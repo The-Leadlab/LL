@@ -199,7 +199,9 @@ export function DataRequestForm({ onSuccess }: DataRequestFormProps) {
         phone: phone.trim(),
         subject: `Data Request — ${company.trim()}`,
         payload,
+        to_email: 'info@the-leadlab.com',
       })
+      toast.success('Submitted — we will email you soon.')
       onSuccess()
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to submit. Please try again.')

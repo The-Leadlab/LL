@@ -2,7 +2,7 @@
 
 - [x] Ensure public intake form submissions are persisted in `marketing_form_submissions`.
 - [x] Send submission notification email to all active admins/superusers.
-- [x] Keep `ali@the-leadlab.com` included via admin query and fallback behavior.
+- [x] Keep `info@the-leadlab.com` as the primary inbox (plus optional `to_email` / admins).
 - [x] Preserve optional `to_email` override compatibility in form payload.
 - [x] Keep form endpoint non-blocking when email sending fails.
 - [x] Ensure Team Management invite modal includes required email field.

@@ -17,27 +17,36 @@ def _row(label: str, value: Any) -> str:
 
 def build_data_request_email(body: Any, payload: Dict[str, Any]) -> Tuple[str, str]:
     """Human-readable email for Typeform-parity data request submissions."""
-    rows: List[str] = [
-        _row("Business sectors", payload.get("business_sectors")),
-        _row("Business sector (other)", payload.get("business_sector_other")),
-        _row("Sales representatives", payload.get("sales_representatives")),
-        _row("Leads per week (per rep)", payload.get("leads_per_week")),
-        _row("Lead sourcing", payload.get("lead_sourcing")),
-        _row("Lead sourcing (other)", payload.get("lead_sourcing_other")),
-        _row("Countries / regions", payload.get("countries")),
-        _row("Countries (other)", payload.get("countries_other")),
-        _row("Ideal customer companies", payload.get("ideal_customer_companies")),
-        _row("Countries out of bounds", payload.get("countries_out_of_bounds")),
-        _row("Target industry", payload.get("target_industry")),
-        _row("Job titles / roles", payload.get("job_titles")),
-        _row("Company sizes", payload.get("company_sizes")),
-        _row("LinkedIn prospect example", payload.get("linkedin_prospect_example")),
-        _row("Ideal customer", payload.get("ideal_customer")),
-        _row("Lead info required", payload.get("lead_info_required")),
-        _row("Additional notes", payload.get("additional_notes")),
-        _row("Weekly lead volume", payload.get("weekly_lead_volume")),
-        _row("Terms accepted", payload.get("terms_accepted")),
+    known_rows: List[Tuple[str, str]] = [
+        ("Business sectors", "business_sectors"),
+        ("Business sector (other)", "business_sector_other"),
+        ("Sales representatives", "sales_representatives"),
+        ("Leads per week (per rep)", "leads_per_week"),
+        ("Lead sourcing", "lead_sourcing"),
+        ("Lead sourcing (other)", "lead_sourcing_other"),
+        ("Countries / regions", "countries"),
+        ("Countries (other)", "countries_other"),
+        ("Ideal customer companies", "ideal_customer_companies"),
+        ("Countries out of bounds", "countries_out_of_bounds"),
+        ("Target industry", "target_industry"),
+        ("Job titles / roles", "job_titles"),
+        ("Company sizes", "company_sizes"),
+        ("LinkedIn prospect example", "linkedin_prospect_example"),
+        ("Ideal customer", "ideal_customer"),
+        ("Lead info required", "lead_info_required"),
+        ("Additional notes", "additional_notes"),
+        ("Weekly lead volume", "weekly_lead_volume"),
+        ("Terms accepted", "terms_accepted"),
+        ("Terms URL", "terms_url"),
+        ("Submitted at", "submitted_at"),
     ]
+    rows: List[str] = [_row(label, payload.get(key)) for label, key in known_rows]
+    used = {key for _, key in known_rows}
+    for key, value in sorted((payload or {}).items()):
+        if key in used:
+            continue
+        rows.append(_row(key.replace("_", " ").title(), value))
+
     table = "<table style='border-collapse:collapse;font-family:sans-serif;font-size:14px;'>" + "".join(rows) + "</table>"
 
     html = f"""
@@ -58,19 +67,9 @@ def build_data_request_email(body: Any, payload: Dict[str, Any]) -> Tuple[str, s
         "",
         "Questionnaire answers:",
     ]
-    for label, key in [
-        ("Business sectors", "business_sectors"),
-        ("Sales representatives", "sales_representatives"),
-        ("Lead sourcing", "lead_sourcing"),
-        ("Countries", "countries"),
-        ("Industry", "target_industry"),
-        ("Job titles", "job_titles"),
-        ("Company sizes", "company_sizes"),
-        ("Weekly lead volume", "weekly_lead_volume"),
-        ("Additional notes", "additional_notes"),
-    ]:
+    for label, key in known_rows:
         val = payload.get(key)
-        if val:
+        if val not in (None, "", [], {}):
             text_lines.append(f"{label}: {val}")
     return html, "\n".join(text_lines)
 

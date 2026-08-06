@@ -116,6 +116,9 @@ typings/
 .env.development.local
 .env.test.local
 .env.production.local
+*.dump
+.supabase_leadlab_db_password.txt
+backend/.supabase_leadlab_db_password.txt
 
 # Parcel-bundler cache (https://parceljs.org/)
 .cache

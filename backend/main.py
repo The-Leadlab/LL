@@ -61,6 +61,15 @@ def _sync_table_sequence(table_name: str, id_column: str = "id") -> None:
 async def startup_sequence_guard() -> None:
     # Keep this list small and focused on tables that are user-created frequently.
     _sync_table_sequence("organizations", "id")
+    # Ensure public marketing intake table exists (data-request / diagnostic / pitch).
+    try:
+        from app.db.session import engine
+        from app.models.marketing_form_submission import MarketingFormSubmission
+
+        MarketingFormSubmission.__table__.create(bind=engine, checkfirst=True)
+        logger.info("Ensured marketing_form_submissions table exists")
+    except Exception as exc:
+        logger.warning("Could not ensure marketing_form_submissions: %s", exc)
 
 # Health check endpoint - Keep both versions for compatibility
 @app.get("/")
@@ -136,8 +145,11 @@ app.add_middleware(
         # Production
         "https://the-leadlab.com",
         "https://www.the-leadlab.com",
-        "https://api.the-leadlab.com"
+        "https://api.the-leadlab.com",
+        # Vercel previews (marketing intake / staging)
+        "https://ll-alilead.vercel.app",
     ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
     allow_headers=[

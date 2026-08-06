@@ -15,4 +15,4 @@ class MarketingFormSubmissionCreate(BaseModel):
     phone: Optional[str] = Field(None, max_length=50)
     subject: Optional[str] = Field(None, max_length=300)
     payload: Dict[str, Any] = Field(default_factory=dict, description="Form-specific fields")
-    to_email: EmailStr = Field(default="ali@the-leadlab.com")
+    to_email: EmailStr = Field(default="info@the-leadlab.com")

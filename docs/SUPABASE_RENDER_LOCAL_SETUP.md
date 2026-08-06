@@ -4,8 +4,24 @@
 
 - Frontend hosting: **Vercel**
 - Backend hosting: **Render** (web service)
-- Current production DB host: **Render Postgres** (expiring soon)
+- Current production DB host: **Render Postgres** (app still connected here until cutover)
 - Target DB host: **Supabase Postgres**
+
+### Active Supabase account / project (reactivated 2026-08-06)
+
+| Field | Value |
+|--------|--------|
+| Supabase org | **aliattia10's Org** (`xirllnlqamtriwmwttzt`) |
+| Project name | **LeadLab** |
+| Project ref | **`mjsooxhqbhdqzipmcrrk`** |
+| Region | **eu-central-1** (Frankfurt) |
+| Dashboard | https://supabase.com/dashboard/project/mjsooxhqbhdqzipmcrrk |
+| API URL | `https://mjsooxhqbhdqzipmcrrk.supabase.co` |
+| DB host | `db.mjsooxhqbhdqzipmcrrk.supabase.co` |
+
+The previous example project ref `kweeltjxvctzgfkjhjut` no longer resolves (deleted / expired). Do **not** use it.
+
+DB password for the new project was generated at create time and stored only locally in `backend/.supabase_leadlab_db_password.txt` (gitignored). Copy it into Render `DATABASE_URL` after restore — never commit it.
 
 This runbook keeps Vercel + Render in place and only swaps the database host.
 
@@ -59,7 +75,7 @@ postgresql+psycopg2://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require
 **Example shape** (do not copy literally; use your own host/user/db):
 
 ```env
-DATABASE_URL=postgresql+psycopg2://postgres:YOUR_ENCODED_PASSWORD@db.kweeltjxvctzgfkjhjut.supabase.co:5432/postgres?sslmode=require
+DATABASE_URL=postgresql+psycopg2://postgres:YOUR_ENCODED_PASSWORD@db.mjsooxhqbhdqzipmcrrk.supabase.co:5432/postgres?sslmode=require
 ```
 
 If the connection fails from Render only, check Supabase docs for **IPv4** add-ons or try the **Session pooler** host/port they provide — network issues vary by region.

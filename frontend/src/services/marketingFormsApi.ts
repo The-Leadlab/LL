@@ -26,7 +26,7 @@ export async function submitMarketingForm(body: MarketingFormPayload): Promise<{
     },
     body: JSON.stringify({
       ...body,
-      to_email: body.to_email || 'ali@the-leadlab.com',
+      to_email: body.to_email || 'info@the-leadlab.com',
     }),
   })
   const data = await res.json().catch(() => ({}))

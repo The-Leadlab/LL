@@ -1,6 +1,5 @@
 from typing import Generator, Optional, Union
 from fastapi import Depends, HTTPException, status, Request
-from fastapi.exceptions import RequestValidationError
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from pydantic import ValidationError
@@ -48,27 +47,22 @@ oauth2_scheme = CustomOAuth2PasswordBearer(
 def get_db() -> Generator:
     """
     Creates a new database session for each request
-    with enhanced error handling
+    with enhanced error handling.
+
+    Connection probe runs *before* yield so SQL/business errors inside
+    endpoints are not incorrectly rewritten as "Database connection error".
     """
     db = SessionLocal()
     try:
-        # Explicitly disable mapper configuration to avoid circular dependencies
-        db.execute(text("SELECT 1"))  # Simple query to test connection
-        yield db
-    except Exception as e:
-        if isinstance(e, HTTPException):
-            # HTTP hataları olduğu gibi iletilsin
-            raise e
-        if isinstance(e, RequestValidationError):
-            # Body/query validation must return 422, not be masked as DB errors
-            raise e
-        else:
-            # Diğer hatalar veritabanı hatası olarak işlensin (log full trace for debugging)
+        try:
+            db.execute(text("SELECT 1"))
+        except Exception as e:
             logger.error("Database connection error: %s", str(e), exc_info=True)
             raise HTTPException(
                 status_code=500,
-                detail="Database connection error. Please try again later."
-            )
+                detail="Database connection error. Please try again later.",
+            ) from e
+        yield db
     finally:
         db.close()
 
