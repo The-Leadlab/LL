@@ -104,11 +104,10 @@ To use Resend for email delivery (recommended):
    - `RESEND_API_KEY=<your-resend-api-key>`
    - `SMTP_FROM_NAME=LeadLab` (optional, defaults to "LeadLab")
 
-2) **About send.the-leadlab.com:**
-   - This is Resend's provided domain - already verified by Resend
-   - You don't need to verify it yourself
-   - DNS records are already configured by Resend
-   - Just use `noreply@send.the-leadlab.com` as the from email
+2) **Domain:**
+   - Use your verified main domain: `the-leadlab.com`
+   - From address example: `noreply@the-leadlab.com`
+   - Subdomain `send.the-leadlab.com` only works if that subdomain is also verified in Resend
 
 **Transport modes:**
 - `EMAIL_PROVIDER=api` → use Resend API only (recommended on Render).
