@@ -94,6 +94,7 @@ class EmailSender:
                 print(f"📧 MOCK: Subject: {subject}")
                 print(f"📧 MOCK: Content: {html_content[:100]}...")
                 return True
+            self.last_error = "SMTP credentials not configured (SMTP_USER/SMTP_PASSWORD)"
             print(f"❌ SMTP credentials not configured for {to_email}")
             return False
 
