@@ -1,5 +1,6 @@
 import smtplib
 import ssl
+import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import List, Optional
@@ -10,16 +11,29 @@ from email.mime.base import MIMEBase
 from email import encoders
 import aiosmtplib
 
+logger = logging.getLogger(__name__)
+
+
+def _clean_secret(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    cleaned = str(value).strip().strip('"').strip("'")
+    return cleaned or None
+
+
 class EmailSender:
     def __init__(self):
         self.smtp_host = settings.SMTP_HOST
         self.smtp_port = settings.SMTP_PORT
-        self.smtp_user = settings.SMTP_USER
-        self.smtp_password = settings.SMTP_PASSWORD
+        self.smtp_user = _clean_secret(settings.SMTP_USER)
+        self.smtp_password = _clean_secret(settings.SMTP_PASSWORD)
         self.smtp_tls = settings.SMTP_TLS
-        self.from_email = settings.EMAILS_FROM_EMAIL
-        self.from_name = settings.SMTP_FROM_NAME
+        self.from_email = (settings.EMAILS_FROM_EMAIL or "").strip()
+        self.from_name = settings.SMTP_FROM_NAME or "LeadLab"
+        self.resend_api_key = _clean_secret(settings.RESEND_API_KEY)
+        self.resend_from_email = _clean_secret(settings.RESEND_FROM_EMAIL) or self.from_email
         self.mock_mode_enabled = (settings.ENV or "").lower() == "development"
+        self.last_error: Optional[str] = None
 
     async def send_email(
         self,
@@ -30,6 +44,7 @@ class EmailSender:
         attachments: List[dict] = None
     ) -> bool:
         """Send email with SMTP-first strategy (Gmail-friendly)."""
+        self.last_error = None
         provider_mode = (settings.EMAIL_PROVIDER or "smtp").lower().strip()
         if provider_mode not in {"smtp", "api", "auto"}:
             provider_mode = "smtp"
@@ -53,7 +68,7 @@ class EmailSender:
         )
         if smtp_sent:
             return True
-        if settings.RESEND_API_KEY:
+        if self.resend_api_key:
             return await self._send_via_resend_api(
                 to_email=to_email,
                 subject=subject,
@@ -142,49 +157,68 @@ class EmailSender:
         html_content: str,
         text_content: Optional[str] = None
     ) -> bool:
-        if not settings.RESEND_API_KEY:
-            print(f"❌ RESEND_API_KEY is not configured for {to_email}")
+        if not self.resend_api_key:
+            self.last_error = "RESEND_API_KEY is not configured"
+            logger.error("%s (to=%s)", self.last_error, to_email)
+            print(f"❌ {self.last_error} for {to_email}")
+            return False
+
+        from_addr = self.resend_from_email or self.from_email
+        if not from_addr:
+            self.last_error = "No Resend from address (set EMAILS_FROM_EMAIL or RESEND_FROM_EMAIL)"
+            logger.error("%s", self.last_error)
             return False
 
         payload = {
-            "from": f"{self.from_name} <{self.from_email}>",
+            "from": f"{self.from_name} <{from_addr}>",
             "to": [to_email],
             "subject": subject,
             "html": html_content,
+            "reply_to": "info@the-leadlab.com",
         }
         if text_content:
             payload["text"] = text_content
 
         headers = {
-            "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+            "Authorization": f"Bearer {self.resend_api_key}",
             "Content-Type": "application/json",
         }
 
         try:
-            async with httpx.AsyncClient(timeout=30) as client:
+            timeout = float(getattr(settings, "EMAIL_PROVIDER_TIMEOUT_SECONDS", 12) or 12)
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.post(
                     "https://api.resend.com/emails",
                     json=payload,
                     headers=headers,
                 )
-                response.raise_for_status()
-                response_data = response.json()
+                if response.status_code >= 400:
+                    error_detail = response.text
+                    try:
+                        error_data = response.json()
+                        error_detail = error_data.get("message") or error_data.get("name") or str(error_data)
+                    except Exception:
+                        pass
+                    self.last_error = f"Resend HTTP {response.status_code}: {error_detail}"
+                    logger.error(
+                        "Resend failed to=%s from=%s status=%s detail=%s",
+                        to_email,
+                        from_addr,
+                        response.status_code,
+                        error_detail,
+                    )
+                    print(f"❌ Failed to send email via Resend API to {to_email}: {error_detail}")
+                    print(f"   Status: {response.status_code}")
+                    return False
 
+                response_data = response.json()
                 email_id = response_data.get("id", "unknown")
+                logger.info("Resend OK to=%s id=%s", to_email, email_id)
                 print(f"✅ Email sent successfully to {to_email} via Resend API (ID: {email_id})")
                 return True
-        except httpx.HTTPStatusError as e:
-            error_detail = "Unknown error"
-            try:
-                error_data = e.response.json()
-                error_detail = error_data.get("message", str(e))
-            except Exception:
-                error_detail = str(e)
-
-            print(f"❌ Failed to send email via Resend API to {to_email}: {error_detail}")
-            print(f"   Status: {e.response.status_code}")
-            return False
         except Exception as e:
+            self.last_error = f"Resend exception: {e}"
+            logger.error("Resend exception to=%s: %s", to_email, e, exc_info=True)
             print(f"❌ Failed to send email via Resend API to {to_email}: {str(e)}")
             return False
 

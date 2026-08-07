@@ -72,8 +72,15 @@ async def submit_marketing_form(
 
     emailed_ok = False
     email_errors = []
+    email_error_detail = None
     try:
         sender = EmailSender()
+        logger.info(
+            "Marketing email attempt provider=%s resend_key=%s from=%s",
+            (settings.EMAIL_PROVIDER or "").strip(),
+            "set" if sender.resend_api_key else "missing",
+            sender.resend_from_email or sender.from_email,
+        )
         for recipient in recipients:
             try:
                 ok = await sender.send_email(
@@ -86,12 +93,16 @@ async def submit_marketing_form(
                     emailed_ok = True
                     logger.info("Marketing form email sent to %s", recipient)
                 else:
-                    email_errors.append(f"{recipient}: send returned false")
-                    logger.error("Marketing form email failed for %s (provider returned false)", recipient)
+                    detail = sender.last_error or "send returned false"
+                    email_error_detail = detail
+                    email_errors.append(f"{recipient}: {detail}")
+                    logger.error("Marketing form email failed for %s: %s", recipient, detail)
             except Exception as send_exc:
+                email_error_detail = str(send_exc)
                 email_errors.append(f"{recipient}: {send_exc}")
                 logger.error("Marketing form email error for %s: %s", recipient, send_exc, exc_info=True)
     except Exception as exc:
+        email_error_detail = str(exc)
         logger.error("Marketing form email setup failed: %s", exc, exc_info=True)
         email_errors.append(str(exc))
 
@@ -113,4 +124,5 @@ async def submit_marketing_form(
         "msg": "Thank you — we received your submission and will be in touch soon.",
         "id": row_id,
         "emailed": emailed_ok,
+        "email_error": email_error_detail if not emailed_ok else None,
     }
