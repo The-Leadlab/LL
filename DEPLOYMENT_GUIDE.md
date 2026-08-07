@@ -41,10 +41,10 @@ Required environment variables:
 - `TOKEN_ENCRYPTION_KEY`
 - `API_SECRET_KEY`
 - `ENV=production`
-- `EMAILS_FROM_EMAIL=noreply@send.the-leadlab.com` (Resend verified domain)
+- `EMAILS_FROM_EMAIL=noreply@the-leadlab.com` (Resend-verified main domain)
 - `RESEND_API_KEY` (Resend API key for email sending)
 - `EMAIL_PROVIDER=auto` (`smtp`, `api`, or `auto`)
-- `RESEND_FROM_EMAIL=noreply@send.the-leadlab.com`
+- `RESEND_FROM_EMAIL=noreply@the-leadlab.com`
 
 Optional environment variables (can be added later):
 - `LINKEDIN_CLIENT_ID`
@@ -100,7 +100,7 @@ If admin button does not appear:
 To use Resend for email delivery (recommended):
 
 1) **Set environment variables in Render:**
-   - `EMAILS_FROM_EMAIL=noreply@send.the-leadlab.com` (Resend's send.the-leadlab.com domain - no verification needed)
+   - `EMAILS_FROM_EMAIL=noreply@the-leadlab.com` (must match a verified domain in Resend)
    - `RESEND_API_KEY=<your-resend-api-key>`
    - `SMTP_FROM_NAME=LeadLab` (optional, defaults to "LeadLab")
 
