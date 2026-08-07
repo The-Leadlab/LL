@@ -8,12 +8,10 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func
 
 from app.api import deps
 from app.core.email import EmailSender
 from app.models.marketing_form_submission import MarketingFormSubmission
-from app.models.user import User
 from app.schemas.marketing_forms import MarketingFormSubmissionCreate
 from app.services.marketing_form_email import build_data_request_email, build_generic_email
 
@@ -38,8 +36,8 @@ async def submit_marketing_form(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """
-    Save submission and email the LeadLab inbox with the full payload.
-    Email delivery is required for success when persistence fails.
+    Save submission and email info@the-leadlab.com with the full payload.
+    Does not fan out to every admin (avoids spam / junk admin accounts).
     """
     _ensure_marketing_table(db)
 
@@ -62,23 +60,8 @@ async def submit_marketing_form(
         db.rollback()
         logger.error("Failed to persist marketing form submission: %s", exc, exc_info=True)
 
-    recipient_set = {PRIMARY_INBOX}
-    if body.to_email:
-        recipient_set.add(str(body.to_email).strip().lower())
-    try:
-        admin_rows = (
-            db.query(User)
-            .filter(
-                User.is_active == True,  # noqa: E712
-                or_(User.is_superuser == True, func.lower(User.role) == "admin"),  # noqa: E712
-            )
-            .all()
-        )
-        for u in admin_rows:
-            if getattr(u, "email", None):
-                recipient_set.add(str(u.email).strip().lower())
-    except Exception as exc:
-        logger.warning("Could not load admin recipients: %s", exc)
+    # Only the LeadLab inbox — never blast all DB admins.
+    recipients = [PRIMARY_INBOX]
 
     subject = body.subject or f"New {body.form_type.replace('_', ' ')} submission"
     payload = body.payload or {}
@@ -91,7 +74,7 @@ async def submit_marketing_form(
     email_errors = []
     try:
         sender = EmailSender()
-        for recipient in sorted(recipient_set):
+        for recipient in recipients:
             try:
                 ok = await sender.send_email(
                     to_email=recipient,

@@ -34,15 +34,6 @@ class EmailSender:
         if provider_mode not in {"smtp", "api", "auto"}:
             provider_mode = "smtp"
 
-        if provider_mode == "smtp":
-            return await self._send_via_smtp(
-                to_email=to_email,
-                subject=subject,
-                html_content=html_content,
-                text_content=text_content,
-                attachments=attachments,
-            )
-
         if provider_mode == "api":
             return await self._send_via_resend_api(
                 to_email=to_email,
@@ -51,7 +42,8 @@ class EmailSender:
                 text_content=text_content,
             )
 
-        # auto mode: prefer SMTP first, fallback to Resend only if configured.
+        # smtp (default) and auto: try SMTP first, then Resend if configured.
+        # Prevents silent failures when SMTP_PASSWORD is missing on Render.
         smtp_sent = await self._send_via_smtp(
             to_email=to_email,
             subject=subject,
