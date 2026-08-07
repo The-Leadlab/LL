@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.core.config import settings
 from app.core.email import EmailSender
 from app.models.marketing_form_submission import MarketingFormSubmission
 from app.schemas.marketing_forms import MarketingFormSubmissionCreate
