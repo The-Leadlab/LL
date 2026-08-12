@@ -282,6 +282,15 @@ export const leadsAPI = {
     });
   },
 
+  moveToClient: async (data: {
+    to_client_id: number;
+    lead_ids?: number[];
+    from_client_id?: number;
+    move_all_from_client?: boolean;
+  }): Promise<any> => {
+    return api.post('/leads/bulk/move-client', data);
+  },
+
   exportCSV: async (params?: {
     search?: string;
     tag?: string;

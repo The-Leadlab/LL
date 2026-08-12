@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
+from typing import Optional
 import pandas as pd
 import numpy as np
 import logging
@@ -84,14 +85,20 @@ async def import_leads_from_csv(
     assigned_user_id: int = Form(...),  # User ID to assign leads to
     tag_id: int = Form(None),  # Optional tag ID to assign to leads
     new_tag_name: str = Form(None),  # Optional new tag name to create and assign
-    client_id: int = Form(None),  # Optional client; defaults to General
+    client_id: Optional[int] = Form(None),  # Optional client; defaults to General when omitted
     file: UploadFile = File(...),
 ):
     """
     Import leads from CSV file.
     The leads will be assigned to the specified user.
     Optionally, a tag can be assigned to all imported leads.
-    Missing client column / client_id defaults to the org General client.
+
+    Client assignment:
+    - If form `client_id` is provided, ALL imported leads use that client
+      (CSV Client / client_name columns are ignored so a template "General"
+      column cannot override the UI selection).
+    - If form `client_id` is omitted, per-row CSV client/client_id is used,
+      falling back to the org General client.
     """
     # Non-admins can only assign to themselves
     if not current_user.is_admin and assigned_user_id != current_user.id:
@@ -313,26 +320,31 @@ async def import_leads_from_csv(
                 if "email" not in lead_data:
                     lead_data["email"] = None
 
-                # Resolve client: row client_id > row client name > form client_id > General
-                resolved_client_id = default_import_client.id
+                # Resolve client:
+                # - Form client_id (UI selection) wins for the whole batch
+                # - Otherwise per-row CSV client / client_id, then General
                 row_client_id = lead_data.pop("client_id", None)
                 row_client_name = lead_data.pop("client", None)
-                if row_client_id:
-                    cobj = crud_client.get_for_org(
-                        db,
-                        id=int(row_client_id),
-                        organization_id=assigned_user.organization_id,
-                    )
-                    if cobj and not cobj.is_archived:
-                        resolved_client_id = cobj.id
-                elif row_client_name:
-                    cobj = crud_client.get_by_name(
-                        db,
-                        organization_id=assigned_user.organization_id,
-                        name=str(row_client_name),
-                    )
-                    if cobj and not cobj.is_archived:
-                        resolved_client_id = cobj.id
+                if client_id:
+                    resolved_client_id = default_import_client.id
+                else:
+                    resolved_client_id = general_client.id
+                    if row_client_id:
+                        cobj = crud_client.get_for_org(
+                            db,
+                            id=int(row_client_id),
+                            organization_id=assigned_user.organization_id,
+                        )
+                        if cobj and not cobj.is_archived:
+                            resolved_client_id = cobj.id
+                    elif row_client_name:
+                        cobj = crud_client.get_by_name(
+                            db,
+                            organization_id=assigned_user.organization_id,
+                            name=str(row_client_name),
+                        )
+                        if cobj and not cobj.is_archived:
+                            resolved_client_id = cobj.id
 
                 lead_data.update({
                     "psychometrics": None,

@@ -25,6 +25,18 @@ class BulkLeadTagUpdate(BaseModel):
     leadIds: List[int]
     tags: List[int]
 
+
+class BulkMoveClientRequest(BaseModel):
+    """Move leads to another client. Provide lead_ids and/or from_client_id."""
+    to_client_id: int
+    lead_ids: Optional[List[int]] = None
+    from_client_id: Optional[int] = None
+    # When true with from_client_id, move every matching lead in the org (not only selected)
+    move_all_from_client: bool = False
+    # Optional ISO datetime — only move leads created at/after this time
+    created_after: Optional[datetime] = None
+
+
 class LeadStatsResponse(BaseModel):
     total: int
     new: int
@@ -710,6 +722,78 @@ def update_lead_tags(
         logger.error(f"Error updating tags: {str(e)}")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/bulk/move-client", response_model=schemas.LeadResponse)
+def bulk_move_leads_to_client(
+    body: BulkMoveClientRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Move selected leads (or all leads from a client) to another client.
+    Use this to fix mistaken imports (e.g. General → Serendian).
+    """
+    from app.crud.crud_client import client as crud_client
+
+    if not current_user.organization_id:
+        raise HTTPException(status_code=400, detail="User has no organization")
+
+    target = crud_client.get_for_org(
+        db, id=body.to_client_id, organization_id=current_user.organization_id
+    )
+    if not target or target.is_archived:
+        raise HTTPException(status_code=400, detail="Invalid or archived target client")
+
+    lead_ids = list(body.lead_ids or [])
+    if body.move_all_from_client:
+        if body.from_client_id is None:
+            raise HTTPException(
+                status_code=400,
+                detail="from_client_id is required when move_all_from_client is true",
+            )
+        q = db.query(models.Lead.id).filter(
+            models.Lead.organization_id == current_user.organization_id,
+            models.Lead.client_id == body.from_client_id,
+            models.Lead.is_deleted == False,  # noqa: E712
+        )
+        if body.created_after is not None:
+            q = q.filter(models.Lead.created_at >= body.created_after)
+        rows = q.all()
+        lead_ids = [r[0] for r in rows]
+    elif body.from_client_id is not None and not lead_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide lead_ids, or set move_all_from_client=true with from_client_id",
+        )
+
+    if not lead_ids:
+        raise HTTPException(status_code=400, detail="No leads to move")
+
+    updated = 0
+    for lid in lead_ids:
+        lead = crud.lead.get(db=db, id=lid)
+        if not lead:
+            continue
+        if lead.organization_id != current_user.organization_id and not current_user.is_admin:
+            raise HTTPException(status_code=403, detail=f"Not enough permissions for lead {lid}")
+        if body.from_client_id is not None and lead.client_id != body.from_client_id:
+            continue
+        if body.created_after is not None and (
+            lead.created_at is None or lead.created_at < body.created_after
+        ):
+            continue
+        lead.client_id = target.id
+        lead.updated_at = datetime.utcnow()
+        db.add(lead)
+        updated += 1
+
+    db.commit()
+    return schemas.LeadResponse(
+        success=True,
+        message=f"Moved {updated} lead(s) to {target.name}",
+        data={"moved": updated, "to_client_id": target.id, "to_client_name": target.name},
+    )
+
 
 @router.post("/bulk/tags", response_model=schemas.LeadResponse)
 def update_leads_tags_bulk(

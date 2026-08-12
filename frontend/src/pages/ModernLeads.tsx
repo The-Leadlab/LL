@@ -33,6 +33,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings2,
+  FolderInput,
 } from 'lucide-react';
 import {
   Dialog,
@@ -185,6 +186,9 @@ export function ModernLeads() {
   const [renamingId, setRenamingId] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [importClientId, setImportClientId] = useState<number | null>(null);
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+  const [moveTargetClientId, setMoveTargetClientId] = useState<number | null>(null);
+  const [moveMode, setMoveMode] = useState<'selected' | 'all_in_client'>('selected');
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
@@ -193,6 +197,7 @@ export function ModernLeads() {
 
   useEffect(() => {
     setPage(0);
+    setSelectedLeads([]);
   }, [debouncedSearch, selectedClientId]);
 
   const { data: clientsData } = useQuery({
@@ -208,8 +213,14 @@ export function ModernLeads() {
     if (selectedClientId != null || activeClients.length === 0) return;
     const general = activeClients.find((c) => c.is_default) ?? activeClients[0];
     setSelectedClientId(general.id);
-    if (importClientId == null) setImportClientId(general.id);
-  }, [activeClients, selectedClientId, importClientId]);
+  }, [activeClients, selectedClientId]);
+
+  // Keep import target in sync with the active Clients tab
+  useEffect(() => {
+    if (selectedClientId != null) {
+      setImportClientId(selectedClientId);
+    }
+  }, [selectedClientId]);
 
   // Fetch leads from backend (paginated; debounced search avoids remounting the page each keystroke)
   const { data: leadsPage, isLoading: isLoadingLeads, isFetching: isFetchingLeads } = useQuery({
@@ -243,9 +254,10 @@ export function ModernLeads() {
       formData.append('file', file);
       formData.append('assigned_user_id', String(user.id));
       const clientForImport = importClientId ?? selectedClientId;
-      if (clientForImport) {
-        formData.append('client_id', String(clientForImport));
+      if (!clientForImport) {
+        throw new Error('Select a client before importing.');
       }
+      formData.append('client_id', String(clientForImport));
       return leadsAPI.uploadCSV(formData);
     },
     onSuccess: () => {
@@ -337,6 +349,68 @@ export function ModernLeads() {
       });
     },
   });
+
+  const moveClientMutation = useMutation({
+    mutationFn: async () => {
+      if (!moveTargetClientId) throw new Error('Pick a destination client');
+      if (moveMode === 'all_in_client') {
+        if (!selectedClientId) throw new Error('No source client');
+        return leadsAPI.moveToClient({
+          to_client_id: moveTargetClientId,
+          from_client_id: selectedClientId,
+          move_all_from_client: true,
+        });
+      }
+      if (selectedLeads.length === 0) throw new Error('Select at least one lead');
+      return leadsAPI.moveToClient({
+        to_client_id: moveTargetClientId,
+        lead_ids: selectedLeads,
+        from_client_id: selectedClientId ?? undefined,
+      });
+    },
+    onSuccess: (res: any) => {
+      const payload = res?.data ?? res;
+      const msg = payload?.message || 'Leads moved';
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setSelectedLeads([]);
+      setIsMoveDialogOpen(false);
+      toast({ title: 'Moved', description: typeof msg === 'string' ? msg : 'Leads moved' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Move failed',
+        description: error?.response?.data?.detail || error?.message || 'Failed',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const openMoveDialog = (mode: 'selected' | 'all_in_client') => {
+    setMoveMode(mode);
+    const dest =
+      activeClients.find((c) => c.id !== selectedClientId && !c.is_default)?.id ??
+      activeClients.find((c) => c.id !== selectedClientId)?.id ??
+      null;
+    setMoveTargetClientId(dest);
+    setIsMoveDialogOpen(true);
+  };
+
+  const toggleSelectAll = () => {
+    if (leads.length === 0) return;
+    const allSelected = leads.every((l) => selectedLeads.includes(l.id));
+    if (allSelected) {
+      setSelectedLeads((prev) => prev.filter((id) => !leads.some((l) => l.id === id)));
+    } else {
+      setSelectedLeads((prev) => Array.from(new Set([...prev, ...leads.map((l) => l.id)])));
+    }
+  };
+
+  const toggleSelectLead = (id: number) => {
+    setSelectedLeads((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   // Handle file selection
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -552,8 +626,34 @@ export function ModernLeads() {
           </div>
 
           <div className="flex items-center space-x-3">
+            {selectedLeads.length > 0 && (
+              <button
+                type="button"
+                onClick={() => openMoveDialog('selected')}
+                className="flex items-center space-x-2 px-4 py-2.5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors"
+              >
+                <FolderInput className="w-4 h-4 text-primary-700 dark:text-primary-300" />
+                <span className="text-primary-800 dark:text-primary-200">
+                  Move {selectedLeads.length}…
+                </span>
+              </button>
+            )}
+            {selectedClientId != null && totalLeads > 0 && (
+              <button
+                type="button"
+                onClick={() => openMoveDialog('all_in_client')}
+                className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                title="Move every lead in this client to another client"
+              >
+                <FolderInput className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                <span className="text-neutral-700 dark:text-neutral-300">Move all…</span>
+              </button>
+            )}
             <button 
-              onClick={() => setIsUploadDialogOpen(true)}
+              onClick={() => {
+                setImportClientId(selectedClientId);
+                setIsUploadDialogOpen(true);
+              }}
               className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
             >
               <Upload className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
@@ -594,7 +694,13 @@ export function ModernLeads() {
             <thead className="bg-neutral-50 dark:bg-neutral-700/50 border-b border-neutral-200 dark:border-neutral-700">
               <tr>
                 <th className="px-6 py-3 text-left">
-                  <input type="checkbox" className="rounded" />
+                  <input
+                    type="checkbox"
+                    className="rounded"
+                    checked={leads.length > 0 && leads.every((l) => selectedLeads.includes(l.id))}
+                    onChange={toggleSelectAll}
+                    aria-label="Select all leads on this page"
+                  />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                   Lead
@@ -624,7 +730,13 @@ export function ModernLeads() {
                   className="hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors cursor-pointer"
                 >
                   <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                    <input type="checkbox" className="rounded" />
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={selectedLeads.includes(lead.id)}
+                      onChange={() => toggleSelectLead(lead.id)}
+                      aria-label={`Select ${lead.full_name || lead.id}`}
+                    />
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
@@ -714,7 +826,7 @@ export function ModernLeads() {
           <DialogHeader>
             <DialogTitle>Import Leads</DialogTitle>
             <DialogDescription>
-              Upload a CSV or Excel file to import leads into your system.
+              Leads will be assigned to the client selected below (defaults to the Clients tab you are viewing).
             </DialogDescription>
           </DialogHeader>
           
@@ -734,7 +846,7 @@ export function ModernLeads() {
                 ))}
               </select>
               <p className="text-xs text-neutral-500">
-                Leads without a client column go here. Skip defaults to General.
+                All rows in this upload go to this client. A CSV Client column is ignored when you pick a client here.
               </p>
             </div>
 
@@ -946,6 +1058,56 @@ export function ModernLeads() {
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsManageClientsOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move leads to another client */}
+      <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Move leads to client</DialogTitle>
+            <DialogDescription>
+              {moveMode === 'all_in_client'
+                ? `Move all leads currently in “${activeClients.find((c) => c.id === selectedClientId)?.name ?? 'this client'}” to another client.`
+                : `Move ${selectedLeads.length} selected lead(s) to another client.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label htmlFor="move-target">Destination client</Label>
+            <select
+              id="move-target"
+              value={moveTargetClientId ?? ''}
+              onChange={(e) => setMoveTargetClientId(Number(e.target.value))}
+              className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm"
+            >
+              {activeClients
+                .filter((c) => c.id !== selectedClientId)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsMoveDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={!moveTargetClientId || moveClientMutation.isPending}
+              onClick={() => moveClientMutation.mutate()}
+            >
+              {moveClientMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Moving…
+                </>
+              ) : (
+                'Move leads'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
