@@ -815,10 +815,28 @@ async def reset_password(
                 detail="User not found"
             )
         
-        # Update password
-        user_in = schemas.UserUpdate(password=reset_password_in.new_password)
-        user = crud.user.update(db, db_obj=user, obj_in=user_in)
-        
+        # Persist password hash directly — do not rely solely on ORM attribute aliasing
+        new_hash = security.get_password_hash(reset_password_in.new_password)
+        from sqlalchemy import text
+        db.execute(
+            text(
+                "UPDATE users SET hashed_password = :hp, updated_at = NOW() WHERE id = :id"
+            ),
+            {"hp": new_hash, "id": user.id},
+        )
+        db.commit()
+
+        row = db.execute(
+            text("SELECT hashed_password FROM users WHERE id = :id"),
+            {"id": user.id},
+        ).first()
+        if not row or not security.verify_password(reset_password_in.new_password, row.hashed_password):
+            logger.error("Password reset did not persist for user_id=%s", user.id)
+            raise HTTPException(
+                status_code=500,
+                detail="Password was not updated. Please try again or contact support.",
+            )
+
         return {"message": "Password reset successfully"}
     
     except HTTPException:

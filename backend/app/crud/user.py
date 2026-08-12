@@ -47,13 +47,20 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         self, db: Session, *, db_obj: User, obj_in: Union[UserUpdate, Dict[str, Any]]
     ) -> User:
         if isinstance(obj_in, dict):
-            update_data = obj_in
+            update_data = dict(obj_in)
         else:
             update_data = obj_in.dict(exclude_unset=True)
-        if "password" in update_data:
-            hashed_password = get_password_hash(update_data["password"])
-            del update_data["password"]
-            update_data["hashed_password"] = hashed_password
+
+        # Must set password_hash (column attr). CRUDBase.update only applies keys
+        # present on jsonable_encoder(db_obj); "hashed_password" is a property and
+        # was silently dropped — reset-password returned 200 without changing the DB.
+        if "password" in update_data and update_data["password"] is not None:
+            db_obj.password_hash = get_password_hash(update_data.pop("password"))
+
+        # Drop legacy aliases so they cannot be mis-applied
+        update_data.pop("hashed_password", None)
+        update_data.pop("password_hash", None)
+
         return super().update(db, db_obj=db_obj, obj_in=update_data)
 
     def authenticate(self, db: Session, *, email: str = None, username: str = None, password: str) -> Optional[User]:
