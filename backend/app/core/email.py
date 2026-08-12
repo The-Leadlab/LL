@@ -444,69 +444,92 @@ This email was sent from an automated system. Please do not reply to this email.
 
     async def send_password_reset(self, to_email: str, reset_link: str) -> bool:
         """Send password reset email"""
-        subject = "Password Reset Request - LeadLab"
+        subject = "Reset your LeadLab password"
+        logo_url = "https://the-leadlab.com/images/leadlab-logo.png"
+        # Brand: blue-600 → indigo-600 (matches marketing / auth UI)
         html_content = f"""
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Password Reset Request</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
-                .btn {{ display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-                .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 12px; }}
-                .logo {{ font-size: 24px; font-weight: bold; }}
-            </style>
+            <meta name="color-scheme" content="light">
+            <title>Reset your LeadLab password</title>
         </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <div class="logo">🚀 LeadLab</div>
-                    <h1>Password Reset Request</h1>
-                </div>
-                <div class="content">
-                    <p>Hello!</p>
-                    <p>We received a request to reset your password for your LeadLab account. Click the button below to create a new password:</p>
-                    <div style="text-align: center;">
-                        <a href="{reset_link}" class="btn">Reset Your Password</a>
-                    </div>
-                    <p>This link will expire in 1 hour for security reasons.</p>
-                    <p>If you didn't request this password reset, you can safely ignore this email. Your account will remain secure.</p>
-                    <p>Need help? Contact our support team at info@the-leadlab.com</p>
-                </div>
-                <div class="footer">
-                    <p>© 2024 LeadLab. All rights reserved.<br>
-                    This email was sent from an automated system. Please do not reply to this email.</p>
-                </div>
-            </div>
+        <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#0f172a;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f1f5f9;padding:32px 12px;">
+              <tr>
+                <td align="center">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #dbeafe;box-shadow:0 10px 30px rgba(37,99,235,0.08);">
+                    <tr>
+                      <td style="background:linear-gradient(135deg,#2563eb 0%,#4f46e5 100%);padding:28px 32px;text-align:center;">
+                        <img src="{logo_url}" alt="LeadLab" width="160" style="display:block;margin:0 auto 12px auto;max-width:160px;height:auto;border:0;" />
+                        <h1 style="margin:0;font-size:22px;line-height:1.3;font-weight:700;color:#ffffff;letter-spacing:-0.02em;">Reset your password</h1>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:32px 28px 8px 28px;">
+                        <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;color:#334155;">Hello,</p>
+                        <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;color:#334155;">
+                          We received a request to reset the password for your LeadLab account. Click the button below to choose a new one.
+                        </p>
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:28px auto;">
+                          <tr>
+                            <td align="center" style="border-radius:12px;background:linear-gradient(135deg,#2563eb 0%,#4f46e5 100%);">
+                              <a href="{reset_link}" style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:12px;">
+                                Reset Password
+                              </a>
+                            </td>
+                          </tr>
+                        </table>
+                        <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#64748b;">
+                          This link expires in <strong style="color:#0f172a;">1 hour</strong> for your security.
+                        </p>
+                        <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#64748b;">
+                          If you didn’t request a password reset, you can ignore this email — your account stays secure.
+                        </p>
+                        <p style="margin:24px 0 0 0;font-size:13px;line-height:1.5;color:#94a3b8;word-break:break-all;">
+                          Button not working? Paste this link into your browser:<br />
+                          <a href="{reset_link}" style="color:#2563eb;text-decoration:underline;">{reset_link}</a>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:24px 28px 28px 28px;border-top:1px solid #e2e8f0;">
+                        <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;text-align:center;">
+                          Need help? Contact
+                          <a href="mailto:info@the-leadlab.com" style="color:#2563eb;text-decoration:none;font-weight:600;">info@the-leadlab.com</a>
+                        </p>
+                        <p style="margin:12px 0 0 0;font-size:12px;line-height:1.5;color:#94a3b8;text-align:center;">
+                          © 2026 LeadLab · the-leadlab.com<br />
+                          This is an automated message — please do not reply.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
         </body>
         </html>
         """
         text_content = f"""
-Password Reset Request - LeadLab
+Reset your LeadLab password
 
-Hello!
+Hello,
 
-We received a request to reset your password for your LeadLab account.
+We received a request to reset the password for your LeadLab account.
 
-Click the link below to reset your password:
+Reset your password:
 {reset_link}
 
-This link will expire in 1 hour for security reasons.
+This link expires in 1 hour for your security.
 
-If you didn't request this password reset, you can safely ignore this email. Your account will remain secure.
+If you didn't request a password reset, you can ignore this email — your account stays secure.
 
-Need help? Contact our support team at info@the-leadlab.com
+Need help? Contact info@the-leadlab.com
 
-Best regards,
-The LeadLab Team
-
-© 2024 LeadLab. All rights reserved.
-This email was sent from an automated system. Please do not reply to this email.
+© 2026 LeadLab · the-leadlab.com
         """
         return await self.send_email(to_email, subject, html_content, text_content)
 

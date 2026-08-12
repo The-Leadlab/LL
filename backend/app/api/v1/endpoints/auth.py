@@ -8,7 +8,7 @@ from app.api import deps
 from app.core import security
 from app.core.config import settings
 from app.schemas.auth import TokenResponse, UserLogin
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, model_validator
 from app.schemas.user import User
 from app.core.email import email_sender
 from app.utils.auth import generate_password_reset_token, verify_password_reset_token, generate_email_verification_token, verify_email_verification_token
@@ -703,7 +703,16 @@ class ForgotPasswordInput(BaseModel):
 
 class ResetPasswordInput(BaseModel):
     token: str
-    new_password: str
+    new_password: Optional[str] = None
+    password: Optional[str] = None
+
+    @model_validator(mode="after")
+    def require_password(self):
+        resolved = self.new_password or self.password
+        if not resolved:
+            raise ValueError("new_password is required")
+        self.new_password = resolved
+        return self
 
 class VerifyEmailInput(BaseModel):
     token: str

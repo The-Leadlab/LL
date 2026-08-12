@@ -47,8 +47,11 @@ export interface ForgotPasswordData {
 
 export interface ResetPasswordData {
   token: string;
-  password: string;
-  password_confirmation: string;
+  /** Preferred field — matches backend ResetPasswordInput.new_password */
+  new_password: string;
+  /** @deprecated kept for callers that still pass password */
+  password?: string;
+  password_confirmation?: string;
 }
 
 export interface RefreshTokenResponse {
@@ -108,7 +111,14 @@ export const resendPasswordReset = async (data: ForgotPasswordData): Promise<{ m
 };
 
 export const resetPassword = async (data: ResetPasswordData): Promise<{ message: string }> => {
-  const response = await api.post('/auth/reset-password', data);
+  const newPassword = data.new_password || data.password;
+  if (!newPassword) {
+    throw new Error('New password is required');
+  }
+  const response = await api.post('/auth/reset-password', {
+    token: data.token,
+    new_password: newPassword,
+  });
   return response.data;
 };
 

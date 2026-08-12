@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Lock } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import authService from '../services/auth'
+import { PublicHeader } from '../components/layout/PublicHeader'
+import { getApiErrorMessage } from '../lib/apiError'
 
 export function ResetPassword() {
   const navigate = useNavigate()
@@ -28,6 +30,12 @@ export function ResetPassword() {
       return
     }
 
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters')
+      setIsLoading(false)
+      return
+    }
+
     if (!token) {
       setError('Invalid or expired reset token')
       setIsLoading(false)
@@ -37,16 +45,16 @@ export function ResetPassword() {
     try {
       await authService.resetPassword({
         token,
-        password: formData.password,
-        password_confirmation: formData.confirmPassword
+        new_password: formData.password,
+        password_confirmation: formData.confirmPassword,
       })
       setSuccess(true)
       toast.success('Password reset successfully!')
       setTimeout(() => {
         navigate('/signin')
-      }, 3000)
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.response?.data?.detail || err.message || 'Failed to reset password'
+      }, 2500)
+    } catch (err: unknown) {
+      const errorMessage = getApiErrorMessage(err, 'Failed to reset password')
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -56,67 +64,82 @@ export function ResetPassword() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center px-4">
-        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center border border-gray-100">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Invalid Reset Link
-          </h1>
-          <p className="text-gray-600 mb-6">
-            This password reset link is invalid or has expired. Please request a new
-            one.
-          </p>
-          <Link
-            to="/forgot-password"
-            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-all duration-200"
-          >
-            Request New Link
-          </Link>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <PublicHeader />
+        <div className="flex items-center justify-center px-4 py-16">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-blue-100">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Invalid Reset Link
+            </h1>
+            <p className="text-gray-600 mb-6">
+              This password reset link is invalid or has expired. Please request a new
+              one.
+            </p>
+            <Link
+              to="/forgot-password"
+              className="inline-flex items-center justify-center px-6 py-3 text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md"
+            >
+              Request New Link
+            </Link>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col">
+      <PublicHeader />
+
+      <div className="container mx-auto px-4 py-4">
         <Link
           to="/signin"
-          className="inline-flex items-center text-blue-600 hover:text-blue-700"
+          className="inline-flex items-center text-blue-600 hover:text-indigo-700 font-medium"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Sign In
         </Link>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-4">
+      <div className="flex-1 flex items-center justify-center px-4 pb-16">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-blue-100">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">
-                Reset Your Password
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md">
+                {success ? <CheckCircle2 className="h-6 w-6" /> : <Lock className="h-6 w-6" />}
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                {success ? 'Password Updated' : 'Reset Your Password'}
               </h1>
               <p className="text-gray-600 mt-2">
-                Please enter your new password below.
+                {success
+                  ? 'You can now sign in with your new password.'
+                  : 'Choose a strong new password for your LeadLab account.'}
               </p>
             </div>
 
-            {error && (
-              <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">
+            {error ? (
+              <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-6 border border-red-100 text-sm">
                 {error}
               </div>
-            )}
+            ) : null}
 
             {success ? (
-              <div className="text-center">
-                <div className="bg-green-50 text-green-700 p-4 rounded-lg mb-6">
-                  Your password has been reset successfully! Redirecting to sign
-                  in...
+              <div className="text-center space-y-4">
+                <div className="bg-emerald-50 text-emerald-800 p-4 rounded-xl border border-emerald-100 text-sm">
+                  Your password has been reset successfully. Redirecting to sign in…
                 </div>
+                <Link
+                  to="/signin"
+                  className="inline-flex w-full items-center justify-center px-6 py-3 text-base font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md"
+                >
+                  Go to Sign In
+                </Link>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -135,8 +158,9 @@ export function ResetPassword() {
                     onChange={handleChange}
                     required
                     minLength={8}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter new password"
+                    autoComplete="new-password"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="At least 8 characters"
                   />
                 </div>
 
@@ -155,22 +179,25 @@ export function ResetPassword() {
                     onChange={handleChange}
                     required
                     minLength={8}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Confirm new password"
+                    autoComplete="new-password"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Re-enter new password"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700 transition-all duration-200 disabled:opacity-50 shadow-sm"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 shadow-md font-semibold"
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                       Resetting...
                     </div>
-                  ) : 'Reset Password'}
+                  ) : (
+                    'Update Password'
+                  )}
                 </button>
               </form>
             )}
