@@ -29,6 +29,33 @@ function getStoredAccessToken(): string | null {
   return localStorage.getItem('token') || sessionStorage.getItem('token');
 }
 
+function getStoredRefreshToken(): string | null {
+  return localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
+}
+
+function storeRefreshedTokens(accessToken: string, refreshToken?: string | null) {
+  const rememberMe =
+    Boolean(localStorage.getItem('token') || localStorage.getItem('refreshToken')) ||
+    useAuthStore.getState().rememberMe;
+
+  if (rememberMe) {
+    localStorage.setItem('token', accessToken);
+    sessionStorage.removeItem('token');
+    if (refreshToken) {
+      localStorage.setItem('refreshToken', refreshToken);
+      sessionStorage.removeItem('refreshToken');
+    }
+  } else {
+    sessionStorage.setItem('token', accessToken);
+    localStorage.removeItem('token');
+    if (refreshToken) {
+      sessionStorage.setItem('refreshToken', refreshToken);
+      localStorage.removeItem('refreshToken');
+    }
+  }
+  useAuthStore.setState({ token: accessToken, rememberMe });
+}
+
 // Yönlendirme yapıp yapılmayacağını kontrol eden değişken
 let isRefreshingToken = false;
 let redirectToLogin = false;
@@ -272,7 +299,7 @@ api.interceptors.response.use(
       
       try {
         // Try to refresh token
-        const refreshToken = localStorage.getItem('refreshToken');
+        const refreshToken = getStoredRefreshToken();
         
         // Refresh token yoksa, login'e yönlendir
         if (!refreshToken) {
@@ -287,10 +314,11 @@ api.interceptors.response.use(
 
         console.log('Calling refresh token endpoint...');
         // Use the same baseURL logic as the main api instance
-        const refreshURL = isDevelopment ? '/api/v1/auth/refresh/' : `${API_URL}/api/v1/auth/refresh/`;
+        const refreshURL = isDevelopment ? '/api/v1/auth/refresh' : `${API_URL}/api/v1/auth/refresh`;
         const response = await axios.post(
           refreshURL,
-          { refresh_token: refreshToken }
+          { refresh_token: refreshToken },
+          { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
         );
 
         if (response.data.access_token) {
@@ -298,11 +326,8 @@ api.interceptors.response.use(
           // Token yenileme başarılı zamanını kaydet
           lastSuccessfulTokenRefresh = Date.now();
           
-          // Update tokens
-          localStorage.setItem('token', response.data.access_token);
-          if (response.data.refresh_token) {
-            localStorage.setItem('refreshToken', response.data.refresh_token);
-          }
+          // Update tokens (respect Remember me storage)
+          storeRefreshedTokens(response.data.access_token, response.data.refresh_token);
 
           // Update auth header
           api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;

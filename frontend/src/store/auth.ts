@@ -37,15 +37,37 @@ interface AuthState {
   clearError: () => void
 }
 
+function clearAuthStorage() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('refreshToken')
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('refreshToken')
+}
+
+function persistTokens(accessToken: string, refreshToken: string | null | undefined, rememberMe: boolean) {
+  clearAuthStorage()
+  if (rememberMe) {
+    localStorage.setItem('token', accessToken)
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
+  } else {
+    sessionStorage.setItem('token', accessToken)
+    if (refreshToken) sessionStorage.setItem('refreshToken', refreshToken)
+  }
+}
+
+export function getStoredRefreshToken(): string | null {
+  return localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
-      rememberMe: false,
+      rememberMe: true,
       avatarRevision: 0,
 
       setUser: (user) => set({ user }),
@@ -54,22 +76,28 @@ export const useAuthStore = create<AuthState>()(
 
       bumpAvatarRevision: () => set((s) => ({ avatarRevision: (s.avatarRevision ?? 0) + 1 })),
       
-      login: async (credentials: LoginCredentials, rememberMe = false) => {
+      login: async (credentials: LoginCredentials, rememberMe = true) => {
         set({ isLoading: true, error: null })
         
         try {
           const response = await authService.login(credentials)
-          const { access_token, user } = response
+          const { access_token, refresh_token, user } = response as {
+            access_token: string
+            refresh_token?: string
+            user: UserInfo
+          }
           
           api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-          sessionStorage.removeItem('token')
-          localStorage.removeItem('token')
-          if (rememberMe) localStorage.setItem('token', access_token)
-          else sessionStorage.setItem('token', access_token)
-          set({ token: access_token, user, isAuthenticated: true, error: null, rememberMe })
+          persistTokens(access_token, refresh_token, rememberMe)
+          set({
+            token: access_token,
+            user: user as unknown as User,
+            isAuthenticated: true,
+            error: null,
+            rememberMe,
+          })
         } catch (error: any) {
-          localStorage.removeItem('token')
-          sessionStorage.removeItem('token')
+          clearAuthStorage()
           delete api.defaults.headers.common['Authorization']
           set({ 
             token: null, 
@@ -88,7 +116,7 @@ export const useAuthStore = create<AuthState>()(
         
         try {
           const user = await authService.register(data)
-          set({ user, error: null })
+          set({ user: user as unknown as User, error: null })
         } catch (error: any) {
           set({ 
             error: error.response?.data?.message || error.response?.data?.detail || 'Registration failed'
@@ -103,11 +131,9 @@ export const useAuthStore = create<AuthState>()(
         try {
           await authService.logout()
         } catch (error) {
-          // Continue with logout even if API call fails
           console.warn('Logout API call failed:', error)
         } finally {
-          localStorage.removeItem('token')
-          sessionStorage.removeItem('token')
+          clearAuthStorage()
           delete api.defaults.headers.common['Authorization']
           set({ user: null, token: null, isAuthenticated: false })
         }
@@ -116,24 +142,22 @@ export const useAuthStore = create<AuthState>()(
       fetchUser: async () => {
         set({ isLoading: true, error: null })
         const tokenAtStart =
-          useAuthStore.getState().token ||
+          get().token ||
           localStorage.getItem('token') ||
           sessionStorage.getItem('token')
 
         try {
           const user = await authService.getCurrentUser()
-          set({ user, isAuthenticated: true, error: null })
+          set({ user: user as unknown as User, isAuthenticated: true, error: null })
         } catch (error: any) {
           const tokenNow =
-            useAuthStore.getState().token ||
+            get().token ||
             localStorage.getItem('token') ||
             sessionStorage.getItem('token')
-          // Ignore stale failures (e.g. bootstrap /me with old token after a fresh login).
           if (tokenAtStart && tokenNow && tokenAtStart !== tokenNow) {
             throw error
           }
-          localStorage.removeItem('token')
-          sessionStorage.removeItem('token')
+          clearAuthStorage()
           delete api.defaults.headers.common['Authorization']
           set({ 
             token: null, 
@@ -151,21 +175,22 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null })
         
         try {
-          const response = await authService.refreshToken()
-          const { access_token } = response
+          const storedRefresh = getStoredRefreshToken()
+          if (!storedRefresh) {
+            throw new Error('No refresh token')
+          }
+          const response = await authService.refreshToken(storedRefresh)
+          const { access_token, refresh_token } = response as {
+            access_token: string
+            refresh_token?: string
+          }
+          const rememberMe = get().rememberMe
           
           api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-          if (useAuthStore.getState().rememberMe) {
-            localStorage.setItem('token', access_token)
-            sessionStorage.removeItem('token')
-          } else {
-            sessionStorage.setItem('token', access_token)
-            localStorage.removeItem('token')
-          }
+          persistTokens(access_token, refresh_token || storedRefresh, rememberMe)
           set({ token: access_token, error: null })
         } catch (error: any) {
-          localStorage.removeItem('token')
-          sessionStorage.removeItem('token')
+          clearAuthStorage()
           delete api.defaults.headers.common['Authorization']
           set({ 
             token: null, 
@@ -193,13 +218,23 @@ const token = localStorage.getItem('token') || sessionStorage.getItem('token')
 if (token) {
   const bootstrapToken = token
   api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-  useAuthStore.setState({ token, isAuthenticated: true })
-  useAuthStore.getState().fetchUser().catch(() => {
+  const remembered = Boolean(localStorage.getItem('token') || localStorage.getItem('refreshToken'))
+  useAuthStore.setState({ token, isAuthenticated: true, rememberMe: remembered || useAuthStore.getState().rememberMe })
+  useAuthStore.getState().fetchUser().catch(async () => {
     const still =
       localStorage.getItem('token') || sessionStorage.getItem('token')
     if (still && still !== bootstrapToken) return
+    // Access token may be expired — try refresh before wiping the session
+    try {
+      if (getStoredRefreshToken()) {
+        await useAuthStore.getState().refreshToken()
+        await useAuthStore.getState().fetchUser()
+        return
+      }
+    } catch {
+      // fall through to clear
+    }
     delete api.defaults.headers.common['Authorization']
-    localStorage.removeItem('token')
-    sessionStorage.removeItem('token')
+    clearAuthStorage()
   })
 }

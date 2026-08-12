@@ -34,6 +34,14 @@ export interface TokenResponse {
   token_type: string;
   expires_at: string;
   user: UserInfo;
+  refresh_token?: string;
+}
+
+export interface RefreshTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_at: string;
+  refresh_token?: string;
 }
 
 export interface ChangePasswordData {
@@ -52,12 +60,6 @@ export interface ResetPasswordData {
   /** @deprecated kept for callers that still pass password */
   password?: string;
   password_confirmation?: string;
-}
-
-export interface RefreshTokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_at: string;
 }
 
 export interface GoogleInitResponse {
@@ -95,8 +97,15 @@ export const logout = async (): Promise<{ message: string }> => {
   return response.data;
 };
 
-export const refreshToken = async (): Promise<RefreshTokenResponse> => {
-  const response = await api.post('/auth/refresh');
+export const refreshToken = async (refresh_token?: string): Promise<RefreshTokenResponse> => {
+  const token =
+    refresh_token ||
+    localStorage.getItem('refreshToken') ||
+    sessionStorage.getItem('refreshToken');
+  if (!token) {
+    throw new Error('No refresh token available');
+  }
+  const response = await api.post('/auth/refresh', { refresh_token: token });
   return response.data;
 };
 

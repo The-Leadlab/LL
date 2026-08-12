@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Input, PasswordInput } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/Form';
 import { Badge } from '@/components/ui/Badge';
@@ -344,8 +344,7 @@ const AcceptInvitation: React.FC = () => {
                     <FormItem>
                       <FormLabel>Password *</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="password" 
+                        <PasswordInput 
                           placeholder="Enter your password"
                           {...field} 
                         />
@@ -362,8 +361,7 @@ const AcceptInvitation: React.FC = () => {
                     <FormItem>
                       <FormLabel>Confirm Password *</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="password" 
+                        <PasswordInput 
                           placeholder="Confirm your password"
                           {...field} 
                         />

@@ -44,7 +44,8 @@ def create_access_token(
     to_encode = {
         "exp": expire,
         "sub": str(subject),
-        "organization_id": organization_id
+        "organization_id": organization_id,
+        "type": "access",
     }
     
     try:
@@ -59,6 +60,45 @@ def create_access_token(
             status_code=500,
             detail=f"Error creating access token: {str(e)}"
         )
+
+
+def create_refresh_token(
+    subject: Union[str, Any],
+    organization_id: Optional[int] = None,
+    expires_delta: Optional[timedelta] = None,
+) -> str:
+    """Long-lived token used to mint new access tokens (Remember me / session restore)."""
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+    to_encode = {
+        "exp": expire,
+        "sub": str(subject),
+        "organization_id": organization_id,
+        "type": "refresh",
+    }
+    try:
+        return jwt.encode(
+            to_encode,
+            settings.SECRET_KEY,
+            algorithm=settings.ALGORITHM,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error creating refresh token: {str(e)}",
+        )
+
+
+def decode_token(token: str) -> dict:
+    """Decode and validate a JWT; raises HTTPException on failure."""
+    try:
+        return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    except Exception as e:
+        logger.warning("Token decode failed: %s", e)
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 def check_permission(user: models.User, entity_type: str, entity_id: int, db_obj: Any = None) -> bool:
     """

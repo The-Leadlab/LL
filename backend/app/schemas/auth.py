@@ -23,6 +23,18 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     expires_at: str
     user: User
+    refresh_token: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+class RefreshTokenInput(BaseModel):
+    refresh_token: str
+
+
+class RefreshTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_at: str
+    refresh_token: Optional[str] = None

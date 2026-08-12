@@ -27,6 +27,9 @@ export function GoogleAuthCallback() {
         sessionStorage.setItem('token', token);
         localStorage.removeItem('token');
       }
+      // Clear stale refresh tokens from prior sessions (Google flow issues access only)
+      localStorage.removeItem('refreshToken');
+      sessionStorage.removeItem('refreshToken');
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       useAuthStore.setState({
         token,

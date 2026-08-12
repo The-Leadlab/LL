@@ -25,7 +25,7 @@ export function SignIn() {
     password: '',
   })
   const [loginType, setLoginType] = useState<'email' | 'username'>('email')
-  const [rememberMe, setRememberMe] = useState(savedRememberMe)
+  const [rememberMe, setRememberMe] = useState(savedRememberMe ?? true)
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -199,6 +199,7 @@ export function SignIn() {
                   />
                   <label htmlFor="remember-me" className="ml-3 block text-sm leading-6 text-gray-700 cursor-pointer">
                     Remember me
+                    <span className="block text-xs text-gray-500 font-normal">Keep me signed in on this device</span>
                   </label>
                 </div>
 

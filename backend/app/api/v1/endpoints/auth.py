@@ -7,7 +7,7 @@ from app import crud, models, schemas
 from app.api import deps
 from app.core import security
 from app.core.config import settings
-from app.schemas.auth import TokenResponse, UserLogin
+from app.schemas.auth import TokenResponse, UserLogin, RefreshTokenInput, RefreshTokenResponse
 from pydantic import BaseModel, EmailStr, model_validator
 from app.schemas.user import User
 from app.core.email import email_sender
@@ -524,6 +524,10 @@ async def login(
                 expires_delta=access_token_expires,
                 organization_id=user.organization_id
             )
+            refresh_token = security.create_refresh_token(
+                user.id,
+                organization_id=user.organization_id,
+            )
             logger.critical(f"[DEBUG] Token created for user: {login_identifier}")
             
             # Update last login time (only if user is a real SQLAlchemy object)
@@ -582,6 +586,7 @@ async def login(
                 
                 response_data = {
                     "access_token": access_token,
+                    "refresh_token": refresh_token,
                     "token_type": "bearer",
                     "expires_at": expires_at.isoformat(),
                     "user": {
@@ -632,6 +637,47 @@ def logout() -> Any:
     Logout 
     """
     return {"message": "Successfully logged out"}
+
+
+@router.post("/refresh", response_model=RefreshTokenResponse)
+@router.post("/refresh/", response_model=RefreshTokenResponse)
+def refresh_access_token(
+    *,
+    db: Session = Depends(deps.get_db),
+    body: RefreshTokenInput,
+) -> Any:
+    """
+    Exchange a refresh token for a new access token (keeps Remember me sessions alive).
+    """
+    if payload.get("type") == "access":
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    user = crud.user.get(db, id=int(user_id))
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    expires_at = datetime.utcnow() + access_token_expires
+    access_token = security.create_access_token(
+        user.id,
+        expires_delta=access_token_expires,
+        organization_id=user.organization_id,
+    )
+    # Rotate refresh token so long sessions stay valid
+    new_refresh = security.create_refresh_token(
+        user.id,
+        organization_id=user.organization_id,
+    )
+    return {
+        "access_token": access_token,
+        "refresh_token": new_refresh,
+        "token_type": "bearer",
+        "expires_at": expires_at.isoformat(),
+    }
 
 @router.get("/me", response_model=schemas.User)
 def get_current_user(
