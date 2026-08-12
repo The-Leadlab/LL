@@ -23,6 +23,7 @@ class Organization(Base, TimestampMixin):
     events = relationship("Event", back_populates="organization")
     deals = relationship("Deal", back_populates="organization")
     tags = relationship("Tag", back_populates="organization")
+    clients = relationship("Client", back_populates="organization", cascade="all, delete-orphan")
     communications = relationship("Communication", back_populates="organization")
     opportunities = relationship("Opportunity", back_populates="organization")
     activities = relationship("Activity", back_populates="organization")

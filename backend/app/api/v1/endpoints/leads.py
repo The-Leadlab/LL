@@ -175,7 +175,8 @@ def read_leads(
     search: Optional[str] = None,
     sort_by: Optional[str] = "created_at",
     sort_desc: bool = True,
-    tag: Optional[str] = None
+    tag: Optional[str] = None,
+    client_id: Optional[int] = Query(None, description="Filter by client id"),
 ) -> Any:
     """
     Retrieve leads.
@@ -203,6 +204,7 @@ def read_leads(
             sort_by=sort_by,
             sort_desc=sort_desc,
             tag_id=tag_id,
+            client_id=client_id,
             is_admin=current_user.is_admin
         )
 
@@ -233,6 +235,7 @@ def export_leads_csv(
     sort_by: Optional[str] = "created_at",
     sort_desc: bool = True,
     tag: Optional[str] = None,
+    client_id: Optional[int] = Query(None, description="Filter by client id"),
 ) -> Any:
     """
     Export leads matching list filters as CSV (same scoping as GET /leads/).
@@ -261,6 +264,8 @@ def export_leads_csv(
                 lead.country or "",
                 str(lead.stage_id) if lead.stage_id is not None else "",
                 stage_name,
+                str(lead.client_id) if lead.client_id is not None else "",
+                (lead.client.name if getattr(lead, "client", None) else "") or "",
                 lead.source or "",
                 lead.created_at.isoformat() if lead.created_at else "",
             ]
@@ -282,6 +287,8 @@ def export_leads_csv(
                     "country",
                     "stage_id",
                     "stage_name",
+                    "client_id",
+                    "client_name",
                     "source",
                     "created_at",
                 ]
@@ -302,6 +309,7 @@ def export_leads_csv(
                     sort_by=sort_by,
                     sort_desc=sort_desc,
                     tag_id=tag_id,
+                    client_id=client_id,
                     is_admin=current_user.is_admin,
                 )
                 if not leads:
@@ -388,6 +396,20 @@ def create_lead(
                 )
             lead_data["stage_id"] = default_stage.id
             logger.info(f"Set stage_id to {default_stage.id}")
+
+        # Resolve client (default General when omitted / skip)
+        from app.crud.crud_client import client as crud_client
+        general = crud_client.ensure_general(db, organization_id=current_user.organization_id)
+        requested_client_id = lead_data.get("client_id")
+        if requested_client_id:
+            client_obj = crud_client.get_for_org(
+                db, id=requested_client_id, organization_id=current_user.organization_id
+            )
+            if not client_obj or client_obj.is_archived:
+                raise HTTPException(status_code=400, detail="Invalid or archived client")
+            lead_data["client_id"] = client_obj.id
+        else:
+            lead_data["client_id"] = general.id
 
         # Create lead
         try:
@@ -507,6 +529,8 @@ def read_lead(
         "organization_id": lead.organization_id,
         "user_id": lead.user_id,
         "stage_id": lead.stage_id,
+        "client_id": lead.client_id,
+        "client_name": lead.client.name if lead.client else None,
         "created_by": lead.created_by,
         "created_at": lead.created_at,
         "is_deleted": lead.is_deleted,
@@ -601,8 +625,25 @@ def update_lead(
     if not current_user.is_admin and lead.organization_id != current_user.organization_id:
         logger.warning(f"Permission denied: User {current_user.id} attempted to update lead {lead_id} from organization {lead.organization_id}, but belongs to organization {current_user.organization_id}")
         raise HTTPException(status_code=403, detail="Not enough permissions")
-        
-    lead = crud.lead.update(db=db, db_obj=lead, obj_in=lead_in)
+
+    update_data = lead_in.model_dump(exclude_unset=True)
+    if "client_id" in update_data:
+        from app.crud.crud_client import client as crud_client
+        requested = update_data.get("client_id")
+        if requested is None:
+            general = crud_client.ensure_general(
+                db, organization_id=lead.organization_id
+            )
+            update_data["client_id"] = general.id
+        else:
+            client_obj = crud_client.get_for_org(
+                db, id=requested, organization_id=lead.organization_id
+            )
+            if not client_obj or client_obj.is_archived:
+                raise HTTPException(status_code=400, detail="Invalid or archived client")
+            update_data["client_id"] = client_obj.id
+
+    lead = crud.lead.update(db=db, db_obj=lead, obj_in=update_data)
     logger.info(f"Lead {lead_id} successfully updated by user {current_user.id}")
     return lead
 

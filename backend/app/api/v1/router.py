@@ -5,7 +5,7 @@ from app.api.v1.endpoints import (
     information_requests, organizations, tags, linkedin,
     tokens, notifications, contact, lead_stages, health, settings, psychometrics, files, ai_insights, messages, credits, invoices, team_invitations, email, ml, calendar_integrations,
     territories, cpq, email_sequences, workflows, conversations, data_import, forecasting, dashboards,
-    marketing_forms, currencies,
+    marketing_forms, currencies, clients,
 )
 import logging
 
@@ -29,6 +29,9 @@ api_router.include_router(lead_stages.router, prefix="/lead-stages", tags=["lead
 
 # Tag routes
 api_router.include_router(tags.router, prefix="/tags", tags=["tags"])
+
+# Client routes (lead containers / branches)
+api_router.include_router(clients.router, prefix="/clients", tags=["clients"])
 
 # Information Request routes
 api_router.include_router(information_requests.router, prefix="/information-requests", tags=["information-requests"])

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean, TypeDecorator
 from sqlalchemy.orm import relationship, composite
 from app.models.base import Base
@@ -22,6 +23,7 @@ class Lead(Base):
     est_wealth_experience = Column(String(255), nullable=True)  # Added for wealth experience data
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=True, index=True)
     stage_id = Column(Integer, ForeignKey("lead_stages.id"), nullable=False)
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=True)
@@ -86,6 +88,7 @@ class Lead(Base):
 
     # Relationships
     organization = relationship("Organization", back_populates="leads")
+    client = relationship("Client", back_populates="leads")
     user = relationship("User", back_populates="leads", foreign_keys=[user_id])
     creator = relationship("User", back_populates="created_leads", foreign_keys=[created_by])
     stage = relationship("LeadStage", back_populates="leads")
@@ -112,6 +115,13 @@ class Lead(Base):
         """Get full name of the lead."""
         return f"{self.first_name} {self.last_name}".strip()
 
+    @property
+    def client_name(self) -> Optional[str]:
+        """Client display name for API responses."""
+        if self.client is not None:
+            return self.client.name
+        return None
+
     def __repr__(self):
         return f"<Lead {self.full_name}>"
 
@@ -133,6 +143,8 @@ class Lead(Base):
                 "est_wealth_experience": self.est_wealth_experience or "",
                 "user_id": self.user_id,
                 "organization_id": self.organization_id,
+                "client_id": self.client_id,
+                "client_name": self.client.name if self.client else None,
                 "stage_id": self.stage_id,
                 "created_at": self.created_at.isoformat() if self.created_at else None,
                 "updated_at": self.updated_at.isoformat() if self.updated_at else None,

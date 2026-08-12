@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useQueryClient, InvalidateQueryFilters } from '@tanstack/react-query';
+import { useQuery, useQueryClient, InvalidateQueryFilters } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/Separator';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/Form';
 import { PageContainer } from '@/components/ui/PageContainer';
 import { useAuth } from '@/hooks/useAuth';
-
+import { clientsAPI } from '@/services/api/clients';
 interface LeadEditFormProps {
   lead: {
     id: number;
@@ -289,6 +289,7 @@ const formSchema = z.object({
   notes: z.string().optional(),
   client_comments: z.string().optional(),
   source: z.string().optional(),
+  client_id: z.number().optional().nullable(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -335,6 +336,12 @@ export function LeadForm() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  const { data: clientsData } = useQuery({
+    queryKey: ['clients'],
+    queryFn: () => clientsAPI.list(false),
+  });
+  const activeClients = clientsData?.items ?? [];
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -353,8 +360,15 @@ export function LeadForm() {
       notes: '',
       client_comments: '',
       source: '',
+      client_id: null,
     },
   });
+
+  useEffect(() => {
+    if (form.getValues('client_id') != null || activeClients.length === 0) return;
+    const general = activeClients.find((c) => c.is_default) ?? activeClients[0];
+    form.setValue('client_id', general.id);
+  }, [activeClients, form]);
 
   const { isSubmitting } = form.formState;
 
@@ -365,22 +379,18 @@ export function LeadForm() {
         return;
       }
 
-      // Log the user object to see what we're working with
-
+      const general = activeClients.find((c) => c.is_default);
       const leadData = {
         ...data,
+        client_id: data.client_id ?? general?.id ?? undefined,
         organization_id: Number(user.organization_id),
         user_id: Number(user.id),
         created_by: Number(user.id),
-        // Don't include stage_id if it's null - let backend handle default
-        // Add default values for required database fields
         is_deleted: false,
         visible: true,
         created_at: new Date().toISOString(),
-        tags: [] // Add empty tags array to prevent type mismatch
+        tags: [] as number[],
       };
-
-      // Log the complete data being sent
 
       const response = await api.post('/leads', leadData);
       
@@ -439,6 +449,37 @@ export function LeadForm() {
                 <CardDescription>Enter the lead's basic contact information.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="client_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Client</FormLabel>
+                      <Select
+                        value={field.value != null ? String(field.value) : undefined}
+                        onValueChange={(v) => field.onChange(Number(v))}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full bg-white border-2 border-gray-200">
+                            <SelectValue placeholder="General (skip / default)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {activeClients.map((c) => (
+                            <SelectItem key={c.id} value={String(c.id)}>
+                              {c.is_default ? 'General (skip / default)' : c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription className="text-xs text-gray-500">
+                        Defaults to General if you skip selection
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}

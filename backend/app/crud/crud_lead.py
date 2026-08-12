@@ -19,12 +19,20 @@ from app.schemas.lead import LeadCreate, LeadUpdate
 logger = logging.getLogger(__name__)
 
 # Lead ORM has read-only @property fields (no DB column); Pydantic LeadBase still includes them.
-_LEAD_ORM_EXCLUDE = frozenset({"email_guidelines", "visible", "full_name"})
+_LEAD_ORM_EXCLUDE = frozenset({
+    "email_guidelines", "visible", "full_name", "client_name", "tags", "notes",
+})
+_INT_OR_NONE_FIELDS = frozenset({
+    "client_id", "stage_id", "organization_id", "user_id", "created_by",
+})
 
 
 def _lead_dict_for_orm(data: Dict[str, Any]) -> Dict[str, Any]:
     """Remove schema-only keys so Lead(**data) does not hit read-only properties."""
     out = {k: v for k, v in data.items() if k not in _LEAD_ORM_EXCLUDE}
+    for key in _INT_OR_NONE_FIELDS:
+        if key in out and out[key] == "":
+            out[key] = None
     return out
 
 
@@ -41,6 +49,7 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
         limit: int = 200,
         organization_id: Optional[int] = None,
         tag_id: Optional[int] = None,
+        client_id: Optional[int] = None,
         search: Optional[str] = None,
         sort_by: Optional[str] = None,
         sort_desc: bool = False,
@@ -71,6 +80,9 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
         # Add organization filter only if user is not admin
         if organization_id is not None and not is_admin:
             query = query.filter(Lead.organization_id == organization_id)
+
+        if client_id is not None and client_id > 0:
+            query = query.filter(Lead.client_id == client_id)
 
         # Add search filter if provided
         if search:
@@ -290,11 +302,12 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
         if self.is_empty_lead(create_data):
             raise ValueError("Cannot create an empty lead. Please provide at least one main field.")
 
-        # Clean empty strings and None values
-        for key, value in create_data.items():
+        # Clean empty strings and None values (keep int FKs as None)
+        _keep_none = {"client_id", "stage_id", "organization_id", "user_id", "created_by", "psychometrics", "sales_intelligence"}
+        for key, value in list(create_data.items()):
             if isinstance(value, str):
                 create_data[key] = value.strip() if value else ""
-            elif value is None:
+            elif value is None and key not in _keep_none:
                 create_data[key] = ""
 
         # Add timestamps

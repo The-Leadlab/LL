@@ -76,6 +76,7 @@ class LeadBase(BaseModel):
 class LeadCreate(LeadBase):
     organization_id: int
     stage_id: Optional[int] = None
+    client_id: Optional[int] = None
     user_id: int
     created_by: Optional[int] = None
     created_at: Optional[datetime] = None
@@ -85,7 +86,7 @@ class LeadCreate(LeadBase):
 
 # Lead Update Schema
 class LeadUpdate(LeadBase):
-    pass
+    client_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -95,6 +96,8 @@ class LeadInDBBase(LeadBase):
     organization_id: int
     user_id: int
     stage_id: int
+    client_id: Optional[int] = None
+    client_name: Optional[str] = None
     created_by: int
     created_at: datetime
     updated_at: Optional[datetime] = None

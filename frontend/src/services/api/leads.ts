@@ -64,6 +64,8 @@ export interface Lead {
   creator: User | null;
   tags: Tag[];
   notes: Note[];
+  client_id?: number | null;
+  client_name?: string | null;
 }
 
 export interface LeadCreate {
@@ -74,6 +76,7 @@ export interface LeadCreate {
   job_title?: string;
   location?: string;
   stage_id: number;
+  client_id?: number;
 }
 
 export interface LeadUpdate extends Partial<LeadCreate> {}
@@ -218,6 +221,7 @@ export const leadsAPI = {
     skip?: number;
     limit?: number;
     tag?: string;
+    client_id?: number;
   }): Promise<any> => {
     return api.get('/leads/', { params });
   },
@@ -231,6 +235,7 @@ export const leadsAPI = {
     skip?: number;
     limit?: number;
     tag?: string;
+    client_id?: number;
   }): Promise<any> => {
     const response = await api.get('/leads/', { params });
     const data = response.data;
@@ -280,6 +285,7 @@ export const leadsAPI = {
   exportCSV: async (params?: {
     search?: string;
     tag?: string;
+    client_id?: number;
     filters?: any;
   }): Promise<Blob> => {
     const response = await api.get('/leads/export/csv', {

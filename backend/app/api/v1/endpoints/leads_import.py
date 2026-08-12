@@ -84,12 +84,14 @@ async def import_leads_from_csv(
     assigned_user_id: int = Form(...),  # User ID to assign leads to
     tag_id: int = Form(None),  # Optional tag ID to assign to leads
     new_tag_name: str = Form(None),  # Optional new tag name to create and assign
+    client_id: int = Form(None),  # Optional client; defaults to General
     file: UploadFile = File(...),
 ):
     """
     Import leads from CSV file.
     The leads will be assigned to the specified user.
     Optionally, a tag can be assigned to all imported leads.
+    Missing client column / client_id defaults to the org General client.
     """
     # Non-admins can only assign to themselves
     if not current_user.is_admin and assigned_user_id != current_user.id:
@@ -201,6 +203,22 @@ async def import_leads_from_csv(
             logger.error(traceback.format_exc())
             tag = None
 
+    from app.crud.crud_client import client as crud_client
+    general_client = crud_client.ensure_general(
+        db, organization_id=assigned_user.organization_id
+    )
+    default_import_client = general_client
+    if client_id:
+        resolved = crud_client.get_for_org(
+            db, id=client_id, organization_id=assigned_user.organization_id
+        )
+        if not resolved or resolved.is_archived:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid or archived client",
+            )
+        default_import_client = resolved
+
     if not file.filename.endswith(".csv"):
         raise HTTPException(
             status_code=400,
@@ -264,6 +282,8 @@ async def import_leads_from_csv(
             "lab_comments": ["lab_comments", "lab_comment", "labcomments", "note"],
             "client_comments": ["client_comments", "client_comment", "clientcomments"],
             "source": ["source", "lead_source"],
+            "client": ["client", "client_name", "clientname"],
+            "client_id": ["client_id", "clientid"],
         }
 
         for index, row in df.iterrows():
@@ -279,6 +299,12 @@ async def import_leads_from_csv(
                             if isinstance(value, (int, float)) and not pd.isna(value):
                                 value = str(int(value))
                             value = clean_value(value)
+                        elif db_field == "client_id":
+                            if isinstance(value, (int, float)) and not pd.isna(value):
+                                value = int(value)
+                            else:
+                                cleaned = clean_value(value)
+                                value = int(cleaned) if cleaned and str(cleaned).isdigit() else None
                         else:
                             value = clean_value(value)
                         lead_data[db_field] = value
@@ -287,10 +313,32 @@ async def import_leads_from_csv(
                 if "email" not in lead_data:
                     lead_data["email"] = None
 
+                # Resolve client: row client_id > row client name > form client_id > General
+                resolved_client_id = default_import_client.id
+                row_client_id = lead_data.pop("client_id", None)
+                row_client_name = lead_data.pop("client", None)
+                if row_client_id:
+                    cobj = crud_client.get_for_org(
+                        db,
+                        id=int(row_client_id),
+                        organization_id=assigned_user.organization_id,
+                    )
+                    if cobj and not cobj.is_archived:
+                        resolved_client_id = cobj.id
+                elif row_client_name:
+                    cobj = crud_client.get_by_name(
+                        db,
+                        organization_id=assigned_user.organization_id,
+                        name=str(row_client_name),
+                    )
+                    if cobj and not cobj.is_archived:
+                        resolved_client_id = cobj.id
+
                 lead_data.update({
                     "psychometrics": None,
                     "wpi": float(clean_value(row.get("wpi", 0))) if clean_value(row.get("wpi", "")) else None,
                     "stage_id": default_stage.id,
+                    "client_id": resolved_client_id,
                     "user_id": assigned_user_id,
                     "organization_id": assigned_user.organization_id,
                     "created_by": current_user.id,
@@ -394,7 +442,7 @@ async def download_csv_template(
         headers = [
             "First_Name", "Last_Name", "Company", "Job_Title", "Email", "Telephone", "Mobile",
             "Location", "LINKEDIN", "Country", "Website", "SECTOR", "Unique_Lead_ID", "Time in Current Role",
-            "Note"
+            "Note", "Client"
         ]
         writer.writerow(headers)
 
@@ -403,13 +451,13 @@ async def download_csv_template(
                 "John", "Doe", "Tech Corp", "Senior Developer", "john.doe@techcorp.com",
                 "+1-555-0123", "+1-555-4567", "San Francisco", "https://linkedin.com/in/johndoe",
                 "USA", "https://techcorp.com", "Technology", "EXT-001", "2 years",
-                "Experienced developer with cloud expertise"
+                "Experienced developer with cloud expertise", "General"
             ],
             [
                 "Jane", "Smith", "Finance Inc", "Investment Manager", "jane.smith@financeinc.com",
                 "+44-20-1234", "+44-77-5678", "London", "https://linkedin.com/in/janesmith",
                 "UK", "https://financeinc.com", "Finance", "EXT-002", "1 year",
-                "Specializes in portfolio management"
+                "Specializes in portfolio management", ""
             ]
         ]
 

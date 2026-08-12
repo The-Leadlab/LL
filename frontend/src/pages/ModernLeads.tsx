@@ -13,6 +13,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { leadsAPI, type Lead } from '@/services/api/leads';
+import { clientsAPI, type Client } from '@/services/api/clients';
 import type { LeadListResponse } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/auth';
@@ -31,6 +32,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Settings2,
 } from 'lucide-react';
 import {
   Dialog,
@@ -41,7 +43,8 @@ import {
   DialogTitle,
 } from "@/components/ui/Dialog";
 import { Button } from '@/components/ui/Button';
-
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 function parseTotalCount(val: unknown, fallback: number): number {
   if (typeof val === 'number' && Number.isFinite(val)) return val;
   if (typeof val === 'string' && val.trim() !== '') {
@@ -176,6 +179,12 @@ export function ModernLeads() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const [isManageClientsOpen, setIsManageClientsOpen] = useState(false);
+  const [newClientName, setNewClientName] = useState('');
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [importClientId, setImportClientId] = useState<number | null>(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
@@ -184,11 +193,28 @@ export function ModernLeads() {
 
   useEffect(() => {
     setPage(0);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, selectedClientId]);
+
+  const { data: clientsData } = useQuery({
+    queryKey: ['clients', 'with-archived'],
+    queryFn: () => clientsAPI.list(true),
+  });
+
+  const allClients: Client[] = clientsData?.items ?? [];
+  const activeClients = allClients.filter((c) => !c.is_archived);
+  const archivedClients = allClients.filter((c) => c.is_archived);
+
+  useEffect(() => {
+    if (selectedClientId != null || activeClients.length === 0) return;
+    const general = activeClients.find((c) => c.is_default) ?? activeClients[0];
+    setSelectedClientId(general.id);
+    if (importClientId == null) setImportClientId(general.id);
+  }, [activeClients, selectedClientId, importClientId]);
 
   // Fetch leads from backend (paginated; debounced search avoids remounting the page each keystroke)
   const { data: leadsPage, isLoading: isLoadingLeads, isFetching: isFetchingLeads } = useQuery({
-    queryKey: ['leads', debouncedSearch, page, pageSize],
+    queryKey: ['leads', debouncedSearch, page, pageSize, selectedClientId],
+    enabled: selectedClientId != null,
     queryFn: async () => {
       const res = await leadsAPI.getAll({
         search: debouncedSearch || undefined,
@@ -196,12 +222,12 @@ export function ModernLeads() {
         limit: pageSize,
         sort_by: 'created_at',
         sort_desc: true,
+        client_id: selectedClientId ?? undefined,
       });
       return normalizeLeadListPayload(res.data) as LeadListResponse;
     },
     placeholderData: keepPreviousData,
   });
-
   const leads: Lead[] = leadsPage?.results ?? [];
   const totalLeads = leadsPage?.total ?? 0;
   const pageStart = totalLeads === 0 ? 0 : page * pageSize + 1;
@@ -216,10 +242,15 @@ export function ModernLeads() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('assigned_user_id', String(user.id));
+      const clientForImport = importClientId ?? selectedClientId;
+      if (clientForImport) {
+        formData.append('client_id', String(clientForImport));
+      }
       return leadsAPI.uploadCSV(formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
       setIsUploadDialogOpen(false);
       setSelectedFile(null);
       toast({
@@ -236,6 +267,73 @@ export function ModernLeads() {
         title: "Error",
         description: typeof detail === "string" ? detail : JSON.stringify(detail),
         variant: "destructive",
+      });
+    },
+  });
+
+  const createClientMutation = useMutation({
+    mutationFn: (name: string) => clientsAPI.create(name),
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setNewClientName('');
+      setSelectedClientId(created.id);
+      toast({ title: 'Client created', description: created.name });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Could not create client',
+        description: error?.response?.data?.detail || error?.message || 'Failed',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const renameClientMutation = useMutation({
+    mutationFn: ({ id, name }: { id: number; name: string }) => clientsAPI.rename(id, name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setRenamingId(null);
+      setRenameValue('');
+      toast({ title: 'Client renamed' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Rename failed',
+        description: error?.response?.data?.detail || error?.message || 'Failed',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const archiveClientMutation = useMutation({
+    mutationFn: (id: number) => clientsAPI.archive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      const general = activeClients.find((c) => c.is_default);
+      if (general) setSelectedClientId(general.id);
+      toast({ title: 'Client archived' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Archive failed',
+        description: error?.response?.data?.detail || error?.message || 'Failed',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const restoreClientMutation = useMutation({
+    mutationFn: (id: number) => clientsAPI.restore(id),
+    onSuccess: (restored) => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setSelectedClientId(restored.id);
+      toast({ title: 'Client restored' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Restore failed',
+        description: error?.response?.data?.detail || error?.message || 'Failed',
+        variant: 'destructive',
       });
     },
   });
@@ -319,6 +417,7 @@ export function ModernLeads() {
     try {
       const blob = await leadsAPI.exportCSV({
         search: debouncedSearch || undefined,
+        client_id: selectedClientId ?? undefined,
       });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -389,8 +488,47 @@ export function ModernLeads() {
           </button>
         </div>
 
+        {/* Clients switcher */}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mr-1">
+            Clients
+          </span>
+          <div className="flex flex-wrap items-center gap-2 flex-1">
+            {activeClients.map((client) => {
+              const selected = selectedClientId === client.id;
+              return (
+                <button
+                  key={client.id}
+                  type="button"
+                  onClick={() => setSelectedClientId(client.id)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+                    selected
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700'
+                  }`}
+                >
+                  {client.name}
+                  {typeof client.lead_count === 'number' && (
+                    <span className={`ml-1.5 tabular-nums ${selected ? 'opacity-90' : 'text-neutral-500'}`}>
+                      ({client.lead_count})
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsManageClientsOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+          >
+            <Settings2 className="w-4 h-4" />
+            Manage
+          </button>
+        </div>
+
         {/* Toolbar */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-4">
           {/* Search & Filter */}
           <div className="flex items-center space-x-3 flex-1 max-w-2xl">
             <div className="relative flex-1">
@@ -529,7 +667,7 @@ export function ModernLeads() {
           </table>
           {leads.length === 0 && (
             <div className="text-center py-12 text-neutral-500 dark:text-neutral-400">
-              No leads found. Click "Add Lead" to create your first lead.
+              No leads in this client yet. Click "Add Lead" or Import to get started.
             </div>
           )}
         </div>
@@ -581,6 +719,25 @@ export function ModernLeads() {
           </DialogHeader>
           
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="import-client">Client</Label>
+              <select
+                id="import-client"
+                value={importClientId ?? ''}
+                onChange={(e) => setImportClientId(Number(e.target.value))}
+                className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm"
+              >
+                {activeClients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}{c.is_default ? ' (default)' : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-neutral-500">
+                Leads without a client column go here. Skip defaults to General.
+              </p>
+            </div>
+
             {/* File input */}
             <div className="flex flex-col space-y-2">
               <input
@@ -665,6 +822,130 @@ export function ModernLeads() {
                   Import Leads
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Clients Dialog */}
+      <Dialog open={isManageClientsOpen} onOpenChange={setIsManageClientsOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Clients</DialogTitle>
+            <DialogDescription>
+              Add, rename, archive, or restore clients. General cannot be archived or renamed.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="flex gap-2">
+              <Input
+                placeholder="New client name"
+                value={newClientName}
+                onChange={(e) => setNewClientName(e.target.value)}
+              />
+              <Button
+                type="button"
+                disabled={!newClientName.trim() || createClientMutation.isPending}
+                onClick={() => createClientMutation.mutate(newClientName.trim())}
+              >
+                Add
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Active</p>
+              {activeClients.map((client) => (
+                <div
+                  key={client.id}
+                  className="flex flex-wrap items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-700 p-3"
+                >
+                  {renamingId === client.id ? (
+                    <>
+                      <Input
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        className="flex-1 min-w-[8rem]"
+                      />
+                      <Button
+                        size="sm"
+                        disabled={!renameValue.trim() || renameClientMutation.isPending}
+                        onClick={() =>
+                          renameClientMutation.mutate({ id: client.id, name: renameValue.trim() })
+                        }
+                      >
+                        Save
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setRenamingId(null)}>
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex-1 font-medium text-neutral-900 dark:text-neutral-50">
+                        {client.name}
+                        {client.is_default && (
+                          <span className="ml-2 text-xs text-neutral-500">default</span>
+                        )}
+                      </span>
+                      {!client.is_default && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setRenamingId(client.id);
+                              setRenameValue(client.name);
+                            }}
+                          >
+                            Rename
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={archiveClientMutation.isPending}
+                            onClick={() => archiveClientMutation.mutate(client.id)}
+                          >
+                            Archive
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {archivedClients.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Archived
+                </p>
+                {archivedClients.map((client) => (
+                  <div
+                    key={client.id}
+                    className="flex items-center gap-2 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-600 p-3"
+                  >
+                    <span className="flex-1 text-neutral-600 dark:text-neutral-400">
+                      {client.name}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={restoreClientMutation.isPending}
+                      onClick={() => restoreClientMutation.mutate(client.id)}
+                    >
+                      Restore
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsManageClientsOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

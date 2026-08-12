@@ -60,11 +60,13 @@ export { default as usersAPI } from './users';
 export { default as dealsAPI } from './deals';
 export { notificationsAPI } from './notifications';
 export { default as tagsAPI } from '../tags';
+export { default as clientsAPI } from './clients';
 export { default as organizationsAPI } from './backend-go';
 export { default as settingsAPI } from './backend-go';
 
 // Re-export types
 export type { Lead, LeadStats, User, Tag } from './leads';
+export type { Client, ClientList } from './clients';
 export type { Tag as TagType } from '../tags';
 export type { User as UserType } from './users';
 

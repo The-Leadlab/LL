@@ -469,6 +469,9 @@ class CSVImportHelper:
             "industry": "industry",
             "description": "description",
             "notes": "notes",
+            "client": "client",
+            "client name": "client",
+            "client_name": "client",
 
             # Deal/Opportunity fields
             "deal name": "name",

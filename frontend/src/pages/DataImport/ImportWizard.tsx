@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { dataImportAPI, CSVPreview, ImportJob } from '@/services/api/data-import';
+import { clientsAPI } from '@/services/api/clients';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -14,7 +15,6 @@ import {
 import { PageContainer } from '@/components/ui/PageContainer';
 import { Badge } from '@/components/ui/Badge';
 import { useNavigate } from 'react-router-dom';
-
 type Step = 'upload' | 'preview' | 'mapping' | 'options' | 'importing';
 
 export const ImportWizard: React.FC = () => {
@@ -32,9 +32,22 @@ export const ImportWizard: React.FC = () => {
     delimiter: ',',
     encoding: 'utf-8',
     deduplicate: true,
-    updateExisting: false
+    updateExisting: false,
+    clientId: null as number | null,
   });
   const [importJob, setImportJob] = useState<ImportJob | null>(null);
+
+  const { data: clientsData } = useQuery({
+    queryKey: ['clients'],
+    queryFn: () => clientsAPI.list(false),
+  });
+  const activeClients = clientsData?.items ?? [];
+
+  useEffect(() => {
+    if (importOptions.clientId != null || activeClients.length === 0) return;
+    const general = activeClients.find((c) => c.is_default) ?? activeClients[0];
+    setImportOptions((prev) => ({ ...prev, clientId: general.id }));
+  }, [activeClients, importOptions.clientId]);
 
   // Upload for preview mutation
   const previewMutation = useMutation({
@@ -300,7 +313,7 @@ export const ImportWizard: React.FC = () => {
               </div>
               <div>
                 <Input
-                  placeholder="Target field (e.g., email, first_name)"
+                  placeholder="Target field (e.g., email, first_name, client)"
                   value={fieldMapping[header] || ''}
                   onChange={(e) =>
                     setFieldMapping({ ...fieldMapping, [header]: e.target.value })
@@ -331,6 +344,30 @@ export const ImportWizard: React.FC = () => {
         <CardTitle>Import Options</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="import-client">Client (default when column skipped)</Label>
+          <Select
+            value={importOptions.clientId != null ? String(importOptions.clientId) : undefined}
+            onValueChange={(v) =>
+              setImportOptions({ ...importOptions, clientId: Number(v) })
+            }
+          >
+            <SelectTrigger id="import-client">
+              <SelectValue placeholder="General (skip / default)" />
+            </SelectTrigger>
+            <SelectContent>
+              {activeClients.map((c) => (
+                <SelectItem key={c.id} value={String(c.id)}>
+                  {c.is_default ? 'General (skip / default)' : c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Map a CSV column to <code>client</code> for per-row assignment. Otherwise leads use this client (defaults to General). Prefer Import on the Leads page for full client support.
+          </p>
+        </div>
+
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <input

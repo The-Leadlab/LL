@@ -28,6 +28,7 @@ from .file import File
 from .organization import Organization
 from .custom_field import CustomFieldDefinition, CustomFieldValue
 from .tag import Tag
+from .client import Client
 from .lead import Lead
 from .organization_settings import OrganizationSettings
 from .communication import Communication
@@ -87,6 +88,7 @@ __all__ = [
     "CustomFieldDefinition",
     "CustomFieldValue",
     "Tag",
+    "Client",
     "OrganizationSettings",
     "Communication",
     "Opportunity",
