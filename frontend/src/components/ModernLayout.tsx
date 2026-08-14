@@ -22,7 +22,11 @@ export function ModernLayout() {
         >
           <Menu className="h-6 w-6 text-neutral-700 dark:text-neutral-200" />
         </button>
-        <span className="font-semibold text-neutral-900 dark:text-neutral-50">LeadLab</span>
+        <img
+          src="/images/leadlab-logo.png"
+          alt="LeadLab"
+          className="h-9 w-auto object-contain dark:brightness-0 dark:invert"
+        />
       </header>
 
       {mobileNavOpen && (

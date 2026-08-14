@@ -226,20 +226,23 @@ export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
       } bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 flex flex-col transition-all duration-300 ease-in-out`}
     >
       {/* Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-neutral-200 dark:border-neutral-800">
-        {!collapsed && (
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-xl text-neutral-900 dark:text-neutral-50">
-              LeadLab
-            </span>
-          </div>
-        )}
+      <div className="h-16 flex items-center justify-between gap-1 px-3 border-b border-neutral-200 dark:border-neutral-800">
+        <Link
+          to="/dashboard"
+          className={`flex items-center min-w-0 ${collapsed ? 'justify-center flex-1' : 'flex-1'}`}
+        >
+          <img
+            src="/images/leadlab-logo.png"
+            alt="LeadLab"
+            className={`object-contain dark:brightness-0 dark:invert ${
+              collapsed ? 'h-9 w-12' : 'h-11 w-auto max-w-[148px]'
+            }`}
+          />
+        </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+          className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors shrink-0"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? (
             <ChevronRight className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
