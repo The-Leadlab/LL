@@ -33,7 +33,8 @@ import {
   ShoppingCart,
   TrendingUp,
   Phone,
-  Bell
+  Bell,
+  Send
 } from 'lucide-react';
 import { featureFlags } from '@/config/featureFlags';
 
@@ -73,6 +74,7 @@ const navigation: NavItem[] = [
         path: '/emails',
         children: [
           { name: 'Inbox', icon: Mail, path: '/emails' },
+          { name: 'Cold Outreach', icon: Send, path: '/emails/outreach' },
           ...(featureFlags.navigation.showEmailSequences
             ? [{ name: 'Sequences', icon: Zap, path: '/email-sequences' }]
             : []),

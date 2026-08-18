@@ -98,6 +98,46 @@ class EmailSend(BaseModel):
                 raise ValueError(f"Invalid email format: {email}")
         return v
 
+
+class OutreachSend(BaseModel):
+    """One personalized email per lead (cold outreach). Max 25 leads per request."""
+    account_id: int
+    lead_ids: List[int]
+    subject: str
+    body: str
+    format: str = "text"  # text | html
+    delay_seconds: float = 1.0
+
+    @validator("lead_ids")
+    def validate_lead_ids(cls, v):
+        if not v:
+            raise ValueError("Select at least one lead")
+        if len(v) > 25:
+            raise ValueError("Send at most 25 leads per batch")
+        return v
+
+    @validator("format")
+    def validate_format(cls, v):
+        mode = (v or "text").lower().strip()
+        if mode not in {"text", "html"}:
+            raise ValueError("format must be text or html")
+        return mode
+
+    @validator("delay_seconds")
+    def validate_delay(cls, v):
+        try:
+            delay = float(v)
+        except (TypeError, ValueError):
+            return 1.0
+        return max(0.0, min(delay, 10.0))
+
+    @validator("subject", "body")
+    def require_content(cls, v):
+        if not (v or "").strip():
+            raise ValueError("Subject and body are required")
+        return v
+
+
 class EmailCreate(EmailBase):
     message_id: str
     thread_id: Optional[str] = None

@@ -178,13 +178,22 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       category: 'actions',
     },
     ...(featureFlags.navigation.showEmail
-      ? [{
-          id: 'action-send-email',
-          title: 'Send Email',
-          icon: <Mail className="w-4 h-4" />,
-          action: () => navigate('/emails'),
-          category: 'actions' as const,
-        }]
+      ? [
+          {
+            id: 'action-send-email',
+            title: 'Send Email',
+            icon: <Mail className="w-4 h-4" />,
+            action: () => navigate('/emails'),
+            category: 'actions' as const,
+          },
+          {
+            id: 'action-cold-outreach',
+            title: 'Cold Outreach',
+            icon: <Mail className="w-4 h-4" />,
+            action: () => navigate('/emails/outreach'),
+            category: 'actions' as const,
+          },
+        ]
       : []),
   ];
 

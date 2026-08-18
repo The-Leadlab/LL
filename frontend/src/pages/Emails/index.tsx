@@ -260,6 +260,15 @@ export const EmailsPage: React.FC = () => {
               <Plus className="h-4 w-4 mr-2" />
               New Email
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-2 w-full justify-start font-medium"
+              onClick={() => navigate('/emails/outreach')}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Cold Outreach
+            </Button>
           </div>
 
           {/* Account Selector */}

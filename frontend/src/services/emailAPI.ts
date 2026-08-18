@@ -45,6 +45,28 @@ export interface SendEmailResult {
   warning?: string | null;
 }
 
+export interface OutreachSendPayload {
+  account_id: number;
+  lead_ids: number[];
+  subject: string;
+  body: string;
+  format: 'text' | 'html';
+  delay_seconds?: number;
+}
+
+export interface OutreachSendResult {
+  sent: number;
+  failed: number;
+  skipped: number;
+  total: number;
+  results: Array<{
+    lead_id: number;
+    email?: string | null;
+    status: 'sent' | 'failed' | 'skipped';
+    reason?: string;
+  }>;
+}
+
 const normalizeEmailMessage = (raw: any): EmailMessage => {
   const decodeMimeHeader = (input?: string): string => {
     if (!input || typeof input !== 'string' || !input.includes('=?')) return input || '';
@@ -262,6 +284,11 @@ const emailAPI = {
     };
 
     const response = await api.post(`/email/send`, payload);
+    return response.data;
+  },
+
+  async sendOutreach(data: OutreachSendPayload): Promise<OutreachSendResult> {
+    const response = await api.post(`/email/outreach`, data);
     return response.data;
   },
 

@@ -1,6 +1,9 @@
 import logging
 from typing import Any, Optional, List, Dict
 from datetime import datetime, timedelta
+import asyncio
+import html as html_lib
+import re
 import base64
 import hashlib
 import hmac
@@ -28,9 +31,10 @@ from app.schemas.email import (
     SendEmailResponse,
     EmailStatus as EmailStatusSchema
 )
+from app.models.lead import Lead
 from app.schemas.email_integration import (
     EmailAccountCreate, EmailAccountUpdate, EmailAccountOut,
-    EmailOut, EmailSend, EmailSuggestion
+    EmailOut, EmailSend, EmailSuggestion, OutreachSend
 )
 from app.core.config import settings
 from app.core.security import encrypt_password
@@ -464,6 +468,134 @@ async def send_email(
         status_code=email_service.last_send_status_code or status.HTTP_503_SERVICE_UNAVAILABLE,
         detail=detail
     )
+
+
+_TOKEN_RE = re.compile(r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}")
+
+
+def _lead_tokens(lead: Lead) -> Dict[str, str]:
+    first = (lead.first_name or "").strip()
+    last = (lead.last_name or "").strip()
+    full = f"{first} {last}".strip()
+    return {
+        "first_name": first,
+        "last_name": last,
+        "full_name": full,
+        "company": (lead.company or "").strip(),
+        "email": (lead.email or "").strip(),
+        "job_title": (lead.job_title or "").strip(),
+    }
+
+
+def _apply_outreach_tokens(template: str, tokens: Dict[str, str], as_html: bool) -> str:
+    def repl(match: re.Match) -> str:
+        key = match.group(1).lower()
+        value = tokens.get(key, "")
+        return html_lib.escape(value) if as_html else value
+
+    return _TOKEN_RE.sub(repl, template or "")
+
+
+@router.post("/outreach")
+async def send_cold_outreach(
+    outreach: OutreachSend,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Send one personalized email to each selected lead via a connected mailbox."""
+    account = db.query(EmailAccount).filter(
+        EmailAccount.id == outreach.account_id,
+        EmailAccount.user_id == current_user.id,
+        EmailAccount.organization_id == current_user.organization_id,
+    ).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Email account not found")
+
+    leads = (
+        db.query(Lead)
+        .filter(
+            Lead.id.in_(outreach.lead_ids),
+            Lead.organization_id == current_user.organization_id,
+            Lead.is_deleted.is_(False),
+        )
+        .all()
+    )
+    by_id = {lead.id: lead for lead in leads}
+    email_service = EmailService(db)
+    as_html = outreach.format == "html"
+    results: List[Dict[str, Any]] = []
+    sent = 0
+    failed = 0
+    skipped = 0
+
+    for index, lead_id in enumerate(outreach.lead_ids):
+        lead = by_id.get(lead_id)
+        if not lead:
+            skipped += 1
+            results.append({"lead_id": lead_id, "status": "skipped", "reason": "Lead not found"})
+            continue
+        to_email = (lead.email or "").strip()
+        if not to_email or "@" not in to_email:
+            skipped += 1
+            results.append({
+                "lead_id": lead.id,
+                "email": to_email or None,
+                "status": "skipped",
+                "reason": "Lead has no email",
+            })
+            continue
+
+        tokens = _lead_tokens(lead)
+        subject = _apply_outreach_tokens(outreach.subject, tokens, as_html=False)
+        body = _apply_outreach_tokens(outreach.body, tokens, as_html=as_html)
+        body_html = body if as_html else f"<p>{html_lib.escape(body).replace(chr(10), '<br>')}</p>"
+        body_text = body if not as_html else re.sub(r"<[^>]+>", " ", body)
+
+        try:
+            send_result = email_service.send_email(
+                account_id=account.id,
+                to_emails=[to_email],
+                subject=subject,
+                body_text=body_text,
+                body_html=body_html,
+            )
+        except Exception as exc:
+            failed += 1
+            logger.error("Outreach send failed for lead %s: %s", lead.id, exc, exc_info=True)
+            results.append({
+                "lead_id": lead.id,
+                "email": to_email,
+                "status": "failed",
+                "reason": str(exc),
+            })
+            continue
+
+        if send_result.get("sent"):
+            sent += 1
+            results.append({
+                "lead_id": lead.id,
+                "email": to_email,
+                "status": "sent",
+            })
+        else:
+            failed += 1
+            results.append({
+                "lead_id": lead.id,
+                "email": to_email,
+                "status": "failed",
+                "reason": email_service.last_send_error or "Delivery failed",
+            })
+
+        if outreach.delay_seconds and index < len(outreach.lead_ids) - 1:
+            await asyncio.sleep(outreach.delay_seconds)
+
+    return {
+        "sent": sent,
+        "failed": failed,
+        "skipped": skipped,
+        "total": len(outreach.lead_ids),
+        "results": results,
+    }
 
 
 @router.post("/send-template", response_model=schemas.email.SendEmailResponse)

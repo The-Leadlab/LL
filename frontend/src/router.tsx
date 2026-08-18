@@ -33,6 +33,7 @@ import { ModernCalendar } from './pages/ModernCalendar'
 import { ModernCredits } from './pages/ModernCredits'
 import { ModernSettings } from './pages/ModernSettings'
 import { ModernEmails } from './pages/ModernEmails'
+import { ColdOutreachPage } from './pages/Emails/ColdOutreach'
 import { ModernCustomization } from './pages/ModernCustomization'
 import { ModernTerritories } from './pages/ModernTerritories'
 import { ModernEmailSequences } from './pages/ModernEmailSequences'
@@ -203,6 +204,10 @@ export const router = createBrowserRouter([
           {
             path: '/emails',
             element: <ModernEmails />
+          },
+          {
+            path: '/emails/outreach',
+            element: <ColdOutreachPage />
           },
           {
             path: '/customization',
