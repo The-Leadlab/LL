@@ -107,6 +107,7 @@ export interface SheetsImportPayload {
   range?: string;
   header_row?: number;
   mapping?: Record<string, string>;
+  pasted_values?: string;
 }
 
 export interface CreateScenarioPayload {
@@ -256,6 +257,11 @@ export const outreachAPI = {
   // AI rewrite
   rewrite: async (data: RewritePayload): Promise<RewriteResult> => {
     const response = await api.post('/outreach/ai/rewrite', data);
+    return response.data;
+  },
+
+  processNow: async (limit = 25): Promise<Record<string, unknown>> => {
+    const response = await api.post('/outreach/worker/process-now', null, { params: { limit } });
     return response.data;
   },
 

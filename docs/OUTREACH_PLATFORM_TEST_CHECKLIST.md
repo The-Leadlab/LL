@@ -5,7 +5,11 @@ After deploy, run both SQL migrations in Supabase (in order):
 1. `backend/migrations/manual/010_outreach_jobs_and_sequence_account.sql`
 2. `backend/migrations/manual/011_outreach_platform_phases_2_4.sql`
 
+**Also:** backend startup now auto-creates outreach tables / adds missing columns (same pattern as marketing forms). After the next API deploy, schema should appear even if SQL was not run yet.
+
 Set Render env: `OUTREACH_WORKER_SECRET` (and cron from `render.yaml`).
+
+On **Runs**, use **Process queue now** to flush due jobs/steps without waiting for cron.
 
 ## Smoke path (manual)
 

@@ -228,6 +228,23 @@ def outreach_worker_tick(
     return runner.tick(limit=min(limit, batch))
 
 
+@router.post("/worker/process-now")
+def outreach_process_now(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+    limit: int = Query(25, ge=1, le=100),
+) -> Dict[str, Any]:
+    """
+    Authenticated tick for the current org — use from the Runs UI while cron is warming up.
+    Processes global due work (same runner); safe because sends are org-scoped on each job/step.
+    """
+    runner = OutreachRunner(db)
+    result = runner.tick(limit=limit)
+    result["requested_by"] = current_user.id
+    result["organization_id"] = current_user.organization_id
+    return result
+
+
 @router.get("/jobs")
 def list_outreach_jobs(
     db: Session = Depends(deps.get_db),

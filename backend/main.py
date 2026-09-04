@@ -71,6 +71,49 @@ async def startup_sequence_guard() -> None:
     except Exception as exc:
         logger.warning("Could not ensure marketing_form_submissions: %s", exc)
 
+    # Outreach platform tables (Phases 1–4) — create if missing so deploy works before manual SQL.
+    try:
+        from app.db.session import engine, SessionLocal
+        from app.models.outreach_job import OutreachJob
+        from app.models.outreach_platform import (
+            OutreachConnection,
+            OutreachScenario,
+            OutreachRun,
+            OutreachRunStep,
+            OutreachTemplate,
+        )
+
+        for table in (
+            OutreachJob.__table__,
+            OutreachConnection.__table__,
+            OutreachScenario.__table__,
+            OutreachRun.__table__,
+            OutreachRunStep.__table__,
+            OutreachTemplate.__table__,
+        ):
+            table.create(bind=engine, checkfirst=True)
+
+        db = SessionLocal()
+        try:
+            alter_stmts = [
+                "ALTER TABLE email_sequences ADD COLUMN IF NOT EXISTS email_account_id INTEGER",
+                "ALTER TABLE email_sequences ADD COLUMN IF NOT EXISTS settings JSONB",
+                "ALTER TABLE sequence_enrollments ADD COLUMN IF NOT EXISTS paused_at TIMESTAMP WITHOUT TIME ZONE",
+                "ALTER TABLE leads ADD COLUMN IF NOT EXISTS do_not_email BOOLEAN NOT NULL DEFAULT FALSE",
+                "ALTER TABLE leads ADD COLUMN IF NOT EXISTS email_bounced BOOLEAN NOT NULL DEFAULT FALSE",
+            ]
+            for stmt in alter_stmts:
+                try:
+                    db.execute(text(stmt))
+                    db.commit()
+                except Exception:
+                    db.rollback()
+        finally:
+            db.close()
+        logger.info("Ensured outreach platform tables/columns exist")
+    except Exception as exc:
+        logger.warning("Could not ensure outreach platform schema: %s", exc)
+
 # Health check endpoint - Keep both versions for compatibility
 @app.get("/")
 async def root():

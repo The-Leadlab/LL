@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronDown, ChevronRight, Loader2, Play } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { useToast } from '@/hooks/use-toast';
 import { outreachAPI, type OutreachRun, type OutreachRunStep } from '@/services/api/outreach';
 
 function RunRow({ run }: { run: OutreachRun }) {
@@ -80,9 +82,26 @@ function RunRow({ run }: { run: OutreachRun }) {
 }
 
 export function OutreachRunsPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: runs = [], isLoading } = useQuery({
     queryKey: ['outreach-runs'],
     queryFn: () => outreachAPI.listRuns({ limit: 100 }),
+  });
+
+  const processMutation = useMutation({
+    mutationFn: () => outreachAPI.processNow(25),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['outreach-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['outreach-jobs'] });
+      toast({
+        title: 'Queue processed',
+        description: `Sent total: ${String(data.sent_total ?? 0)}. Refresh runs to see updates.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Process failed', description: error.message, variant: 'destructive' });
+    },
   });
 
   if (isLoading) {
@@ -95,11 +114,26 @@ export function OutreachRunsPage() {
 
   return (
     <div className="container mx-auto space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Outreach Runs</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Scenario execution history. Click a row to expand step details.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Outreach Runs</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Scenario execution history. Click a row to expand step details.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={processMutation.isPending}
+          onClick={() => processMutation.mutate()}
+        >
+          {processMutation.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Play className="mr-2 h-4 w-4" />
+          )}
+          Process queue now
+        </Button>
       </div>
 
       <Card>

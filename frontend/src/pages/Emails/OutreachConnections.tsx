@@ -29,6 +29,7 @@ export function OutreachConnectionsPage() {
   const [accountId, setAccountId] = useState('');
   const [importRange, setImportRange] = useState('Sheet1!A:Z');
   const [importConnectionId, setImportConnectionId] = useState<number | null>(null);
+  const [pastedCsv, setPastedCsv] = useState('');
 
   const { data: connections = [], isLoading } = useQuery({
     queryKey: ['outreach-connections'],
@@ -80,14 +81,23 @@ export function OutreachConnectionsPage() {
   const importMutation = useMutation({
     mutationFn: (connectionId: number) =>
       outreachAPI.importSheets(connectionId, {
-        spreadsheet_id: spreadsheetId.trim(),
+        spreadsheet_id: spreadsheetId.trim() || 'pasted',
         range: importRange.trim() || undefined,
+        pasted_values: pastedCsv.trim() || undefined,
       }),
     onSuccess: (data) => {
+      const imported = typeof data?.imported === 'number' ? data.imported : undefined;
+      const skipped = typeof data?.skipped === 'number' ? data.skipped : undefined;
       toast({
-        title: 'Import preview',
-        description: typeof data === 'object' ? JSON.stringify(data).slice(0, 200) : 'Import started',
+        title: 'Import finished',
+        description:
+          imported != null
+            ? `Imported ${imported}, skipped ${skipped ?? 0}.`
+            : typeof data === 'object'
+              ? JSON.stringify(data).slice(0, 200)
+              : 'Import started',
       });
+      setPastedCsv('');
     },
     onError: (error: Error) => {
       toast({ title: 'Import failed', description: error.message, variant: 'destructive' });
@@ -252,29 +262,40 @@ export function OutreachConnectionsPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {conn.type === 'google_sheets' && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={importMutation.isPending && importConnectionId === conn.id}
-                      onClick={() => {
-                        setImportConnectionId(conn.id);
-                        const sheetId = String(conn.config?.spreadsheet_id || spreadsheetId || '');
-                        if (!sheetId) {
-                          toast({
-                            title: 'Missing spreadsheet ID',
-                            description: 'Set spreadsheet_id on the connection or in the form.',
-                            variant: 'destructive',
-                          });
-                          return;
-                        }
-                        setSpreadsheetId(sheetId);
-                        importMutation.mutate(conn.id);
-                      }}
-                    >
-                      <Upload className="mr-1 h-3 w-3" />
-                      Import leads preview
-                    </Button>
+                    <div className="w-full max-w-md space-y-2">
+                      <Label className="text-xs">Paste CSV/TSV (email,first_name,last_name,company)</Label>
+                      <textarea
+                        className="min-h-[72px] w-full rounded-md border p-2 font-mono text-xs"
+                        value={importConnectionId === conn.id ? pastedCsv : ''}
+                        onChange={(e) => {
+                          setImportConnectionId(conn.id);
+                          setPastedCsv(e.target.value);
+                        }}
+                        placeholder={'email,first_name,last_name,company\nada@example.com,Ada,Lovelace,Analytical'}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={importMutation.isPending && importConnectionId === conn.id}
+                        onClick={() => {
+                          setImportConnectionId(conn.id);
+                          const sheetId = String(conn.config?.spreadsheet_id || spreadsheetId || 'pasted');
+                          setSpreadsheetId(sheetId);
+                          if (!pastedCsv.trim() && !sheetId) {
+                            toast({
+                              title: 'Paste CSV rows or set a spreadsheet ID',
+                              variant: 'destructive',
+                            });
+                            return;
+                          }
+                          importMutation.mutate(conn.id);
+                        }}
+                      >
+                        <Upload className="mr-1 h-3 w-3" />
+                        Import leads
+                      </Button>
+                    </div>
                   )}
                   <Button
                     type="button"
