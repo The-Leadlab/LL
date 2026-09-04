@@ -37,6 +37,8 @@ class Lead(Base):
     _psychometrics = Column("psychometrics", JSON, nullable=True)
     wpi = Column(String(50), index=True, nullable=True)
     is_deleted = Column(Boolean, nullable=False, default=False)
+    do_not_email = Column(Boolean, nullable=False, default=False)
+    email_bounced = Column(Boolean, nullable=False, default=False)
     # visible = Column(Boolean, nullable=False, default=True)  # Column doesn't exist in database
     source = Column(String(100), nullable=True)
     # email_guidelines = Column(Text, nullable=True)  # Column doesn't exist in database

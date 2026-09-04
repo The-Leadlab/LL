@@ -502,7 +502,9 @@ async def send_cold_outreach(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
-    """Send one personalized email to each selected lead via a connected mailbox."""
+    """Send or queue personalized emails to selected leads via a connected mailbox."""
+    from app.services.outreach_runner import OutreachRunner, lead_can_email
+
     account = db.query(EmailAccount).filter(
         EmailAccount.id == outreach.account_id,
         EmailAccount.user_id == current_user.id,
@@ -510,6 +512,50 @@ async def send_cold_outreach(
     ).first()
     if not account:
         raise HTTPException(status_code=404, detail="Email account not found")
+
+    settings_snapshot = {
+        "timezone": outreach.timezone or "UTC",
+        "send_window_start": outreach.send_window_start,
+        "send_window_end": outreach.send_window_end,
+        "weekdays_only": bool(outreach.weekdays_only),
+        "max_per_hour": outreach.max_per_hour,
+    }
+    # Drop empty window keys so runner treats unset as no window
+    if not settings_snapshot.get("send_window_start"):
+        settings_snapshot.pop("send_window_start", None)
+        settings_snapshot.pop("send_window_end", None)
+
+    should_queue = bool(outreach.queue or outreach.schedule_at)
+    if not should_queue and outreach.delay_seconds and len(outreach.lead_ids) > 1:
+        # Long staggered sends should not block the HTTP worker
+        if outreach.delay_seconds * (len(outreach.lead_ids) - 1) > 20:
+            should_queue = True
+
+    if should_queue:
+        runner = OutreachRunner(db)
+        queued = runner.enqueue_outreach_jobs(
+            organization_id=current_user.organization_id,
+            user_id=current_user.id,
+            account_id=account.id,
+            lead_ids=outreach.lead_ids,
+            subject=outreach.subject,
+            body=outreach.body,
+            format=outreach.format,
+            start_at=outreach.schedule_at or datetime.utcnow(),
+            delay_seconds=outreach.delay_seconds,
+            settings=settings_snapshot,
+        )
+        return {
+            "mode": "queued",
+            "sent": 0,
+            "failed": 0,
+            "skipped": queued.get("skipped", 0),
+            "queued": queued.get("queued", 0),
+            "total": len(outreach.lead_ids),
+            "batch_id": queued.get("batch_id"),
+            "first_scheduled_at": queued.get("first_scheduled_at"),
+            "results": [],
+        }
 
     leads = (
         db.query(Lead)
@@ -530,21 +576,13 @@ async def send_cold_outreach(
 
     for index, lead_id in enumerate(outreach.lead_ids):
         lead = by_id.get(lead_id)
-        if not lead:
+        ok, reason = lead_can_email(lead)
+        if not ok:
             skipped += 1
-            results.append({"lead_id": lead_id, "status": "skipped", "reason": "Lead not found"})
-            continue
-        to_email = (lead.email or "").strip()
-        if not to_email or "@" not in to_email:
-            skipped += 1
-            results.append({
-                "lead_id": lead.id,
-                "email": to_email or None,
-                "status": "skipped",
-                "reason": "Lead has no email",
-            })
+            results.append({"lead_id": lead_id, "status": "skipped", "reason": reason})
             continue
 
+        to_email = (lead.email or "").strip()
         tokens = _lead_tokens(lead)
         subject = _apply_outreach_tokens(outreach.subject, tokens, as_html=False)
         body = _apply_outreach_tokens(outreach.body, tokens, as_html=as_html)
@@ -558,6 +596,7 @@ async def send_cold_outreach(
                 subject=subject,
                 body_text=body_text,
                 body_html=body_html,
+                lead_id=lead.id,
             )
         except Exception as exc:
             failed += 1
@@ -587,12 +626,14 @@ async def send_cold_outreach(
             })
 
         if outreach.delay_seconds and index < len(outreach.lead_ids) - 1:
-            await asyncio.sleep(outreach.delay_seconds)
+            await asyncio.sleep(min(float(outreach.delay_seconds), 10.0))
 
     return {
+        "mode": "immediate",
         "sent": sent,
         "failed": failed,
         "skipped": skipped,
+        "queued": 0,
         "total": len(outreach.lead_ids),
         "results": results,
     }

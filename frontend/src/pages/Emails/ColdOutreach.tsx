@@ -78,8 +78,15 @@ export function ColdOutreachPage() {
   const [body, setBody] = useState('');
   const [format, setFormat] = useState<'text' | 'html'>('text');
   const [delaySeconds, setDelaySeconds] = useState('1');
+  const [scheduleAt, setScheduleAt] = useState('');
+  const [weekdaysOnly, setWeekdaysOnly] = useState(false);
+  const [sendWindowStart, setSendWindowStart] = useState('');
+  const [sendWindowEnd, setSendWindowEnd] = useState('');
+  const [maxPerHour, setMaxPerHour] = useState('');
+  const [useQueue, setUseQueue] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [lastBatchId, setLastBatchId] = useState<string | null>(null);
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['email-accounts'],
@@ -159,11 +166,29 @@ export function ColdOutreachPage() {
       if (!accountId) throw new Error('Choose a sending mailbox first.');
       const ids = Array.from(selectedIds);
       if (!ids.length) throw new Error('Select at least one lead.');
-      const delay = Math.max(0, Math.min(Number(delaySeconds) || 1, 10));
+      const delay = Math.max(0, Math.min(Number(delaySeconds) || 1, 3600));
+      const scheduleIso = scheduleAt ? new Date(scheduleAt).toISOString() : null;
+      if (scheduleAt && Number.isNaN(Date.parse(scheduleAt))) {
+        throw new Error('Invalid schedule date/time.');
+      }
+      const timing = {
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        send_window_start: sendWindowStart || null,
+        send_window_end: sendWindowEnd || null,
+        weekdays_only: weekdaysOnly,
+        max_per_hour: maxPerHour ? Number(maxPerHour) : null,
+        schedule_at: scheduleIso,
+        queue: Boolean(useQueue || scheduleIso),
+      };
+
       let sent = 0;
       let failed = 0;
       let skipped = 0;
+      let queued = 0;
+      let batchId: string | undefined;
       setProgress({ done: 0, total: ids.length });
+      setLastBatchId(null);
+
       for (let i = 0; i < ids.length; i += BATCH_SIZE) {
         const batch = ids.slice(i, i + BATCH_SIZE);
         const result = await emailAPI.sendOutreach({
@@ -173,20 +198,31 @@ export function ColdOutreachPage() {
           body,
           format,
           delay_seconds: delay,
+          ...timing,
         });
         sent += result.sent;
         failed += result.failed;
         skipped += result.skipped;
+        queued += result.queued || 0;
+        if (result.batch_id) batchId = result.batch_id;
         setProgress({ done: Math.min(i + batch.length, ids.length), total: ids.length });
       }
-      return { sent, failed, skipped, total: ids.length };
+      return { sent, failed, skipped, queued, total: ids.length, batchId, mode: timing.queue ? 'queued' : 'immediate' };
     },
     onSuccess: (summary) => {
       setProgress(null);
-      toast({
-        title: 'Outreach finished',
-        description: `Sent ${summary.sent} of ${summary.total}. Failed ${summary.failed}, skipped ${summary.skipped}.`,
-      });
+      if (summary.batchId) setLastBatchId(summary.batchId);
+      if (summary.mode === 'queued' || (summary.queued || 0) > 0) {
+        toast({
+          title: 'Campaign queued',
+          description: `Queued ${summary.queued || summary.total} emails. The worker sends them on schedule with your pauses and send window.`,
+        });
+      } else {
+        toast({
+          title: 'Outreach finished',
+          description: `Sent ${summary.sent} of ${summary.total}. Failed ${summary.failed}, skipped ${summary.skipped}.`,
+        });
+      }
     },
     onError: (error) => {
       setProgress(null);
@@ -421,16 +457,92 @@ export function ColdOutreachPage() {
               <Input
                 type="number"
                 min={0}
-                max={10}
+                max={3600}
                 step={0.5}
                 value={delaySeconds}
                 onChange={(event) => setDelaySeconds(event.target.value)}
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Long delays auto-queue so the request does not block. Worker sends one-by-one.
+              </p>
             </div>
+
+            <div>
+              <Label>Schedule start (optional)</Label>
+              <Input
+                type="datetime-local"
+                value={scheduleAt}
+                onChange={(event) => setScheduleAt(event.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Send window start</Label>
+                <Input
+                  type="time"
+                  value={sendWindowStart}
+                  onChange={(event) => setSendWindowStart(event.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Send window end</Label>
+                <Input
+                  type="time"
+                  value={sendWindowEnd}
+                  onChange={(event) => setSendWindowEnd(event.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={weekdaysOnly}
+                onCheckedChange={(checked) => setWeekdaysOnly(Boolean(checked))}
+              />
+              <Label className="font-normal">Weekdays only (Mon–Fri)</Label>
+            </div>
+
+            <div>
+              <Label>Max emails per hour (optional)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={500}
+                value={maxPerHour}
+                onChange={(event) => setMaxPerHour(event.target.value)}
+                placeholder="e.g. 30"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={useQueue || Boolean(scheduleAt)}
+                disabled={Boolean(scheduleAt)}
+                onCheckedChange={(checked) => setUseQueue(Boolean(checked))}
+              />
+              <Label className="font-normal">Queue via worker (Make-style delayed campaign)</Label>
+            </div>
+
+            {lastBatchId && (
+              <p className="text-xs text-gray-600">
+                Last batch: <code>{lastBatchId}</code>{' '}
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={async () => {
+                    await emailAPI.cancelOutreachBatch(lastBatchId);
+                    toast({ title: 'Batch cancelled', description: 'Pending jobs in this batch were cancelled.' });
+                  }}
+                >
+                  Cancel pending
+                </button>
+              </p>
+            )}
 
             {progress && (
               <p className="text-sm text-gray-600">
-                Sending {progress.done} / {progress.total}…
+                Processing {progress.done} / {progress.total}…
               </p>
             )}
 
@@ -448,7 +560,8 @@ export function ColdOutreachPage() {
                 type="button"
                 disabled={!canSend}
                 onClick={() => {
-                  if (!window.confirm(`Send this email to ${selectedIds.size} lead${selectedIds.size === 1 ? '' : 's'}?`)) {
+                  const verb = scheduleAt || useQueue ? 'Queue' : 'Send';
+                  if (!window.confirm(`${verb} this email for ${selectedIds.size} lead${selectedIds.size === 1 ? '' : 's'}?`)) {
                     return;
                   }
                   sendMutation.mutate();
@@ -459,7 +572,10 @@ export function ColdOutreachPage() {
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
                 )}
-                Send to {selectedIds.size || 0}
+                {scheduleAt || useQueue ? `Queue ${selectedIds.size || 0}` : `Send to ${selectedIds.size || 0}`}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => navigate('/email-sequences')}>
+                Open Sequences
               </Button>
             </div>
           </CardContent>

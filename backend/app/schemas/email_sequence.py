@@ -28,6 +28,11 @@ class EmailSequenceBase(BaseModel):
     description: Optional[str] = Field(None, description="Sequence description")
     is_active: bool = Field(True, description="Is sequence active?")
     steps: List[SequenceStepDefinition] = Field(..., description="Sequence steps")
+    email_account_id: Optional[int] = Field(None, description="Connected mailbox used by the worker")
+    settings: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Campaign timing: timezone, send_window_start/end, weekdays_only, max_per_hour",
+    )
 
 
 class EmailSequenceCreate(EmailSequenceBase):
@@ -41,6 +46,8 @@ class EmailSequenceUpdate(BaseModel):
     description: Optional[str] = None
     is_active: Optional[bool] = None
     steps: Optional[List[SequenceStepDefinition]] = None
+    email_account_id: Optional[int] = None
+    settings: Optional[Dict[str, Any]] = None
 
 
 class EmailSequenceResponse(EmailSequenceBase):
@@ -52,6 +59,8 @@ class EmailSequenceResponse(EmailSequenceBase):
     total_completed: int = 0
     total_replied: int = 0
     created_at: datetime
+    email_account_id: Optional[int] = None
+    settings: Optional[Dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -107,6 +107,14 @@ class OutreachSend(BaseModel):
     body: str
     format: str = "text"  # text | html
     delay_seconds: float = 1.0
+    # When set (ISO datetime UTC) or queue=True, jobs go to outreach_jobs worker queue
+    schedule_at: Optional[datetime] = None
+    queue: bool = False
+    timezone: Optional[str] = "UTC"
+    send_window_start: Optional[str] = None  # "09:00"
+    send_window_end: Optional[str] = None  # "17:00"
+    weekdays_only: bool = False
+    max_per_hour: Optional[int] = None
 
     @validator("lead_ids")
     def validate_lead_ids(cls, v):
@@ -129,13 +137,19 @@ class OutreachSend(BaseModel):
             delay = float(v)
         except (TypeError, ValueError):
             return 1.0
-        return max(0.0, min(delay, 10.0))
+        return max(0.0, min(delay, 3600.0))
 
     @validator("subject", "body")
     def require_content(cls, v):
         if not (v or "").strip():
             raise ValueError("Subject and body are required")
         return v
+
+    @validator("max_per_hour")
+    def validate_max_per_hour(cls, v):
+        if v is None:
+            return v
+        return max(1, min(int(v), 500))
 
 
 class EmailCreate(EmailBase):

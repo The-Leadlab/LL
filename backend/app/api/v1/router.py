@@ -5,7 +5,7 @@ from app.api.v1.endpoints import (
     information_requests, organizations, tags, linkedin,
     tokens, notifications, contact, lead_stages, health, settings, psychometrics, files, ai_insights, messages, credits, invoices, team_invitations, email, ml, calendar_integrations,
     territories, cpq, email_sequences, workflows, conversations, data_import, forecasting, dashboards,
-    marketing_forms, currencies, clients,
+    marketing_forms, currencies, clients, outreach,
 )
 import logging
 
@@ -138,6 +138,9 @@ api_router.include_router(cpq.router, prefix="/cpq", tags=["cpq"])
 
 # Email Sequences (Automated Email Campaigns)
 api_router.include_router(email_sequences.router, prefix="/email-sequences", tags=["email-sequences"])
+
+# Outreach platform (queued jobs + worker tick)
+api_router.include_router(outreach.router, prefix="/outreach", tags=["outreach"])
 
 # Workflow Automation (Visual Workflow Builder & Approvals)
 api_router.include_router(workflows.router, prefix="/workflows", tags=["workflows"])

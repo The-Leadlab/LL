@@ -107,6 +107,12 @@ class Settings(BaseSettings):
     )
     EMAIL_PROVIDER: str = Field(default="smtp", description="Email transport mode: smtp, api, or auto")
     EMAIL_PROVIDER_TIMEOUT_SECONDS: int = Field(default=12, description="Timeout (seconds) for provider API requests")
+    # Outreach / sequence worker (Render cron → POST /api/v1/outreach/worker/tick)
+    OUTREACH_WORKER_SECRET: Optional[str] = Field(
+        default=None,
+        description="Shared secret for internal outreach worker tick endpoint (X-Outreach-Worker-Secret)",
+    )
+    OUTREACH_WORKER_BATCH_SIZE: int = Field(default=25, description="Max jobs/steps processed per worker tick")
 
     # Invoice Email Configuration (separate from auth emails)
     INVOICE_EMAIL: str = Field(default="invoice@the-leadlab.com", description="Invoice-specific email")

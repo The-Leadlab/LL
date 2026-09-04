@@ -47,6 +47,7 @@ from .calendar_event_link import CalendarEventLink
 from .territory import Territory, TerritoryMember, TerritoryRule, TerritoryAssignment, TerritoryQuota, TerritoryType, AssignmentPriority
 from .cpq import Product, Quote, QuoteItem, PricingRule
 from .email_sequence import EmailSequence, SequenceEnrollment, SequenceStep
+from .outreach_job import OutreachJob
 from .workflow import Workflow, WorkflowExecution, WorkflowActionExecution, ApprovalProcess, ApprovalRequest, ApprovalStep, WorkflowTriggerType, WorkflowStatus, WorkflowExecutionStatus, ActionType
 from .conversation import CallRecording, ConversationInsight
 from .forecast import ForecastPeriod, Forecast, ForecastItem, ForecastHistory, ForecastRollup, ForecastComment, ForecastCategory, ForecastPeriodType, ForecastStatus
@@ -117,6 +118,7 @@ __all__ = [
     "QuoteItem",
     "PricingRule",
     "EmailSequence",
+    "OutreachJob",
     "SequenceEnrollment",
     "SequenceStep",
     "Workflow",

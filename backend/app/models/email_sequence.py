@@ -21,6 +21,10 @@ class EmailSequence(Base):
 
     is_active = Column(Boolean, default=True)
     steps = Column(JSON)  # [{step, delay_days, subject, body, template_id}]
+    # Mailbox used by the outreach worker when sending sequence steps
+    email_account_id = Column(Integer, ForeignKey("email_accounts.id"), nullable=True)
+    # {timezone, send_window_start, send_window_end, weekdays_only, max_per_hour}
+    settings = Column(JSON, nullable=True)
 
     # Stats
     total_enrolled = Column(Integer, default=0)
@@ -46,6 +50,7 @@ class SequenceEnrollment(Base):
 
     enrolled_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime)
+    paused_at = Column(DateTime, nullable=True)
 
     sequence = relationship("EmailSequence", back_populates="enrollments")
     steps = relationship("SequenceStep", back_populates="enrollment")

@@ -1215,7 +1215,8 @@ class EmailService:
         body_html: Optional[str] = None,
         cc_emails: Optional[List[str]] = None,
         bcc_emails: Optional[List[str]] = None,
-        reply_to: Optional[str] = None
+        reply_to: Optional[str] = None,
+        lead_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Send email via SMTP, API provider, or auto fallback."""
         self.last_send_error = None
@@ -1274,6 +1275,7 @@ class EmailService:
                     cc_emails=cc_emails,
                     bcc_emails=bcc_emails,
                     message_id=msg.get("Message-ID"),
+                    lead_id=lead_id,
                 )
             except Exception as persist_err:
                 self.db.rollback()
@@ -1506,6 +1508,7 @@ class EmailService:
         cc_emails: Optional[List[str]],
         bcc_emails: Optional[List[str]],
         message_id: Optional[str],
+        lead_id: Optional[int] = None,
     ) -> None:
         sent_email = Email(
             message_id=message_id or f"sent-{datetime.utcnow().timestamp()}",
@@ -1524,6 +1527,7 @@ class EmailService:
             folder_name='SENT',
             email_account_id=account.id,
             organization_id=account.organization_id,
+            lead_id=lead_id,
         )
         self.db.add(sent_email)
         self.db.commit()

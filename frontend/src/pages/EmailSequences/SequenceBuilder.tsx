@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { emailSequencesAPI, type SequenceStep } from '@/services/api/email-sequences';
+import emailAPI from '@/services/emailAPI';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 
 const emptyStep = (step = 1): SequenceStep => ({ step, delay_days: 0, subject: '', body: '' });
@@ -23,9 +25,15 @@ export function SequenceBuilder() {
     enabled: isEdit,
   });
 
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['email-accounts'],
+    queryFn: emailAPI.getAccounts,
+  });
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [accountId, setAccountId] = useState('');
   const [steps, setSteps] = useState<SequenceStep[]>([emptyStep(1)]);
 
   useEffect(() => {
@@ -33,8 +41,15 @@ export function SequenceBuilder() {
     setName(data.name || '');
     setDescription(data.description || '');
     setIsActive(Boolean(data.is_active));
+    setAccountId(data.email_account_id ? String(data.email_account_id) : '');
     setSteps(data.steps?.length ? data.steps : [emptyStep(1)]);
   }, [data]);
+
+  useEffect(() => {
+    if (!accountId && accounts.length) {
+      setAccountId(String(accounts[0].id));
+    }
+  }, [accounts, accountId]);
 
   const saveMutation = useMutation({
     mutationFn: () => {
@@ -42,6 +57,7 @@ export function SequenceBuilder() {
         name: name.trim(),
         description: description.trim() || undefined,
         is_active: isActive,
+        email_account_id: accountId ? Number(accountId) : null,
         steps: steps.map((s, idx) => ({ ...s, step: idx + 1 })),
       };
       return isEdit ? emailSequencesAPI.update(editingId as number, payload) : emailSequencesAPI.create(payload);
@@ -68,6 +84,22 @@ export function SequenceBuilder() {
           <Label>Description</Label>
           <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
         </div>
+        <div>
+          <Label>Send from mailbox</Label>
+          <Select value={accountId} onValueChange={setAccountId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Choose mailbox" />
+            </SelectTrigger>
+            <SelectContent>
+              {accounts.map((account) => (
+                <SelectItem key={account.id} value={String(account.id)}>
+                  {account.display_name ? `${account.display_name} (${account.email})` : account.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-1 text-xs text-gray-500">Required for the outreach worker to send sequence steps.</p>
+        </div>
         <label className="inline-flex items-center gap-2 text-sm">
           <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
           Active
@@ -84,7 +116,7 @@ export function SequenceBuilder() {
               </Button>
             </div>
             <div>
-              <Label>Delay (days)</Label>
+              <Label>Delay (days after previous step)</Label>
               <Input type="number" value={s.delay_days} onChange={(e) => setSteps(steps.map((x, idx) => idx === i ? { ...x, delay_days: Number(e.target.value) || 0 } : x))} />
             </div>
             <div>
@@ -103,7 +135,7 @@ export function SequenceBuilder() {
         <Button type="button" variant="outline" onClick={() => setSteps([...steps, emptyStep(steps.length + 1)])}>
           <Plus className="h-4 w-4 mr-2" /> Add step
         </Button>
-        <Button type="button" onClick={() => saveMutation.mutate()} disabled={!name.trim() || saveMutation.isPending}>
+        <Button type="button" onClick={() => saveMutation.mutate()} disabled={!name.trim() || !accountId || saveMutation.isPending}>
           {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Save sequence
         </Button>
@@ -111,4 +143,3 @@ export function SequenceBuilder() {
     </div>
   );
 }
-

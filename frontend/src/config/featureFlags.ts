@@ -1,7 +1,7 @@
 export const featureFlags = {
   navigation: {
     showEmail: true,
-    showEmailSequences: false,
+    showEmailSequences: true,
     showForecasting: false,
     showDataImport: false,
     showMindMapping: true,

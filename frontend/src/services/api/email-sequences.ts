@@ -19,6 +19,8 @@ export interface EmailSequence {
   organization_id: number;
   is_active: boolean;
   steps: SequenceStep[];
+  email_account_id?: number | null;
+  settings?: Record<string, unknown> | null;
   total_enrolled: number;
   total_completed: number;
   total_replied: number;
@@ -53,6 +55,8 @@ export interface CreateSequenceRequest {
   description?: string;
   is_active: boolean;
   steps: SequenceStep[];
+  email_account_id?: number | null;
+  settings?: Record<string, unknown> | null;
 }
 
 export const emailSequencesAPI = {

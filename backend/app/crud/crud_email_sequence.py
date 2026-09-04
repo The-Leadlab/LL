@@ -57,7 +57,9 @@ class CRUDEmailSequence:
             organization_id=organization_id,
             created_by_id=created_by_id,
             is_active=obj_in.is_active,
-            steps=steps_data
+            steps=steps_data,
+            email_account_id=getattr(obj_in, "email_account_id", None),
+            settings=getattr(obj_in, "settings", None),
         )
         db.add(sequence)
         db.commit()
@@ -219,11 +221,13 @@ class CRUDSequenceEnrollment:
         ).first()
 
         if sequence and sequence.steps:
-            # Create step executions for all steps in sequence
-            for step_def in sequence.steps:
-                # Calculate scheduled time based on delay
-                delay_days = step_def.get("delay_days", 0)
-                scheduled_at = datetime.utcnow() + timedelta(days=delay_days)
+            # Cumulative delay: each step waits delay_days after the previous step
+            cumulative_days = 0
+            ordered = sorted(sequence.steps, key=lambda s: int(s.get("step") or 0))
+            for step_def in ordered:
+                delay_days = int(step_def.get("delay_days") or 0)
+                cumulative_days += delay_days
+                scheduled_at = datetime.utcnow() + timedelta(days=cumulative_days)
 
                 step = SequenceStep(
                     enrollment_id=enrollment.id,
@@ -264,6 +268,7 @@ class CRUDSequenceEnrollment:
         enrollment = self.get(db, enrollment_id)
         if enrollment and enrollment.status == "active":
             enrollment.status = "paused"
+            enrollment.paused_at = datetime.utcnow()
             db.add(enrollment)
             db.commit()
             db.refresh(enrollment)
@@ -271,11 +276,24 @@ class CRUDSequenceEnrollment:
         return None
 
     def resume(self, db: Session, enrollment_id: int) -> Optional[SequenceEnrollment]:
-        """Resume enrollment"""
+        """Resume enrollment and shift pending step schedules by pause duration."""
         enrollment = self.get(db, enrollment_id)
         if enrollment and enrollment.status == "paused":
+            pause_delta = timedelta(0)
+            if enrollment.paused_at:
+                pause_delta = datetime.utcnow() - enrollment.paused_at
             enrollment.status = "active"
+            enrollment.paused_at = None
             db.add(enrollment)
+            if pause_delta.total_seconds() > 0:
+                pending = db.query(SequenceStep).filter(
+                    SequenceStep.enrollment_id == enrollment.id,
+                    SequenceStep.status == "pending",
+                ).all()
+                for step in pending:
+                    if step.scheduled_at:
+                        step.scheduled_at = step.scheduled_at + pause_delta
+                        db.add(step)
             db.commit()
             db.refresh(enrollment)
             return enrollment
@@ -368,13 +386,23 @@ class CRUDSequenceStep:
         return db.query(SequenceStep).filter(SequenceStep.id == step_id).first()
 
     def get_pending_steps(self, db: Session, limit: int = 100) -> List[SequenceStep]:
-        """Get pending steps that are ready to be sent"""
-        return db.query(SequenceStep).filter(
-            and_(
-                SequenceStep.status == "pending",
-                SequenceStep.scheduled_at <= datetime.utcnow()
+        """Get pending steps that are ready to be sent (active enrollments only)."""
+        return (
+            db.query(SequenceStep)
+            .join(SequenceEnrollment, SequenceEnrollment.id == SequenceStep.enrollment_id)
+            .join(EmailSequence, EmailSequence.id == SequenceEnrollment.sequence_id)
+            .filter(
+                and_(
+                    SequenceStep.status == "pending",
+                    SequenceStep.scheduled_at <= datetime.utcnow(),
+                    SequenceEnrollment.status == "active",
+                    EmailSequence.is_active.is_(True),
+                )
             )
-        ).limit(limit).all()
+            .order_by(SequenceStep.scheduled_at.asc())
+            .limit(limit)
+            .all()
+        )
 
     def mark_sent(self, db: Session, step_id: int) -> Optional[SequenceStep]:
         """Mark step as sent"""

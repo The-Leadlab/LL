@@ -52,13 +52,24 @@ export interface OutreachSendPayload {
   body: string;
   format: 'text' | 'html';
   delay_seconds?: number;
+  schedule_at?: string | null;
+  queue?: boolean;
+  timezone?: string;
+  send_window_start?: string | null;
+  send_window_end?: string | null;
+  weekdays_only?: boolean;
+  max_per_hour?: number | null;
 }
 
 export interface OutreachSendResult {
+  mode?: 'immediate' | 'queued';
   sent: number;
   failed: number;
   skipped: number;
+  queued?: number;
   total: number;
+  batch_id?: string;
+  first_scheduled_at?: string | null;
   results: Array<{
     lead_id: number;
     email?: string | null;
@@ -289,6 +300,16 @@ const emailAPI = {
 
   async sendOutreach(data: OutreachSendPayload): Promise<OutreachSendResult> {
     const response = await api.post(`/email/outreach`, data);
+    return response.data;
+  },
+
+  async listOutreachJobs(params?: { batch_id?: string; status?: string; skip?: number; limit?: number }) {
+    const response = await api.get(`/outreach/jobs`, { params });
+    return response.data;
+  },
+
+  async cancelOutreachBatch(batchId: string) {
+    const response = await api.post(`/outreach/jobs/${batchId}/cancel`);
     return response.data;
   },
 
