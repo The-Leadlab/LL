@@ -540,18 +540,63 @@ def import_from_sheets(
 
 # ---------- scenarios ----------
 
-@router.get("/scenarios")
-def list_scenarios(
+@router.post("/scenarios/seed-demo", status_code=201)
+def seed_demo_scenario(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
-) -> List[Dict[str, Any]]:
-    rows = (
+) -> Dict[str, Any]:
+    """Create a starter Wait → Router → Send scenario for the current org (if none exists)."""
+    existing = (
         db.query(OutreachScenario)
-        .filter(OutreachScenario.organization_id == current_user.organization_id)
-        .order_by(OutreachScenario.id.desc())
-        .all()
+        .filter(
+            OutreachScenario.organization_id == current_user.organization_id,
+            OutreachScenario.name == "Demo: Wait → Check email → Send",
+        )
+        .first()
     )
-    return [_scenario_out(s) for s in rows]
+    if existing:
+        return _scenario_out(existing)
+
+    account = (
+        db.query(EmailAccount)
+        .filter(
+            EmailAccount.organization_id == current_user.organization_id,
+            EmailAccount.user_id == current_user.id,
+        )
+        .order_by(EmailAccount.id.asc())
+        .first()
+    )
+    account_id = account.id if account else None
+    flow = {
+        "modules": [
+            {"id": "m1", "type": "trigger_manual", "config": {}},
+            {"id": "m2", "type": "wait", "config": {"amount": 0, "unit": "minutes"}},
+            {"id": "m3", "type": "router_has_email", "config": {}},
+            {
+                "id": "m4",
+                "type": "send_email",
+                "config": {
+                    "account_id": account_id,
+                    "format": "text",
+                    "subject": "Quick hello {{first_name}}",
+                    "body": "Hi {{first_name}},\n\nWanted to reach out from LeadLab outreach.\n\nBest",
+                },
+            },
+        ]
+    }
+    scenario = OutreachScenario(
+        organization_id=current_user.organization_id,
+        name="Demo: Wait → Check email → Send",
+        description="Starter Make-style scenario. Set mailbox on the send module if empty, activate, then Run.",
+        status="draft",
+        flow_definition=flow,
+        settings={"default_account_id": account_id} if account_id else {},
+        created_by_id=current_user.id,
+    )
+    db.add(scenario)
+    db.commit()
+    db.refresh(scenario)
+    return _scenario_out(scenario)
 
 
 @router.post("/scenarios", status_code=201)

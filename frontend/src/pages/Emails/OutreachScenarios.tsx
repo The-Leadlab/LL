@@ -39,6 +39,18 @@ export function OutreachScenariosPage() {
     },
   });
 
+  const seedMutation = useMutation({
+    mutationFn: () => outreachAPI.seedDemoScenario(),
+    onSuccess: (scenario) => {
+      queryClient.invalidateQueries({ queryKey: ['outreach-scenarios'] });
+      toast({ title: 'Demo scenario ready', description: 'Open it, activate, then Run with lead IDs.' });
+      navigate(`/emails/scenarios/${scenario.id}`);
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Could not seed demo', description: error.message, variant: 'destructive' });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -56,14 +68,25 @@ export function OutreachScenariosPage() {
             Build Make-style linear flows: wait, send email, route, update leads, and more.
           </p>
         </div>
-        <Button type="button" disabled={createMutation.isPending} onClick={() => createMutation.mutate()}>
-          {createMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="mr-2 h-4 w-4" />
-          )}
-          Create scenario
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={seedMutation.isPending}
+            onClick={() => seedMutation.mutate()}
+          >
+            {seedMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GitBranch className="mr-2 h-4 w-4" />}
+            Seed demo scenario
+          </Button>
+          <Button type="button" disabled={createMutation.isPending} onClick={() => createMutation.mutate()}>
+            {createMutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
+            Create scenario
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-3">

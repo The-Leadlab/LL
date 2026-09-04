@@ -189,7 +189,7 @@ export function ColdOutreachPage() {
     onError: (error) => {
       toast({
         title: 'Rewrite failed',
-        description: extractEmailErrorMessage(error),
+        description: extractEmailErrorMessage(error).description,
         variant: 'destructive',
       });
     },
@@ -279,7 +279,7 @@ export function ColdOutreachPage() {
       setProgress(null);
       toast({
         title: 'Could not send outreach',
-        description: extractEmailErrorMessage(error),
+        description: extractEmailErrorMessage(error).description,
         variant: 'destructive',
       });
     },

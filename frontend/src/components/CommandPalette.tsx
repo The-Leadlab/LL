@@ -193,6 +193,39 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             action: () => navigate('/emails/outreach'),
             category: 'actions' as const,
           },
+          ...(featureFlags.navigation.showOutreachScenarios
+            ? [
+                {
+                  id: 'action-outreach-scenarios',
+                  title: 'Outreach Scenarios',
+                  icon: <Mail className="w-4 h-4" />,
+                  action: () => navigate('/emails/scenarios'),
+                  category: 'actions' as const,
+                },
+              ]
+            : []),
+          ...(featureFlags.navigation.showOutreachConnections
+            ? [
+                {
+                  id: 'action-outreach-connections',
+                  title: 'Outreach Connections',
+                  icon: <Mail className="w-4 h-4" />,
+                  action: () => navigate('/emails/connections'),
+                  category: 'actions' as const,
+                },
+              ]
+            : []),
+          ...(featureFlags.navigation.showOutreachRuns
+            ? [
+                {
+                  id: 'action-outreach-runs',
+                  title: 'Outreach Runs',
+                  icon: <Mail className="w-4 h-4" />,
+                  action: () => navigate('/emails/runs'),
+                  category: 'actions' as const,
+                },
+              ]
+            : []),
         ]
       : []),
   ];

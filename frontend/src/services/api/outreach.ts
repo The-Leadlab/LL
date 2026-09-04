@@ -201,6 +201,11 @@ export const outreachAPI = {
     return response.data;
   },
 
+  seedDemoScenario: async (): Promise<OutreachScenario> => {
+    const response = await api.post('/outreach/scenarios/seed-demo');
+    return response.data;
+  },
+
   updateScenario: async (
     id: number,
     data: Partial<CreateScenarioPayload>,

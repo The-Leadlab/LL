@@ -269,6 +269,30 @@ export const EmailsPage: React.FC = () => {
               <Send className="h-4 w-4 mr-2" />
               Cold Outreach
             </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-1 w-full justify-start text-sm font-normal"
+              onClick={() => navigate('/emails/scenarios')}
+            >
+              Scenarios
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-1 w-full justify-start text-sm font-normal"
+              onClick={() => navigate('/emails/runs')}
+            >
+              Runs
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-1 w-full justify-start text-sm font-normal"
+              onClick={() => navigate('/emails/connections')}
+            >
+              Connections
+            </Button>
           </div>
 
           {/* Account Selector */}

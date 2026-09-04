@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { useToast } from '@/hooks/use-toast';
+import { getApiOrigin } from '@/lib/apiOrigin';
 import emailAPI from '@/services/emailAPI';
 import {
   outreachAPI,
@@ -15,7 +16,8 @@ import {
 } from '@/services/api/outreach';
 
 function webhookUrl(publicToken: string): string {
-  return `/api/v1/outreach/webhooks/${publicToken}`;
+  const origin = getApiOrigin() || (typeof window !== 'undefined' ? window.location.origin : '');
+  return `${origin}/api/v1/outreach/webhooks/${publicToken}`;
 }
 
 export function OutreachConnectionsPage() {
@@ -250,7 +252,17 @@ export function OutreachConnectionsPage() {
                   {conn.type === 'webhook' && conn.public_token && (
                     <div className="text-sm">
                       <span className="text-gray-500">Webhook URL: </span>
-                      <code className="rounded bg-slate-100 px-1 text-xs">{webhookUrl(conn.public_token)}</code>
+                      <code className="break-all rounded bg-slate-100 px-1 text-xs">{webhookUrl(conn.public_token)}</code>
+                      <button
+                        type="button"
+                        className="ml-2 text-xs underline"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(webhookUrl(conn.public_token!));
+                          toast({ title: 'Webhook URL copied' });
+                        }}
+                      >
+                        Copy
+                      </button>
                     </div>
                   )}
                   {conn.type === 'google_sheets' && conn.config?.spreadsheet_id && (
