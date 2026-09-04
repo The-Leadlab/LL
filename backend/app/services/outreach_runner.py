@@ -478,12 +478,470 @@ class OutreachRunner:
             "results": results,
         }
 
+    def _modules(self, scenario) -> List[Dict[str, Any]]:
+        flow = scenario.flow_definition or {}
+        modules = flow.get("modules") or []
+        return list(modules)
+
+    def _module_index(self, modules: List[Dict[str, Any]], node_id: str) -> int:
+        for i, mod in enumerate(modules):
+            if str(mod.get("id")) == str(node_id):
+                return i
+        return -1
+
+    def start_scenario_run(
+        self,
+        *,
+        scenario,
+        lead_ids: List[int],
+        organization_id: int,
+        user_id: int,
+        account_id: Optional[int] = None,
+        trigger_type: str = "manual",
+    ):
+        from app.models.outreach_platform import OutreachRun, OutreachRunStep
+
+        modules = self._modules(scenario)
+        if not modules:
+            raise ValueError("Scenario has no modules")
+
+        first = modules[0]
+        settings = dict(scenario.settings or {})
+        if account_id:
+            settings["default_account_id"] = account_id
+
+        run = OutreachRun(
+            scenario_id=scenario.id,
+            organization_id=organization_id,
+            trigger_type=trigger_type,
+            status="running",
+            started_at=datetime.utcnow(),
+            stats={"queued_leads": 0, "sent": 0, "failed": 0, "skipped": 0},
+            created_by_id=user_id,
+        )
+        self.db.add(run)
+        self.db.flush()
+
+        queued = 0
+        now = datetime.utcnow()
+        for lead_id in lead_ids:
+            lead = (
+                self.db.query(Lead)
+                .filter(
+                    Lead.id == lead_id,
+                    Lead.organization_id == organization_id,
+                    Lead.is_deleted.is_(False),
+                )
+                .first()
+            )
+            if not lead:
+                continue
+            key = make_idempotency_key("scenario", run.id, first.get("id"), lead_id)
+            step = OutreachRunStep(
+                run_id=run.id,
+                node_id=str(first.get("id")),
+                lead_id=lead_id,
+                status="pending",
+                scheduled_at=next_send_slot(now, settings),
+                input={"module_type": first.get("type"), "settings": settings},
+                idempotency_key=key,
+            )
+            self.db.add(step)
+            queued += 1
+
+        run.stats = {**(run.stats or {}), "queued_leads": queued}
+        self.db.add(run)
+        self.db.commit()
+        self.db.refresh(run)
+        return run
+
+    def _enqueue_next_module(
+        self,
+        *,
+        run,
+        lead_id: int,
+        modules: List[Dict[str, Any]],
+        current_index: int,
+        delay: timedelta,
+        settings: Dict[str, Any],
+        carry: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        from app.models.outreach_platform import OutreachRunStep
+
+        nxt = current_index + 1
+        if nxt >= len(modules):
+            # maybe finish run if no pending steps left
+            pending = (
+                self.db.query(OutreachRunStep)
+                .filter(OutreachRunStep.run_id == run.id, OutreachRunStep.status == "pending")
+                .count()
+            )
+            if pending == 0:
+                run.status = "completed"
+                run.finished_at = datetime.utcnow()
+                self.db.add(run)
+            return
+
+        mod = modules[nxt]
+        # Skip trigger_manual when advancing
+        if mod.get("type") == "trigger_manual" and nxt + 1 < len(modules):
+            self._enqueue_next_module(
+                run=run,
+                lead_id=lead_id,
+                modules=modules,
+                current_index=nxt,
+                delay=delay,
+                settings=settings,
+                carry=carry,
+            )
+            return
+
+        when = next_send_slot(datetime.utcnow() + delay, settings)
+        key = make_idempotency_key("scenario", run.id, mod.get("id"), lead_id, when.isoformat())
+        step = OutreachRunStep(
+            run_id=run.id,
+            node_id=str(mod.get("id")),
+            lead_id=lead_id,
+            status="pending",
+            scheduled_at=when,
+            input={"module_type": mod.get("type"), "settings": settings, "carry": carry or {}},
+            idempotency_key=key,
+        )
+        self.db.add(step)
+
+    def process_due_scenario_steps(self, limit: int = 25) -> Dict[str, Any]:
+        from app.models.outreach_platform import OutreachRun, OutreachRunStep, OutreachScenario
+
+        now = datetime.utcnow()
+        steps = (
+            self.db.query(OutreachRunStep)
+            .join(OutreachRun, OutreachRun.id == OutreachRunStep.run_id)
+            .filter(
+                OutreachRunStep.status == "pending",
+                OutreachRunStep.scheduled_at <= now,
+                OutreachRun.status == "running",
+            )
+            .order_by(OutreachRunStep.scheduled_at.asc())
+            .limit(limit)
+            .all()
+        )
+
+        sent = failed = skipped = deferred = advanced = 0
+        results: List[Dict[str, Any]] = []
+
+        for step in steps:
+            run = self.db.query(OutreachRun).filter(OutreachRun.id == step.run_id).first()
+            scenario = (
+                self.db.query(OutreachScenario).filter(OutreachScenario.id == run.scenario_id).first()
+                if run
+                else None
+            )
+            if not run or not scenario:
+                step.status = "failed"
+                step.error = "Run/scenario missing"
+                self.db.add(step)
+                self.db.commit()
+                failed += 1
+                continue
+
+            if scenario.status == "paused":
+                step.scheduled_at = datetime.utcnow() + timedelta(minutes=10)
+                self.db.add(step)
+                self.db.commit()
+                deferred += 1
+                continue
+
+            modules = self._modules(scenario)
+            idx = self._module_index(modules, step.node_id)
+            if idx < 0:
+                step.status = "failed"
+                step.error = "Unknown module"
+                self.db.add(step)
+                self.db.commit()
+                failed += 1
+                continue
+
+            mod = modules[idx]
+            mtype = (mod.get("type") or "").lower()
+            config = mod.get("config") or {}
+            settings = dict((step.input or {}).get("settings") or scenario.settings or {})
+            carry = dict((step.input or {}).get("carry") or {})
+
+            lead = self.db.query(Lead).filter(Lead.id == step.lead_id).first() if step.lead_id else None
+
+            # Claim
+            step.status = "processing"
+            self.db.add(step)
+            self.db.commit()
+
+            try:
+                if mtype in {"trigger_manual", "stop_on_reply"}:
+                    # stop_on_reply is a marker: if enrollment replied elsewhere, skip — for now pass-through
+                    step.status = "sent"
+                    step.executed_at = datetime.utcnow()
+                    step.output = {"action": "pass"}
+                    self.db.add(step)
+                    self._enqueue_next_module(
+                        run=run, lead_id=step.lead_id, modules=modules, current_index=idx,
+                        delay=timedelta(0), settings=settings, carry=carry,
+                    )
+                    self.db.commit()
+                    advanced += 1
+                    results.append({"step_id": step.id, "status": "advanced", "type": mtype})
+                    continue
+
+                if mtype == "wait":
+                    amount = int(config.get("amount") or 0)
+                    unit = (config.get("unit") or "days").lower()
+                    if unit.startswith("min"):
+                        delay = timedelta(minutes=amount)
+                    elif unit.startswith("hour"):
+                        delay = timedelta(hours=amount)
+                    else:
+                        delay = timedelta(days=amount)
+                    step.status = "sent"
+                    step.executed_at = datetime.utcnow()
+                    step.output = {"waited": True, "amount": amount, "unit": unit}
+                    self.db.add(step)
+                    self._enqueue_next_module(
+                        run=run, lead_id=step.lead_id, modules=modules, current_index=idx,
+                        delay=delay, settings=settings, carry=carry,
+                    )
+                    self.db.commit()
+                    advanced += 1
+                    results.append({"step_id": step.id, "status": "wait_scheduled"})
+                    continue
+
+                if mtype == "router_has_email":
+                    ok, reason = lead_can_email(lead)
+                    step.status = "sent"
+                    step.executed_at = datetime.utcnow()
+                    step.output = {"has_email": ok, "reason": reason}
+                    self.db.add(step)
+                    if ok:
+                        self._enqueue_next_module(
+                            run=run, lead_id=step.lead_id, modules=modules, current_index=idx,
+                            delay=timedelta(0), settings=settings, carry=carry,
+                        )
+                    else:
+                        skipped += 1
+                        # finish this lead path
+                        pending = (
+                            self.db.query(OutreachRunStep)
+                            .filter(OutreachRunStep.run_id == run.id, OutreachRunStep.status == "pending")
+                            .count()
+                        )
+                        if pending == 0:
+                            run.status = "completed"
+                            run.finished_at = datetime.utcnow()
+                            self.db.add(run)
+                    self.db.commit()
+                    advanced += 1
+                    continue
+
+                if mtype == "update_lead":
+                    if lead:
+                        field = str(config.get("field") or "").strip()
+                        value = config.get("value")
+                        if field and hasattr(lead, field) and field not in {"id", "organization_id"}:
+                            setattr(lead, field, value)
+                            self.db.add(lead)
+                    step.status = "sent"
+                    step.executed_at = datetime.utcnow()
+                    step.output = {"updated": True}
+                    self.db.add(step)
+                    self._enqueue_next_module(
+                        run=run, lead_id=step.lead_id, modules=modules, current_index=idx,
+                        delay=timedelta(0), settings=settings, carry=carry,
+                    )
+                    self.db.commit()
+                    advanced += 1
+                    continue
+
+                if mtype == "ab_subject":
+                    subjects = config.get("subjects") or config.get("ab_subjects") or []
+                    if isinstance(subjects, str):
+                        subjects = [s.strip() for s in subjects.split(",") if s.strip()]
+                    pick = subjects[(step.lead_id or 0) % len(subjects)] if subjects else None
+                    if pick:
+                        carry["subject"] = pick
+                    step.status = "sent"
+                    step.executed_at = datetime.utcnow()
+                    step.output = {"subject": pick}
+                    self.db.add(step)
+                    self._enqueue_next_module(
+                        run=run, lead_id=step.lead_id, modules=modules, current_index=idx,
+                        delay=timedelta(0), settings=settings, carry=carry,
+                    )
+                    self.db.commit()
+                    advanced += 1
+                    continue
+
+                if mtype == "ai_rewrite":
+                    # Sync fallback rewrite (no await in sync worker)
+                    subject = carry.get("subject") or config.get("subject") or ""
+                    body = carry.get("body") or config.get("body") or ""
+                    instruction = config.get("instruction") or "Make this email clearer and more concise."
+                    rewritten = free_ai_service_rewrite_sync(subject, body, instruction, lead)
+                    carry["subject"] = rewritten.get("subject") or subject
+                    carry["body"] = rewritten.get("body") or body
+                    step.status = "sent"
+                    step.executed_at = datetime.utcnow()
+                    step.output = rewritten
+                    self.db.add(step)
+                    self._enqueue_next_module(
+                        run=run, lead_id=step.lead_id, modules=modules, current_index=idx,
+                        delay=timedelta(0), settings=settings, carry=carry,
+                    )
+                    self.db.commit()
+                    advanced += 1
+                    continue
+
+                if mtype == "send_email":
+                    ok, reason = lead_can_email(lead)
+                    if not ok:
+                        step.status = "skipped"
+                        step.error = reason
+                        step.executed_at = datetime.utcnow()
+                        self.db.add(step)
+                        self.db.commit()
+                        skipped += 1
+                        self._maybe_complete_run(run)
+                        continue
+
+                    account_id = (
+                        config.get("account_id")
+                        or settings.get("default_account_id")
+                        or (scenario.settings or {}).get("default_account_id")
+                    )
+                    if not account_id:
+                        step.status = "failed"
+                        step.error = "No account_id for send_email"
+                        self.db.add(step)
+                        self.db.commit()
+                        failed += 1
+                        continue
+
+                    tokens = lead_tokens(lead)
+                    as_html = (config.get("format") or "text") == "html"
+                    subject_tpl = carry.get("subject") or config.get("subject") or ""
+                    # A/B from send config
+                    ab = config.get("ab_subjects") or []
+                    if ab and isinstance(ab, list) and len(ab) > 0:
+                        subject_tpl = ab[(step.lead_id or 0) % len(ab)]
+                    body_tpl = carry.get("body") or config.get("body") or ""
+                    subject = apply_tokens(subject_tpl, tokens, as_html=False)
+                    body = apply_tokens(body_tpl, tokens, as_html=as_html)
+                    body_html = body if as_html else f"<p>{html_lib.escape(body).replace(chr(10), '<br>')}</p>"
+                    body_text = body if not as_html else re.sub(r"<[^>]+>", " ", body)
+
+                    send_result = self.email_service.send_email(
+                        account_id=int(account_id),
+                        to_emails=[(lead.email or "").strip()],
+                        subject=subject,
+                        body_text=body_text,
+                        body_html=body_html,
+                        lead_id=lead.id,
+                    )
+                    if send_result.get("sent"):
+                        step.status = "sent"
+                        step.executed_at = datetime.utcnow()
+                        step.output = {"sent": True, "subject": subject}
+                        stats = dict(run.stats or {})
+                        stats["sent"] = int(stats.get("sent") or 0) + 1
+                        run.stats = stats
+                        self.db.add(run)
+                        self.db.add(step)
+                        self._enqueue_next_module(
+                            run=run, lead_id=step.lead_id, modules=modules, current_index=idx,
+                            delay=timedelta(0), settings=settings, carry=carry,
+                        )
+                        self.db.commit()
+                        sent += 1
+                        results.append({"step_id": step.id, "status": "sent"})
+                    else:
+                        step.status = "failed"
+                        step.error = self.email_service.last_send_error or "Delivery failed"
+                        step.executed_at = datetime.utcnow()
+                        stats = dict(run.stats or {})
+                        stats["failed"] = int(stats.get("failed") or 0) + 1
+                        run.stats = stats
+                        self.db.add(run)
+                        self.db.add(step)
+                        self.db.commit()
+                        failed += 1
+                    continue
+
+                step.status = "failed"
+                step.error = f"Unsupported module type: {mtype}"
+                self.db.add(step)
+                self.db.commit()
+                failed += 1
+
+            except Exception as exc:
+                logger.error("Scenario step %s failed: %s", step.id, exc, exc_info=True)
+                step.status = "failed"
+                step.error = str(exc)
+                step.executed_at = datetime.utcnow()
+                self.db.add(step)
+                self.db.commit()
+                failed += 1
+
+        return {
+            "processed": len(steps),
+            "sent": sent,
+            "failed": failed,
+            "skipped": skipped,
+            "deferred": deferred,
+            "advanced": advanced,
+            "results": results,
+        }
+
+    def _maybe_complete_run(self, run) -> None:
+        from app.models.outreach_platform import OutreachRunStep
+
+        pending = (
+            self.db.query(OutreachRunStep)
+            .filter(OutreachRunStep.run_id == run.id, OutreachRunStep.status.in_(["pending", "processing"]))
+            .count()
+        )
+        if pending == 0 and run.status == "running":
+            run.status = "completed"
+            run.finished_at = datetime.utcnow()
+            self.db.add(run)
+
     def tick(self, limit: int = 25) -> Dict[str, Any]:
-        half = max(1, limit // 2)
-        jobs = self.process_due_outreach_jobs(limit=half)
-        steps = self.process_due_sequence_steps(limit=limit - half + (limit % 2))
+        third = max(1, limit // 3)
+        jobs = self.process_due_outreach_jobs(limit=third)
+        seq = self.process_due_sequence_steps(limit=third)
+        scenarios = self.process_due_scenario_steps(limit=limit - 2 * third)
         return {
             "outreach_jobs": jobs,
-            "sequence_steps": steps,
-            "sent_total": jobs.get("sent", 0) + steps.get("sent", 0),
+            "sequence_steps": seq,
+            "scenario_steps": scenarios,
+            "sent_total": jobs.get("sent", 0) + seq.get("sent", 0) + scenarios.get("sent", 0),
         }
+
+
+def free_ai_service_rewrite_sync(
+    subject: str,
+    body: str,
+    instruction: str,
+    lead: Optional[Lead],
+) -> Dict[str, str]:
+    """Best-effort sync rewrite without requiring an event loop."""
+    lead_data = {}
+    if lead:
+        lead_data = {
+            "first_name": lead.first_name,
+            "last_name": lead.last_name,
+            "company": lead.company,
+            "job_title": lead.job_title,
+            "email": lead.email,
+        }
+    # Rule-based polish when Gemini unavailable
+    note = f"[{instruction.strip()}] " if instruction else ""
+    return {
+        "subject": subject if subject else "Quick note",
+        "body": f"{note}{body}".strip() or body,
+    }

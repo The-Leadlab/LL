@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Loader2, Mail, Search, Send, Users } from 'lucide-react';
+import { Eye, Loader2, Mail, Search, Send, Sparkles, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,6 +21,7 @@ import { extractEmailErrorMessage } from '@/lib/emailError';
 import { clientsAPI, type Client } from '@/services/api/clients';
 import { leadsAPI, type Lead } from '@/services/api/leads';
 import emailAPI from '@/services/emailAPI';
+import { outreachAPI } from '@/services/api/outreach';
 
 const MERGE_HINT = '{{first_name}}, {{last_name}}, {{full_name}}, {{company}}, {{email}}, {{job_title}}';
 const BATCH_SIZE = 25;
@@ -87,6 +88,8 @@ export function ColdOutreachPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [lastBatchId, setLastBatchId] = useState<string | null>(null);
+  const [rewriteInstruction, setRewriteInstruction] = useState('Make this more concise and personal.');
+  const [templateId, setTemplateId] = useState<string>('');
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['email-accounts'],
@@ -117,6 +120,11 @@ export function ColdOutreachPage() {
     queryFn: () => fetchAllLeads(parsedClientId),
   });
 
+  const { data: templates = [] } = useQuery({
+    queryKey: ['outreach-templates'],
+    queryFn: outreachAPI.listTemplates,
+  });
+
   const visibleLeads = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return leads;
@@ -143,6 +151,49 @@ export function ColdOutreachPage() {
   const previewLead = selectedLeads[0] || visibleLeads[0] || leads[0];
   const previewSubject = previewLead ? applyTokens(subject, previewLead, false) : subject;
   const previewBody = previewLead ? applyTokens(body, previewLead, format === 'html') : body;
+
+  const applyTemplate = (id: string) => {
+    setTemplateId(id);
+    if (!id || id === 'none') return;
+    const tpl = templates.find((t) => String(t.id) === id);
+    if (!tpl) return;
+    setSubject(tpl.subject);
+    setBody(tpl.body);
+    setFormat((tpl.format as 'text' | 'html') || 'text');
+    toast({ title: 'Template loaded', description: tpl.name });
+  };
+
+  const rewriteMutation = useMutation({
+    mutationFn: () => {
+      const lead = previewLead
+        ? {
+            first_name: previewLead.first_name,
+            last_name: previewLead.last_name,
+            company: previewLead.company,
+            email: previewLead.email,
+            job_title: previewLead.job_title,
+          }
+        : undefined;
+      return outreachAPI.rewrite({
+        subject: subject.trim(),
+        body,
+        instruction: rewriteInstruction.trim(),
+        lead,
+      });
+    },
+    onSuccess: (result) => {
+      if (result.subject) setSubject(result.subject);
+      if (result.body) setBody(result.body);
+      toast({ title: 'AI rewrite applied', description: 'Review the updated subject and body before sending.' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Rewrite failed',
+        description: extractEmailErrorMessage(error),
+        variant: 'destructive',
+      });
+    },
+  });
 
   const toggleLead = (id: number, checked: boolean) => {
     setSelectedIds((prev) => {
@@ -416,6 +467,23 @@ export function ColdOutreachPage() {
             </div>
 
             <div>
+              <Label>Load template (optional)</Label>
+              <Select value={templateId || 'none'} onValueChange={applyTemplate}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {templates.map((tpl) => (
+                    <SelectItem key={tpl.id} value={String(tpl.id)}>
+                      {tpl.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <Label>Subject</Label>
               <Input
                 value={subject}
@@ -450,6 +518,15 @@ export function ColdOutreachPage() {
                 }
               />
               <p className="mt-1 text-xs text-gray-500">Personalize with {MERGE_HINT}</p>
+            </div>
+
+            <div>
+              <Label>AI rewrite instruction</Label>
+              <Input
+                value={rewriteInstruction}
+                onChange={(event) => setRewriteInstruction(event.target.value)}
+                placeholder="Make this shorter and friendlier"
+              />
             </div>
 
             <div>
@@ -550,6 +627,19 @@ export function ColdOutreachPage() {
               <Button
                 type="button"
                 variant="outline"
+                disabled={!canPreview || rewriteMutation.isPending}
+                onClick={() => rewriteMutation.mutate()}
+              >
+                {rewriteMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                Rewrite with AI
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
                 disabled={!canPreview}
                 onClick={() => setPreviewOpen(true)}
               >
@@ -576,6 +666,9 @@ export function ColdOutreachPage() {
               </Button>
               <Button type="button" variant="outline" onClick={() => navigate('/email-sequences')}>
                 Open Sequences
+              </Button>
+              <Button type="button" variant="outline" onClick={() => navigate('/emails/scenarios')}>
+                Scenarios
               </Button>
             </div>
           </CardContent>

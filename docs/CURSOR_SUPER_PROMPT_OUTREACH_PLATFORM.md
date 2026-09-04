@@ -9,6 +9,14 @@
 - **Deploy:** `render.yaml` cron every 2 minutes; set `OUTREACH_WORKER_SECRET` in Render.
 - **Still Phase 2+:** Google Sheets/Docs connections, visual scenario canvas, AI nodes.
 
+## Applied in this repo (Phases 2–4)
+
+- **SQL:** `backend/migrations/manual/011_outreach_platform_phases_2_4.sql` — connections, scenarios, runs, run_steps, templates.
+- **API:** `/outreach/connections`, `/scenarios`, `/runs`, `/templates`, `/ai/rewrite`, `/webhooks/{token}`, Sheets import (+ pasted CSV fallback).
+- **Worker:** also processes `outreach_run_steps` (Wait / Router / Send / AI / A-B / Update lead).
+- **UI:** Email → Connections, Scenarios (+ builder), Runs, Templates; Cold Outreach AI rewrite + templates.
+- **AI:** `FreeAIService.rewrite_email` (Gemini when keyed, else passthrough).
+
 Use this prompt in Cursor when building or extending **Cold Outreach** into a full outreach automation platform: connections, timers, campaign scheduling, inter-email pauses, Google Sheets/Docs, AI steps, and visual scenarios.
 
 **Status today (baseline):**

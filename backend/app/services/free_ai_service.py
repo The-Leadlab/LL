@@ -247,5 +247,62 @@ class FreeAIService:
         primary = disc_profile[0] if disc_profile else "D"
         return approach_map.get(primary, "Professional approach with clear value proposition.")
 
+    async def rewrite_email(
+        self,
+        *,
+        subject: str,
+        body: str,
+        instruction: str,
+        lead_data: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Rewrite outreach email subject/body. Falls back to lightly annotated original."""
+        lead_data = lead_data or {}
+        prompt = (
+            f"Rewrite this cold outreach email.\n"
+            f"Instruction: {instruction}\n"
+            f"Lead context: {json.dumps(lead_data)[:800]}\n"
+            f"Current subject: {subject}\n"
+            f"Current body:\n{body}\n\n"
+            'Respond ONLY with JSON: {"subject": "...", "body": "..."}\n'
+            "Keep merge tokens like {{first_name}} unchanged.\n"
+        )
+        try:
+            if self.gemini_api_key:
+                url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+                headers = {"Content-Type": "application/json", "x-goog-api-key": self.gemini_api_key}
+                payload = {
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"temperature": 0.4, "maxOutputTokens": 1200},
+                }
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    response = await client.post(url, headers=headers, json=payload)
+                if response.status_code == 200:
+                    data = response.json()
+                    text = (
+                        data.get("candidates", [{}])[0]
+                        .get("content", {})
+                        .get("parts", [{}])[0]
+                        .get("text", "")
+                    )
+                    start = text.find("{")
+                    end = text.rfind("}") + 1
+                    if start >= 0 and end > start:
+                        parsed = json.loads(text[start:end])
+                        return {
+                            "subject": str(parsed.get("subject") or subject),
+                            "body": str(parsed.get("body") or body),
+                            "provider": "gemini",
+                        }
+        except Exception as e:
+            logger.warning("AI rewrite failed: %s", e)
+
+        return {
+            "subject": subject,
+            "body": (f"({instruction.strip()})\n\n{body}" if instruction else body),
+            "provider": "passthrough",
+        }
+
+
 # Global instance
-free_ai_service = FreeAIService() 
+free_ai_service = FreeAIService()
+ 

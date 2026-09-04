@@ -48,6 +48,13 @@ from .territory import Territory, TerritoryMember, TerritoryRule, TerritoryAssig
 from .cpq import Product, Quote, QuoteItem, PricingRule
 from .email_sequence import EmailSequence, SequenceEnrollment, SequenceStep
 from .outreach_job import OutreachJob
+from .outreach_platform import (
+    OutreachConnection,
+    OutreachScenario,
+    OutreachRun,
+    OutreachRunStep,
+    OutreachTemplate,
+)
 from .workflow import Workflow, WorkflowExecution, WorkflowActionExecution, ApprovalProcess, ApprovalRequest, ApprovalStep, WorkflowTriggerType, WorkflowStatus, WorkflowExecutionStatus, ActionType
 from .conversation import CallRecording, ConversationInsight
 from .forecast import ForecastPeriod, Forecast, ForecastItem, ForecastHistory, ForecastRollup, ForecastComment, ForecastCategory, ForecastPeriodType, ForecastStatus
@@ -119,6 +126,11 @@ __all__ = [
     "PricingRule",
     "EmailSequence",
     "OutreachJob",
+    "OutreachConnection",
+    "OutreachScenario",
+    "OutreachRun",
+    "OutreachRunStep",
+    "OutreachTemplate",
     "SequenceEnrollment",
     "SequenceStep",
     "Workflow",

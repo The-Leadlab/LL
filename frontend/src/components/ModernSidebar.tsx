@@ -34,7 +34,11 @@ import {
   TrendingUp,
   Phone,
   Bell,
-  Send
+  Send,
+  Link2,
+  GitBranch,
+  PlayCircle,
+  FileStack,
 } from 'lucide-react';
 import { featureFlags } from '@/config/featureFlags';
 
@@ -77,6 +81,18 @@ const navigation: NavItem[] = [
           { name: 'Cold Outreach', icon: Send, path: '/emails/outreach' },
           ...(featureFlags.navigation.showEmailSequences
             ? [{ name: 'Sequences', icon: Zap, path: '/email-sequences' }]
+            : []),
+          ...(featureFlags.navigation.showOutreachConnections
+            ? [{ name: 'Connections', icon: Link2, path: '/emails/connections' }]
+            : []),
+          ...(featureFlags.navigation.showOutreachScenarios
+            ? [{ name: 'Scenarios', icon: GitBranch, path: '/emails/scenarios' }]
+            : []),
+          ...(featureFlags.navigation.showOutreachRuns
+            ? [{ name: 'Runs', icon: PlayCircle, path: '/emails/runs' }]
+            : []),
+          ...(featureFlags.navigation.showOutreachTemplates
+            ? [{ name: 'Templates', icon: FileStack, path: '/emails/templates' }]
             : []),
         ],
       } as NavItem]
