@@ -205,7 +205,7 @@ export function ColdOutreachPage() {
   const [sendWindowStart, setSendWindowStart] = useState('');
   const [sendWindowEnd, setSendWindowEnd] = useState('');
   const [maxPerHour, setMaxPerHour] = useState('60');
-  const [useQueue, setUseQueue] = useState(false);
+  const [useQueue, setUseQueue] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [lastBatchId, setLastBatchId] = useState<string | null>(null);

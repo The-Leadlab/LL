@@ -770,6 +770,19 @@ async def send_cold_outreach(
         if outreach.delay_seconds and index < len(outreach.lead_ids) - 1:
             await asyncio.sleep(min(float(outreach.delay_seconds), 10.0))
 
+    # Immediate sends must still appear under Runs (campaign batch history).
+    runner = OutreachRunner(db)
+    recorded = runner.record_completed_outreach_batch(
+        organization_id=current_user.organization_id,
+        user_id=current_user.id,
+        account_id=account.id,
+        subject=outreach.subject,
+        body=outreach.body,
+        format=outreach.format,
+        settings=settings_snapshot,
+        results=results,
+    )
+
     return {
         "mode": "immediate",
         "sent": sent,
@@ -777,6 +790,7 @@ async def send_cold_outreach(
         "skipped": skipped,
         "queued": 0,
         "total": len(outreach.lead_ids),
+        "batch_id": recorded.get("batch_id"),
         "campaign_id": campaign.id,
         "campaign_name": campaign.name,
         "results": results,

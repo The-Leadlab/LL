@@ -163,11 +163,29 @@ class OutreachRunner:
             campaign_id = (settings or {}).get("campaign_id")
             if ok and (settings or {}).get("skip_if_sent", True) and lead_already_sent_for_campaign(lead, campaign_id):
                 ok, reason = False, "Already sent in this campaign"
+            scheduled = start + timedelta(seconds=delay * index)
             if not ok:
                 skipped += 1
+                key = make_idempotency_key("outreach-skip", batch_id, lead_id, subject[:40])
+                job = OutreachJob(
+                    organization_id=organization_id,
+                    user_id=user_id,
+                    account_id=account_id,
+                    lead_id=lead_id,
+                    batch_id=batch_id,
+                    subject=subject,
+                    body=body,
+                    format=(format or "text").lower(),
+                    scheduled_at=scheduled,
+                    status="skipped",
+                    last_error=reason,
+                    idempotency_key=key,
+                    settings=settings or {},
+                )
+                self.db.add(job)
+                jobs.append(job)
                 continue
 
-            scheduled = start + timedelta(seconds=delay * index)
             scheduled = next_send_slot(scheduled, settings)
             key = make_idempotency_key("outreach", batch_id, lead_id, subject[:40])
             job = OutreachJob(
@@ -193,9 +211,58 @@ class OutreachRunner:
             "queued": created,
             "skipped": skipped,
             "batch_id": batch_id,
-            "first_scheduled_at": jobs[0].scheduled_at.isoformat() if jobs else None,
+            "first_scheduled_at": next((j.scheduled_at.isoformat() for j in jobs if j.status == "pending"), None),
             "job_ids": [j.id for j in jobs],
         }
+
+    def record_completed_outreach_batch(
+        self,
+        *,
+        organization_id: int,
+        user_id: int,
+        account_id: int,
+        subject: str,
+        body: str,
+        format: str = "text",
+        settings: Optional[Dict[str, Any]] = None,
+        results: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """Persist immediate-send outcomes so Runs history stays in sync."""
+        batch_id = uuid.uuid4().hex
+        now = datetime.utcnow()
+        job_ids: List[int] = []
+
+        for result in results:
+            lead_id = result.get("lead_id")
+            if lead_id is None:
+                continue
+            status = str(result.get("status") or "failed").lower()
+            if status not in {"sent", "failed", "skipped"}:
+                status = "failed"
+            key = make_idempotency_key("outreach-immediate", batch_id, lead_id, subject[:40], status)
+            job = OutreachJob(
+                organization_id=organization_id,
+                user_id=user_id,
+                account_id=account_id,
+                lead_id=int(lead_id),
+                batch_id=batch_id,
+                subject=subject,
+                body=body,
+                format=(format or "text").lower(),
+                scheduled_at=now,
+                status=status,
+                attempts=1 if status != "skipped" else 0,
+                last_error=(result.get("reason") if status != "sent" else None),
+                idempotency_key=key,
+                settings=settings or {},
+                sent_at=now if status == "sent" else None,
+            )
+            self.db.add(job)
+            self.db.flush()
+            job_ids.append(job.id)
+
+        self.db.commit()
+        return {"batch_id": batch_id, "recorded": len(job_ids), "job_ids": job_ids}
 
     def process_due_outreach_jobs(self, limit: int = 25) -> Dict[str, Any]:
         now = datetime.utcnow()
