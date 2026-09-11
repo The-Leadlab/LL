@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, FileSpreadsheet, Loader2, Mail, Search, Send, Sparkles, Upload, Users } from 'lucide-react';
@@ -119,6 +119,36 @@ function applyTokens(template: string, lead: Lead, asHtml: boolean): string {
   });
 }
 
+function looksLikeHtml(value: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test((value || '').trim());
+}
+
+function wrapHtmlPreviewDocument(html: string): string {
+  const trimmed = (html || '').trim();
+  if (!trimmed) {
+    return '<!DOCTYPE html><html><body><p style="color:#666">(empty message)</p></body></html>';
+  }
+  if (/<html[\s>]/i.test(trimmed)) return trimmed;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><base target="_blank"><style>
+body{margin:16px;font-family:Georgia,serif;color:#111;line-height:1.5;background:#fff}
+img{max-width:100%;height:auto}
+a{color:#0b57d0}
+</style></head><body>${trimmed}</body></html>`;
+}
+
+function leadPersonalityLabel(lead: Lead): string {
+  const psycho = lead.psychometrics || {};
+  const raw =
+    psycho.personality_type ||
+    psycho.personality ||
+    psycho.type ||
+    psycho.disc ||
+    psycho.profile ||
+    lead.wpi ||
+    '';
+  return String(raw || '').trim();
+}
+
 async function fetchAllLeads(clientId?: number): Promise<Lead[]> {
   const collected: Lead[] = [];
   let skip = 0;
@@ -150,7 +180,8 @@ export function ColdOutreachPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [format, setFormat] = useState<'text' | 'html'>('text');
+  const [format, setFormat] = useState<'text' | 'html'>('html');
+  const bodyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [delayMinutes, setDelayMinutes] = useState('1');
   const [emailsPerMinute, setEmailsPerMinute] = useState('1');
   const [scheduleAt, setScheduleAt] = useState('');
@@ -170,6 +201,7 @@ export function ColdOutreachPage() {
   const [sheetRange, setSheetRange] = useState('Sheet1!A1:Z500');
   const [sheetTab, setSheetTab] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ready' | 'all' | 'sent'>('ready');
+  const [personalityFilter, setPersonalityFilter] = useState<string>('all');
   const [skipIfSent, setSkipIfSent] = useState(true);
   const [connectingGoogle, setConnectingGoogle] = useState(false);
   const [importPreview, setImportPreview] = useState<LeadImportPreview | null>(null);
@@ -278,11 +310,21 @@ export function ColdOutreachPage() {
     setSheetRange(`${quoteSheetTitle(sheetTab)}!A1:Z500`);
   }, [sheetTab]);
 
+  const personalityOptions = useMemo(() => {
+    const values = new Set<string>();
+    for (const lead of leads) {
+      const label = leadPersonalityLabel(lead);
+      if (label) values.add(label);
+    }
+    return Array.from(values).sort((a, b) => a.localeCompare(b));
+  }, [leads]);
+
   const visibleLeads = useMemo(() => {
     const q = search.trim().toLowerCase();
     return leads.filter((lead) => {
       if (statusFilter === 'sent' && !isSheetSent(lead)) return false;
       if (statusFilter === 'ready' && isSheetSent(lead)) return false;
+      if (personalityFilter !== 'all' && leadPersonalityLabel(lead) !== personalityFilter) return false;
       if (!q) return true;
       const hay = [
         lead.first_name,
@@ -293,13 +335,14 @@ export function ColdOutreachPage() {
         lead.client_name,
         lead.unique_lead_id,
         sheetStatus(lead),
+        leadPersonalityLabel(lead),
       ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [leads, search, statusFilter]);
+  }, [leads, search, statusFilter, personalityFilter]);
 
   const readyLeadCount = leads.filter((lead) => Boolean(lead.email) && !isSheetSent(lead)).length;
   const sentLeadCount = leads.filter((lead) => isSheetSent(lead)).length;
@@ -309,8 +352,10 @@ export function ColdOutreachPage() {
     [leads, selectedIds],
   );
   const previewLead = selectedLeads[0] || visibleLeads[0] || leads[0];
+  const previewAsHtml = format === 'html' || looksLikeHtml(body);
   const previewSubject = previewLead ? applyTokens(subject, previewLead, false) : subject;
-  const previewBody = previewLead ? applyTokens(body, previewLead, format === 'html') : body;
+  const previewBody = previewLead ? applyTokens(body, previewLead, previewAsHtml) : body;
+  const previewHtmlDocument = wrapHtmlPreviewDocument(previewBody);
 
   const applyTemplate = (id: string) => {
     setTemplateId(id);
@@ -499,10 +544,24 @@ export function ColdOutreachPage() {
   };
 
   const insertMergeToken = (token: string) => {
-    setBody((prev) => {
-      if (!prev) return `{{${token}}}`;
-      const spacer = prev.endsWith(' ') || prev.endsWith('\n') ? '' : ' ';
-      return `${prev}${spacer}{{${token}}}`;
+    const insert = `{{${token}}}`;
+    const el = bodyTextareaRef.current;
+    if (!el) {
+      setBody((prev) => {
+        if (!prev) return insert;
+        const spacer = prev.endsWith(' ') || prev.endsWith('\n') ? '' : ' ';
+        return `${prev}${spacer}${insert}`;
+      });
+      return;
+    }
+    const start = el.selectionStart ?? body.length;
+    const end = el.selectionEnd ?? start;
+    const next = `${body.slice(0, start)}${insert}${body.slice(end)}`;
+    setBody(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const caret = start + insert.length;
+      el.setSelectionRange(caret, caret);
     });
   };
 
@@ -869,6 +928,22 @@ export function ColdOutreachPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="min-w-[180px]">
+                <Label>Personality</Label>
+                <Select value={personalityFilter} onValueChange={setPersonalityFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All personalities" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All personalities</SelectItem>
+                    {personalityOptions.map((label) => (
+                      <SelectItem key={label} value={label}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button type="button" variant="outline" size="sm" onClick={selectVisibleWithEmail}>
                 Select visible with email
               </Button>
@@ -1045,6 +1120,7 @@ export function ColdOutreachPage() {
             <div>
               <Label>{format === 'html' ? 'HTML body' : 'Message'}</Label>
               <Textarea
+                ref={bodyTextareaRef}
                 className="min-h-[220px] font-mono text-sm"
                 value={body}
                 onChange={(event) => setBody(event.target.value)}
@@ -1054,7 +1130,9 @@ export function ColdOutreachPage() {
                     : 'Hi {{first_name}},\n\nI wanted to reach out…'
                 }
               />
-              <p className="mt-1 text-xs text-gray-500">Personalize with merge fields from the table.</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Click a merge field to insert it at the cursor. HTML mode is recommended for logos and styled emails.
+              </p>
               <div className="mt-2 flex flex-wrap gap-1">
                 {MERGE_FIELDS.map((field) => (
                   <Button
@@ -1376,18 +1454,23 @@ export function ColdOutreachPage() {
               <div className="text-xs uppercase text-gray-500">Subject</div>
               <div className="font-medium">{previewSubject || '(empty subject)'}</div>
             </div>
-            {format === 'html' ? (
+            {previewAsHtml ? (
               <iframe
                 title="HTML preview"
-                sandbox=""
-                className="h-80 w-full rounded-md border bg-white"
-                srcDoc={previewBody}
+                sandbox="allow-popups allow-popups-to-escape-sandbox"
+                className="h-[28rem] w-full rounded-md border bg-white"
+                srcDoc={previewHtmlDocument}
               />
             ) : (
               <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md border bg-slate-50 p-3 text-sm">
                 {previewBody || '(empty message)'}
               </pre>
             )}
+            {previewAsHtml && format !== 'html' ? (
+              <p className="text-xs text-amber-700">
+                Showing a visual HTML preview because the body looks like HTML. Switch Format to HTML before sending.
+              </p>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>

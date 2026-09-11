@@ -102,6 +102,8 @@ async def startup_sequence_guard() -> None:
                 "ALTER TABLE leads ADD COLUMN IF NOT EXISTS do_not_email BOOLEAN NOT NULL DEFAULT FALSE",
                 "ALTER TABLE leads ADD COLUMN IF NOT EXISTS email_bounced BOOLEAN NOT NULL DEFAULT FALSE",
                 "ALTER TABLE leads ADD COLUMN IF NOT EXISTS outreach_meta JSONB",
+                # Empty JSON strings (\"\") break LeadListResponse; coerce to NULL on boot.
+                "UPDATE leads SET outreach_meta = NULL WHERE outreach_meta IS NOT NULL AND jsonb_typeof(outreach_meta) = 'string'",
             ]
             for stmt in alter_stmts:
                 try:

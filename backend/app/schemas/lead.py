@@ -52,24 +52,30 @@ class LeadBase(BaseModel):
     sales_intelligence: Optional[Dict[str, Any]] = None
     outreach_meta: Optional[Dict[str, Any]] = None
 
-    @field_validator('psychometrics', mode='before')
-    @classmethod
-    def validate_psychometrics(cls, v):
-        """Ensure psychometrics is always a dict, not a string"""
+    @staticmethod
+    def _coerce_json_object(v: Any) -> Dict[str, Any]:
+        """DB/JSON columns sometimes store '' instead of null/{} — never 500 the list API."""
         import json
+
         if v is None:
             return {}
         if isinstance(v, dict):
             return v
         if isinstance(v, str):
-            if v == '' or v == '{}':
+            raw = v.strip()
+            if not raw or raw in {"{}", "null", "None"}:
                 return {}
             try:
-                parsed = json.loads(v)
+                parsed = json.loads(raw)
                 return parsed if isinstance(parsed, dict) else {}
-            except (json.JSONDecodeError, ValueError):
+            except (json.JSONDecodeError, ValueError, TypeError):
                 return {}
         return {}
+
+    @field_validator('psychometrics', 'sales_intelligence', 'outreach_meta', mode='before')
+    @classmethod
+    def validate_json_object_fields(cls, v):
+        return cls._coerce_json_object(v)
 
     model_config = ConfigDict(from_attributes=True)
 
