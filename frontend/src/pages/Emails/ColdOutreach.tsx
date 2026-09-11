@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, FileSpreadsheet, Loader2, Mail, Search, Send, Sparkles, Upload, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -15,16 +15,39 @@ import {
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/hooks/use-toast';
 import { extractEmailErrorMessage } from '@/lib/emailError';
 import { clientsAPI, type Client } from '@/services/api/clients';
 import { leadsAPI, type Lead } from '@/services/api/leads';
 import emailAPI from '@/services/emailAPI';
-import { outreachAPI } from '@/services/api/outreach';
+import { outreachAPI, type LeadImportPreview } from '@/services/api/outreach';
 
-const MERGE_HINT = '{{first_name}}, {{last_name}}, {{full_name}}, {{company}}, {{email}}, {{job_title}}';
+const MERGE_FIELDS = [
+  { token: 'first_name', label: 'First name' },
+  { token: 'last_name', label: 'Last name' },
+  { token: 'full_name', label: 'Full name' },
+  { token: 'email', label: 'Email' },
+  { token: 'company', label: 'Company' },
+  { token: 'job_title', label: 'Job title' },
+  { token: 'id', label: 'Lead ID' },
+  { token: 'unique_lead_id', label: 'Sheet / external ID' },
+] as const;
+
 const BATCH_SIZE = 25;
+const IMPORT_FIELD_OPTIONS = [
+  { value: 'skip', label: 'Ignore this column' },
+  { value: 'email', label: 'Email' },
+  { value: 'first_name', label: 'First name' },
+  { value: 'last_name', label: 'Last name' },
+  { value: 'full_name', label: 'Full name' },
+  { value: 'company', label: 'Company' },
+  { value: 'job_title', label: 'Job title' },
+  { value: 'unique_lead_id', label: 'Sheet / external ID' },
+  { value: 'telephone', label: 'Phone' },
+  { value: 'linkedin', label: 'LinkedIn' },
+];
 
 function applyTokens(template: string, lead: Lead, asHtml: boolean): string {
   const first = (lead.first_name || '').trim();
@@ -36,6 +59,8 @@ function applyTokens(template: string, lead: Lead, asHtml: boolean): string {
     company: (lead.company || '').trim(),
     email: (lead.email || '').trim(),
     job_title: (lead.job_title || '').trim(),
+    id: String(lead.id),
+    unique_lead_id: (lead.unique_lead_id || '').trim(),
   };
   return (template || '').replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, key: string) => {
     const value = tokens[key.toLowerCase()] || '';
@@ -70,6 +95,8 @@ async function fetchAllLeads(clientId?: number): Promise<Lead[]> {
 
 export function ColdOutreachPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [accountId, setAccountId] = useState<string>('');
   const [clientId, setClientId] = useState<string>('all');
@@ -91,6 +118,18 @@ export function ColdOutreachPage() {
   const [rewriteInstruction, setRewriteInstruction] = useState('Make this more concise and personal.');
   const [templateId, setTemplateId] = useState<string>('');
   const [pasteEmails, setPasteEmails] = useState('');
+  const [sheetChoice, setSheetChoice] = useState('');
+  const [sheetUrl, setSheetUrl] = useState('');
+  const [sheetRange, setSheetRange] = useState('Sheet1!A1:Z500');
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const [importPreview, setImportPreview] = useState<LeadImportPreview | null>(null);
+  const [importMapping, setImportMapping] = useState<Record<string, string>>({});
+  const [pendingImport, setPendingImport] = useState<{
+    kind: 'text' | 'sheet';
+    text?: string;
+    source?: string;
+    spreadsheet_id?: string;
+  } | null>(null);
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['email-accounts'],
@@ -102,6 +141,8 @@ export function ColdOutreachPage() {
       setAccountId(String(accounts[0].id));
     }
   }, [accounts, accountId]);
+
+  const selectedAccount = accounts.find((account) => String(account.id) === accountId);
 
   const { data: clientsData } = useQuery({
     queryKey: ['clients'],
@@ -125,6 +166,36 @@ export function ColdOutreachPage() {
     queryKey: ['outreach-templates'],
     queryFn: outreachAPI.listTemplates,
   });
+
+  const { data: googleStatus } = useQuery({
+    queryKey: ['outreach-google-status'],
+    queryFn: outreachAPI.googleStatus,
+  });
+
+  const { data: sheetsCatalog } = useQuery({
+    queryKey: ['outreach-google-spreadsheets'],
+    queryFn: outreachAPI.listSpreadsheets,
+    enabled: Boolean(googleStatus?.connected),
+  });
+  const sheetFiles = sheetsCatalog?.files || [];
+  const sheetsReady = Boolean(googleStatus?.connected && googleStatus?.has_sheets_scope);
+
+  useEffect(() => {
+    const oauth = searchParams.get('sheets_oauth') || searchParams.get('email_oauth');
+    if (!oauth) return;
+    if (oauth === 'success') {
+      toast({ title: 'Google connected', description: 'You can import a spreadsheet on this page.' });
+      queryClient.invalidateQueries({ queryKey: ['outreach-google-status'] });
+      queryClient.invalidateQueries({ queryKey: ['outreach-google-spreadsheets'] });
+    } else {
+      toast({
+        title: 'Google connection failed',
+        description: searchParams.get('reason') || 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+    setSearchParams({}, { replace: true });
+  }, [queryClient, searchParams, setSearchParams, toast]);
 
   const visibleLeads = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -213,22 +284,42 @@ export function ColdOutreachPage() {
     setSelectedIds(new Set(leads.filter((lead) => Boolean(lead.email)).map((lead) => lead.id)));
   };
 
+  const importClientId = parsedClientId;
+
+  const closeImportPreview = () => {
+    setImportPreview(null);
+    setPendingImport(null);
+    setImportMapping({});
+  };
+
+  const applyImportedLeads = async (result: {
+    imported: number;
+    skipped: number;
+    updated?: number;
+    lead_ids: number[];
+  }) => {
+    setPasteEmails('');
+    closeImportPreview();
+    await refetchLeads();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      result.lead_ids.forEach((id) => next.add(id));
+      return next;
+    });
+    const updated = result.updated || 0;
+    toast({
+      title: 'Leads ready',
+      description: `Imported ${result.imported}${updated ? `, filled names on ${updated} existing` : ''}, already in CRM ${result.skipped}. They are selected in the table.`,
+    });
+  };
+
   const importTextMutation = useMutation({
-    mutationFn: (payload: { text: string; source: string }) =>
-      outreachAPI.importLeadsFromText(payload.text, payload.source),
-    onSuccess: async (result) => {
-      setPasteEmails('');
-      await refetchLeads();
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        result.lead_ids.forEach((id) => next.add(id));
-        return next;
-      });
-      toast({
-        title: 'Leads added',
-        description: `Imported ${result.imported}, already in CRM ${result.skipped}. They are selected below.`,
-      });
-    },
+    mutationFn: (payload: { text: string; source: string; mapping?: Record<string, string> }) =>
+      outreachAPI.importLeadsFromText(payload.text, payload.source, {
+        mapping: payload.mapping,
+        client_id: importClientId,
+      }),
+    onSuccess: applyImportedLeads,
     onError: (error) => {
       toast({
         title: 'Could not add emails',
@@ -237,6 +328,98 @@ export function ColdOutreachPage() {
       });
     },
   });
+
+  const importSheetMutation = useMutation({
+    mutationFn: (payload: { spreadsheet_id: string; mapping?: Record<string, string> }) =>
+      outreachAPI.importGoogleSheet({
+        spreadsheet_id: payload.spreadsheet_id,
+        range: sheetRange.trim() || 'Sheet1!A1:Z500',
+        mapping: payload.mapping,
+        client_id: importClientId,
+      }),
+    onSuccess: applyImportedLeads,
+    onError: (error) => {
+      toast({
+        title: 'Sheet import failed',
+        description: extractEmailErrorMessage(error).description,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const previewMutation = useMutation({
+    mutationFn: (payload: { text?: string; spreadsheet_id?: string; source?: string }) =>
+      outreachAPI.previewLeads({
+        text: payload.text,
+        spreadsheet_id: payload.spreadsheet_id,
+        range: sheetRange.trim() || undefined,
+      }),
+    onSuccess: (preview, variables) => {
+      setImportPreview(preview);
+      setImportMapping({ ...preview.mapping });
+      setPendingImport(
+        variables.spreadsheet_id
+          ? { kind: 'sheet', spreadsheet_id: variables.spreadsheet_id }
+          : { kind: 'text', text: variables.text, source: variables.source || 'outreach_paste' },
+      );
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not read columns',
+        description: extractEmailErrorMessage(error).description,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const openPreviewFromText = (text: string, source: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    previewMutation.mutate({ text: trimmed, source });
+  };
+
+  const connectGoogle = async () => {
+    setConnectingGoogle(true);
+    try {
+      const result = await emailAPI.initGoogleOAuth('/emails/outreach');
+      window.location.href = result.authorization_url;
+    } catch (error) {
+      setConnectingGoogle(false);
+      toast({
+        title: 'Could not start Google sign-in',
+        description: extractEmailErrorMessage(error).description,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const selectedSheetId = sheetUrl.trim() || sheetChoice || googleStatus?.spreadsheet_id || '';
+
+  const insertMergeToken = (token: string) => {
+    setBody((prev) => {
+      if (!prev) return `{{${token}}}`;
+      const spacer = prev.endsWith(' ') || prev.endsWith('\n') ? '' : ' ';
+      return `${prev}${spacer}{{${token}}}`;
+    });
+  };
+
+  const confirmImportPreview = () => {
+    if (!pendingImport) return;
+    const mapping = Object.fromEntries(
+      Object.entries(importMapping).filter(([, field]) => field && field !== 'skip'),
+    );
+    if (pendingImport.kind === 'sheet' && pendingImport.spreadsheet_id) {
+      importSheetMutation.mutate({ spreadsheet_id: pendingImport.spreadsheet_id, mapping });
+      return;
+    }
+    if (pendingImport.text) {
+      importTextMutation.mutate({
+        text: pendingImport.text,
+        source: pendingImport.source || 'outreach_paste',
+        mapping,
+      });
+    }
+  };
 
   const onCsvFile = (file?: File | null) => {
     if (!file) return;
@@ -247,7 +430,7 @@ export function ColdOutreachPage() {
         toast({ title: 'Empty file', variant: 'destructive' });
         return;
       }
-      importTextMutation.mutate({ text, source: 'csv_upload' });
+      openPreviewFromText(text, 'csv_upload');
     };
     reader.readAsText(file);
   };
@@ -413,31 +596,31 @@ export function ColdOutreachPage() {
             </div>
 
             <div className="space-y-2 rounded-md border border-dashed p-3">
-              <Label>Add emails or a CSV</Label>
+              <Label>Add people from CSV, paste, or Google Sheets</Label>
               <p className="text-xs text-gray-500">
-                Paste addresses (one per line) or upload a CSV with an email column. They are saved as CRM leads and
-                selected here.
+                Include first name, last name, email, company, and an ID column if you have one. We detect those
+                headers the same way a spreadsheet import would, then you can write Hi {'{{first_name}}'}.
               </p>
               <Textarea
                 value={pasteEmails}
                 onChange={(event) => setPasteEmails(event.target.value)}
-                placeholder={'ada@example.com\nbob@example.com'}
-                className="min-h-[88px] font-mono text-xs"
+                placeholder={'email,first_name,last_name,company\nada@example.com,Ada,Lovelace,Analytical\n\nAli Attia <ali@the-leadlab.com>'}
+                className="min-h-[96px] font-mono text-xs"
               />
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled={!pasteEmails.trim() || importTextMutation.isPending}
-                  onClick={() => importTextMutation.mutate({ text: pasteEmails, source: 'outreach_paste' })}
+                  disabled={!pasteEmails.trim() || previewMutation.isPending || importTextMutation.isPending}
+                  onClick={() => openPreviewFromText(pasteEmails, 'outreach_paste')}
                 >
-                  {importTextMutation.isPending ? (
+                  {previewMutation.isPending ? (
                     <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                   ) : (
                     <Upload className="mr-1 h-3 w-3" />
                   )}
-                  Add pasted emails
+                  Preview pasted rows
                 </Button>
                 <label className="inline-flex cursor-pointer items-center rounded-md border px-3 py-1.5 text-sm">
                   <FileSpreadsheet className="mr-1 h-3 w-3" />
@@ -452,9 +635,60 @@ export function ColdOutreachPage() {
                     }}
                   />
                 </label>
-                <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/emails/connections')}>
-                  Import from Google Sheet
-                </Button>
+              </div>
+
+              <div className="space-y-2 border-t pt-3">
+                <Label>Google Sheet</Label>
+                {sheetsReady ? (
+                  <>
+                    {sheetFiles.length > 0 && (
+                      <Select value={sheetChoice || undefined} onValueChange={setSheetChoice}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a spreadsheet" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sheetFiles.map((file) => (
+                            <SelectItem key={file.id} value={file.id}>
+                              {file.name || file.id}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Input
+                      value={sheetUrl}
+                      onChange={(event) => setSheetUrl(event.target.value)}
+                      placeholder="Or paste a Sheets URL"
+                    />
+                    <Input
+                      value={sheetRange}
+                      onChange={(event) => setSheetRange(event.target.value)}
+                      placeholder="Sheet1!A1:Z500"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!selectedSheetId || previewMutation.isPending}
+                      onClick={() => previewMutation.mutate({ spreadsheet_id: selectedSheetId })}
+                    >
+                      {previewMutation.isPending ? (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      ) : (
+                        <FileSpreadsheet className="mr-1 h-3 w-3" />
+                      )}
+                      Preview sheet columns
+                    </Button>
+                    {sheetsCatalog?.drive_error && (
+                      <p className="text-xs text-amber-700">{sheetsCatalog.drive_error}</p>
+                    )}
+                  </>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" onClick={() => void connectGoogle()} disabled={connectingGoogle}>
+                    {connectingGoogle ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileSpreadsheet className="mr-1 h-3 w-3" />}
+                    Connect Google Sheets
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -489,7 +723,7 @@ export function ColdOutreachPage() {
               </Button>
             </div>
 
-            <div className="max-h-80 overflow-auto rounded-md border">
+            <div className="max-h-[28rem] overflow-auto rounded-md border">
               {leadsLoading ? (
                 <div className="flex items-center justify-center p-8 text-sm text-gray-500">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -498,27 +732,58 @@ export function ColdOutreachPage() {
               ) : visibleLeads.length === 0 ? (
                 <p className="p-4 text-sm text-gray-500">No leads match this filter.</p>
               ) : (
-                <ul className="divide-y">
-                  {visibleLeads.map((lead) => {
-                    const name = `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unnamed lead';
-                    const hasEmail = Boolean(lead.email);
-                    return (
-                      <li key={lead.id} className="flex items-start gap-3 px-3 py-2">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
                         <Checkbox
-                          checked={selectedIds.has(lead.id)}
-                          disabled={!hasEmail}
-                          onCheckedChange={(checked) => toggleLead(lead.id, Boolean(checked))}
+                          checked={
+                            visibleLeads.filter((lead) => lead.email).length > 0 &&
+                            visibleLeads.filter((lead) => lead.email).every((lead) => selectedIds.has(lead.id))
+                          }
+                          onCheckedChange={(checked) => {
+                            if (checked) selectVisibleWithEmail();
+                            else setSelectedIds(new Set());
+                          }}
                         />
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium">{name}</div>
-                          <div className="truncate text-xs text-gray-500">
-                            {lead.email || 'No email'} {lead.company ? `· ${lead.company}` : ''}
-                          </div>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
+                      </TableHead>
+                      <TableHead>ID</TableHead>
+                      <TableHead>First name</TableHead>
+                      <TableHead>Last name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Job title</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visibleLeads.map((lead) => {
+                      const hasEmail = Boolean(lead.email);
+                      return (
+                        <TableRow
+                          key={lead.id}
+                          className={!hasEmail ? 'opacity-50' : 'cursor-pointer'}
+                          onClick={() => hasEmail && toggleLead(lead.id, !selectedIds.has(lead.id))}
+                        >
+                          <TableCell onClick={(event) => event.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedIds.has(lead.id)}
+                              disabled={!hasEmail}
+                              onCheckedChange={(checked) => toggleLead(lead.id, Boolean(checked))}
+                            />
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-xs text-gray-500">
+                            {lead.unique_lead_id || lead.id}
+                          </TableCell>
+                          <TableCell>{lead.first_name || '—'}</TableCell>
+                          <TableCell>{lead.last_name || '—'}</TableCell>
+                          <TableCell className="max-w-[180px] truncate">{lead.email || 'No email'}</TableCell>
+                          <TableCell className="max-w-[140px] truncate">{lead.company || '—'}</TableCell>
+                          <TableCell className="max-w-[140px] truncate">{lead.job_title || '—'}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               )}
             </div>
             <p className="text-sm text-gray-600">
@@ -550,6 +815,9 @@ export function ColdOutreachPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <p className="mt-1 text-xs text-gray-500">
+                Recipients see {selectedAccount?.email || 'this mailbox'} as the sender, not the LeadLab no-reply address.
+              </p>
             </div>
 
             <div>
@@ -603,7 +871,21 @@ export function ColdOutreachPage() {
                     : 'Hi {{first_name}},\n\nI wanted to reach out…'
                 }
               />
-              <p className="mt-1 text-xs text-gray-500">Personalize with {MERGE_HINT}</p>
+              <p className="mt-1 text-xs text-gray-500">Personalize with merge fields from the table.</p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {MERGE_FIELDS.map((field) => (
+                  <Button
+                    key={field.token}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => insertMergeToken(field.token)}
+                  >
+                    {`{{${field.token}}}`}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <div>
@@ -760,6 +1042,85 @@ export function ColdOutreachPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={Boolean(importPreview)} onOpenChange={(open) => !open && closeImportPreview()}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Match columns</DialogTitle>
+            <DialogDescription>
+              We found {importPreview?.total_rows || 0} rows. Map first name, last name, email, and any ID column,
+              then import into the recipient table.
+            </DialogDescription>
+          </DialogHeader>
+          {importPreview && (
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {importPreview.headers.map((header) => (
+                  <div key={header}>
+                    <Label className="text-xs">{header}</Label>
+                    <Select
+                      value={importMapping[header] || 'skip'}
+                      onValueChange={(value) =>
+                        setImportMapping((prev) => ({ ...prev, [header]: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {IMPORT_FIELD_OPTIONS.map((option) => (
+                          <SelectItem key={`${header}-${option.value}`} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+              <div className="max-h-56 overflow-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>First name</TableHead>
+                      <TableHead>Last name</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>ID</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {importPreview.sample.map((row, index) => (
+                      <TableRow key={`${row.email || 'row'}-${index}`}>
+                        <TableCell>{row.email || '—'}</TableCell>
+                        <TableCell>{row.first_name || '—'}</TableCell>
+                        <TableCell>{row.last_name || '—'}</TableCell>
+                        <TableCell>{row.company || '—'}</TableCell>
+                        <TableCell>{row.unique_lead_id || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={closeImportPreview}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  disabled={importTextMutation.isPending || importSheetMutation.isPending}
+                  onClick={confirmImportPreview}
+                >
+                  {(importTextMutation.isPending || importSheetMutation.isPending) && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Import {importPreview.total_rows} rows
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-2xl">

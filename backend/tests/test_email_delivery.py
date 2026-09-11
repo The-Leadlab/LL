@@ -34,6 +34,9 @@ class _FakeDB:
     def commit(self):
         self.commits += 1
 
+    def rollback(self):
+        return None
+
 
 def _build_account():
     return SimpleNamespace(
@@ -81,6 +84,28 @@ def test_send_email_returns_provider_error_when_all_transports_fail(monkeypatch)
     assert service.last_send_error_code == "PROVIDER_UNAVAILABLE"
     assert service.last_send_retryable is True
     assert service.last_send_status_code == 503
+
+
+def test_send_email_google_oauth_uses_gmail_api_not_resend(monkeypatch):
+    account = _build_account()
+    account.auth_type = "oauth"
+    account.oauth_refresh_token = "refresh-token"
+    account.provider_type = "gmail"
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "api")
+    monkeypatch.setattr(service, "_send_email_gmail_api", lambda *args, **kwargs: True)
+
+    def _must_not_resend(*args, **kwargs):
+        raise AssertionError("OAuth mailbox must not send via Resend no-reply")
+
+    monkeypatch.setattr(service, "_send_email_provider_api", _must_not_resend)
+    monkeypatch.setattr(service, "_send_email_smtp", _must_not_resend)
+    monkeypatch.setattr(service, "_persist_sent_email", lambda *args, **kwargs: None)
+
+    result = service.send_email(1, ["to@example.com"], "Subject", "Text", "Html")
+    assert result["sent"] is True
+    assert result["transport"] == "gmail_api"
 
 
 def test_send_email_raises_for_missing_account(monkeypatch):

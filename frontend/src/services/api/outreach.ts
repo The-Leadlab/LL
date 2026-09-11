@@ -132,7 +132,18 @@ export interface GoogleSpreadsheetsResponse extends GoogleSheetsStatus {
 export interface LeadsFromTextResult {
   imported: number;
   skipped: number;
+  updated?: number;
   lead_ids: number[];
+}
+
+export interface LeadImportPreview {
+  headers: string[];
+  mapping: Record<string, string>;
+  unmapped: string[];
+  sample: Array<Record<string, string>>;
+  total_rows: number;
+  has_email: boolean;
+  fields?: string[];
 }
 
 export interface CreateScenarioPayload {
@@ -210,6 +221,22 @@ export const outreachAPI = {
     return response.data;
   },
 
+  previewLeads: async (data: {
+    text?: string;
+    spreadsheet_id?: string;
+    range?: string;
+    header_row?: number;
+    mapping?: Record<string, string>;
+  }): Promise<LeadImportPreview> => {
+    const response = await api.post('/outreach/leads/preview', data);
+    return response.data;
+  },
+
+  importGoogleSheet: async (data: SheetsImportPayload & { client_id?: number }): Promise<LeadsFromTextResult> => {
+    const response = await api.post('/outreach/google/sheets/import', data);
+    return response.data;
+  },
+
   googleStatus: async (): Promise<GoogleSheetsStatus> => {
     const response = await api.get('/outreach/google/status');
     return response.data;
@@ -223,8 +250,9 @@ export const outreachAPI = {
   importLeadsFromText: async (
     text: string,
     source = 'outreach_paste',
+    extra?: { mapping?: Record<string, string>; client_id?: number; header_row?: number },
   ): Promise<LeadsFromTextResult> => {
-    const response = await api.post('/outreach/leads/from-text', { text, source });
+    const response = await api.post('/outreach/leads/from-text', { text, source, ...(extra || {}) });
     return response.data;
   },
 

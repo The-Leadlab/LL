@@ -1230,6 +1230,12 @@ class EmailService:
             raise ValueError("Email account not found")
 
         try:
+            # Campaigns from a connected Google mailbox must send as that user,
+            # never via the shared no-reply/Resend address.
+            use_gmail_api = self._is_google_oauth_mailbox(account)
+            if use_gmail_api and not reply_to:
+                reply_to = account.email
+
             msg = self._build_message(
                 account=account,
                 to_emails=to_emails,
@@ -1246,7 +1252,10 @@ class EmailService:
 
             transport_used = ""
             sent = False
-            if provider_mode == "smtp":
+            if use_gmail_api:
+                sent = self._send_email_gmail_api(account, msg, to_emails, cc_emails, bcc_emails)
+                transport_used = "gmail_api"
+            elif provider_mode == "smtp":
                 sent = self._send_email_smtp(account, msg, to_emails, cc_emails, bcc_emails)
                 transport_used = "smtp"
             elif provider_mode == "api":
@@ -1324,6 +1333,83 @@ class EmailService:
         if body_html:
             msg.attach(MIMEText(body_html, 'html'))
         return msg
+
+    def _is_google_oauth_mailbox(self, account: EmailAccount) -> bool:
+        if (getattr(account, "auth_type", None) or "").lower() != "oauth":
+            return False
+        if not getattr(account, "oauth_refresh_token", None):
+            return False
+        provider = str(getattr(account, "provider_type", None) or "").lower()
+        return provider in {EmailProviderType.GMAIL.value, "gmail", "google"}
+
+    def _send_email_gmail_api(
+        self,
+        account: EmailAccount,
+        msg: MIMEMultipart,
+        to_emails: List[str],
+        cc_emails: Optional[List[str]],
+        bcc_emails: Optional[List[str]],
+    ) -> bool:
+        try:
+            access_token = self._get_google_access_token(account)
+        except ValueError as exc:
+            self._set_send_error(
+                code="GMAIL_OAUTH_REQUIRED",
+                message=(
+                    f"Could not send as {account.email}. Reconnect Google under Settings → Integrations "
+                    f"so campaigns go out from your mailbox. ({exc})"
+                ),
+                retryable=False,
+                status_code=400,
+            )
+            return False
+
+        if bcc_emails and not msg.get("Bcc"):
+            msg["Bcc"] = ", ".join(bcc_emails)
+
+        raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii")
+        try:
+            response = requests.post(
+                "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": "application/json",
+                },
+                json={"raw": raw},
+                timeout=30,
+            )
+        except requests.RequestException as exc:
+            self._set_send_error(
+                code="GMAIL_API_UNAVAILABLE",
+                message=f"Gmail send request failed: {exc}",
+                retryable=True,
+                status_code=503,
+            )
+            return False
+
+        if 200 <= response.status_code < 300:
+            return True
+
+        body_text_resp = (response.text or "")[:500]
+        if response.status_code in {401, 403}:
+            self._set_send_error(
+                code="GMAIL_SEND_DENIED",
+                message=(
+                    f"Google refused to send as {account.email}. Click Connect Google / Gmail once "
+                    f"to grant send permission, then try again. ({response.status_code}) {body_text_resp}"
+                ),
+                retryable=False,
+                status_code=400,
+            )
+            return False
+
+        self._set_send_error(
+            code="GMAIL_SEND_FAILED",
+            message=f"Gmail send failed ({response.status_code}): {body_text_resp}",
+            retryable=response.status_code >= 500,
+            status_code=503 if response.status_code >= 500 else 400,
+        )
+        return False
 
     def _send_email_smtp(
         self,
