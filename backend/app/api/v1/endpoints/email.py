@@ -196,8 +196,14 @@ def google_email_oauth_callback(
         timeout=20,
     )
     if token_response.status_code >= 400:
+        logger.error(
+            "Google token exchange failed (%s): %s",
+            token_response.status_code,
+            (token_response.text or "")[:500],
+        )
         return RedirectResponse(
-            url=_email_oauth_frontend_url(return_to, success=False, reason="token_exchange")
+            url=_email_oauth_frontend_url(return_to, success=False, reason="token_exchange"),
+            status_code=303,
         )
     token_data = token_response.json()
     access_token = token_data.get("access_token")
@@ -286,11 +292,10 @@ def google_email_oauth_callback(
             ensure_sheets_connection(db, user)
         except Exception as conn_err:
             logger.warning("Could not auto-create Sheets connection after OAuth: %s", conn_err)
-    try:
-        EmailService(db).sync_account_emails(account.id, days_back=365)
-    except Exception as sync_err:
-        logger.warning("Initial Gmail sync failed after OAuth callback: %s", sync_err)
-    return RedirectResponse(url=_email_oauth_frontend_url(return_to, success=True))
+    return RedirectResponse(
+        url=_email_oauth_frontend_url(return_to, success=True),
+        status_code=303,
+    )
 
 async def send_email_background(
     db: Session,
