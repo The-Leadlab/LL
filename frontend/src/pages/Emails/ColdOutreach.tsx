@@ -37,6 +37,22 @@ const MERGE_FIELDS = [
 
 const BATCH_SIZE = 25;
 const SENT_STATUS_VALUES = new Set(['sent', 'send', 'done', 'emailed', 'yes']);
+const MAX_MINUTES_BETWEEN_SENDS = 60;
+const MAX_EMAILS_PER_HOUR = 500;
+
+function parsePositiveNumber(value: string): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function roundPace(value: number): string {
+  return String(Math.round(value * 100) / 100);
+}
+
+function hourCapFromMinutes(minutes: number): string {
+  if (minutes <= 0) return '';
+  return String(Math.max(1, Math.min(MAX_EMAILS_PER_HOUR, Math.round(60 / minutes))));
+}
 const IMPORT_FIELD_OPTIONS = [
   { value: 'skip', label: 'Ignore this column' },
   { value: 'email', label: 'Email' },
@@ -135,12 +151,13 @@ export function ColdOutreachPage() {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [format, setFormat] = useState<'text' | 'html'>('text');
-  const [delaySeconds, setDelaySeconds] = useState('1');
+  const [delayMinutes, setDelayMinutes] = useState('1');
+  const [emailsPerMinute, setEmailsPerMinute] = useState('1');
   const [scheduleAt, setScheduleAt] = useState('');
   const [weekdaysOnly, setWeekdaysOnly] = useState(false);
   const [sendWindowStart, setSendWindowStart] = useState('');
   const [sendWindowEnd, setSendWindowEnd] = useState('');
-  const [maxPerHour, setMaxPerHour] = useState('');
+  const [maxPerHour, setMaxPerHour] = useState('60');
   const [useQueue, setUseQueue] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -526,7 +543,11 @@ export function ColdOutreachPage() {
       if (!accountId) throw new Error('Choose a sending mailbox first.');
       const ids = Array.from(selectedIds);
       if (!ids.length) throw new Error('Select at least one lead.');
-      const delay = Math.max(0, Math.min(Number(delaySeconds) || 1, 3600));
+      const minutes = Math.max(
+        0,
+        Math.min(parsePositiveNumber(delayMinutes) || 1, MAX_MINUTES_BETWEEN_SENDS),
+      );
+      const delay = Math.round(minutes * 60 * 100) / 100;
       const scheduleIso = scheduleAt ? new Date(scheduleAt).toISOString() : null;
       if (scheduleAt && Number.isNaN(Date.parse(scheduleAt))) {
         throw new Error('Invalid schedule date/time.');
@@ -1059,20 +1080,61 @@ export function ColdOutreachPage() {
               />
             </div>
 
-            <div>
-              <Label>Seconds between each send</Label>
-              <Input
-                type="number"
-                min={0}
-                max={3600}
-                step={0.5}
-                value={delaySeconds}
-                onChange={(event) => setDelaySeconds(event.target.value)}
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Long delays auto-queue so the request does not block. Worker sends one-by-one.
-              </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Minutes between each email</Label>
+                <Input
+                  type="number"
+                  min={0.1}
+                  max={MAX_MINUTES_BETWEEN_SENDS}
+                  step={0.5}
+                  value={delayMinutes}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setDelayMinutes(value);
+                    const minutes = Math.min(
+                      MAX_MINUTES_BETWEEN_SENDS,
+                      parsePositiveNumber(value),
+                    );
+                    if (!minutes) {
+                      setEmailsPerMinute('');
+                      setMaxPerHour('');
+                      return;
+                    }
+                    setEmailsPerMinute(roundPace(1 / minutes));
+                    setMaxPerHour(hourCapFromMinutes(minutes));
+                  }}
+                />
+              </div>
+              <div>
+                <Label>Emails per minute</Label>
+                <Input
+                  type="number"
+                  min={0.1}
+                  max={MAX_EMAILS_PER_HOUR / 60}
+                  step={0.1}
+                  value={emailsPerMinute}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setEmailsPerMinute(value);
+                    const rate = parsePositiveNumber(value);
+                    if (!rate) {
+                      setDelayMinutes('');
+                      setMaxPerHour('');
+                      return;
+                    }
+                    const minutes = Math.min(MAX_MINUTES_BETWEEN_SENDS, 1 / rate);
+                    setDelayMinutes(roundPace(minutes));
+                    setMaxPerHour(hourCapFromMinutes(minutes));
+                  }}
+                />
+              </div>
             </div>
+            <p className="-mt-2 text-xs text-gray-500">
+              {parsePositiveNumber(delayMinutes)
+                ? `That's about ${maxPerHour || hourCapFromMinutes(parsePositiveNumber(delayMinutes))} emails per hour. The hourly cap fills in automatically.`
+                : 'Set minutes between emails or emails per minute. The hourly cap fills in automatically.'}
+            </p>
 
             <div>
               <Label>Schedule start (optional)</Label>
@@ -1111,15 +1173,18 @@ export function ColdOutreachPage() {
             </div>
 
             <div>
-              <Label>Max emails per hour (optional)</Label>
+              <Label>Max emails per hour</Label>
               <Input
                 type="number"
                 min={1}
-                max={500}
+                max={MAX_EMAILS_PER_HOUR}
                 value={maxPerHour}
                 onChange={(event) => setMaxPerHour(event.target.value)}
-                placeholder="e.g. 30"
+                placeholder="Filled from send pace"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Auto-filled from the pace above. Lower it if you want a stricter hourly cap.
+              </p>
             </div>
 
             <div className="flex items-center gap-2">

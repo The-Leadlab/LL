@@ -114,7 +114,9 @@ def _drive_error_payload(response: requests.Response) -> Tuple[str, str]:
         str(item.get("reason") or "") for item in details if isinstance(item, dict)
     )
     blob = f"{status} {message} {reasons} {response.text or ''}".upper()
-    if "ACCESS_TOKEN_SCOPE_INSUFFICIENT" in blob or "INSUFFICIENT" in blob and "SCOPE" in blob:
+    if "ACCESS_TOKEN_SCOPE_INSUFFICIENT" in blob or (
+        "INSUFFICIENT" in blob and "SCOPE" in blob
+    ):
         return (
             "insufficient_scopes",
             "Reconnect Google Sheets to list your spreadsheets, or paste a Sheets URL below.",

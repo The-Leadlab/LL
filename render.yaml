@@ -6,7 +6,8 @@ services:
     plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn main:app -k uvicorn.workers.UvicornWorker -w 2 --bind 0.0.0.0:$PORT
+    startCommand: gunicorn main:app -k uvicorn.workers.UvicornWorker -w 1 --bind 0.0.0.0:$PORT
+    healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: ENVIRONMENT

@@ -106,3 +106,43 @@ def test_merged_oauth_scopes_exclude_calendar():
     assert "gmail.send" in scopes
     assert "spreadsheets" in scopes
     assert "auth/calendar" not in scopes
+
+
+class _FakeDriveResponse:
+    def __init__(self, payload, text=""):
+        self._payload = payload
+        self.text = text
+
+    def json(self):
+        return self._payload
+
+
+def test_drive_list_treats_disabled_api_as_optional():
+    from app.services.google_workspace import _drive_error_payload
+
+    code, message = _drive_error_payload(
+        _FakeDriveResponse(
+            {
+                "error": {
+                    "status": "PERMISSION_DENIED",
+                    "message": "Google Drive API has not been used in project Finance GCP before or it is disabled.",
+                }
+            }
+        )
+    )
+    assert code == "drive_api_disabled"
+    assert message == ""
+
+    code, message = _drive_error_payload(
+        _FakeDriveResponse(
+            {
+                "error": {
+                    "status": "PERMISSION_DENIED",
+                    "message": "ACCESS_TOKEN_SCOPE_INSUFFICIENT",
+                }
+            }
+        )
+    )
+    assert code == "insufficient_scopes"
+    assert "Reconnect" in message
+
