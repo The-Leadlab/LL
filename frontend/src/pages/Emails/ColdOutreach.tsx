@@ -182,6 +182,7 @@ export function ColdOutreachPage() {
     queryFn: () => clientsAPI.list(false),
   });
   const clients: Client[] = clientsData?.items ?? [];
+  const selectedClient = clients.find((client) => String(client.id) === clientId);
 
   const parsedClientId = clientId === 'all' ? undefined : Number(clientId);
 
@@ -396,7 +397,7 @@ export function ColdOutreachPage() {
     const alreadySent = result.already_sent || 0;
     toast({
       title: 'Leads ready',
-      description: `Imported ${result.imported}${updated ? `, filled names on ${updated} existing` : ''}, already in CRM ${result.skipped}${alreadySent ? `. Skipped ${alreadySent} already marked Sent` : ''}. Ready rows are selected.`,
+      description: `Imported ${result.imported}${updated ? `, filled names on ${updated} existing` : ''}, already in CRM ${result.skipped}${alreadySent ? `. Skipped ${alreadySent} already marked Sent` : ''}${selectedClient ? ` onto ${selectedClient.name}` : ''}. Ready rows are selected.`,
     });
   };
 
@@ -655,38 +656,11 @@ export function ColdOutreachPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label>Sync from client</Label>
-              <Select
-                value={clientId}
-                onValueChange={(value) => {
-                  setClientId(value);
-                  setSelectedIds(new Set());
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All leads" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All leads</SelectItem>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={String(client.id)}>
-                      {client.name}
-                      {typeof client.lead_count === 'number' ? ` (${client.lead_count})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="mt-1 text-xs text-gray-500">
-                Choosing a client loads that client’s leads. You can still tick or untick people below.
-              </p>
-            </div>
-
             <div className="space-y-2 rounded-md border border-dashed p-3">
               <Label>Add people from CSV, paste, or Google Sheets</Label>
               <p className="text-xs text-gray-500">
-                Include first name, last name, email, company, and an ID column if you have one. We detect those
-                headers the same way a spreadsheet import would, then you can write Hi {'{{first_name}}'}.
+                Include first name, last name, email, company, and an ID column if you have one. Imported rows are
+                saved on the client selected below.
               </p>
               <Textarea
                 value={pasteEmails}
@@ -828,11 +802,39 @@ export function ColdOutreachPage() {
                 className="pl-9"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search loaded leads"
+                placeholder={
+                  selectedClient
+                    ? `Search ${selectedClient.name} leads`
+                    : 'Search loaded leads'
+                }
               />
             </div>
 
             <div className="flex flex-wrap items-end gap-2">
+              <div className="min-w-[220px] flex-1">
+                <Label>Client / lead list</Label>
+                <Select
+                  value={clientId}
+                  onValueChange={(value) => {
+                    setClientId(value);
+                    setSelectedIds(new Set());
+                    setSearch('');
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All clients</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={String(client.id)}>
+                        {client.name}
+                        {typeof client.lead_count === 'number' ? ` (${client.lead_count})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="min-w-[160px]">
                 <Label>Status filter</Label>
                 <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'ready' | 'all' | 'sent')}>
@@ -873,7 +875,11 @@ export function ColdOutreachPage() {
                   Loading leads…
                 </div>
               ) : visibleLeads.length === 0 ? (
-                <p className="p-4 text-sm text-gray-500">No leads match this filter.</p>
+                <p className="p-4 text-sm text-gray-500">
+                  {selectedClient
+                    ? `No leads for ${selectedClient.name} match this filter. Choose another client or import a sheet onto this client.`
+                    : 'No leads match this filter.'}
+                </p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -896,6 +902,7 @@ export function ColdOutreachPage() {
                       <TableHead>Email</TableHead>
                       <TableHead>Company</TableHead>
                       <TableHead>Job title</TableHead>
+                      {clientId === 'all' && <TableHead>Client</TableHead>}
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -925,6 +932,9 @@ export function ColdOutreachPage() {
                           <TableCell className="max-w-[180px] truncate">{lead.email || 'No email'}</TableCell>
                           <TableCell className="max-w-[140px] truncate">{lead.company || '—'}</TableCell>
                           <TableCell className="max-w-[140px] truncate">{lead.job_title || '—'}</TableCell>
+                          {clientId === 'all' && (
+                            <TableCell className="max-w-[140px] truncate">{lead.client_name || '—'}</TableCell>
+                          )}
                           <TableCell>
                             <span className={sent ? 'text-emerald-700' : 'text-gray-500'}>
                               {status || 'Ready'}
@@ -938,6 +948,7 @@ export function ColdOutreachPage() {
               )}
             </div>
             <p className="text-sm text-gray-600">
+              {selectedClient ? `${selectedClient.name} · ` : 'All clients · '}
               {selectedIds.size} selected · {readyLeadCount} ready · {sentLeadCount} already Sent ·{' '}
               {leads.filter((lead) => lead.email).length} of {leads.length} loaded have an email
             </p>
