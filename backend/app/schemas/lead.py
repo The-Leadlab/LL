@@ -50,6 +50,7 @@ class LeadBase(BaseModel):
     est_wealth_experience: Optional[str] = None
     email_guidelines: Optional[str] = None
     sales_intelligence: Optional[Dict[str, Any]] = None
+    outreach_meta: Optional[Dict[str, Any]] = None
 
     @field_validator('psychometrics', mode='before')
     @classmethod

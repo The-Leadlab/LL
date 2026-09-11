@@ -33,16 +33,21 @@ from app.models.outreach_platform import (
 from app.models.user import User
 from app.services.free_ai_service import free_ai_service
 from app.services.google_workspace import (
+    account_can_write_sheets,
     account_has_sheets_scope,
     column_field_map,
+    column_index_to_letter,
     ensure_sheets_connection,
     get_user_google_access_token,
     google_oauth_account,
+    is_sent_status,
     mapped_lead_from_row,
     normalize_header_name,
     parse_pasted_lead_rows,
     parse_spreadsheet_id,
     preview_mapped_rows,
+    range_start_row,
+    sheet_title_from_range,
 )
 from app.services.outreach_runner import OutreachRunner
 
@@ -258,6 +263,7 @@ def _google_status_payload(db: Session, current_user: User) -> Dict[str, Any]:
     return {
         "connected": bool(account and account.oauth_refresh_token),
         "has_sheets_scope": account_has_sheets_scope(account),
+        "can_write_sheets": account_can_write_sheets(account),
         "email": account.email if account else None,
         "connection_id": conn.id if conn else None,
         "spreadsheet_id": (conn.config or {}).get("spreadsheet_id") if conn else None,
@@ -346,6 +352,7 @@ def _import_lead_rows(
     source: str = "google_sheets",
     commit: bool = True,
     client_id: Optional[int] = None,
+    sheet_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     if not rows:
         return {"imported": 0, "skipped": 0, "updated": 0, "lead_ids": []}
@@ -377,6 +384,18 @@ def _import_lead_rows(
     skipped = 0
     updated = 0
     created_ids: List[int] = []
+    ready_ids: List[int] = []
+    already_sent = 0
+    status_col_idx = next((idx for idx, field in col_to_field.items() if field == "status"), None)
+    status_column = column_index_to_letter(status_col_idx) if status_col_idx is not None else None
+    sheet_title = ""
+    spreadsheet_id = ""
+    start_row = 1
+    if sheet_context:
+        sheet_title = str(sheet_context.get("sheet_title") or sheet_title_from_range(str(sheet_context.get("range") or "")))
+        spreadsheet_id = parse_spreadsheet_id(str(sheet_context.get("spreadsheet_id") or ""))
+        start_row = int(sheet_context.get("start_row") or range_start_row(str(sheet_context.get("range") or "")))
+
     fill_fields = (
         "first_name",
         "last_name",
@@ -388,12 +407,24 @@ def _import_lead_rows(
         "linkedin",
         "location",
     )
-    for row in rows[header_idx + 1 :]:
+    for offset, row in enumerate(rows[header_idx + 1 :]):
         data = mapped_lead_from_row(row, col_to_field)
         email = (data.get("email") or "").strip()
         if not email or "@" not in email:
             skipped += 1
             continue
+        sheet_row_number = start_row + header_idx + 1 + offset
+        outreach_meta = None
+        if spreadsheet_id:
+            outreach_meta = {
+                "spreadsheet_id": spreadsheet_id,
+                "sheet_title": sheet_title,
+                "row": sheet_row_number,
+                "status_column": status_column,
+                "status": (data.get("status") or "").strip(),
+            }
+        elif data.get("status"):
+            outreach_meta = {"status": (data.get("status") or "").strip()}
         existing = (
             db.query(Lead)
             .filter(
@@ -413,12 +444,19 @@ def _import_lead_rows(
             if resolved_client_id and not existing.client_id:
                 existing.client_id = resolved_client_id
                 changed = True
+            if outreach_meta:
+                existing.outreach_meta = outreach_meta
+                changed = True
             if changed:
                 db.add(existing)
                 updated += 1
             else:
                 skipped += 1
             created_ids.append(existing.id)
+            if not is_sent_status((outreach_meta or {}).get("status") or ""):
+                ready_ids.append(existing.id)
+            else:
+                already_sent += 1
             continue
         lead = Lead(
             first_name=data.get("first_name") or None,
@@ -439,15 +477,27 @@ def _import_lead_rows(
             source=(source or "outreach_paste")[:100],
             is_deleted=False,
             client_id=resolved_client_id,
+            outreach_meta=outreach_meta,
         )
         db.add(lead)
         db.flush()
         created_ids.append(lead.id)
         imported += 1
+        if not is_sent_status((outreach_meta or {}).get("status") or ""):
+            ready_ids.append(lead.id)
+        else:
+            already_sent += 1
 
     if commit:
         db.commit()
-    return {"imported": imported, "skipped": skipped, "updated": updated, "lead_ids": created_ids}
+    return {
+        "imported": imported,
+        "skipped": skipped,
+        "updated": updated,
+        "lead_ids": created_ids,
+        "ready_ids": ready_ids,
+        "already_sent": already_sent,
+    }
 
 
 # ---------- worker / jobs ----------
@@ -706,6 +756,39 @@ def list_google_spreadsheets(
     return {**status_payload, "files": files, "drive_error": None}
 
 
+@router.get("/google/spreadsheets/{spreadsheet_id}/tabs")
+def list_spreadsheet_tabs(
+    spreadsheet_id: str,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Dict[str, Any]:
+    sheet_id = parse_spreadsheet_id(spreadsheet_id)
+    if not sheet_id:
+        raise HTTPException(status_code=400, detail="Provide a spreadsheet URL or ID.")
+    try:
+        token = get_user_google_access_token(db, current_user)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    try:
+        resp = requests.get(
+            f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}",
+            params={"fields": "sheets.properties(sheetId,title)"},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=20,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    if resp.status_code >= 400:
+        raise HTTPException(status_code=400, detail="Could not read worksheet tabs. Reconnect Google Sheets and try again.")
+    tabs = []
+    for item in (resp.json().get("sheets") or []):
+        props = item.get("properties") or {}
+        title = props.get("title")
+        if title:
+            tabs.append({"title": title, "sheet_id": props.get("sheetId")})
+    return {"spreadsheet_id": sheet_id, "tabs": tabs}
+
+
 @router.post("/leads/preview")
 def preview_leads_from_source(
     body: LeadRowsPreviewBody,
@@ -775,6 +858,14 @@ def import_google_sheet_direct(
         source="google_sheets",
         commit=False,
         client_id=body.client_id,
+        sheet_context={
+            "spreadsheet_id": sheet_id,
+            "range": body.range,
+            "sheet_title": sheet_title_from_range(body.range),
+            "start_row": range_start_row(body.range),
+        }
+        if sheet_id and not body.pasted_values
+        else None,
     )
     config = dict(conn.config or {})
     if sheet_id and sheet_id.lower() != "pasted":
@@ -817,6 +908,14 @@ def import_from_sheets(
         source="google_sheets" if not body.pasted_values else "outreach_paste",
         commit=False,
         client_id=body.client_id,
+        sheet_context={
+            "spreadsheet_id": sheet_id,
+            "range": body.range,
+            "sheet_title": sheet_title_from_range(body.range),
+            "start_row": range_start_row(body.range),
+        }
+        if sheet_id and not body.pasted_values
+        else None,
     )
     config = dict(conn.config or {})
     if sheet_id and sheet_id.lower() != "pasted":

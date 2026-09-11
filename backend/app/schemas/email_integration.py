@@ -115,6 +115,7 @@ class OutreachSend(BaseModel):
     send_window_end: Optional[str] = None  # "17:00"
     weekdays_only: bool = False
     max_per_hour: Optional[int] = None
+    skip_if_sent: bool = True
 
     @validator("lead_ids")
     def validate_lead_ids(cls, v):

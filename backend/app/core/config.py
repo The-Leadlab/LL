@@ -134,7 +134,7 @@ class Settings(BaseSettings):
     GOOGLE_EMAIL_REDIRECT_URI: Optional[str] = None
     GOOGLE_EMAIL_SCOPES: str = "openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send"
     GOOGLE_SHEETS_SCOPES: str = (
-        "https://www.googleapis.com/auth/spreadsheets.readonly "
+        "https://www.googleapis.com/auth/spreadsheets "
         "https://www.googleapis.com/auth/drive.metadata.readonly"
     )
     GOOGLE_AUTH_REDIRECT_URI: Optional[str] = None

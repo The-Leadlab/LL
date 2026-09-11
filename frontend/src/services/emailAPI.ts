@@ -59,6 +59,7 @@ export interface OutreachSendPayload {
   send_window_end?: string | null;
   weekdays_only?: boolean;
   max_per_hour?: number | null;
+  skip_if_sent?: boolean;
 }
 
 export interface OutreachSendResult {

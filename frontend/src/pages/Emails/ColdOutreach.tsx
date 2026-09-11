@@ -36,6 +36,7 @@ const MERGE_FIELDS = [
 ] as const;
 
 const BATCH_SIZE = 25;
+const SENT_STATUS_VALUES = new Set(['sent', 'send', 'done', 'emailed', 'yes']);
 const IMPORT_FIELD_OPTIONS = [
   { value: 'skip', label: 'Ignore this column' },
   { value: 'email', label: 'Email' },
@@ -45,9 +46,38 @@ const IMPORT_FIELD_OPTIONS = [
   { value: 'company', label: 'Company' },
   { value: 'job_title', label: 'Job title' },
   { value: 'unique_lead_id', label: 'Sheet / external ID' },
+  { value: 'status', label: 'Status (Sent / skip)' },
   { value: 'telephone', label: 'Phone' },
   { value: 'linkedin', label: 'LinkedIn' },
 ];
+
+function sheetStatus(lead: Lead): string {
+  return (lead.outreach_meta?.status || '').trim();
+}
+
+function isSheetSent(lead: Lead): boolean {
+  return SENT_STATUS_VALUES.has(sheetStatus(lead).toLowerCase());
+}
+
+function quoteSheetTitle(title: string): string {
+  const raw = (title || 'Sheet1').trim() || 'Sheet1';
+  if (/^[A-Za-z0-9_]+$/.test(raw)) return raw;
+  return `'${raw.replace(/'/g, "''")}'`;
+}
+
+function parseSpreadsheetId(value: string): string {
+  const raw = (value || '').trim();
+  const fromPath = raw.match(/\/spreadsheets\/d\/([a-zA-Z0-9\-_]+)/);
+  if (fromPath) return fromPath[1];
+  const fromQuery = raw.match(/[?&]id=([a-zA-Z0-9\-_]+)/);
+  if (fromQuery) return fromQuery[1];
+  return raw;
+}
+
+function gidFromSheetUrl(url: string): number | null {
+  const match = (url || '').match(/[?&#]gid=(\d+)/);
+  return match ? Number(match[1]) : null;
+}
 
 function applyTokens(template: string, lead: Lead, asHtml: boolean): string {
   const first = (lead.first_name || '').trim();
@@ -121,6 +151,9 @@ export function ColdOutreachPage() {
   const [sheetChoice, setSheetChoice] = useState('');
   const [sheetUrl, setSheetUrl] = useState('');
   const [sheetRange, setSheetRange] = useState('Sheet1!A1:Z500');
+  const [sheetTab, setSheetTab] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ready' | 'all' | 'sent'>('ready');
+  const [skipIfSent, setSkipIfSent] = useState(true);
   const [connectingGoogle, setConnectingGoogle] = useState(false);
   const [importPreview, setImportPreview] = useState<LeadImportPreview | null>(null);
   const [importMapping, setImportMapping] = useState<Record<string, string>>({});
@@ -179,6 +212,16 @@ export function ColdOutreachPage() {
   });
   const sheetFiles = sheetsCatalog?.files || [];
   const sheetsReady = Boolean(googleStatus?.connected && googleStatus?.has_sheets_scope);
+  const selectedSheetId = parseSpreadsheetId(
+    sheetUrl.trim() || sheetChoice || googleStatus?.spreadsheet_id || '',
+  );
+
+  const { data: sheetTabsData } = useQuery({
+    queryKey: ['outreach-google-sheet-tabs', selectedSheetId],
+    queryFn: () => outreachAPI.listSpreadsheetTabs(selectedSheetId),
+    enabled: Boolean(sheetsReady && selectedSheetId),
+  });
+  const sheetTabs = sheetTabsData?.tabs || [];
 
   useEffect(() => {
     const oauth = searchParams.get('sheets_oauth') || searchParams.get('email_oauth');
@@ -197,10 +240,32 @@ export function ColdOutreachPage() {
     setSearchParams({}, { replace: true });
   }, [queryClient, searchParams, setSearchParams, toast]);
 
+  useEffect(() => {
+    setSheetTab('');
+  }, [selectedSheetId]);
+
+  useEffect(() => {
+    if (!sheetTabs.length) return;
+    const gid = gidFromSheetUrl(sheetUrl);
+    const byGid = gid != null ? sheetTabs.find((tab) => Number(tab.sheet_id) === gid) : undefined;
+    setSheetTab((current) => {
+      if (byGid) return byGid.title;
+      if (current && sheetTabs.some((tab) => tab.title === current)) return current;
+      return sheetTabs[0].title;
+    });
+  }, [sheetTabs, sheetUrl]);
+
+  useEffect(() => {
+    if (!sheetTab) return;
+    setSheetRange(`${quoteSheetTitle(sheetTab)}!A1:Z500`);
+  }, [sheetTab]);
+
   const visibleLeads = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return leads;
     return leads.filter((lead) => {
+      if (statusFilter === 'sent' && !isSheetSent(lead)) return false;
+      if (statusFilter === 'ready' && isSheetSent(lead)) return false;
+      if (!q) return true;
       const hay = [
         lead.first_name,
         lead.last_name,
@@ -208,13 +273,18 @@ export function ColdOutreachPage() {
         lead.company,
         lead.job_title,
         lead.client_name,
+        lead.unique_lead_id,
+        sheetStatus(lead),
       ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [leads, search]);
+  }, [leads, search, statusFilter]);
+
+  const readyLeadCount = leads.filter((lead) => Boolean(lead.email) && !isSheetSent(lead)).length;
+  const sentLeadCount = leads.filter((lead) => isSheetSent(lead)).length;
 
   const selectedLeads = useMemo(
     () => leads.filter((lead) => selectedIds.has(lead.id)),
@@ -277,11 +347,23 @@ export function ColdOutreachPage() {
   };
 
   const selectVisibleWithEmail = () => {
-    setSelectedIds(new Set(visibleLeads.filter((lead) => Boolean(lead.email)).map((lead) => lead.id)));
+    setSelectedIds(
+      new Set(
+        visibleLeads
+          .filter((lead) => Boolean(lead.email) && (!skipIfSent || !isSheetSent(lead)))
+          .map((lead) => lead.id),
+      ),
+    );
   };
 
   const selectAllLoaded = () => {
-    setSelectedIds(new Set(leads.filter((lead) => Boolean(lead.email)).map((lead) => lead.id)));
+    setSelectedIds(
+      new Set(
+        leads
+          .filter((lead) => Boolean(lead.email) && (!skipIfSent || !isSheetSent(lead)))
+          .map((lead) => lead.id),
+      ),
+    );
   };
 
   const importClientId = parsedClientId;
@@ -297,19 +379,24 @@ export function ColdOutreachPage() {
     skipped: number;
     updated?: number;
     lead_ids: number[];
+    ready_ids?: number[];
+    already_sent?: number;
   }) => {
     setPasteEmails('');
     closeImportPreview();
     await refetchLeads();
+    const idsToSelect = result.ready_ids ?? result.lead_ids;
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      result.lead_ids.forEach((id) => next.add(id));
+      idsToSelect.forEach((id) => next.add(id));
       return next;
     });
+    setStatusFilter('ready');
     const updated = result.updated || 0;
+    const alreadySent = result.already_sent || 0;
     toast({
       title: 'Leads ready',
-      description: `Imported ${result.imported}${updated ? `, filled names on ${updated} existing` : ''}, already in CRM ${result.skipped}. They are selected in the table.`,
+      description: `Imported ${result.imported}${updated ? `, filled names on ${updated} existing` : ''}, already in CRM ${result.skipped}${alreadySent ? `. Skipped ${alreadySent} already marked Sent` : ''}. Ready rows are selected.`,
     });
   };
 
@@ -393,8 +480,6 @@ export function ColdOutreachPage() {
     }
   };
 
-  const selectedSheetId = sheetUrl.trim() || sheetChoice || googleStatus?.spreadsheet_id || '';
-
   const insertMergeToken = (token: string) => {
     setBody((prev) => {
       if (!prev) return `{{${token}}}`;
@@ -472,6 +557,7 @@ export function ColdOutreachPage() {
           body,
           format,
           delay_seconds: delay,
+          skip_if_sent: skipIfSent,
           ...timing,
         });
         sent += result.sent;
@@ -483,9 +569,10 @@ export function ColdOutreachPage() {
       }
       return { sent, failed, skipped, queued, total: ids.length, batchId, mode: timing.queue ? 'queued' : 'immediate' };
     },
-    onSuccess: (summary) => {
+    onSuccess: async (summary) => {
       setProgress(null);
       if (summary.batchId) setLastBatchId(summary.batchId);
+      await refetchLeads();
       if (summary.mode === 'queued' || (summary.queued || 0) > 0) {
         toast({
           title: 'Campaign queued',
@@ -641,6 +728,12 @@ export function ColdOutreachPage() {
                 <Label>Google Sheet</Label>
                 {sheetsReady ? (
                   <>
+                    {googleStatus?.connected && googleStatus?.can_write_sheets === false && (
+                      <p className="text-xs text-amber-800">
+                        Google is connected, but LeadLab cannot write Sent back into the Status column yet.
+                        Reconnect Google so outreach can skip rows that already say Sent, the same way Make.com did.
+                      </p>
+                    )}
                     {sheetFiles.length > 0 && (
                       <Select value={sheetChoice || undefined} onValueChange={setSheetChoice}>
                         <SelectTrigger>
@@ -660,25 +753,50 @@ export function ColdOutreachPage() {
                       onChange={(event) => setSheetUrl(event.target.value)}
                       placeholder="Or paste a Sheets URL"
                     />
+                    {sheetTabs.length > 0 && (
+                      <Select value={sheetTab || undefined} onValueChange={setSheetTab}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a tab" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sheetTabs.map((tab) => (
+                            <SelectItem key={`${tab.sheet_id || tab.title}`} value={tab.title}>
+                              {tab.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                     <Input
                       value={sheetRange}
                       onChange={(event) => setSheetRange(event.target.value)}
-                      placeholder="Sheet1!A1:Z500"
+                      placeholder="Cleaned - Lucas!A1:Z500"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={!selectedSheetId || previewMutation.isPending}
-                      onClick={() => previewMutation.mutate({ spreadsheet_id: selectedSheetId })}
-                    >
-                      {previewMutation.isPending ? (
-                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                      ) : (
-                        <FileSpreadsheet className="mr-1 h-3 w-3" />
+                    <p className="text-xs text-gray-500">
+                      Rows whose Status is Sent are skipped. After a successful send we write Sent into that cell.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={!selectedSheetId || previewMutation.isPending}
+                        onClick={() => previewMutation.mutate({ spreadsheet_id: selectedSheetId })}
+                      >
+                        {previewMutation.isPending ? (
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        ) : (
+                          <FileSpreadsheet className="mr-1 h-3 w-3" />
+                        )}
+                        Preview sheet columns
+                      </Button>
+                      {googleStatus?.can_write_sheets === false && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => void connectGoogle()} disabled={connectingGoogle}>
+                          {connectingGoogle ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileSpreadsheet className="mr-1 h-3 w-3" />}
+                          Reconnect Google
+                        </Button>
                       )}
-                      Preview sheet columns
-                    </Button>
+                    </div>
                     {sheetsCatalog?.drive_error && (
                       <p className="text-xs text-amber-700">{sheetsCatalog.drive_error}</p>
                     )}
@@ -702,7 +820,20 @@ export function ColdOutreachPage() {
               />
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="min-w-[160px]">
+                <Label>Status filter</Label>
+                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'ready' | 'all' | 'sent')}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ready">Ready to send ({readyLeadCount})</SelectItem>
+                    <SelectItem value="sent">Already Sent ({sentLeadCount})</SelectItem>
+                    <SelectItem value="all">All loaded ({leads.length})</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button type="button" variant="outline" size="sm" onClick={selectVisibleWithEmail}>
                 Select visible with email
               </Button>
@@ -753,11 +884,14 @@ export function ColdOutreachPage() {
                       <TableHead>Email</TableHead>
                       <TableHead>Company</TableHead>
                       <TableHead>Job title</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {visibleLeads.map((lead) => {
                       const hasEmail = Boolean(lead.email);
+                      const sent = isSheetSent(lead);
+                      const status = sheetStatus(lead);
                       return (
                         <TableRow
                           key={lead.id}
@@ -779,6 +913,11 @@ export function ColdOutreachPage() {
                           <TableCell className="max-w-[180px] truncate">{lead.email || 'No email'}</TableCell>
                           <TableCell className="max-w-[140px] truncate">{lead.company || '—'}</TableCell>
                           <TableCell className="max-w-[140px] truncate">{lead.job_title || '—'}</TableCell>
+                          <TableCell>
+                            <span className={sent ? 'text-emerald-700' : 'text-gray-500'}>
+                              {status || 'Ready'}
+                            </span>
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -787,8 +926,8 @@ export function ColdOutreachPage() {
               )}
             </div>
             <p className="text-sm text-gray-600">
-              {selectedIds.size} selected · {leads.filter((lead) => lead.email).length} of {leads.length} loaded
-              have an email
+              {selectedIds.size} selected · {readyLeadCount} ready · {sentLeadCount} already Sent ·{' '}
+              {leads.filter((lead) => lead.email).length} of {leads.length} loaded have an email
             </p>
           </CardContent>
         </Card>
@@ -962,6 +1101,14 @@ export function ColdOutreachPage() {
 
             <div className="flex items-center gap-2">
               <Checkbox
+                checked={skipIfSent}
+                onCheckedChange={(checked) => setSkipIfSent(Boolean(checked))}
+              />
+              <Label className="font-normal">Skip rows already marked Sent (Make.com filter)</Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
                 checked={useQueue || Boolean(scheduleAt)}
                 disabled={Boolean(scheduleAt)}
                 onCheckedChange={(checked) => setUseQueue(Boolean(checked))}
@@ -1048,8 +1195,10 @@ export function ColdOutreachPage() {
           <DialogHeader>
             <DialogTitle>Match columns</DialogTitle>
             <DialogDescription>
-              We found {importPreview?.total_rows || 0} rows. Map first name, last name, email, and any ID column,
-              then import into the recipient table.
+              We found {importPreview?.total_rows || 0} rows
+              {importPreview?.has_status
+                ? `, including ${importPreview.sent_count || 0} already marked Sent and ${importPreview.ready_count ?? importPreview.total_rows} ready to send`
+                : ''}. Map first name, last name, email, Status, and any ID column, then import.
             </DialogDescription>
           </DialogHeader>
           {importPreview && (
@@ -1087,6 +1236,7 @@ export function ColdOutreachPage() {
                       <TableHead>Last name</TableHead>
                       <TableHead>Company</TableHead>
                       <TableHead>ID</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1097,6 +1247,7 @@ export function ColdOutreachPage() {
                         <TableCell>{row.last_name || '—'}</TableCell>
                         <TableCell>{row.company || '—'}</TableCell>
                         <TableCell>{row.unique_lead_id || '—'}</TableCell>
+                        <TableCell>{row.status || 'Ready'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

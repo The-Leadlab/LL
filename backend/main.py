@@ -101,6 +101,7 @@ async def startup_sequence_guard() -> None:
                 "ALTER TABLE sequence_enrollments ADD COLUMN IF NOT EXISTS paused_at TIMESTAMP WITHOUT TIME ZONE",
                 "ALTER TABLE leads ADD COLUMN IF NOT EXISTS do_not_email BOOLEAN NOT NULL DEFAULT FALSE",
                 "ALTER TABLE leads ADD COLUMN IF NOT EXISTS email_bounced BOOLEAN NOT NULL DEFAULT FALSE",
+                "ALTER TABLE leads ADD COLUMN IF NOT EXISTS outreach_meta JSONB",
             ]
             for stmt in alter_stmts:
                 try:

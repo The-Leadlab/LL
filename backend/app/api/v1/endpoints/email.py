@@ -32,6 +32,7 @@ from app.schemas.email import (
     EmailStatus as EmailStatusSchema
 )
 from app.models.lead import Lead
+from app.services.google_workspace import lead_already_sent_on_sheet, mark_lead_sent_on_sheet
 from app.schemas.email_integration import (
     EmailAccountCreate, EmailAccountUpdate, EmailAccountOut,
     EmailOut, EmailSend, EmailSuggestion, OutreachSend
@@ -589,6 +590,7 @@ async def send_cold_outreach(
         "send_window_end": outreach.send_window_end,
         "weekdays_only": bool(outreach.weekdays_only),
         "max_per_hour": outreach.max_per_hour,
+        "skip_if_sent": bool(outreach.skip_if_sent),
     }
     # Drop empty window keys so runner treats unset as no window
     if not settings_snapshot.get("send_window_start"):
@@ -647,6 +649,8 @@ async def send_cold_outreach(
     for index, lead_id in enumerate(outreach.lead_ids):
         lead = by_id.get(lead_id)
         ok, reason = lead_can_email(lead)
+        if ok and outreach.skip_if_sent and lead_already_sent_on_sheet(lead):
+            ok, reason = False, "Already marked Sent on the Google Sheet"
         if not ok:
             skipped += 1
             results.append({"lead_id": lead_id, "status": "skipped", "reason": reason})
@@ -681,6 +685,14 @@ async def send_cold_outreach(
 
         if send_result.get("sent"):
             sent += 1
+            token = None
+            try:
+                if getattr(account, "oauth_refresh_token", None):
+                    token = email_service._get_google_access_token(account)
+            except Exception as sheet_exc:
+                logger.warning("Could not refresh Google token to write Sent status: %s", sheet_exc)
+            mark_lead_sent_on_sheet(db, lead, token)
+            db.commit()
             results.append({
                 "lead_id": lead.id,
                 "email": to_email,

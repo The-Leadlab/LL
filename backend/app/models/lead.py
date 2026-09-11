@@ -43,6 +43,7 @@ class Lead(Base):
     source = Column(String(100), nullable=True)
     # email_guidelines = Column(Text, nullable=True)  # Column doesn't exist in database
     sales_intelligence = Column(JSON, nullable=True)  # AI sales intelligence data
+    outreach_meta = Column(JSON, nullable=True)
 
     # Properties for backward compatibility
     @property
@@ -187,7 +188,8 @@ class Lead(Base):
                     } for tag in self.tags
                 ] if self.tags else [],
                 "email_guidelines": self.email_guidelines or "",
-                "sales_intelligence": self.sales_intelligence or {}
+                "sales_intelligence": self.sales_intelligence or {},
+                "outreach_meta": self.outreach_meta or {},
             }
         except Exception as e:
             print(f"Error in to_dict: {str(e)}")

@@ -114,6 +114,7 @@ export interface GoogleSheetsStatus {
   connected: boolean;
   has_sheets_scope: boolean;
   email?: string | null;
+  can_write_sheets?: boolean;
   connection_id?: number | null;
   spreadsheet_id?: string | null;
 }
@@ -134,6 +135,8 @@ export interface LeadsFromTextResult {
   skipped: number;
   updated?: number;
   lead_ids: number[];
+  ready_ids?: number[];
+  already_sent?: number;
 }
 
 export interface LeadImportPreview {
@@ -143,6 +146,9 @@ export interface LeadImportPreview {
   sample: Array<Record<string, string>>;
   total_rows: number;
   has_email: boolean;
+  has_status?: boolean;
+  sent_count?: number;
+  ready_count?: number;
   fields?: string[];
 }
 
@@ -244,6 +250,15 @@ export const outreachAPI = {
 
   listSpreadsheets: async (): Promise<GoogleSpreadsheetsResponse> => {
     const response = await api.get('/outreach/google/spreadsheets');
+    return response.data;
+  },
+
+  listSpreadsheetTabs: async (
+    spreadsheetId: string,
+  ): Promise<{ spreadsheet_id: string; tabs: Array<{ title: string; sheet_id?: number }> }> => {
+    const response = await api.get(
+      `/outreach/google/spreadsheets/${encodeURIComponent(spreadsheetId)}/tabs`,
+    );
     return response.data;
   },
 

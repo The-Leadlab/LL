@@ -3,18 +3,26 @@
 from __future__ import annotations
 
 import csv
+import logging
 import re
 from datetime import datetime
 from io import StringIO
 from typing import Any, Dict, List, Optional, Sequence, Tuple
+from urllib.parse import quote
 
+import requests
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.config import settings
 from app.models.email_account import EmailAccount
 from app.models.outreach_platform import OutreachConnection
 from app.models.user import User
 
+logger = logging.getLogger(__name__)
+
+SHEETS_WRITE_SCOPE = "https://www.googleapis.com/auth/spreadsheets"
+SENT_STATUS_VALUES = {"sent", "send", "done", "emailed", "yes"}
 SHEETS_SCOPE_MARKERS = (
     "spreadsheets",
     "drive.readonly",
@@ -56,6 +64,11 @@ def parse_spreadsheet_id(value: str) -> str:
 def account_has_sheets_scope(account: Optional[EmailAccount]) -> bool:
     scopes = (account.oauth_scopes or "") if account else ""
     return any(marker in scopes for marker in SHEETS_SCOPE_MARKERS)
+
+
+def account_can_write_sheets(account: Optional[EmailAccount]) -> bool:
+    tokens = ((account.oauth_scopes or "").split() if account else [])
+    return SHEETS_WRITE_SCOPE in tokens
 
 
 def google_oauth_account(db: Session, user: User) -> Optional[EmailAccount]:
@@ -148,6 +161,7 @@ LEAD_IMPORT_FIELDS = (
     "mobile",
     "linkedin",
     "location",
+    "status",
 )
 
 DEFAULT_SHEET_COLUMN_MAP = {
@@ -196,6 +210,11 @@ DEFAULT_SHEET_COLUMN_MAP = {
     "linkedin_url": "linkedin",
     "location": "location",
     "city": "location",
+    "status": "status",
+    "sheet_status": "status",
+    "send_status": "status",
+    "outreach_status": "status",
+    "sent_status": "status",
 }
 
 HEADER_HINT_TOKENS = (
@@ -212,6 +231,7 @@ HEADER_HINT_TOKENS = (
     "organization",
     "job_title",
     "linkedin",
+    "status",
 )
 
 
@@ -433,6 +453,7 @@ def preview_mapped_rows(
     mapping_labels = header_mapping_labels(headers, col_to_field)
     mapped_indexes = set(col_to_field)
     unmapped = [header for i, header in enumerate(headers) if i not in mapped_indexes]
+    sent_count = sum(1 for row in data_rows if is_sent_status(mapped_lead_from_row(row, col_to_field).get("status") or ""))
     return {
         "headers": headers,
         "mapping": mapping_labels,
@@ -440,5 +461,110 @@ def preview_mapped_rows(
         "sample": sample,
         "total_rows": len(data_rows),
         "has_email": "email" in col_to_field.values(),
+        "has_status": "status" in col_to_field.values(),
+        "sent_count": sent_count,
+        "ready_count": max(0, len(data_rows) - sent_count),
         "fields": list(LEAD_IMPORT_FIELDS),
     }
+
+
+def column_index_to_letter(index: int) -> str:
+    if index < 0:
+        return ""
+    number = index + 1
+    letters = ""
+    while number:
+        number, remainder = divmod(number - 1, 26)
+        letters = chr(65 + remainder) + letters
+    return letters
+
+
+def sheet_title_from_range(range_name: str) -> str:
+    raw = (range_name or "").strip()
+    if "!" not in raw:
+        return "Sheet1"
+    title = raw.split("!", 1)[0].strip()
+    if title.startswith("'") and title.endswith("'") and len(title) >= 2:
+        title = title[1:-1].replace("''", "'")
+    return title or "Sheet1"
+
+
+def range_start_row(range_name: str) -> int:
+    raw = (range_name or "").strip()
+    match = re.search(r"!\$?[A-Za-z]+(\d+)", raw)
+    if match:
+        return int(match.group(1))
+    match = re.match(r"\$?[A-Za-z]+(\d+)", raw)
+    return int(match.group(1)) if match else 1
+
+
+def a1_cell_range(sheet_title: str, column_letter: str, row_number: int) -> str:
+    original = sheet_title or "Sheet1"
+    escaped = original.replace("'", "''")
+    needs_quotes = not re.fullmatch(r"[A-Za-z0-9_]+", original)
+    prefix = f"'{escaped}'" if needs_quotes else original
+    return f"{prefix}!{column_letter}{int(row_number)}"
+
+
+def is_sent_status(value: Optional[str]) -> bool:
+    return (value or "").strip().lower() in SENT_STATUS_VALUES
+
+
+def lead_sheet_status(lead: Any) -> str:
+    meta = getattr(lead, "outreach_meta", None) or {}
+    if not isinstance(meta, dict):
+        return ""
+    return str(meta.get("status") or "").strip()
+
+
+def lead_already_sent_on_sheet(lead: Any) -> bool:
+    return is_sent_status(lead_sheet_status(lead))
+
+
+def write_google_sheet_cell(
+    access_token: str,
+    spreadsheet_id: str,
+    a1_range: str,
+    value: str,
+) -> None:
+    encoded = quote(a1_range, safe="")
+    url = (
+        f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/"
+        f"{encoded}?valueInputOption=USER_ENTERED"
+    )
+    response = requests.put(
+        url,
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+        },
+        json={"values": [[value]]},
+        timeout=20,
+    )
+    if response.status_code >= 400:
+        raise ValueError(f"Sheets write failed ({response.status_code}): {(response.text or '')[:300]}")
+
+
+def mark_lead_sent_on_sheet(db: Session, lead: Any, access_token: Optional[str]) -> bool:
+    meta = dict(getattr(lead, "outreach_meta", None) or {})
+    wrote = False
+    spreadsheet_id = meta.get("spreadsheet_id")
+    column_letter = meta.get("status_column")
+    row_number = meta.get("row")
+    sheet_title = meta.get("sheet_title") or "Sheet1"
+    if access_token and spreadsheet_id and column_letter and row_number:
+        try:
+            write_google_sheet_cell(
+                access_token,
+                str(spreadsheet_id),
+                a1_cell_range(str(sheet_title), str(column_letter), int(row_number)),
+                "Sent",
+            )
+            wrote = True
+        except Exception as exc:
+            logger.warning("Could not write Sent status to Google Sheet: %s", exc)
+    meta["status"] = "Sent"
+    lead.outreach_meta = meta
+    flag_modified(lead, "outreach_meta")
+    db.add(lead)
+    return wrote

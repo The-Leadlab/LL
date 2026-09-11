@@ -43,6 +43,13 @@ export interface Lead {
   website: string | null;
   sector: string | null;
   unique_lead_id: string | null;
+  outreach_meta?: {
+    spreadsheet_id?: string;
+    sheet_title?: string;
+    row?: number;
+    status_column?: string;
+    status?: string;
+  } | null;
   time_in_current_role: string | null;
   lab_comments: string | null;
   client_comments: string | null;
