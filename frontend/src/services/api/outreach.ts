@@ -251,7 +251,16 @@ export const outreachAPI = {
 
   listSpreadsheets: async (): Promise<GoogleSpreadsheetsResponse> => {
     const response = await api.get('/outreach/google/spreadsheets');
-    return response.data;
+    const data = (response.data || {}) as GoogleSpreadsheetsResponse;
+    const raw = (data.drive_error || '').toLowerCase();
+    if (
+      raw.includes('finance gcp') ||
+      raw.includes('enable drive api') ||
+      raw.includes('drive listing is not enabled')
+    ) {
+      return { ...data, drive_error: null, drive_error_code: data.drive_error_code || 'drive_api_disabled' };
+    }
+    return data;
   },
 
   listSpreadsheetTabs: async (

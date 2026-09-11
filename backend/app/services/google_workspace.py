@@ -120,14 +120,8 @@ def _drive_error_payload(response: requests.Response) -> Tuple[str, str]:
             "Reconnect Google Sheets to list your spreadsheets, or paste a Sheets URL below.",
         )
     if "ACCESS_NOT_CONFIGURED" in blob or "HAS NOT BEEN USED" in blob or "DISABLED" in blob:
-        return (
-            "drive_api_disabled",
-            "Paste a Google Sheets URL to import. The spreadsheet picker needs Drive listing on this Google project.",
-        )
-    return (
-        "drive_list_failed",
-        "Paste a Google Sheets URL to import. The spreadsheet picker is unavailable right now.",
-    )
+        return ("drive_api_disabled", "")
+    return ("drive_list_failed", "")
 
 
 def list_drive_spreadsheets(access_token: str) -> Tuple[List[Dict[str, Any]], Optional[str], Optional[str]]:
@@ -150,10 +144,7 @@ def list_drive_spreadsheets(access_token: str) -> Tuple[List[Dict[str, Any]], Op
             "includeItemsFromAllDrives": "true",
         },
     )
-    last_error: Tuple[str, str] = (
-        "drive_list_failed",
-        "Paste a Google Sheets URL to import. The spreadsheet picker is unavailable right now.",
-    )
+    last_error: Tuple[str, str] = ("drive_list_failed", "")
     for params in attempts:
         try:
             response = requests.get(
@@ -179,7 +170,7 @@ def list_drive_spreadsheets(access_token: str) -> Tuple[List[Dict[str, Any]], Op
         last_error = _drive_error_payload(response)
         if last_error[0] == "insufficient_scopes":
             break
-    return [], last_error[0], last_error[1]
+    return [], last_error[0], last_error[1] or None
 
 
 def ensure_sheets_connection(

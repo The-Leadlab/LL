@@ -721,7 +721,7 @@ def list_google_spreadsheets(
     return {
         **status_payload,
         "files": files,
-        "drive_error": drive_error,
+        "drive_error": drive_error or None,
         "drive_error_code": error_code,
     }
 
