@@ -4,13 +4,14 @@ Outreach platform APIs: worker, jobs, connections, scenarios, runs, templates, A
 
 from __future__ import annotations
 
-import json
 import logging
 import secrets
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
 
+import requests
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session, joinedload
@@ -31,6 +32,15 @@ from app.models.outreach_platform import (
 )
 from app.models.user import User
 from app.services.free_ai_service import free_ai_service
+from app.services.google_workspace import (
+    account_has_sheets_scope,
+    column_field_map,
+    get_user_google_access_token,
+    google_oauth_account,
+    normalize_header_name,
+    parse_pasted_lead_rows,
+    parse_spreadsheet_id,
+)
 from app.services.outreach_runner import OutreachRunner
 
 logger = logging.getLogger(__name__)
@@ -54,12 +64,17 @@ class ConnectionUpdate(BaseModel):
 
 
 class SheetsImportBody(BaseModel):
-    spreadsheet_id: str
+    spreadsheet_id: str = ""
     range: str = "Sheet1!A1:Z500"
     header_row: int = 1
     mapping: Optional[Dict[str, str]] = None
-    # Dev fallback: paste CSV/TSV instead of live Sheets API
+    # Optional fallback: paste CSV/TSV instead of live Sheets API
     pasted_values: Optional[str] = None
+
+
+class LeadsFromTextBody(BaseModel):
+    text: str = Field(..., min_length=1, max_length=500_000)
+    source: str = "outreach_paste"
 
 
 class ScenarioCreate(BaseModel):
@@ -212,6 +227,106 @@ def _org_connection(db: Session, connection_id: int, org_id: int) -> OutreachCon
     if not conn:
         raise HTTPException(status_code=404, detail="Connection not found")
     return conn
+
+
+def _google_status_payload(db: Session, current_user: User) -> Dict[str, Any]:
+    account = google_oauth_account(db, current_user)
+    conn = (
+        db.query(OutreachConnection)
+        .filter(
+            OutreachConnection.organization_id == current_user.organization_id,
+            OutreachConnection.user_id == current_user.id,
+            OutreachConnection.type == "google_sheets",
+        )
+        .order_by(OutreachConnection.id.desc())
+        .first()
+    )
+    return {
+        "connected": bool(account and account.oauth_refresh_token),
+        "has_sheets_scope": account_has_sheets_scope(account),
+        "email": account.email if account else None,
+        "connection_id": conn.id if conn else None,
+        "spreadsheet_id": (conn.config or {}).get("spreadsheet_id") if conn else None,
+    }
+
+
+def _import_lead_rows(
+    db: Session,
+    current_user: User,
+    rows: List[List[str]],
+    *,
+    header_row: int = 1,
+    mapping: Optional[Dict[str, str]] = None,
+    source: str = "google_sheets",
+    commit: bool = True,
+) -> Dict[str, Any]:
+    if not rows:
+        return {"imported": 0, "skipped": 0, "lead_ids": []}
+
+    header_idx = max(0, (header_row or 1) - 1)
+    if header_idx >= len(rows):
+        return {"imported": 0, "skipped": 0, "lead_ids": []}
+    headers = [normalize_header_name(h) for h in rows[header_idx]]
+    col_to_field = column_field_map(headers, mapping)
+    if not col_to_field or "email" not in col_to_field.values():
+        raise HTTPException(
+            status_code=400,
+            detail="Could not find an email column. Include a header named email, or paste one address per line.",
+        )
+
+    stage = (
+        db.query(LeadStage)
+        .filter(LeadStage.organization_id == current_user.organization_id)
+        .order_by(LeadStage.id.asc())
+        .first()
+    )
+    if not stage:
+        raise HTTPException(status_code=400, detail="No lead stage configured for organization")
+
+    imported = 0
+    skipped = 0
+    created_ids: List[int] = []
+    for row in rows[header_idx + 1 :]:
+        data = {field: (row[i] if i < len(row) else "").strip() for i, field in col_to_field.items()}
+        email = (data.get("email") or "").strip()
+        if not email or "@" not in email:
+            skipped += 1
+            continue
+        existing = (
+            db.query(Lead)
+            .filter(
+                Lead.organization_id == current_user.organization_id,
+                Lead.email == email,
+                Lead.is_deleted.is_(False),
+            )
+            .first()
+        )
+        if existing:
+            skipped += 1
+            created_ids.append(existing.id)
+            continue
+        lead = Lead(
+            first_name=data.get("first_name") or None,
+            last_name=data.get("last_name") or None,
+            email=email,
+            company=data.get("company") or None,
+            job_title=data.get("job_title") or None,
+            user_id=current_user.id,
+            organization_id=current_user.organization_id,
+            stage_id=stage.id,
+            created_by=current_user.id,
+            created_at=datetime.utcnow(),
+            source=(source or "outreach_paste")[:100],
+            is_deleted=False,
+        )
+        db.add(lead)
+        db.flush()
+        created_ids.append(lead.id)
+        imported += 1
+
+    if commit:
+        db.commit()
+    return {"imported": imported, "skipped": skipped, "lead_ids": created_ids}
 
 
 # ---------- worker / jobs ----------
@@ -403,6 +518,86 @@ def delete_connection(
     return {"deleted": True}
 
 
+@router.get("/google/status")
+def google_sheets_status(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Dict[str, Any]:
+    return _google_status_payload(db, current_user)
+
+
+@router.get("/google/spreadsheets")
+def list_google_spreadsheets(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Dict[str, Any]:
+    status_payload = _google_status_payload(db, current_user)
+    if not status_payload["connected"]:
+        return {**status_payload, "files": [], "drive_error": None}
+    if not status_payload["has_sheets_scope"]:
+        return {
+            **status_payload,
+            "files": [],
+            "drive_error": "Reconnect Google to grant Sheets access, or paste a spreadsheet URL below.",
+        }
+    try:
+        token = get_user_google_access_token(db, current_user)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    try:
+        resp = requests.get(
+            "https://www.googleapis.com/drive/v3/files",
+            params={
+                "q": "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+                "fields": "files(id,name,modifiedTime)",
+                "pageSize": 50,
+                "orderBy": "modifiedTime desc",
+                "supportsAllDrives": "true",
+                "includeItemsFromAllDrives": "true",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30,
+        )
+    except Exception as exc:
+        return {**status_payload, "files": [], "drive_error": str(exc)}
+
+    if resp.status_code == 403:
+        return {
+            **status_payload,
+            "files": [],
+            "drive_error": (
+                "Google Drive listing is not enabled yet. Paste a spreadsheet URL to import. "
+                "On the Finance GCP project, enable Drive API if you want the picker list."
+            ),
+        }
+    if resp.status_code >= 400:
+        return {
+            **status_payload,
+            "files": [],
+            "drive_error": f"Drive API error ({resp.status_code}). Paste a spreadsheet URL instead.",
+        }
+    files = [
+        {"id": item.get("id"), "name": item.get("name"), "modified_time": item.get("modifiedTime")}
+        for item in (resp.json().get("files") or [])
+        if item.get("id")
+    ]
+    return {**status_payload, "files": files, "drive_error": None}
+
+
+@router.post("/leads/from-text")
+def import_leads_from_text(
+    body: LeadsFromTextBody,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Dict[str, Any]:
+    rows = parse_pasted_lead_rows(body.text)
+    if not rows:
+        raise HTTPException(status_code=400, detail="Paste at least one email or a CSV with an email column.")
+    source = (body.source or "outreach_paste").strip() or "outreach_paste"
+    return _import_lead_rows(db, current_user, rows, source=source)
+
+
 @router.post("/connections/{connection_id}/sheets/import")
 def import_from_sheets(
     connection_id: int,
@@ -410,21 +605,29 @@ def import_from_sheets(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Dict[str, Any]:
-    """Import leads from Google Sheets values API or pasted CSV/TSV."""
+    """Import leads from Google Sheets via mailbox OAuth, or pasted CSV/TSV."""
     conn = _org_connection(db, connection_id, current_user.organization_id)
     if conn.type not in {"google_sheets", "google_docs"}:
         raise HTTPException(status_code=400, detail="Connection is not a Sheets type")
 
     rows: List[List[str]] = []
+    sheet_id = parse_spreadsheet_id(body.spreadsheet_id) or parse_spreadsheet_id(
+        str((conn.config or {}).get("spreadsheet_id") or "")
+    )
     if body.pasted_values:
-        for line in body.pasted_values.strip().splitlines():
-            if "\t" in line:
-                rows.append([c.strip() for c in line.split("\t")])
-            else:
-                rows.append([c.strip() for c in line.split(",")])
+        rows = parse_pasted_lead_rows(body.pasted_values)
     else:
+        if not sheet_id or sheet_id.lower() == "pasted":
+            raise HTTPException(
+                status_code=400,
+                detail="Choose a spreadsheet or paste a Google Sheets URL.",
+            )
         token = None
-        if conn.encrypted_credentials:
+        try:
+            token = get_user_google_access_token(db, current_user)
+        except ValueError:
+            token = None
+        if not token and conn.encrypted_credentials:
             try:
                 token = decrypt_password(conn.encrypted_credentials)
             except Exception:
@@ -432,15 +635,25 @@ def import_from_sheets(
         if not token:
             raise HTTPException(
                 status_code=400,
-                detail="No access token on connection. Paste access_token on the connection or provide pasted_values CSV.",
+                detail="Connect Google Sheets first (no pasted access token needed), then import.",
             )
         try:
-            import requests
-
             url = (
-                f"https://sheets.googleapis.com/v4/spreadsheets/{body.spreadsheet_id}/values/{body.range}"
+                f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/"
+                f"{quote(body.range or 'Sheet1!A1:Z500', safe='')}"
             )
             resp = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=30)
+            if resp.status_code in {401, 403}:
+                conn.last_error = resp.text[:500]
+                db.add(conn)
+                db.commit()
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "Google refused Sheets access. Click Connect Google Sheets once to grant "
+                        "spreadsheet permission, then try again."
+                    ),
+                )
             if resp.status_code != 200:
                 conn.last_error = resp.text[:500]
                 db.add(conn)
@@ -451,91 +664,27 @@ def import_from_sheets(
         except HTTPException:
             raise
         except Exception as exc:
-            raise HTTPException(status_code=502, detail=str(exc))
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-    if not rows:
-        return {"imported": 0, "skipped": 0, "leads": []}
-
-    header_idx = max(0, (body.header_row or 1) - 1)
-    headers = [h.lower().strip().replace(" ", "_") for h in rows[header_idx]]
-    mapping = body.mapping or {}
-    # default map common headers
-    default_map = {
-        "email": "email",
-        "e-mail": "email",
-        "first_name": "first_name",
-        "firstname": "first_name",
-        "last_name": "last_name",
-        "lastname": "last_name",
-        "company": "company",
-        "job_title": "job_title",
-        "title": "job_title",
-    }
-    col_to_field: Dict[int, str] = {}
-    for i, h in enumerate(headers):
-        field = mapping.get(h) or mapping.get(headers[i]) or default_map.get(h)
-        if field:
-            col_to_field[i] = field
-
-    stage = (
-        db.query(LeadStage)
-        .filter(LeadStage.organization_id == current_user.organization_id)
-        .order_by(LeadStage.id.asc())
-        .first()
+    result = _import_lead_rows(
+        db,
+        current_user,
+        rows,
+        header_row=body.header_row,
+        mapping=body.mapping,
+        source="google_sheets" if not body.pasted_values else "outreach_paste",
+        commit=False,
     )
-    if not stage:
-        raise HTTPException(status_code=400, detail="No lead stage configured for organization")
-
-    imported = 0
-    skipped = 0
-    created_ids: List[int] = []
-    for row in rows[header_idx + 1 :]:
-        data = {field: (row[i] if i < len(row) else "").strip() for i, field in col_to_field.items()}
-        email = (data.get("email") or "").strip()
-        if not email or "@" not in email:
-            skipped += 1
-            continue
-        existing = (
-            db.query(Lead)
-            .filter(
-                Lead.organization_id == current_user.organization_id,
-                Lead.email == email,
-                Lead.is_deleted.is_(False),
-            )
-            .first()
-        )
-        if existing:
-            skipped += 1
-            created_ids.append(existing.id)
-            continue
-        lead = Lead(
-            first_name=data.get("first_name") or None,
-            last_name=data.get("last_name") or None,
-            email=email,
-            company=data.get("company") or None,
-            job_title=data.get("job_title") or None,
-            user_id=current_user.id,
-            organization_id=current_user.organization_id,
-            stage_id=stage.id,
-            created_by=current_user.id,
-            created_at=datetime.utcnow(),
-            source="google_sheets",
-            is_deleted=False,
-        )
-        db.add(lead)
-        db.flush()
-        created_ids.append(lead.id)
-        imported += 1
-
     config = dict(conn.config or {})
-    config["spreadsheet_id"] = body.spreadsheet_id
+    if sheet_id and sheet_id.lower() != "pasted":
+        config["spreadsheet_id"] = sheet_id
     config["range"] = body.range
     conn.config = config
     conn.last_error = None
     conn.updated_at = datetime.utcnow()
     db.add(conn)
     db.commit()
-    return {"imported": imported, "skipped": skipped, "lead_ids": created_ids}
+    return result
 
 
 # ---------- scenarios ----------

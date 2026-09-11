@@ -380,6 +380,20 @@ export function LeadDetail() {
   const fromLeadList = location.state?.from === 'leadList';
   const savedScrollPosition = location.state?.scrollPosition;
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('edit') === '1') {
+      setIsEditModalOpen(true);
+    }
+  }, [location.search]);
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    if (new URLSearchParams(location.search).get('edit') === '1' && id) {
+      navigate(`/leads/${id}`, { replace: true, state: location.state });
+    }
+  };
+
   // Scroll event handler to hide/show header
   useEffect(() => {
     const handleScroll = () => {
@@ -872,7 +886,13 @@ export function LeadDetail() {
       </div>
 
       {/* Edit Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+      <Dialog
+        open={isEditModalOpen}
+        onOpenChange={(open) => {
+          if (open) setIsEditModalOpen(true);
+          else closeEditModal();
+        }}
+      >
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Edit Lead</DialogTitle>
@@ -880,10 +900,10 @@ export function LeadDetail() {
           <LeadEditForm
             lead={lead}
             onSuccess={() => {
-              setIsEditModalOpen(false);
+              closeEditModal();
               queryClient.invalidateQueries({queryKey: ['lead', id]});
             }}
-            onCancel={() => setIsEditModalOpen(false)}
+            onCancel={closeEditModal}
           />
         </DialogContent>
       </Dialog>

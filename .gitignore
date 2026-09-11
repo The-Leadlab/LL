@@ -224,3 +224,4 @@ tramp
 *.exe
 *.out
 *.app 
+.vercel

@@ -413,7 +413,7 @@ def create_lead(
         from app.crud.crud_client import client as crud_client
         general = crud_client.ensure_general(db, organization_id=current_user.organization_id)
         requested_client_id = lead_data.get("client_id")
-        if requested_client_id:
+        if requested_client_id is not None:
             client_obj = crud_client.get_for_org(
                 db, id=requested_client_id, organization_id=current_user.organization_id
             )

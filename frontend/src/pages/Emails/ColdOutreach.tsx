@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Loader2, Mail, Search, Send, Sparkles, Users } from 'lucide-react';
+import { Eye, FileSpreadsheet, Loader2, Mail, Search, Send, Sparkles, Upload, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -90,6 +90,7 @@ export function ColdOutreachPage() {
   const [lastBatchId, setLastBatchId] = useState<string | null>(null);
   const [rewriteInstruction, setRewriteInstruction] = useState('Make this more concise and personal.');
   const [templateId, setTemplateId] = useState<string>('');
+  const [pasteEmails, setPasteEmails] = useState('');
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['email-accounts'],
@@ -210,6 +211,45 @@ export function ColdOutreachPage() {
 
   const selectAllLoaded = () => {
     setSelectedIds(new Set(leads.filter((lead) => Boolean(lead.email)).map((lead) => lead.id)));
+  };
+
+  const importTextMutation = useMutation({
+    mutationFn: (payload: { text: string; source: string }) =>
+      outreachAPI.importLeadsFromText(payload.text, payload.source),
+    onSuccess: async (result) => {
+      setPasteEmails('');
+      await refetchLeads();
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        result.lead_ids.forEach((id) => next.add(id));
+        return next;
+      });
+      toast({
+        title: 'Leads added',
+        description: `Imported ${result.imported}, already in CRM ${result.skipped}. They are selected below.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not add emails',
+        description: extractEmailErrorMessage(error).description,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const onCsvFile = (file?: File | null) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = typeof reader.result === 'string' ? reader.result : '';
+      if (!text.trim()) {
+        toast({ title: 'Empty file', variant: 'destructive' });
+        return;
+      }
+      importTextMutation.mutate({ text, source: 'csv_upload' });
+    };
+    reader.readAsText(file);
   };
 
   const sendMutation = useMutation({
@@ -370,6 +410,52 @@ export function ColdOutreachPage() {
               <p className="mt-1 text-xs text-gray-500">
                 Choosing a client loads that client’s leads. You can still tick or untick people below.
               </p>
+            </div>
+
+            <div className="space-y-2 rounded-md border border-dashed p-3">
+              <Label>Add emails or a CSV</Label>
+              <p className="text-xs text-gray-500">
+                Paste addresses (one per line) or upload a CSV with an email column. They are saved as CRM leads and
+                selected here.
+              </p>
+              <Textarea
+                value={pasteEmails}
+                onChange={(event) => setPasteEmails(event.target.value)}
+                placeholder={'ada@example.com\nbob@example.com'}
+                className="min-h-[88px] font-mono text-xs"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!pasteEmails.trim() || importTextMutation.isPending}
+                  onClick={() => importTextMutation.mutate({ text: pasteEmails, source: 'outreach_paste' })}
+                >
+                  {importTextMutation.isPending ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : (
+                    <Upload className="mr-1 h-3 w-3" />
+                  )}
+                  Add pasted emails
+                </Button>
+                <label className="inline-flex cursor-pointer items-center rounded-md border px-3 py-1.5 text-sm">
+                  <FileSpreadsheet className="mr-1 h-3 w-3" />
+                  Upload CSV
+                  <input
+                    type="file"
+                    accept=".csv,text/csv,text/plain"
+                    className="hidden"
+                    onChange={(event) => {
+                      onCsvFile(event.target.files?.[0]);
+                      event.target.value = '';
+                    }}
+                  />
+                </label>
+                <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/emails/connections')}>
+                  Import from Google Sheet
+                </Button>
+              </div>
             </div>
 
             <div className="relative">

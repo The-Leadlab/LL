@@ -176,8 +176,10 @@ export interface EmailAccountSettings {
 }
 
 const emailAPI = {
-  async initGoogleOAuth(): Promise<{ provider: string; authorization_url: string }> {
-    const response = await api.post('/email/oauth/google/init');
+  async initGoogleOAuth(returnTo?: string): Promise<{ provider: string; authorization_url: string }> {
+    const response = await api.post('/email/oauth/google/init', null, {
+      params: returnTo ? { return_to: returnTo } : undefined,
+    });
     return response.data;
   },
 

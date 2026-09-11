@@ -75,12 +75,9 @@ def _parse_oauth_state(state: str) -> Dict[str, Any]:
 
 
 def _google_combined_scopes() -> str:
-    merged = []
-    for scope_line in [settings.GOOGLE_CALENDAR_SCOPES, settings.GOOGLE_EMAIL_SCOPES]:
-        for s in (scope_line or "").split():
-            if s and s not in merged:
-                merged.append(s)
-    return " ".join(merged)
+    from app.services.google_workspace import merged_google_oauth_scopes
+
+    return merged_google_oauth_scopes()
 
 
 def _build_token_response_for_user(user: Any, access_token: str, expires_at: datetime) -> Dict[str, Any]:
@@ -128,6 +125,7 @@ def google_auth_init(remember_me: bool = False) -> Any:
         "response_type": "code",
         "access_type": "offline",
         "prompt": "consent",
+        "include_granted_scopes": "true",
         "scope": _google_combined_scopes(),
         "state": _build_oauth_state(remember_me=remember_me),
     }
@@ -257,6 +255,10 @@ def google_auth_callback(
             auto_create_tasks=True,
         )
         db.add(email_account)
+
+    from app.services.google_workspace import ensure_sheets_connection
+
+    ensure_sheets_connection(db, user, commit=False)
 
     # Auto-link Google Calendar (allow multiple accounts)
     provider_sub = profile.get("id")

@@ -10,7 +10,7 @@ import hmac
 import json
 from urllib.parse import urlencode
 import requests
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -52,11 +52,46 @@ def _sign_oauth_state(payload_b64: str) -> str:
     ).hexdigest()
 
 
-def _build_oauth_state(user_id: int, organization_id: int, purpose: str) -> str:
+_ALLOWED_EMAIL_OAUTH_RETURN = {
+    "/settings/integrations",
+    "/emails/connections",
+    "/emails/outreach",
+}
+
+
+def _normalize_oauth_return_to(return_to: Optional[str]) -> str:
+    path = (return_to or "").strip() or "/settings/integrations"
+    if path not in _ALLOWED_EMAIL_OAUTH_RETURN:
+        return "/settings/integrations"
+    return path
+
+
+def _email_oauth_frontend_url(return_to: str, *, success: bool, reason: Optional[str] = None) -> str:
+    base = f"{settings.FRONTEND_URL.rstrip('/')}{return_to}"
+    if return_to in {"/emails/connections", "/emails/outreach"}:
+        status_key = "sheets_oauth"
+    else:
+        status_key = "email_oauth"
+        if return_to == "/settings/integrations":
+            base = f"{base}?tab=integrations"
+    joiner = "&" if "?" in base else "?"
+    if success:
+        return f"{base}{joiner}{status_key}=success"
+    reason_q = reason or "error"
+    return f"{base}{joiner}{status_key}=error&reason={reason_q}"
+
+
+def _build_oauth_state(
+    user_id: int,
+    organization_id: int,
+    purpose: str,
+    return_to: Optional[str] = None,
+) -> str:
     payload = {
         "u": int(user_id),
         "o": int(organization_id),
         "p": purpose,
+        "r": _normalize_oauth_return_to(return_to),
         "ts": int(datetime.utcnow().timestamp()),
     }
     payload_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode("utf-8")).decode("utf-8")
@@ -89,18 +124,27 @@ def _google_oauth_redirect_uri_for_email() -> str:
 @router.post("/oauth/google/init")
 def init_google_email_oauth(
     current_user: User = Depends(deps.get_current_active_user),
+    return_to: Optional[str] = Query(None),
 ):
     if not settings.GOOGLE_CALENDAR_CLIENT_ID:
         raise HTTPException(status_code=400, detail="GOOGLE_CALENDAR_CLIENT_ID is not configured")
+    from app.services.google_workspace import merged_google_oauth_scopes
+
     redirect_uri = _google_oauth_redirect_uri_for_email()
-    state = _build_oauth_state(current_user.id, current_user.organization_id, "email_google")
+    state = _build_oauth_state(
+        current_user.id,
+        current_user.organization_id,
+        "email_google",
+        return_to=return_to,
+    )
     params = {
         "client_id": settings.GOOGLE_CALENDAR_CLIENT_ID,
         "redirect_uri": redirect_uri,
         "response_type": "code",
         "access_type": "offline",
         "prompt": "consent",
-        "scope": settings.GOOGLE_EMAIL_SCOPES,
+        "include_granted_scopes": "true",
+        "scope": merged_google_oauth_scopes(),
         "state": state,
     }
     return {
@@ -117,15 +161,27 @@ def google_email_oauth_callback(
     error: Optional[str] = None,
     db: Session = Depends(deps.get_db),
 ):
-    redirect_base = f"{settings.FRONTEND_URL.rstrip('/')}/settings/integrations"
-    if error:
-        return RedirectResponse(url=f"{redirect_base}?tab=integrations&email_oauth=error&reason={error}")
-    if not code or not state:
-        return RedirectResponse(url=f"{redirect_base}?tab=integrations&email_oauth=error&reason=missing_code")
+    from app.services.google_workspace import ensure_sheets_connection, merged_google_oauth_scopes
 
-    parsed = _parse_oauth_state(state, "email_google")
+    fallback_return = "/settings/integrations"
+    if error:
+        return RedirectResponse(
+            url=_email_oauth_frontend_url(fallback_return, success=False, reason=error)
+        )
+    if not code or not state:
+        return RedirectResponse(
+            url=_email_oauth_frontend_url(fallback_return, success=False, reason="missing_code")
+        )
+
+    try:
+        parsed = _parse_oauth_state(state, "email_google")
+    except HTTPException as exc:
+        return RedirectResponse(
+            url=_email_oauth_frontend_url(fallback_return, success=False, reason=str(exc.detail))
+        )
     user_id = int(parsed["u"])
     organization_id = int(parsed["o"])
+    return_to = _normalize_oauth_return_to(parsed.get("r"))
 
     token_response = requests.post(
         "https://oauth2.googleapis.com/token",
@@ -139,14 +195,18 @@ def google_email_oauth_callback(
         timeout=20,
     )
     if token_response.status_code >= 400:
-        return RedirectResponse(url=f"{redirect_base}?tab=integrations&email_oauth=error&reason=token_exchange")
+        return RedirectResponse(
+            url=_email_oauth_frontend_url(return_to, success=False, reason="token_exchange")
+        )
     token_data = token_response.json()
     access_token = token_data.get("access_token")
     refresh_token = token_data.get("refresh_token")
     expires_in = int(token_data.get("expires_in") or 3600)
-    scopes = token_data.get("scope")
+    scopes = token_data.get("scope") or merged_google_oauth_scopes()
     if not access_token:
-        return RedirectResponse(url=f"{redirect_base}?tab=integrations&email_oauth=error&reason=no_access_token")
+        return RedirectResponse(
+            url=_email_oauth_frontend_url(return_to, success=False, reason="no_access_token")
+        )
 
     profile_response = requests.get(
         "https://www.googleapis.com/oauth2/v2/userinfo",
@@ -154,12 +214,16 @@ def google_email_oauth_callback(
         timeout=20,
     )
     if profile_response.status_code >= 400:
-        return RedirectResponse(url=f"{redirect_base}?tab=integrations&email_oauth=error&reason=userinfo")
+        return RedirectResponse(
+            url=_email_oauth_frontend_url(return_to, success=False, reason="userinfo")
+        )
     profile = profile_response.json()
     email_addr = profile.get("email")
     display_name = profile.get("name") or email_addr
     if not email_addr:
-        return RedirectResponse(url=f"{redirect_base}?tab=integrations&email_oauth=error&reason=no_email")
+        return RedirectResponse(
+            url=_email_oauth_frontend_url(return_to, success=False, reason="no_email")
+        )
 
     account = db.query(EmailAccount).filter(
         EmailAccount.email == email_addr,
@@ -215,11 +279,17 @@ def google_email_oauth_callback(
 
     db.commit()
     db.refresh(account)
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        try:
+            ensure_sheets_connection(db, user)
+        except Exception as conn_err:
+            logger.warning("Could not auto-create Sheets connection after OAuth: %s", conn_err)
     try:
         EmailService(db).sync_account_emails(account.id, days_back=365)
     except Exception as sync_err:
         logger.warning("Initial Gmail sync failed after OAuth callback: %s", sync_err)
-    return RedirectResponse(url=f"{redirect_base}?tab=integrations&email_oauth=success")
+    return RedirectResponse(url=_email_oauth_frontend_url(return_to, success=True))
 
 async def send_email_background(
     db: Session,

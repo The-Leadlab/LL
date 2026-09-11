@@ -103,11 +103,36 @@ export interface CreateConnectionPayload {
 }
 
 export interface SheetsImportPayload {
-  spreadsheet_id: string;
+  spreadsheet_id?: string;
   range?: string;
   header_row?: number;
   mapping?: Record<string, string>;
   pasted_values?: string;
+}
+
+export interface GoogleSheetsStatus {
+  connected: boolean;
+  has_sheets_scope: boolean;
+  email?: string | null;
+  connection_id?: number | null;
+  spreadsheet_id?: string | null;
+}
+
+export interface GoogleSpreadsheetFile {
+  id: string;
+  name?: string | null;
+  modified_time?: string | null;
+}
+
+export interface GoogleSpreadsheetsResponse extends GoogleSheetsStatus {
+  files: GoogleSpreadsheetFile[];
+  drive_error?: string | null;
+}
+
+export interface LeadsFromTextResult {
+  imported: number;
+  skipped: number;
+  lead_ids: number[];
 }
 
 export interface CreateScenarioPayload {
@@ -180,8 +205,26 @@ export const outreachAPI = {
   importSheets: async (
     connectionId: number,
     data: SheetsImportPayload,
-  ): Promise<Record<string, unknown>> => {
+  ): Promise<LeadsFromTextResult> => {
     const response = await api.post(`/outreach/connections/${connectionId}/sheets/import`, data);
+    return response.data;
+  },
+
+  googleStatus: async (): Promise<GoogleSheetsStatus> => {
+    const response = await api.get('/outreach/google/status');
+    return response.data;
+  },
+
+  listSpreadsheets: async (): Promise<GoogleSpreadsheetsResponse> => {
+    const response = await api.get('/outreach/google/spreadsheets');
+    return response.data;
+  },
+
+  importLeadsFromText: async (
+    text: string,
+    source = 'outreach_paste',
+  ): Promise<LeadsFromTextResult> => {
+    const response = await api.post('/outreach/leads/from-text', { text, source });
     return response.data;
   },
 

@@ -11,7 +11,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { leadsAPI, type Lead } from '@/services/api/leads';
 import { clientsAPI, type Client } from '@/services/api/clients';
 import type { LeadListResponse } from '@/services/api';
@@ -34,6 +34,9 @@ import {
   ChevronRight,
   Settings2,
   FolderInput,
+  Eye,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import {
   Dialog,
@@ -43,9 +46,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/Dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+
+const SELECTED_CLIENT_KEY = 'leadlab.leads.selectedClientId';
 function parseTotalCount(val: unknown, fallback: number): number {
   if (typeof val === 'number' && Number.isFinite(val)) return val;
   if (typeof val === 'string' && val.trim() !== '') {
@@ -166,6 +178,7 @@ function LeadsPaginationBar({
 
 export function ModernLeads() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuthStore();
@@ -211,9 +224,34 @@ export function ModernLeads() {
 
   useEffect(() => {
     if (selectedClientId != null || activeClients.length === 0) return;
-    const general = activeClients.find((c) => c.is_default) ?? activeClients[0];
-    setSelectedClientId(general.id);
-  }, [activeClients, selectedClientId]);
+    const fromUrl = Number(searchParams.get('client_id'));
+    let fromStore = NaN;
+    try {
+      fromStore = Number(sessionStorage.getItem(SELECTED_CLIENT_KEY));
+    } catch {
+      fromStore = NaN;
+    }
+    const match =
+      activeClients.find((c) => c.id === fromUrl) ||
+      activeClients.find((c) => c.id === fromStore) ||
+      activeClients.find((c) => c.is_default) ||
+      activeClients[0];
+    setSelectedClientId(match.id);
+  }, [activeClients, selectedClientId, searchParams]);
+
+  useEffect(() => {
+    if (selectedClientId == null) return;
+    try {
+      sessionStorage.setItem(SELECTED_CLIENT_KEY, String(selectedClientId));
+    } catch {
+      /* ignore quota / private mode */
+    }
+    if (searchParams.get('client_id') !== String(selectedClientId)) {
+      const next = new URLSearchParams(searchParams);
+      next.set('client_id', String(selectedClientId));
+      setSearchParams(next, { replace: true });
+    }
+  }, [selectedClientId, searchParams, setSearchParams]);
 
   // Keep import target in sync with the active Clients tab
   useEffect(() => {
@@ -279,6 +317,22 @@ export function ModernLeads() {
         title: "Error",
         description: typeof detail === "string" ? detail : JSON.stringify(detail),
         variant: "destructive",
+      });
+    },
+  });
+
+  const deleteLeadMutation = useMutation({
+    mutationFn: (id: number) => leadsAPI.delete(id, true),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast({ title: 'Lead deleted' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Could not delete lead',
+        description: error?.response?.data?.detail || error?.message || 'Failed',
+        variant: 'destructive',
       });
     },
   });
@@ -554,7 +608,10 @@ export function ModernLeads() {
             </p>
           </div>
           <button
-            onClick={() => navigate('/leads/new')}
+            onClick={() => {
+              const qs = selectedClientId != null ? `?client_id=${selectedClientId}` : '';
+              navigate(`/leads/form${qs}`);
+            }}
             className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
           >
             <Plus className="w-5 h-5" />
@@ -769,9 +826,57 @@ export function ModernLeads() {
                     {lead.user ? `${lead.user.first_name} ${lead.user.last_name}` : 'Unassigned'}
                   </td>
                   <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                    <button className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors">
-                      <MoreVertical className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                    </button>
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                          aria-label={`Actions for ${lead.full_name || lead.id}`}
+                        >
+                          <MoreVertical className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="z-[200] w-44">
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => navigate(`/leads/${lead.id}`)}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => navigate(`/leads/${lead.id}?edit=1`)}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => {
+                            setSelectedLeads([lead.id]);
+                            setMoveMode('selected');
+                            setIsMoveDialogOpen(true);
+                          }}
+                        >
+                          <FolderInput className="mr-2 h-4 w-4" />
+                          Move to client
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="cursor-pointer text-red-600 focus:text-red-600"
+                          onClick={() => {
+                            const name = lead.full_name || `${lead.first_name} ${lead.last_name}`.trim() || 'this lead';
+                            if (window.confirm(`Delete ${name}?`)) {
+                              deleteLeadMutation.mutate(lead.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))}

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link2, Loader2, Plus, Trash2, Upload } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { FileSpreadsheet, Link2, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -8,6 +9,7 @@ import { Label } from '@/components/ui/Label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { useToast } from '@/hooks/use-toast';
 import { getApiOrigin } from '@/lib/apiOrigin';
+import { extractEmailErrorMessage } from '@/lib/emailError';
 import emailAPI from '@/services/emailAPI';
 import {
   outreachAPI,
@@ -23,15 +25,18 @@ function webhookUrl(publicToken: string): string {
 export function OutreachConnectionsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showForm, setShowForm] = useState(false);
   const [type, setType] = useState<ConnectionType>('google_sheets');
   const [displayName, setDisplayName] = useState('');
   const [spreadsheetId, setSpreadsheetId] = useState('');
-  const [accessToken, setAccessToken] = useState('');
   const [accountId, setAccountId] = useState('');
   const [importRange, setImportRange] = useState('Sheet1!A:Z');
   const [importConnectionId, setImportConnectionId] = useState<number | null>(null);
   const [pastedCsv, setPastedCsv] = useState('');
+  const [sheetChoice, setSheetChoice] = useState<Record<number, string>>({});
+  const [sheetUrl, setSheetUrl] = useState<Record<number, string>>({});
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
 
   const { data: connections = [], isLoading } = useQuery({
     queryKey: ['outreach-connections'],
@@ -42,6 +47,50 @@ export function OutreachConnectionsPage() {
     queryKey: ['email-accounts'],
     queryFn: emailAPI.getAccounts,
   });
+
+  const { data: googleStatus } = useQuery({
+    queryKey: ['outreach-google-status'],
+    queryFn: outreachAPI.googleStatus,
+  });
+
+  const { data: sheetsCatalog } = useQuery({
+    queryKey: ['outreach-google-spreadsheets'],
+    queryFn: outreachAPI.listSpreadsheets,
+    enabled: Boolean(googleStatus?.connected),
+  });
+
+  useEffect(() => {
+    const oauth = searchParams.get('sheets_oauth') || searchParams.get('email_oauth');
+    if (!oauth) return;
+    if (oauth === 'success') {
+      toast({ title: 'Google Sheets connected', description: 'Pick a spreadsheet and import leads.' });
+      queryClient.invalidateQueries({ queryKey: ['outreach-connections'] });
+      queryClient.invalidateQueries({ queryKey: ['outreach-google-status'] });
+      queryClient.invalidateQueries({ queryKey: ['outreach-google-spreadsheets'] });
+    } else {
+      toast({
+        title: 'Google connection failed',
+        description: searchParams.get('reason') || 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+    setSearchParams({}, { replace: true });
+  }, [queryClient, searchParams, setSearchParams, toast]);
+
+  const connectGoogle = async () => {
+    setConnectingGoogle(true);
+    try {
+      const result = await emailAPI.initGoogleOAuth('/emails/connections');
+      window.location.href = result.authorization_url;
+    } catch (error) {
+      setConnectingGoogle(false);
+      toast({
+        title: 'Could not start Google sign-in',
+        description: extractEmailErrorMessage(error).description,
+        variant: 'destructive',
+      });
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: () => {
@@ -56,7 +105,6 @@ export function OutreachConnectionsPage() {
         type,
         display_name: displayName.trim(),
         config: Object.keys(config).length ? config : undefined,
-        access_token: type === 'google_sheets' && accessToken ? accessToken.trim() : undefined,
       });
     },
     onSuccess: () => {
@@ -64,11 +112,10 @@ export function OutreachConnectionsPage() {
       setShowForm(false);
       setDisplayName('');
       setSpreadsheetId('');
-      setAccessToken('');
       toast({ title: 'Connection created' });
     },
     onError: (error: Error) => {
-      toast({ title: 'Could not create connection', description: error.message, variant: 'destructive' });
+      toast({ title: 'Could not create connection', description: extractEmailErrorMessage(error).description, variant: 'destructive' });
     },
   });
 
@@ -81,32 +128,35 @@ export function OutreachConnectionsPage() {
   });
 
   const importMutation = useMutation({
-    mutationFn: (connectionId: number) =>
-      outreachAPI.importSheets(connectionId, {
-        spreadsheet_id: spreadsheetId.trim() || 'pasted',
+    mutationFn: (connection: OutreachConnection) => {
+      const savedId = String(connection.config?.spreadsheet_id || '');
+      const chosen =
+        sheetUrl[connection.id]?.trim() ||
+        sheetChoice[connection.id]?.trim() ||
+        spreadsheetId.trim() ||
+        savedId;
+      return outreachAPI.importSheets(connection.id, {
+        spreadsheet_id: chosen,
         range: importRange.trim() || undefined,
-        pasted_values: pastedCsv.trim() || undefined,
-      }),
+        pasted_values: importConnectionId === connection.id ? pastedCsv.trim() || undefined : undefined,
+      });
+    },
     onSuccess: (data) => {
-      const imported = typeof data?.imported === 'number' ? data.imported : undefined;
-      const skipped = typeof data?.skipped === 'number' ? data.skipped : undefined;
       toast({
         title: 'Import finished',
-        description:
-          imported != null
-            ? `Imported ${imported}, skipped ${skipped ?? 0}.`
-            : typeof data === 'object'
-              ? JSON.stringify(data).slice(0, 200)
-              : 'Import started',
+        description: `Imported ${data.imported}, skipped ${data.skipped}.`,
       });
       setPastedCsv('');
+      queryClient.invalidateQueries({ queryKey: ['outreach-connections'] });
     },
     onError: (error: Error) => {
-      toast({ title: 'Import failed', description: error.message, variant: 'destructive' });
+      toast({ title: 'Import failed', description: extractEmailErrorMessage(error).description, variant: 'destructive' });
     },
   });
 
   const canCreate = Boolean(displayName.trim()) && (type !== 'gmail_link' || accountId);
+  const sheetsReady = Boolean(googleStatus?.connected && googleStatus?.has_sheets_scope);
+  const sheetFiles = sheetsCatalog?.files || [];
 
   if (isLoading) {
     return (
@@ -122,14 +172,44 @@ export function OutreachConnectionsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Outreach Connections</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Connect Google Sheets, webhooks, Gmail mailboxes, or AI providers for scenario triggers.
+            Connect Google Sheets without pasting keys, then import leads into Cold Outreach.
           </p>
         </div>
-        <Button type="button" onClick={() => setShowForm((v) => !v)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add connection
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={() => void connectGoogle()} disabled={connectingGoogle}>
+            {connectingGoogle ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
+            {sheetsReady ? 'Reconnect Google Sheets' : 'Connect Google Sheets'}
+          </Button>
+          <Button type="button" onClick={() => setShowForm((v) => !v)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add connection
+          </Button>
+        </div>
       </div>
+
+      <Card>
+        <CardContent className="space-y-2 py-4 text-sm">
+          {sheetsReady ? (
+            <p>
+              Google Sheets is connected as <span className="font-medium">{googleStatus?.email}</span>. Pick a
+              spreadsheet on a connection below, or paste a Sheets URL.
+            </p>
+          ) : googleStatus?.connected ? (
+            <p>
+              You are signed in as {googleStatus.email}, but Sheets access is not granted yet. Click Connect Google
+              Sheets once — existing logins need this extra permission.
+            </p>
+          ) : (
+            <p>
+              Connect Google Sheets to list your spreadsheets and import rows. You can still paste a spreadsheet URL
+              after connecting.
+            </p>
+          )}
+          {sheetsCatalog?.drive_error && (
+            <p className="text-xs text-amber-700">{sheetsCatalog.drive_error}</p>
+          )}
+        </CardContent>
+      </Card>
 
       {showForm && (
         <Card>
@@ -164,24 +244,12 @@ export function OutreachConnectionsPage() {
             {type === 'google_sheets' && (
               <>
                 <div>
-                  <Label>Spreadsheet ID</Label>
+                  <Label>Spreadsheet URL or ID (optional)</Label>
                   <Input
                     value={spreadsheetId}
                     onChange={(e) => setSpreadsheetId(e.target.value)}
-                    placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+                    placeholder="https://docs.google.com/spreadsheets/d/…"
                   />
-                </div>
-                <div>
-                  <Label>Access token (dev only)</Label>
-                  <Input
-                    type="password"
-                    value={accessToken}
-                    onChange={(e) => setAccessToken(e.target.value)}
-                    placeholder="Paste service account or OAuth token for testing"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    OAuth coming — paste a service token for test imports until OAuth is wired.
-                  </p>
                 </div>
                 <div>
                   <Label>Import range (optional)</Label>
@@ -235,94 +303,121 @@ export function OutreachConnectionsPage() {
         {connections.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-sm text-gray-500">
-              No connections yet. Add one to sync leads or receive webhook enrollments.
+              No connections yet. Connect Google Sheets or add a webhook.
             </CardContent>
           </Card>
         ) : (
-          connections.map((conn: OutreachConnection) => (
-            <Card key={conn.id}>
-              <CardContent className="flex flex-wrap items-start justify-between gap-4 py-4">
-                <div className="min-w-0 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Link2 className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">{conn.display_name}</span>
-                    <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{conn.type}</span>
-                    <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{conn.status}</span>
+          connections.map((conn: OutreachConnection) => {
+            const savedSheet = String(conn.config?.spreadsheet_id || '');
+            const selected = sheetChoice[conn.id] || savedSheet || (sheetFiles[0]?.id ?? '');
+            return (
+              <Card key={conn.id}>
+                <CardContent className="flex flex-wrap items-start justify-between gap-4 py-4">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Link2 className="h-4 w-4 text-gray-500" />
+                      <span className="font-medium">{conn.display_name}</span>
+                      <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{conn.type}</span>
+                      <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{conn.status}</span>
+                    </div>
+                    {conn.type === 'webhook' && conn.public_token && (
+                      <div className="text-sm">
+                        <span className="text-gray-500">Webhook URL: </span>
+                        <code className="break-all rounded bg-slate-100 px-1 text-xs">{webhookUrl(conn.public_token)}</code>
+                        <button
+                          type="button"
+                          className="ml-2 text-xs underline"
+                          onClick={() => {
+                            void navigator.clipboard.writeText(webhookUrl(conn.public_token!));
+                            toast({ title: 'Webhook URL copied' });
+                          }}
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    )}
+                    {conn.type === 'google_sheets' && savedSheet && (
+                      <p className="text-xs text-gray-500">Sheet: {savedSheet}</p>
+                    )}
+                    {conn.last_error && (
+                      <p className="text-xs text-red-600">{conn.last_error}</p>
+                    )}
                   </div>
-                  {conn.type === 'webhook' && conn.public_token && (
-                    <div className="text-sm">
-                      <span className="text-gray-500">Webhook URL: </span>
-                      <code className="break-all rounded bg-slate-100 px-1 text-xs">{webhookUrl(conn.public_token)}</code>
-                      <button
-                        type="button"
-                        className="ml-2 text-xs underline"
-                        onClick={() => {
-                          void navigator.clipboard.writeText(webhookUrl(conn.public_token!));
-                          toast({ title: 'Webhook URL copied' });
-                        }}
-                      >
-                        Copy
-                      </button>
-                    </div>
-                  )}
-                  {conn.type === 'google_sheets' && conn.config?.spreadsheet_id && (
-                    <p className="text-xs text-gray-500">Sheet: {String(conn.config.spreadsheet_id)}</p>
-                  )}
-                  {conn.last_error && (
-                    <p className="text-xs text-red-600">{conn.last_error}</p>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {conn.type === 'google_sheets' && (
-                    <div className="w-full max-w-md space-y-2">
-                      <Label className="text-xs">Paste CSV/TSV (email,first_name,last_name,company)</Label>
-                      <textarea
-                        className="min-h-[72px] w-full rounded-md border p-2 font-mono text-xs"
-                        value={importConnectionId === conn.id ? pastedCsv : ''}
-                        onChange={(e) => {
-                          setImportConnectionId(conn.id);
-                          setPastedCsv(e.target.value);
-                        }}
-                        placeholder={'email,first_name,last_name,company\nada@example.com,Ada,Lovelace,Analytical'}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={importMutation.isPending && importConnectionId === conn.id}
-                        onClick={() => {
-                          setImportConnectionId(conn.id);
-                          const sheetId = String(conn.config?.spreadsheet_id || spreadsheetId || 'pasted');
-                          setSpreadsheetId(sheetId);
-                          if (!pastedCsv.trim() && !sheetId) {
-                            toast({
-                              title: 'Paste CSV rows or set a spreadsheet ID',
-                              variant: 'destructive',
-                            });
-                            return;
-                          }
-                          importMutation.mutate(conn.id);
-                        }}
-                      >
-                        <Upload className="mr-1 h-3 w-3" />
-                        Import leads
-                      </Button>
-                    </div>
-                  )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (window.confirm('Delete this connection?')) deleteMutation.mutate(conn.id);
-                    }}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                  <div className="flex flex-wrap gap-2">
+                    {conn.type === 'google_sheets' && (
+                      <div className="w-full max-w-md space-y-2">
+                        {sheetFiles.length > 0 && (
+                          <div>
+                            <Label className="text-xs">Spreadsheet</Label>
+                            <Select
+                              value={selected || undefined}
+                              onValueChange={(value) => setSheetChoice((prev) => ({ ...prev, [conn.id]: value }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose a spreadsheet" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {sheetFiles.map((file) => (
+                                  <SelectItem key={file.id} value={file.id}>
+                                    {file.name || file.id}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        <div>
+                          <Label className="text-xs">Or paste a Sheets URL</Label>
+                          <Input
+                            value={sheetUrl[conn.id] || ''}
+                            onChange={(e) => setSheetUrl((prev) => ({ ...prev, [conn.id]: e.target.value }))}
+                            placeholder="https://docs.google.com/spreadsheets/d/…"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Range</Label>
+                          <Input value={importRange} onChange={(e) => setImportRange(e.target.value)} />
+                        </div>
+                        <Label className="text-xs">Or paste CSV (email, first_name, last_name, company)</Label>
+                        <textarea
+                          className="min-h-[72px] w-full rounded-md border p-2 font-mono text-xs"
+                          value={importConnectionId === conn.id ? pastedCsv : ''}
+                          onChange={(e) => {
+                            setImportConnectionId(conn.id);
+                            setPastedCsv(e.target.value);
+                          }}
+                          placeholder={'email,first_name,last_name,company\nada@example.com,Ada,Lovelace,Analytical'}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={importMutation.isPending && importConnectionId === conn.id}
+                          onClick={() => {
+                            setImportConnectionId(conn.id);
+                            importMutation.mutate(conn);
+                          }}
+                        >
+                          <Upload className="mr-1 h-3 w-3" />
+                          Import leads
+                        </Button>
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (window.confirm('Delete this connection?')) deleteMutation.mutate(conn.id);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>

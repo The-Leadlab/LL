@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useSearchParams } from 'react-router-dom'
 import { HomePage } from './pages/HomePage'
 import { IntakeSelectPage } from './pages/IntakeSelectPage'
 import { IntakeFormPage } from './pages/IntakeFormPage'
@@ -25,7 +25,6 @@ import { ModernAIInsights } from './pages/ModernAIInsights'
 import { NotFound } from './pages/NotFound'
 import { ModernProfile } from './pages/ModernProfile'
 import { AdminPanel } from './pages/Admin/AdminPanel'
-import { Navigate } from 'react-router-dom'
 import { LinkedInCallback } from './pages/Linkedin/Callback'
 import { ModernMessages } from './pages/ModernMessages'
 import { ModernReports } from './pages/ModernReports'
@@ -58,6 +57,12 @@ import AcceptInvitation from './pages/AcceptInvitation'
 import { InvoiceMaker } from './pages/Admin/InvoiceMaker'
 import RecordingDetail from './pages/ConversationIntelligence/RecordingDetail'
 import { GoogleAuthCallback } from './pages/GoogleAuthCallback'
+
+function PreserveSearchNavigate({ to }: { to: string }) {
+  const [params] = useSearchParams();
+  const qs = params.toString();
+  return <Navigate to={qs ? `${to}?${qs}` : to} replace />;
+}
 
 export const router = createBrowserRouter([
   {
@@ -124,7 +129,7 @@ export const router = createBrowserRouter([
           },
           {
             path: '/leads/new',
-            element: <Navigate to="/leads/form" replace />
+            element: <PreserveSearchNavigate to="/leads/form" />
           },
           {
             path: '/leads/:id',

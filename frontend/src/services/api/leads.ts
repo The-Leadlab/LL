@@ -270,8 +270,8 @@ export const leadsAPI = {
     return api.put(`/leads/${id}`, data);
   },
 
-  delete: async (id: number): Promise<any> => {
-    return api.delete(`/leads/${id}`);
+  delete: async (id: number, confirm = true): Promise<any> => {
+    return api.delete(`/leads/${id}`, { params: { confirm } });
   },
 
   uploadCSV: async (formData: FormData): Promise<any> => {

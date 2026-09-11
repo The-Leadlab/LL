@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery, useQueryClient, InvalidateQueryFilters } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2, ArrowLeft, Save } from 'lucide-react';
@@ -333,8 +333,10 @@ const formatPhoneNumber = (value: string, format: string = '### ### ####') => {
 
 export function LeadForm() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const appliedClientPrefill = useRef(false);
 
   const { data: clientsData } = useQuery({
     queryKey: ['clients'],
@@ -365,10 +367,30 @@ export function LeadForm() {
   });
 
   useEffect(() => {
-    if (form.getValues('client_id') != null || activeClients.length === 0) return;
+    if (appliedClientPrefill.current || activeClients.length === 0) return;
+    const requested = Number(searchParams.get('client_id'));
+    let fromStore = NaN;
+    try {
+      fromStore = Number(sessionStorage.getItem('leadlab.leads.selectedClientId'));
+    } catch {
+      fromStore = NaN;
+    }
+    const fromTab =
+      activeClients.find((c) => c.id === requested) ||
+      activeClients.find((c) => c.id === fromStore);
+    if (fromTab) {
+      form.setValue('client_id', fromTab.id);
+      appliedClientPrefill.current = true;
+      return;
+    }
+    if (form.getValues('client_id') != null) {
+      appliedClientPrefill.current = true;
+      return;
+    }
     const general = activeClients.find((c) => c.is_default) ?? activeClients[0];
     form.setValue('client_id', general.id);
-  }, [activeClients, form]);
+    appliedClientPrefill.current = true;
+  }, [activeClients, form, searchParams]);
 
   const { isSubmitting } = form.formState;
 
@@ -396,8 +418,15 @@ export function LeadForm() {
       
       if (response.data.success) {
         toast.success('Lead created successfully');
+        const clientId = leadData.client_id;
+        try {
+          if (clientId) sessionStorage.setItem('leadlab.leads.selectedClientId', String(clientId));
+        } catch {
+          /* ignore */
+        }
         await queryClient.invalidateQueries({ queryKey: ['leads'] });
-        navigate('/leads');
+        await queryClient.invalidateQueries({ queryKey: ['clients'] });
+        navigate(clientId ? `/leads?client_id=${clientId}` : '/leads');
       } else {
         console.error('Lead creation failed:', response.data);
         toast.error(response.data.message || 'Failed to create lead');
@@ -473,7 +502,7 @@ export function LeadForm() {
                         </SelectContent>
                       </Select>
                       <FormDescription className="text-xs text-gray-500">
-                        Defaults to General if you skip selection
+                        Uses the Clients tab you were on. Change it here if this lead belongs to a different client.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
