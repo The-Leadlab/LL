@@ -2,8 +2,8 @@ export const featureFlags = {
   navigation: {
     showEmail: true,
     showEmailSequences: true,
-    showOutreachConnections: true,
-    showOutreachScenarios: true,
+    showOutreachConnections: false,
+    showOutreachScenarios: false,
     showOutreachRuns: true,
     showOutreachTemplates: true,
     showForecasting: false,

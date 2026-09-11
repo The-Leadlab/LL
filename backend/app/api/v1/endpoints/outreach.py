@@ -561,6 +561,8 @@ def list_outreach_jobs(
                 "sent_at": job.sent_at.isoformat() if job.sent_at else None,
                 "last_error": job.last_error,
                 "subject": job.subject[:120] if job.subject else None,
+                "campaign_id": (job.settings or {}).get("campaign_id"),
+                "campaign_name": (job.settings or {}).get("campaign_name"),
             }
             for job in rows
         ],

@@ -35,8 +35,6 @@ import {
   Phone,
   Bell,
   Send,
-  Link2,
-  GitBranch,
   PlayCircle,
   FileStack,
 } from 'lucide-react';
@@ -80,13 +78,7 @@ const navigation: NavItem[] = [
           { name: 'Inbox', icon: Mail, path: '/emails' },
           { name: 'Cold Outreach', icon: Send, path: '/emails/outreach' },
           ...(featureFlags.navigation.showEmailSequences
-            ? [{ name: 'Sequences', icon: Zap, path: '/email-sequences' }]
-            : []),
-          ...(featureFlags.navigation.showOutreachConnections
-            ? [{ name: 'Connections', icon: Link2, path: '/emails/connections' }]
-            : []),
-          ...(featureFlags.navigation.showOutreachScenarios
-            ? [{ name: 'Scenarios', icon: GitBranch, path: '/emails/scenarios' }]
+            ? [{ name: 'Campaigns', icon: Zap, path: '/email-sequences' }]
             : []),
           ...(featureFlags.navigation.showOutreachRuns
             ? [{ name: 'Runs', icon: PlayCircle, path: '/emails/runs' }]

@@ -34,8 +34,6 @@ import { ModernSettings } from './pages/ModernSettings'
 import { ModernEmails } from './pages/ModernEmails'
 import { ColdOutreachPage } from './pages/Emails/ColdOutreach'
 import { OutreachConnectionsPage } from './pages/Emails/OutreachConnections'
-import { OutreachScenariosPage } from './pages/Emails/OutreachScenarios'
-import { OutreachScenarioBuilderPage } from './pages/Emails/OutreachScenarioBuilder'
 import { OutreachRunsPage } from './pages/Emails/OutreachRuns'
 import { OutreachTemplatesPage } from './pages/Emails/OutreachTemplates'
 import { ModernCustomization } from './pages/ModernCustomization'
@@ -233,11 +231,11 @@ export const router = createBrowserRouter([
           },
           {
             path: '/emails/scenarios',
-            element: <OutreachScenariosPage />
+            element: <Navigate to="/email-sequences" replace />
           },
           {
             path: '/emails/scenarios/:id',
-            element: <OutreachScenarioBuilderPage />
+            element: <Navigate to="/email-sequences" replace />
           },
           {
             path: '/emails/runs',
@@ -265,7 +263,7 @@ export const router = createBrowserRouter([
           },
           {
             path: '/email-sequences/create',
-            element: <SequenceBuilder />
+            element: <Navigate to="/emails/outreach" replace />
           },
           {
             path: '/email-sequences/:id',

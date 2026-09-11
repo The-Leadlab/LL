@@ -1,11 +1,26 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Loader2, Play } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/hooks/use-toast';
 import { outreachAPI, type OutreachRun, type OutreachRunStep } from '@/services/api/outreach';
+import emailAPI from '@/services/emailAPI';
+
+type JobRow = {
+  id: number;
+  batch_id?: string | null;
+  lead_id: number;
+  status: string;
+  scheduled_at?: string | null;
+  sent_at?: string | null;
+  last_error?: string | null;
+  subject?: string | null;
+  campaign_id?: number | null;
+  campaign_name?: string | null;
+};
 
 function RunRow({ run }: { run: OutreachRun }) {
   const [expanded, setExpanded] = useState(false);
@@ -82,75 +97,159 @@ function RunRow({ run }: { run: OutreachRun }) {
 }
 
 export function OutreachRunsPage() {
-  const { toast } = useToast();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: runs = [], isLoading } = useQuery({
+  const { toast } = useToast();
+
+  const { data: runs = [], isLoading: runsLoading } = useQuery({
     queryKey: ['outreach-runs'],
     queryFn: () => outreachAPI.listRuns({ limit: 100 }),
   });
 
-  const processMutation = useMutation({
-    mutationFn: () => outreachAPI.processNow(25),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['outreach-runs'] });
-      queryClient.invalidateQueries({ queryKey: ['outreach-jobs'] });
-      toast({
-        title: 'Queue processed',
-        description: `Sent total: ${String(data.sent_total ?? 0)}. Refresh runs to see updates.`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Process failed', description: error.message, variant: 'destructive' });
-    },
+  const { data: jobsPayload, isLoading: jobsLoading } = useQuery({
+    queryKey: ['outreach-jobs'],
+    queryFn: () => emailAPI.listOutreachJobs({ limit: 200 }),
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  const jobBatches = useMemo(() => {
+    const items = ((jobsPayload as { items?: JobRow[] } | undefined)?.items || []) as JobRow[];
+    const byBatch = new Map<string, JobRow[]>();
+    for (const job of items) {
+      const key = job.batch_id || `job-${job.id}`;
+      const list = byBatch.get(key) || [];
+      list.push(job);
+      byBatch.set(key, list);
+    }
+    return Array.from(byBatch.entries()).map(([batchId, jobs]) => {
+      const sent = jobs.filter((j) => j.status === 'sent').length;
+      const failed = jobs.filter((j) => j.status === 'failed').length;
+      const pending = jobs.filter((j) => ['pending', 'deferred', 'processing'].includes(j.status)).length;
+      const skipped = jobs.filter((j) => j.status === 'skipped').length;
+      const campaignName =
+        jobs.find((j) => j.campaign_name)?.campaign_name ||
+        (jobs.find((j) => j.campaign_id) ? `Campaign #${jobs.find((j) => j.campaign_id)?.campaign_id}` : 'Cold outreach');
+      const latest = jobs
+        .map((j) => j.sent_at || j.scheduled_at || '')
+        .filter(Boolean)
+        .sort()
+        .reverse()[0];
+      return { batchId, jobs, sent, failed, pending, skipped, campaignName, latest };
+    });
+  }, [jobsPayload]);
+
+  const processMutation = useMutation({
+    mutationFn: () => outreachAPI.processNow(25),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['outreach-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['outreach-jobs'] });
+      toast({ title: 'Queue processed', description: 'Due jobs and steps were processed.' });
+    },
+    onError: () => {
+      toast({ title: 'Could not process queue', variant: 'destructive' });
+    },
+  });
 
   return (
     <div className="container mx-auto space-y-6 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Outreach Runs</h1>
+          <h1 className="text-2xl font-semibold">Runs</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Scenario execution history. Click a row to expand step details.
+            History of every cold outreach campaign launch.
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={processMutation.isPending}
-          onClick={() => processMutation.mutate()}
-        >
-          {processMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Play className="mr-2 h-4 w-4" />
-          )}
-          Process queue now
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={() => navigate('/emails/outreach')}>
+            Cold Outreach
+          </Button>
+          <Button
+            type="button"
+            onClick={() => processMutation.mutate()}
+            disabled={processMutation.isPending}
+          >
+            {processMutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Play className="mr-2 h-4 w-4" />
+            )}
+            Process queue now
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardContent className="p-0">
-          {runs.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-500">No runs yet.</p>
+          <div className="border-b px-4 py-3">
+            <h2 className="font-medium">Campaign batches</h2>
+            <p className="text-xs text-gray-500">Each Cold Outreach launch creates a batch here.</p>
+          </div>
+          {jobsLoading ? (
+            <div className="flex items-center justify-center p-8 text-sm text-gray-500">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading batches…
+            </div>
+          ) : jobBatches.length === 0 ? (
+            <p className="p-6 text-sm text-gray-500">
+              No campaign sends yet. Launch one from Cold Outreach.
+            </p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">
+            <div className="overflow-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs uppercase text-gray-500">
                   <tr>
-                    <th className="w-8 px-4 py-2" />
-                    <th className="px-4 py-2">Run</th>
-                    <th className="px-4 py-2">Status</th>
-                    <th className="px-4 py-2">Scenario</th>
-                    <th className="px-4 py-2">Started</th>
-                    <th className="px-4 py-2">Finished</th>
+                    <th className="px-4 py-3">Campaign</th>
+                    <th className="px-4 py-3">Batch</th>
+                    <th className="px-4 py-3">Sent</th>
+                    <th className="px-4 py-3">Pending</th>
+                    <th className="px-4 py-3">Failed</th>
+                    <th className="px-4 py-3">Skipped</th>
+                    <th className="px-4 py-3">Latest</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {jobBatches.map((batch) => (
+                    <tr key={batch.batchId} className="border-b">
+                      <td className="px-4 py-3 font-medium">{batch.campaignName}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{batch.batchId}</td>
+                      <td className="px-4 py-3">{batch.sent}</td>
+                      <td className="px-4 py-3">{batch.pending}</td>
+                      <td className="px-4 py-3">{batch.failed}</td>
+                      <td className="px-4 py-3">{batch.skipped}</td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {batch.latest ? new Date(batch.latest).toLocaleString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {runs.length > 0 && (
+      <Card>
+        <CardContent className="p-0">
+          <div className="border-b px-4 py-3">
+            <h2 className="font-medium">Other runs</h2>
+            <p className="text-xs text-gray-500">Older automation history, if any.</p>
+          </div>
+          {runsLoading ? (
+            <div className="flex items-center justify-center p-8 text-sm text-gray-500">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading runs…
+            </div>
+          ) : (
+            <div className="overflow-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs uppercase text-gray-500">
+                  <tr>
+                    <th className="px-4 py-3" />
+                    <th className="px-4 py-3">ID</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3">Started</th>
+                    <th className="px-4 py-3">Finished</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -163,6 +262,7 @@ export function OutreachRunsPage() {
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

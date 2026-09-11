@@ -20,7 +20,7 @@ from app.models.email_sequence import EmailSequence, SequenceEnrollment, Sequenc
 from app.models.lead import Lead
 from app.models.outreach_job import OutreachJob
 from app.services.email_service import EmailService
-from app.services.google_workspace import lead_already_sent_on_sheet, mark_lead_sent_on_sheet
+from app.services.google_workspace import lead_already_sent_for_campaign, mark_lead_sent_on_sheet
 
 logger = logging.getLogger(__name__)
 
@@ -160,8 +160,9 @@ class OutreachRunner:
                 .first()
             )
             ok, reason = lead_can_email(lead)
-            if ok and (settings or {}).get("skip_if_sent", True) and lead_already_sent_on_sheet(lead):
-                ok, reason = False, "Already marked Sent on the Google Sheet"
+            campaign_id = (settings or {}).get("campaign_id")
+            if ok and (settings or {}).get("skip_if_sent", True) and lead_already_sent_for_campaign(lead, campaign_id):
+                ok, reason = False, "Already sent in this campaign"
             if not ok:
                 skipped += 1
                 continue
@@ -221,8 +222,9 @@ class OutreachRunner:
 
             lead = self.db.query(Lead).filter(Lead.id == job.lead_id).first()
             ok, reason = lead_can_email(lead)
-            if ok and (job.settings or {}).get("skip_if_sent", True) and lead_already_sent_on_sheet(lead):
-                ok, reason = False, "Already marked Sent on the Google Sheet"
+            campaign_id = (job.settings or {}).get("campaign_id")
+            if ok and (job.settings or {}).get("skip_if_sent", True) and lead_already_sent_for_campaign(lead, campaign_id):
+                ok, reason = False, "Already sent in this campaign"
             if not ok:
                 job.status = "skipped"
                 job.last_error = reason
@@ -307,7 +309,13 @@ class OutreachRunner:
                         token = self.email_service._get_google_access_token(account)
                 except Exception as sheet_exc:
                     logger.warning("Could not refresh Google token to write Sent status: %s", sheet_exc)
-                mark_lead_sent_on_sheet(self.db, lead, token)
+                mark_lead_sent_on_sheet(
+                    self.db,
+                    lead,
+                    token,
+                    campaign_id=(job.settings or {}).get("campaign_id"),
+                    campaign_name=(job.settings or {}).get("campaign_name"),
+                )
                 self.db.add(job)
                 self.db.commit()
                 sent += 1

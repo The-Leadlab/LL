@@ -32,7 +32,7 @@ from app.schemas.email import (
     EmailStatus as EmailStatusSchema
 )
 from app.models.lead import Lead
-from app.services.google_workspace import lead_already_sent_on_sheet, mark_lead_sent_on_sheet
+from app.services.google_workspace import lead_already_sent_for_campaign, mark_lead_sent_on_sheet
 from app.schemas.email_integration import (
     EmailAccountCreate, EmailAccountUpdate, EmailAccountOut,
     EmailOut, EmailSend, EmailSuggestion, OutreachSend
@@ -579,6 +579,7 @@ async def send_cold_outreach(
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Send or queue personalized emails to selected leads via a connected mailbox."""
+    from app.models.email_sequence import EmailSequence
     from app.services.outreach_runner import OutreachRunner, lead_can_email
 
     account = db.query(EmailAccount).filter(
@@ -589,6 +590,49 @@ async def send_cold_outreach(
     if not account:
         raise HTTPException(status_code=404, detail="Email account not found")
 
+    campaign = None
+    if outreach.campaign_id:
+        campaign = (
+            db.query(EmailSequence)
+            .filter(
+                EmailSequence.id == outreach.campaign_id,
+                EmailSequence.organization_id == current_user.organization_id,
+            )
+            .first()
+        )
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+    else:
+        campaign_name = (outreach.campaign_name or "").strip()
+        if not campaign_name:
+            raise HTTPException(status_code=400, detail="Choose or name a campaign before sending")
+        campaign = EmailSequence(
+            name=campaign_name,
+            description="Cold outreach campaign",
+            organization_id=current_user.organization_id,
+            is_active=True,
+            email_account_id=account.id,
+            steps=[
+                {
+                    "step": 1,
+                    "delay_days": 0,
+                    "subject": outreach.subject,
+                    "body": outreach.body,
+                }
+            ],
+            settings={
+                "timezone": outreach.timezone or "UTC",
+                "send_window_start": outreach.send_window_start,
+                "send_window_end": outreach.send_window_end,
+                "weekdays_only": bool(outreach.weekdays_only),
+                "max_per_hour": outreach.max_per_hour,
+                "source": "cold_outreach",
+            },
+            created_by_id=current_user.id,
+        )
+        db.add(campaign)
+        db.flush()
+
     settings_snapshot = {
         "timezone": outreach.timezone or "UTC",
         "send_window_start": outreach.send_window_start,
@@ -596,6 +640,9 @@ async def send_cold_outreach(
         "weekdays_only": bool(outreach.weekdays_only),
         "max_per_hour": outreach.max_per_hour,
         "skip_if_sent": bool(outreach.skip_if_sent),
+        "campaign_id": campaign.id,
+        "campaign_name": campaign.name,
+        "sequence_id": campaign.id,
     }
     # Drop empty window keys so runner treats unset as no window
     if not settings_snapshot.get("send_window_start"):
@@ -630,6 +677,8 @@ async def send_cold_outreach(
             "queued": queued.get("queued", 0),
             "total": len(outreach.lead_ids),
             "batch_id": queued.get("batch_id"),
+            "campaign_id": campaign.id,
+            "campaign_name": campaign.name,
             "first_scheduled_at": queued.get("first_scheduled_at"),
             "results": [],
         }
@@ -654,8 +703,8 @@ async def send_cold_outreach(
     for index, lead_id in enumerate(outreach.lead_ids):
         lead = by_id.get(lead_id)
         ok, reason = lead_can_email(lead)
-        if ok and outreach.skip_if_sent and lead_already_sent_on_sheet(lead):
-            ok, reason = False, "Already marked Sent on the Google Sheet"
+        if ok and outreach.skip_if_sent and lead_already_sent_for_campaign(lead, campaign.id):
+            ok, reason = False, "Already sent in this campaign"
         if not ok:
             skipped += 1
             results.append({"lead_id": lead_id, "status": "skipped", "reason": reason})
@@ -696,7 +745,13 @@ async def send_cold_outreach(
                     token = email_service._get_google_access_token(account)
             except Exception as sheet_exc:
                 logger.warning("Could not refresh Google token to write Sent status: %s", sheet_exc)
-            mark_lead_sent_on_sheet(db, lead, token)
+            mark_lead_sent_on_sheet(
+                db,
+                lead,
+                token,
+                campaign_id=campaign.id,
+                campaign_name=campaign.name,
+            )
             db.commit()
             results.append({
                 "lead_id": lead.id,
@@ -722,6 +777,8 @@ async def send_cold_outreach(
         "skipped": skipped,
         "queued": 0,
         "total": len(outreach.lead_ids),
+        "campaign_id": campaign.id,
+        "campaign_name": campaign.name,
         "results": results,
     }
 

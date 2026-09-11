@@ -74,7 +74,7 @@ export function SequenceBuilder() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">{isEdit ? 'Edit Sequence' : 'Create Sequence'}</h1>
+      <h1 className="text-2xl font-bold">{isEdit ? 'Edit Campaign' : 'Campaign'}</h1>
       <Card><CardContent className="p-4 space-y-4">
         <div>
           <Label>Name</Label>

@@ -273,9 +273,9 @@ export const EmailsPage: React.FC = () => {
               type="button"
               variant="ghost"
               className="mt-1 w-full justify-start text-sm font-normal"
-              onClick={() => navigate('/emails/scenarios')}
+              onClick={() => navigate('/email-sequences')}
             >
-              Scenarios
+              Campaigns
             </Button>
             <Button
               type="button"
@@ -289,9 +289,9 @@ export const EmailsPage: React.FC = () => {
               type="button"
               variant="ghost"
               className="mt-1 w-full justify-start text-sm font-normal"
-              onClick={() => navigate('/emails/connections')}
+              onClick={() => navigate('/emails/templates')}
             >
-              Connections
+              Templates
             </Button>
           </div>
 

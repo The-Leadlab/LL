@@ -60,6 +60,8 @@ export interface OutreachSendPayload {
   weekdays_only?: boolean;
   max_per_hour?: number | null;
   skip_if_sent?: boolean;
+  campaign_id?: number | null;
+  campaign_name?: string | null;
 }
 
 export interface OutreachSendResult {
@@ -70,6 +72,8 @@ export interface OutreachSendResult {
   queued?: number;
   total: number;
   batch_id?: string;
+  campaign_id?: number;
+  campaign_name?: string;
   first_scheduled_at?: string | null;
   results: Array<{
     lead_id: number;

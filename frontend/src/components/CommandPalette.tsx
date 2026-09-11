@@ -193,24 +193,13 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             action: () => navigate('/emails/outreach'),
             category: 'actions' as const,
           },
-          ...(featureFlags.navigation.showOutreachScenarios
+          ...(featureFlags.navigation.showEmailSequences
             ? [
                 {
-                  id: 'action-outreach-scenarios',
-                  title: 'Outreach Scenarios',
+                  id: 'action-campaigns',
+                  title: 'Campaigns',
                   icon: <Mail className="w-4 h-4" />,
-                  action: () => navigate('/emails/scenarios'),
-                  category: 'actions' as const,
-                },
-              ]
-            : []),
-          ...(featureFlags.navigation.showOutreachConnections
-            ? [
-                {
-                  id: 'action-outreach-connections',
-                  title: 'Outreach Connections',
-                  icon: <Mail className="w-4 h-4" />,
-                  action: () => navigate('/emails/connections'),
+                  action: () => navigate('/email-sequences'),
                   category: 'actions' as const,
                 },
               ]
@@ -222,6 +211,24 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                   title: 'Outreach Runs',
                   icon: <Mail className="w-4 h-4" />,
                   action: () => navigate('/emails/runs'),
+                  category: 'actions' as const,
+                },
+              ]
+            : []),
+          {
+            id: 'action-outreach-connections',
+            title: 'Outreach Connections',
+            icon: <Mail className="w-4 h-4" />,
+            action: () => navigate('/emails/connections'),
+            category: 'actions' as const,
+          },
+          ...(featureFlags.navigation.showOutreachTemplates
+            ? [
+                {
+                  id: 'action-outreach-templates',
+                  title: 'Outreach Templates',
+                  icon: <Mail className="w-4 h-4" />,
+                  action: () => navigate('/emails/templates'),
                   category: 'actions' as const,
                 },
               ]

@@ -595,8 +595,34 @@ def lead_sheet_status(lead: Any) -> str:
     return str(meta.get("status") or "").strip()
 
 
+def lead_campaign_status(lead: Any, campaign_id: Optional[int]) -> str:
+    if not campaign_id:
+        return ""
+    meta = getattr(lead, "outreach_meta", None) or {}
+    if not isinstance(meta, dict):
+        return ""
+    campaigns = meta.get("campaigns") or {}
+    if not isinstance(campaigns, dict):
+        return ""
+    entry = campaigns.get(str(campaign_id)) or campaigns.get(campaign_id)
+    if isinstance(entry, dict):
+        return str(entry.get("status") or "").strip()
+    return str(entry or "").strip()
+
+
 def lead_already_sent_on_sheet(lead: Any) -> bool:
     return is_sent_status(lead_sheet_status(lead))
+
+
+def lead_already_sent_for_campaign(lead: Any, campaign_id: Optional[int] = None) -> bool:
+    """Skip only when this campaign already mailed the lead.
+
+    A new campaign can contact the same email again even if another campaign
+    (or the Google Sheet Status column) already says Sent.
+    """
+    if campaign_id:
+        return is_sent_status(lead_campaign_status(lead, campaign_id))
+    return lead_already_sent_on_sheet(lead)
 
 
 def write_google_sheet_cell(
@@ -623,8 +649,17 @@ def write_google_sheet_cell(
         raise ValueError(f"Sheets write failed ({response.status_code}): {(response.text or '')[:300]}")
 
 
-def mark_lead_sent_on_sheet(db: Session, lead: Any, access_token: Optional[str]) -> bool:
+def mark_lead_sent_on_sheet(
+    db: Session,
+    lead: Any,
+    access_token: Optional[str],
+    *,
+    campaign_id: Optional[int] = None,
+    campaign_name: Optional[str] = None,
+) -> bool:
     meta = dict(getattr(lead, "outreach_meta", None) or {})
+    if not isinstance(meta, dict):
+        meta = {}
     wrote = False
     spreadsheet_id = meta.get("spreadsheet_id")
     column_letter = meta.get("status_column")
@@ -642,6 +677,14 @@ def mark_lead_sent_on_sheet(db: Session, lead: Any, access_token: Optional[str])
         except Exception as exc:
             logger.warning("Could not write Sent status to Google Sheet: %s", exc)
     meta["status"] = "Sent"
+    if campaign_id:
+        campaigns = dict(meta.get("campaigns") or {})
+        campaigns[str(campaign_id)] = {
+            "status": "Sent",
+            "name": campaign_name or "",
+            "at": datetime.utcnow().isoformat(),
+        }
+        meta["campaigns"] = campaigns
     lead.outreach_meta = meta
     flag_modified(lead, "outreach_meta")
     db.add(lead)

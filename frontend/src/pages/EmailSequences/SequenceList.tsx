@@ -72,14 +72,14 @@ export const SequenceList: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Email Sequences</h1>
+            <h1 className="text-3xl font-bold">Campaigns</h1>
             <p className="text-gray-600 mt-1">
-              Automate your outreach with multi-step email campaigns
+              Campaigns are created when you launch Cold Outreach. Open a campaign here to review activity.
             </p>
           </div>
-          <Button onClick={() => navigate('/email-sequences/create')}>
+          <Button onClick={() => navigate('/emails/outreach')}>
             <Plus className="h-4 w-4 mr-2" />
-            Create Sequence
+            Launch in Cold Outreach
           </Button>
         </div>
 
@@ -92,7 +92,7 @@ export const SequenceList: React.FC = () => {
                   <Mail className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total Sequences</p>
+                  <p className="text-sm text-gray-600">Total Campaigns</p>
                   <p className="text-2xl font-bold">{sequences?.length || 0}</p>
                 </div>
               </div>

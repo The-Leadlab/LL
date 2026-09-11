@@ -116,6 +116,8 @@ class OutreachSend(BaseModel):
     weekdays_only: bool = False
     max_per_hour: Optional[int] = None
     skip_if_sent: bool = True
+    campaign_id: Optional[int] = None
+    campaign_name: Optional[str] = None
 
     @validator("lead_ids")
     def validate_lead_ids(cls, v):
@@ -124,6 +126,14 @@ class OutreachSend(BaseModel):
         if len(v) > 25:
             raise ValueError("Send at most 25 leads per batch")
         return v
+
+    @validator("campaign_name", pre=True, always=True)
+    def require_campaign(cls, v, values):
+        name = (v or "").strip() if isinstance(v, str) else (v or None)
+        campaign_id = values.get("campaign_id")
+        if campaign_id or name:
+            return name or None
+        raise ValueError("Choose or name a campaign before sending")
 
     @validator("format")
     def validate_format(cls, v):

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, FileSpreadsheet, Loader2, Mail, Search, Send, Sparkles, Upload, Users } from 'lucide-react';
+import { Eye, FileSpreadsheet, Link2, Loader2, Mail, PlayCircle, Search, Send, Sparkles, Upload, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/hooks/use-toast';
 import { extractEmailErrorMessage } from '@/lib/emailError';
 import { clientsAPI, type Client } from '@/services/api/clients';
+import { emailSequencesAPI, type EmailSequence } from '@/services/api/email-sequences';
 import { leadsAPI, type Lead } from '@/services/api/leads';
 import emailAPI from '@/services/emailAPI';
 import { outreachAPI, type LeadImportPreview } from '@/services/api/outreach';
@@ -71,7 +72,20 @@ function sheetStatus(lead: Lead): string {
   return (lead.outreach_meta?.status || '').trim();
 }
 
-function isSheetSent(lead: Lead): boolean {
+function campaignStatus(lead: Lead, campaignId?: number | null): string {
+  if (!campaignId) return '';
+  const campaigns = (lead.outreach_meta as { campaigns?: Record<string, { status?: string } | string> } | null | undefined)
+    ?.campaigns;
+  if (!campaigns) return '';
+  const entry = campaigns[String(campaignId)];
+  if (!entry) return '';
+  return typeof entry === 'string' ? entry : (entry.status || '').trim();
+}
+
+function isSheetSent(lead: Lead, campaignId?: number | null): boolean {
+  if (campaignId) {
+    return SENT_STATUS_VALUES.has(campaignStatus(lead, campaignId).toLowerCase());
+  }
   return SENT_STATUS_VALUES.has(sheetStatus(lead).toLowerCase());
 }
 
@@ -205,6 +219,9 @@ export function ColdOutreachPage() {
   const [statusFilter, setStatusFilter] = useState<'ready' | 'all' | 'sent'>('ready');
   const [personalityFilter, setPersonalityFilter] = useState<string>('all');
   const [skipIfSent, setSkipIfSent] = useState(true);
+  const [campaignMode, setCampaignMode] = useState<'existing' | 'new'>('new');
+  const [campaignId, setCampaignId] = useState<string>('');
+  const [campaignName, setCampaignName] = useState('');
   const [connectingGoogle, setConnectingGoogle] = useState(false);
   const [importPreview, setImportPreview] = useState<LeadImportPreview | null>(null);
   const [importMapping, setImportMapping] = useState<Record<string, string>>({});
@@ -261,6 +278,15 @@ export function ColdOutreachPage() {
     queryKey: ['outreach-templates'],
     queryFn: outreachAPI.listTemplates,
   });
+
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ['email-sequences'],
+    queryFn: () => emailSequencesAPI.getAll(),
+  });
+
+  const selectedCampaign = campaigns.find((item: EmailSequence) => String(item.id) === campaignId);
+  const activeCampaignId =
+    campaignMode === 'existing' && campaignId ? Number(campaignId) : null;
 
   const { data: googleStatus } = useQuery({
     queryKey: ['outreach-google-status'],
@@ -334,8 +360,8 @@ export function ColdOutreachPage() {
   const visibleLeads = useMemo(() => {
     const q = search.trim().toLowerCase();
     return leads.filter((lead) => {
-      if (statusFilter === 'sent' && !isSheetSent(lead)) return false;
-      if (statusFilter === 'ready' && isSheetSent(lead)) return false;
+      if (statusFilter === 'sent' && !isSheetSent(lead, activeCampaignId)) return false;
+      if (statusFilter === 'ready' && isSheetSent(lead, activeCampaignId)) return false;
       if (personalityFilter !== 'all' && leadPersonalityLabel(lead) !== personalityFilter) return false;
       if (!q) return true;
       const hay = [
@@ -347,6 +373,7 @@ export function ColdOutreachPage() {
         lead.client_name,
         lead.unique_lead_id,
         sheetStatus(lead),
+        campaignStatus(lead, activeCampaignId),
         leadPersonalityLabel(lead),
       ]
         .filter(Boolean)
@@ -354,10 +381,12 @@ export function ColdOutreachPage() {
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [leads, search, statusFilter, personalityFilter]);
+  }, [leads, search, statusFilter, personalityFilter, activeCampaignId]);
 
-  const readyLeadCount = leads.filter((lead) => Boolean(lead.email) && !isSheetSent(lead)).length;
-  const sentLeadCount = leads.filter((lead) => isSheetSent(lead)).length;
+  const readyLeadCount = leads.filter(
+    (lead) => Boolean(lead.email) && !isSheetSent(lead, activeCampaignId),
+  ).length;
+  const sentLeadCount = leads.filter((lead) => isSheetSent(lead, activeCampaignId)).length;
 
   const selectedLeads = useMemo(
     () => leads.filter((lead) => selectedIds.has(lead.id)),
@@ -425,7 +454,7 @@ export function ColdOutreachPage() {
     setSelectedIds(
       new Set(
         visibleLeads
-          .filter((lead) => Boolean(lead.email) && (!skipIfSent || !isSheetSent(lead)))
+          .filter((lead) => Boolean(lead.email) && (!skipIfSent || !isSheetSent(lead, activeCampaignId)))
           .map((lead) => lead.id),
       ),
     );
@@ -435,7 +464,7 @@ export function ColdOutreachPage() {
     setSelectedIds(
       new Set(
         leads
-          .filter((lead) => Boolean(lead.email) && (!skipIfSent || !isSheetSent(lead)))
+          .filter((lead) => Boolean(lead.email) && (!skipIfSent || !isSheetSent(lead, activeCampaignId)))
           .map((lead) => lead.id),
       ),
     );
@@ -640,6 +669,12 @@ export function ColdOutreachPage() {
       if (!accountId) throw new Error('Choose a sending mailbox first.');
       const ids = Array.from(selectedIds);
       if (!ids.length) throw new Error('Select at least one lead.');
+      if (campaignMode === 'existing' && !campaignId) {
+        throw new Error('Choose a campaign, or switch to New campaign and name it.');
+      }
+      if (campaignMode === 'new' && !campaignName.trim()) {
+        throw new Error('Name this campaign before sending.');
+      }
       const minutes = Math.max(
         0,
         Math.min(parsePositiveNumber(delayMinutes) || 1, MAX_MINUTES_BETWEEN_SENDS),
@@ -657,6 +692,11 @@ export function ColdOutreachPage() {
         max_per_hour: maxPerHour ? Number(maxPerHour) : null,
         schedule_at: scheduleIso,
         queue: Boolean(useQueue || scheduleIso),
+        campaign_id: campaignMode === 'existing' ? Number(campaignId) : null,
+        campaign_name:
+          campaignMode === 'existing'
+            ? selectedCampaign?.name || null
+            : campaignName.trim(),
       };
 
       let sent = 0;
@@ -691,15 +731,20 @@ export function ColdOutreachPage() {
     onSuccess: async (summary) => {
       setProgress(null);
       if (summary.batchId) setLastBatchId(summary.batchId);
-      await refetchLeads();
+      await Promise.all([
+        refetchLeads(),
+        queryClient.invalidateQueries({ queryKey: ['email-sequences'] }),
+        queryClient.invalidateQueries({ queryKey: ['outreach-jobs'] }),
+        queryClient.invalidateQueries({ queryKey: ['outreach-runs'] }),
+      ]);
       if (summary.mode === 'queued' || (summary.queued || 0) > 0) {
         toast({
           title: 'Campaign queued',
-          description: `Queued ${summary.queued || summary.total} emails. The worker sends them on schedule with your pauses and send window.`,
+          description: `Queued ${summary.queued || summary.total} emails. Track progress under Runs.`,
         });
       } else {
         toast({
-          title: 'Outreach finished',
+          title: 'Campaign finished',
           description: `Sent ${summary.sent} of ${summary.total}. Failed ${summary.failed}, skipped ${summary.skipped}.`,
         });
       }
@@ -715,18 +760,24 @@ export function ColdOutreachPage() {
   });
 
   const canPreview = Boolean(subject.trim() && body.trim());
+  const hasCampaign =
+    (campaignMode === 'existing' && Boolean(campaignId)) ||
+    (campaignMode === 'new' && Boolean(campaignName.trim()));
   const canSend =
     Boolean(accountId) &&
     selectedIds.size > 0 &&
     canPreview &&
+    hasCampaign &&
     !sendMutation.isPending;
-  const sendBlockedReason = !accountId
-    ? 'Choose a mailbox to send from.'
-    : selectedIds.size === 0
-      ? 'Select people in the list first (or add them below).'
-      : !canPreview
-        ? 'Add a subject and message before sending.'
-        : null;
+  const sendBlockedReason = !hasCampaign
+    ? 'Name a new campaign or choose an existing one before sending.'
+    : !accountId
+      ? 'Choose a mailbox to send from.'
+      : selectedIds.size === 0
+        ? 'Select people in the list first (or add them below).'
+        : !canPreview
+          ? 'Add a subject and message before sending.'
+          : null;
 
   if (accountsLoading) {
     return (
@@ -763,17 +814,30 @@ export function ColdOutreachPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Cold Outreach</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-600">
-            Choose a client list, add people if needed, write one email, then send to the selected rows.
+            Name a campaign, choose a client list, add people if needed, then send. History shows under Runs and Campaigns.
           </p>
           <ol className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-            <li className="rounded-full border border-slate-200 bg-white px-3 py-1">1. Choose list</li>
-            <li className="rounded-full border border-slate-200 bg-white px-3 py-1">2. Add or select people</li>
+            <li className="rounded-full border border-slate-200 bg-white px-3 py-1">1. Campaign</li>
+            <li className="rounded-full border border-slate-200 bg-white px-3 py-1">2. People</li>
             <li className="rounded-full border border-slate-200 bg-white px-3 py-1">3. Write &amp; send</li>
           </ol>
         </div>
-        <Button type="button" variant="outline" onClick={() => navigate('/emails')}>
-          Back to Inbox
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={() => navigate('/emails')}>
+            Back to Inbox
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate('/emails/connections')}>
+            <Link2 className="mr-1 h-4 w-4" />
+            Connections
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate('/emails/runs')}>
+            <PlayCircle className="mr-1 h-4 w-4" />
+            Runs
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate('/email-sequences')}>
+            Campaigns
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
@@ -944,8 +1008,9 @@ export function ColdOutreachPage() {
                       <TableBody>
                         {visibleLeads.map((lead) => {
                           const hasEmail = Boolean(lead.email);
-                          const sent = isSheetSent(lead);
-                          const status = sheetStatus(lead);
+                          const sent = isSheetSent(lead, activeCampaignId);
+                          const status =
+                            campaignStatus(lead, activeCampaignId) || sheetStatus(lead);
                           return (
                             <TableRow
                               key={lead.id}
@@ -1182,6 +1247,55 @@ export function ColdOutreachPage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-3 space-y-3">
+              <div>
+                <Label>Campaign</Label>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Every send belongs to a campaign. A new campaign can email the same person again; skip-already-sent only applies inside the selected campaign.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1 rounded-md border border-slate-200 bg-white p-1">
+                <button
+                  type="button"
+                  className={`rounded px-3 py-1.5 text-sm ${
+                    campaignMode === 'new' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                  onClick={() => setCampaignMode('new')}
+                >
+                  New campaign
+                </button>
+                <button
+                  type="button"
+                  className={`rounded px-3 py-1.5 text-sm ${
+                    campaignMode === 'existing' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                  onClick={() => setCampaignMode('existing')}
+                >
+                  Existing campaign
+                </button>
+              </div>
+              {campaignMode === 'new' ? (
+                <Input
+                  value={campaignName}
+                  onChange={(event) => setCampaignName(event.target.value)}
+                  placeholder="e.g. Paystack Lucas wave 2"
+                />
+              ) : (
+                <Select value={campaignId || undefined} onValueChange={setCampaignId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a campaign" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {campaigns.map((item: EmailSequence) => (
+                      <SelectItem key={item.id} value={String(item.id)}>
+                        {item.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
             <div>
               <Label>Send from</Label>
               <Select value={accountId} onValueChange={setAccountId}>
@@ -1393,7 +1507,9 @@ export function ColdOutreachPage() {
                 checked={skipIfSent}
                 onCheckedChange={(checked) => setSkipIfSent(Boolean(checked))}
               />
-              <Label className="font-normal">Skip rows already marked Sent (Make.com filter)</Label>
+              <Label className="font-normal">
+                Skip people already sent in this campaign
+              </Label>
             </div>
 
             <div className="flex items-center gap-2">
