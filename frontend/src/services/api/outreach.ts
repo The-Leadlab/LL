@@ -128,6 +128,7 @@ export interface GoogleSpreadsheetFile {
 export interface GoogleSpreadsheetsResponse extends GoogleSheetsStatus {
   files: GoogleSpreadsheetFile[];
   drive_error?: string | null;
+  drive_error_code?: string | null;
 }
 
 export interface LeadsFromTextResult {

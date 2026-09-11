@@ -22,6 +22,21 @@ function webhookUrl(publicToken: string): string {
   return `${origin}/api/v1/outreach/webhooks/${publicToken}`;
 }
 
+function parseSpreadsheetId(value: string): string {
+  const raw = (value || '').trim();
+  const fromPath = raw.match(/\/spreadsheets\/d\/([a-zA-Z0-9\-_]+)/);
+  if (fromPath) return fromPath[1];
+  const fromQuery = raw.match(/[?&]id=([a-zA-Z0-9\-_]+)/);
+  if (fromQuery) return fromQuery[1];
+  return raw;
+}
+
+function quoteSheetTitle(title: string): string {
+  const raw = (title || 'Sheet1').trim() || 'Sheet1';
+  if (/^[A-Za-z0-9_]+$/.test(raw)) return raw;
+  return `'${raw.replace(/'/g, "''")}'`;
+}
+
 export function OutreachConnectionsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -31,11 +46,12 @@ export function OutreachConnectionsPage() {
   const [displayName, setDisplayName] = useState('');
   const [spreadsheetId, setSpreadsheetId] = useState('');
   const [accountId, setAccountId] = useState('');
-  const [importRange, setImportRange] = useState('Sheet1!A:Z');
+  const [importRange, setImportRange] = useState('Sheet1!A1:Z500');
   const [importConnectionId, setImportConnectionId] = useState<number | null>(null);
   const [pastedCsv, setPastedCsv] = useState('');
   const [sheetChoice, setSheetChoice] = useState<Record<number, string>>({});
   const [sheetUrl, setSheetUrl] = useState<Record<number, string>>({});
+  const [sheetTab, setSheetTab] = useState<Record<number, string>>({});
   const [connectingGoogle, setConnectingGoogle] = useState(false);
 
   const { data: connections = [], isLoading } = useQuery({
@@ -58,12 +74,30 @@ export function OutreachConnectionsPage() {
     queryFn: outreachAPI.listSpreadsheets,
     enabled: Boolean(googleStatus?.connected),
   });
+  const sheetFiles = sheetsCatalog?.files || [];
+  const sheetsReady = Boolean(googleStatus?.connected && googleStatus?.has_sheets_scope);
+  const focusedConnection =
+    connections.find((conn) => conn.id === importConnectionId && conn.type === 'google_sheets') ||
+    connections.find((conn) => conn.type === 'google_sheets');
+  const focusedSheetId = focusedConnection
+    ? parseSpreadsheetId(
+        sheetUrl[focusedConnection.id] ||
+          sheetChoice[focusedConnection.id] ||
+          String(focusedConnection.config?.spreadsheet_id || ''),
+      )
+    : '';
+  const { data: sheetTabsData } = useQuery({
+    queryKey: ['outreach-google-sheet-tabs', focusedSheetId],
+    queryFn: () => outreachAPI.listSpreadsheetTabs(focusedSheetId),
+    enabled: Boolean(sheetsReady && focusedSheetId),
+  });
+  const sheetTabs = sheetTabsData?.tabs || [];
 
   useEffect(() => {
     const oauth = searchParams.get('sheets_oauth') || searchParams.get('email_oauth');
     if (!oauth) return;
     if (oauth === 'success') {
-      toast({ title: 'Google Sheets connected', description: 'Pick a spreadsheet and import leads.' });
+      toast({ title: 'Google Sheets connected', description: 'Paste a spreadsheet URL and import the tab you need.' });
       queryClient.invalidateQueries({ queryKey: ['outreach-connections'] });
       queryClient.invalidateQueries({ queryKey: ['outreach-google-status'] });
       queryClient.invalidateQueries({ queryKey: ['outreach-google-spreadsheets'] });
@@ -155,8 +189,6 @@ export function OutreachConnectionsPage() {
   });
 
   const canCreate = Boolean(displayName.trim()) && (type !== 'gmail_link' || accountId);
-  const sheetsReady = Boolean(googleStatus?.connected && googleStatus?.has_sheets_scope);
-  const sheetFiles = sheetsCatalog?.files || [];
 
   if (isLoading) {
     return (
@@ -191,8 +223,11 @@ export function OutreachConnectionsPage() {
         <CardContent className="space-y-2 py-4 text-sm">
           {sheetsReady ? (
             <p>
-              Google Sheets is connected as <span className="font-medium">{googleStatus?.email}</span>. Pick a
-              spreadsheet on a connection below, or paste a Sheets URL.
+              Google Sheets is connected as <span className="font-medium">{googleStatus?.email}</span>.
+              {googleStatus?.can_write_sheets
+                ? ' After a send, LeadLab can write Sent back into the Status column.'
+                : ' Reconnect if you need LeadLab to write Sent back into the sheet.'}{' '}
+              Paste a Sheets URL below to import.
             </p>
           ) : googleStatus?.connected ? (
             <p>
@@ -201,12 +236,17 @@ export function OutreachConnectionsPage() {
             </p>
           ) : (
             <p>
-              Connect Google Sheets to list your spreadsheets and import rows. You can still paste a spreadsheet URL
-              after connecting.
+              Connect Google Sheets, then paste a spreadsheet URL to import rows into Cold Outreach.
             </p>
           )}
-          {sheetsCatalog?.drive_error && (
+          {sheetsCatalog?.drive_error_code === 'insufficient_scopes' && (
             <p className="text-xs text-amber-700">{sheetsCatalog.drive_error}</p>
+          )}
+          {sheetsReady && !sheetFiles.length && sheetsCatalog?.drive_error_code !== 'insufficient_scopes' && (
+            <p className="text-xs text-gray-500">
+              There is no spreadsheet picker on this Google project yet. Paste the full Sheets URL — that is enough
+              to import and to write Sent after each email.
+            </p>
           )}
         </CardContent>
       </Card>
@@ -370,13 +410,43 @@ export function OutreachConnectionsPage() {
                           <Label className="text-xs">Or paste a Sheets URL</Label>
                           <Input
                             value={sheetUrl[conn.id] || ''}
-                            onChange={(e) => setSheetUrl((prev) => ({ ...prev, [conn.id]: e.target.value }))}
+                            onChange={(e) => {
+                              setImportConnectionId(conn.id);
+                              setSheetUrl((prev) => ({ ...prev, [conn.id]: e.target.value }));
+                            }}
                             placeholder="https://docs.google.com/spreadsheets/d/…"
                           />
                         </div>
+                        {focusedConnection?.id === conn.id && sheetTabs.length > 0 && (
+                          <div>
+                            <Label className="text-xs">Tab</Label>
+                            <Select
+                              value={sheetTab[conn.id] || undefined}
+                              onValueChange={(value) => {
+                                setSheetTab((prev) => ({ ...prev, [conn.id]: value }));
+                                setImportRange(`${quoteSheetTitle(value)}!A1:Z500`);
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose a tab" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {sheetTabs.map((tab) => (
+                                  <SelectItem key={`${tab.sheet_id || tab.title}`} value={tab.title}>
+                                    {tab.title}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                         <div>
                           <Label className="text-xs">Range</Label>
-                          <Input value={importRange} onChange={(e) => setImportRange(e.target.value)} />
+                          <Input
+                            value={importRange}
+                            onChange={(e) => setImportRange(e.target.value)}
+                            placeholder="Cleaned - Lucas!A1:Z500"
+                          />
                         </div>
                         <Label className="text-xs">Or paste CSV (email, first_name, last_name, company)</Label>
                         <textarea

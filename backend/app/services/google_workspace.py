@@ -102,6 +102,86 @@ def get_user_google_access_token(db: Session, user: User) -> str:
     return EmailService(db)._get_google_access_token(account)
 
 
+def _drive_error_payload(response: requests.Response) -> Tuple[str, str]:
+    try:
+        payload = (response.json() or {}).get("error") or {}
+    except Exception:
+        payload = {}
+    status = str(payload.get("status") or "")
+    message = str(payload.get("message") or "")
+    details = payload.get("details") or []
+    reasons = " ".join(
+        str(item.get("reason") or "") for item in details if isinstance(item, dict)
+    )
+    blob = f"{status} {message} {reasons} {response.text or ''}".upper()
+    if "ACCESS_TOKEN_SCOPE_INSUFFICIENT" in blob or "INSUFFICIENT" in blob and "SCOPE" in blob:
+        return (
+            "insufficient_scopes",
+            "Reconnect Google Sheets to list your spreadsheets, or paste a Sheets URL below.",
+        )
+    if "ACCESS_NOT_CONFIGURED" in blob or "HAS NOT BEEN USED" in blob or "DISABLED" in blob:
+        return (
+            "drive_api_disabled",
+            "Paste a Google Sheets URL to import. The spreadsheet picker needs Drive listing on this Google project.",
+        )
+    return (
+        "drive_list_failed",
+        "Paste a Google Sheets URL to import. The spreadsheet picker is unavailable right now.",
+    )
+
+
+def list_drive_spreadsheets(access_token: str) -> Tuple[List[Dict[str, Any]], Optional[str], Optional[str]]:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    attempts = (
+        {
+            "q": "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+            "fields": "files(id,name,modifiedTime)",
+            "pageSize": 50,
+            "orderBy": "modifiedTime desc",
+            "spaces": "drive",
+            "corpora": "user",
+        },
+        {
+            "q": "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+            "fields": "files(id,name,modifiedTime)",
+            "pageSize": 50,
+            "orderBy": "modifiedTime desc",
+            "supportsAllDrives": "true",
+            "includeItemsFromAllDrives": "true",
+        },
+    )
+    last_error: Tuple[str, str] = (
+        "drive_list_failed",
+        "Paste a Google Sheets URL to import. The spreadsheet picker is unavailable right now.",
+    )
+    for params in attempts:
+        try:
+            response = requests.get(
+                "https://www.googleapis.com/drive/v3/files",
+                params=params,
+                headers=headers,
+                timeout=20,
+            )
+        except Exception as exc:
+            last_error = ("drive_list_failed", str(exc))
+            continue
+        if response.status_code < 400:
+            files = [
+                {
+                    "id": item.get("id"),
+                    "name": item.get("name"),
+                    "modified_time": item.get("modifiedTime"),
+                }
+                for item in (response.json().get("files") or [])
+                if item.get("id")
+            ]
+            return files, None, None
+        last_error = _drive_error_payload(response)
+        if last_error[0] == "insufficient_scopes":
+            break
+    return [], last_error[0], last_error[1]
+
+
 def ensure_sheets_connection(
     db: Session,
     user: User,

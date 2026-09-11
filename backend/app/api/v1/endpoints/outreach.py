@@ -41,6 +41,7 @@ from app.services.google_workspace import (
     get_user_google_access_token,
     google_oauth_account,
     is_sent_status,
+    list_drive_spreadsheets,
     mapped_lead_from_row,
     normalize_header_name,
     parse_pasted_lead_rows,
@@ -716,44 +717,13 @@ def list_google_spreadsheets(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    try:
-        resp = requests.get(
-            "https://www.googleapis.com/drive/v3/files",
-            params={
-                "q": "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
-                "fields": "files(id,name,modifiedTime)",
-                "pageSize": 50,
-                "orderBy": "modifiedTime desc",
-                "supportsAllDrives": "true",
-                "includeItemsFromAllDrives": "true",
-            },
-            headers={"Authorization": f"Bearer {token}"},
-            timeout=30,
-        )
-    except Exception as exc:
-        return {**status_payload, "files": [], "drive_error": str(exc)}
-
-    if resp.status_code == 403:
-        return {
-            **status_payload,
-            "files": [],
-            "drive_error": (
-                "Google Drive listing is not enabled yet. Paste a spreadsheet URL to import. "
-                "On the Finance GCP project, enable Drive API if you want the picker list."
-            ),
-        }
-    if resp.status_code >= 400:
-        return {
-            **status_payload,
-            "files": [],
-            "drive_error": f"Drive API error ({resp.status_code}). Paste a spreadsheet URL instead.",
-        }
-    files = [
-        {"id": item.get("id"), "name": item.get("name"), "modified_time": item.get("modifiedTime")}
-        for item in (resp.json().get("files") or [])
-        if item.get("id")
-    ]
-    return {**status_payload, "files": files, "drive_error": None}
+    files, error_code, drive_error = list_drive_spreadsheets(token)
+    return {
+        **status_payload,
+        "files": files,
+        "drive_error": drive_error,
+        "drive_error_code": error_code,
+    }
 
 
 @router.get("/google/spreadsheets/{spreadsheet_id}/tabs")

@@ -798,8 +798,14 @@ export function ColdOutreachPage() {
                         </Button>
                       )}
                     </div>
-                    {sheetsCatalog?.drive_error && (
+                    {sheetsCatalog?.drive_error_code === 'insufficient_scopes' ? (
                       <p className="text-xs text-amber-700">{sheetsCatalog.drive_error}</p>
+                    ) : (
+                      sheetsCatalog?.drive_error && !sheetFiles.length && (
+                        <p className="text-xs text-gray-500">
+                          Paste a Sheets URL to import. The file picker is optional.
+                        </p>
+                      )
                     )}
                   </>
                 ) : (
