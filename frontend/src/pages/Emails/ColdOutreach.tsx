@@ -182,6 +182,8 @@ export function ColdOutreachPage() {
   const [body, setBody] = useState('');
   const [format, setFormat] = useState<'text' | 'html'>('html');
   const bodyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const listSectionRef = useRef<HTMLDivElement | null>(null);
+  const [addPeopleMethod, setAddPeopleMethod] = useState<'paste' | 'csv' | 'sheet'>('paste');
   const [delayMinutes, setDelayMinutes] = useState('1');
   const [emailsPerMinute, setEmailsPerMinute] = useState('1');
   const [scheduleAt, setScheduleAt] = useState('');
@@ -232,6 +234,16 @@ export function ColdOutreachPage() {
   });
   const clients: Client[] = clientsData?.items ?? [];
   const selectedClient = clients.find((client) => String(client.id) === clientId);
+  const clientInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (clientInitializedRef.current || !clients.length) return;
+    clientInitializedRef.current = true;
+    if (clientId !== 'all') return;
+    const preferred =
+      clients.find((client) => (client.lead_count || 0) > 0) || clients[0];
+    if (preferred) setClientId(String(preferred.id));
+  }, [clients, clientId]);
 
   const parsedClientId = clientId === 'all' ? undefined : Number(clientId);
 
@@ -448,19 +460,30 @@ export function ColdOutreachPage() {
     setPasteEmails('');
     closeImportPreview();
     await refetchLeads();
-    const idsToSelect = result.ready_ids ?? result.lead_ids;
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      idsToSelect.forEach((id) => next.add(id));
-      return next;
-    });
-    setStatusFilter('ready');
+    const idsToSelect = (result.ready_ids?.length ? result.ready_ids : result.lead_ids) || [];
+    setSelectedIds(new Set(idsToSelect));
+    setStatusFilter(idsToSelect.length ? 'ready' : 'all');
     const updated = result.updated || 0;
     const alreadySent = result.already_sent || 0;
     toast({
-      title: 'Leads ready',
-      description: `Imported ${result.imported}${updated ? `, filled names on ${updated} existing` : ''}, already in CRM ${result.skipped}${alreadySent ? `. Skipped ${alreadySent} already marked Sent` : ''}${selectedClient ? ` onto ${selectedClient.name}` : ''}. Ready rows are selected.`,
+      title: idsToSelect.length ? 'People added and selected' : 'Import finished',
+      description: idsToSelect.length
+        ? `${idsToSelect.length} ready to email on ${selectedClient?.name || 'this list'}. Write your message on the right, then Send.`
+        : `Imported ${result.imported}${updated ? `, updated ${updated}` : ''}, skipped ${result.skipped}${alreadySent ? `, already Sent ${alreadySent}` : ''}.`,
     });
+    requestAnimationFrame(() => {
+      listSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const ensureImportClient = () => {
+    if (importClientId) return true;
+    toast({
+      title: 'Choose a client list first',
+      description: 'Pick the list these people belong to (for example Paystack), then add them again.',
+      variant: 'destructive',
+    });
+    return false;
   };
 
   const importTextMutation = useMutation({
@@ -525,7 +548,21 @@ export function ColdOutreachPage() {
   const openPreviewFromText = (text: string, source: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
+    if (!ensureImportClient()) return;
     previewMutation.mutate({ text: trimmed, source });
+  };
+
+  const openPreviewFromSheet = () => {
+    if (!ensureImportClient()) return;
+    if (!selectedSheetId) {
+      toast({
+        title: 'Paste a Google Sheet URL',
+        description: 'Copy the spreadsheet link from Google Sheets, then click Preview.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    previewMutation.mutate({ spreadsheet_id: selectedSheetId });
   };
 
   const connectGoogle = async () => {
@@ -567,6 +604,7 @@ export function ColdOutreachPage() {
 
   const confirmImportPreview = () => {
     if (!pendingImport) return;
+    if (!ensureImportClient()) return;
     const mapping = Object.fromEntries(
       Object.entries(importMapping).filter(([, field]) => field && field !== 'skip'),
     );
@@ -682,6 +720,13 @@ export function ColdOutreachPage() {
     selectedIds.size > 0 &&
     canPreview &&
     !sendMutation.isPending;
+  const sendBlockedReason = !accountId
+    ? 'Choose a mailbox to send from.'
+    : selectedIds.size === 0
+      ? 'Select people in the list first (or add them below).'
+      : !canPreview
+        ? 'Add a subject and message before sending.'
+        : null;
 
   if (accountsLoading) {
     return (
@@ -713,352 +758,430 @@ export function ColdOutreachPage() {
   }
 
   return (
-    <div className="container mx-auto space-y-6 p-6">
+    <div className="container mx-auto max-w-7xl space-y-5 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Cold Outreach</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Load leads from a client (or pick them yourself), write one email, preview it, then send individually
-            to each selected address.
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Cold Outreach</h1>
+          <p className="mt-1 max-w-2xl text-sm text-slate-600">
+            Choose a client list, add people if needed, write one email, then send to the selected rows.
           </p>
+          <ol className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+            <li className="rounded-full border border-slate-200 bg-white px-3 py-1">1. Choose list</li>
+            <li className="rounded-full border border-slate-200 bg-white px-3 py-1">2. Add or select people</li>
+            <li className="rounded-full border border-slate-200 bg-white px-3 py-1">3. Write &amp; send</li>
+          </ol>
         </div>
         <Button type="button" variant="outline" onClick={() => navigate('/emails')}>
           Back to Inbox
         </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Users className="h-5 w-5" />
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="border-b border-slate-100 pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg text-slate-900">
+              <Users className="h-5 w-5 text-slate-700" />
               Recipients
             </CardTitle>
+            <p className="text-sm text-slate-500">
+              People live on a client list. Add them under the table, then tick who should get this email.
+            </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2 rounded-md border border-dashed p-3">
-              <Label>Add people from CSV, paste, or Google Sheets</Label>
-              <p className="text-xs text-gray-500">
-                Include first name, last name, email, company, and an ID column if you have one. Imported rows are
-                saved on the client selected below.
-              </p>
-              <Textarea
-                value={pasteEmails}
-                onChange={(event) => setPasteEmails(event.target.value)}
-                placeholder={'email,first_name,last_name,company\nada@example.com,Ada,Lovelace,Analytical\n\nAli Attia <ali@the-leadlab.com>'}
-                className="min-h-[96px] font-mono text-xs"
-              />
-              <div className="flex flex-wrap gap-2">
+          <CardContent className="space-y-4 pt-4">
+            <div ref={listSectionRef} className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="sm:col-span-2 xl:col-span-2">
+                  <Label>Client list</Label>
+                  <Select
+                    value={clientId}
+                    onValueChange={(value) => {
+                      setClientId(value);
+                      setSelectedIds(new Set());
+                      setSearch('');
+                    }}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Choose a client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All clients</SelectItem>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={String(client.id)}>
+                          {client.name}
+                          {typeof client.lead_count === 'number' ? ` (${client.lead_count})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'ready' | 'all' | 'sent')}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ready">Ready ({readyLeadCount})</SelectItem>
+                      <SelectItem value="sent">Sent ({sentLeadCount})</SelectItem>
+                      <SelectItem value="all">All ({leads.length})</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Personality</Label>
+                  <Select value={personalityFilter} onValueChange={setPersonalityFilter}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All personalities</SelectItem>
+                      {personalityOptions.map((label) => (
+                        <SelectItem key={label} value={label}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  className="pl-9"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder={
+                    selectedClient
+                      ? `Search ${selectedClient.name}`
+                      : 'Search loaded people'
+                  }
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={selectVisibleWithEmail}>
+                  Select visible
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={selectAllLoaded}>
+                  Select all loaded
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
+                  Clear
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled={!pasteEmails.trim() || previewMutation.isPending || importTextMutation.isPending}
-                  onClick={() => openPreviewFromText(pasteEmails, 'outreach_paste')}
+                  onClick={() => refetchLeads()}
+                  disabled={leadsFetching}
                 >
-                  {previewMutation.isPending ? (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                  ) : (
-                    <Upload className="mr-1 h-3 w-3" />
-                  )}
-                  Preview pasted rows
+                  {leadsFetching ? 'Refreshing…' : 'Refresh'}
                 </Button>
-                <label className="inline-flex cursor-pointer items-center rounded-md border px-3 py-1.5 text-sm">
-                  <FileSpreadsheet className="mr-1 h-3 w-3" />
-                  Upload CSV
-                  <input
-                    type="file"
-                    accept=".csv,text/csv,text/plain"
-                    className="hidden"
-                    onChange={(event) => {
-                      onCsvFile(event.target.files?.[0]);
-                      event.target.value = '';
-                    }}
-                  />
-                </label>
+                <span className="ml-auto text-sm font-medium text-slate-700">
+                  {selectedIds.size} selected
+                </span>
               </div>
 
-              <div className="space-y-2 border-t pt-3">
-                <Label>Google Sheet</Label>
-                {sheetsReady ? (
-                  <>
-                    {googleStatus?.connected && googleStatus?.can_write_sheets === false && (
-                      <p className="text-xs text-amber-800">
-                        Google is connected, but LeadLab cannot write Sent back into the Status column yet.
-                        Reconnect Google so outreach can skip rows that already say Sent. On Google's page, scroll
-                        to the bottom and click Continue, then Allow — the button sits under the privacy warning.
-                      </p>
-                    )}
-                    {sheetFiles.length > 0 && (
-                      <Select value={sheetChoice || undefined} onValueChange={setSheetChoice}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a spreadsheet" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {sheetFiles.map((file) => (
-                            <SelectItem key={file.id} value={file.id}>
-                              {file.name || file.id}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <Input
-                      value={sheetUrl}
-                      onChange={(event) => setSheetUrl(event.target.value)}
-                      placeholder="Or paste a Sheets URL"
-                    />
-                    {sheetTabs.length > 0 && (
-                      <Select value={sheetTab || undefined} onValueChange={setSheetTab}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a tab" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {sheetTabs.map((tab) => (
-                            <SelectItem key={`${tab.sheet_id || tab.title}`} value={tab.title}>
-                              {tab.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <Input
-                      value={sheetRange}
-                      onChange={(event) => setSheetRange(event.target.value)}
-                      placeholder="Cleaned - Lucas!A1:Z500"
-                    />
-                    <p className="text-xs text-gray-500">
-                      Rows whose Status is Sent are skipped. After a successful send we write Sent into that cell.
+              <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                {leadsLoading ? (
+                  <div className="flex items-center justify-center p-10 text-sm text-slate-500">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading people…
+                  </div>
+                ) : visibleLeads.length === 0 ? (
+                  <div className="px-6 py-10 text-center">
+                    <Users className="mx-auto h-8 w-8 text-slate-300" />
+                    <h3 className="mt-3 text-base font-medium text-slate-900">
+                      {selectedClient
+                        ? `No people on ${selectedClient.name} yet`
+                        : 'No people match this filter'}
+                    </h3>
+                    <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
+                      {clientId === 'all'
+                        ? 'Pick a client list above, then add people with paste, CSV, or Google Sheet below.'
+                        : 'Use Add people below the table. After import, ready rows are selected so you can send.'}
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={!selectedSheetId || previewMutation.isPending}
-                        onClick={() => previewMutation.mutate({ spreadsheet_id: selectedSheetId })}
-                      >
-                        {previewMutation.isPending ? (
-                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                        ) : (
-                          <FileSpreadsheet className="mr-1 h-3 w-3" />
-                        )}
-                        Preview sheet columns
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      <Button type="button" size="sm" onClick={() => setAddPeopleMethod('paste')}>
+                        Paste emails
                       </Button>
-                      {googleStatus?.can_write_sheets === false && (
-                        <Button type="button" variant="outline" size="sm" onClick={() => void connectGoogle()} disabled={connectingGoogle}>
-                          {connectingGoogle ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileSpreadsheet className="mr-1 h-3 w-3" />}
-                          Reconnect Google
-                        </Button>
-                      )}
+                      <Button type="button" size="sm" variant="outline" onClick={() => setAddPeopleMethod('csv')}>
+                        Upload CSV
+                      </Button>
+                      <Button type="button" size="sm" variant="outline" onClick={() => setAddPeopleMethod('sheet')}>
+                        Google Sheet
+                      </Button>
                     </div>
-                    {sheetsCatalog?.drive_error_code === 'insufficient_scopes' ? (
-                      <p className="text-xs text-amber-700">{sheetsCatalog.drive_error}</p>
-                    ) : (
-                      sheetsCatalog?.drive_error && !sheetFiles.length && (
-                        <p className="text-xs text-gray-500">
-                          Paste a Sheets URL to import. The file picker is optional.
-                        </p>
-                      )
-                    )}
-                  </>
+                  </div>
                 ) : (
-                  <div className="space-y-2">
-                    <Button type="button" variant="outline" size="sm" onClick={() => void connectGoogle()} disabled={connectingGoogle}>
-                      {connectingGoogle ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileSpreadsheet className="mr-1 h-3 w-3" />}
-                      Connect Google Sheets
-                    </Button>
-                    <p className="text-xs text-gray-500">
-                      Google opens a permission page. Scroll to the bottom and click Continue, then Allow.
-                    </p>
+                  <div className="max-h-[26rem] overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50/80">
+                          <TableHead className="w-10">
+                            <Checkbox
+                              checked={
+                                visibleLeads.filter((lead) => lead.email).length > 0 &&
+                                visibleLeads.filter((lead) => lead.email).every((lead) => selectedIds.has(lead.id))
+                              }
+                              onCheckedChange={(checked) => {
+                                if (checked) selectVisibleWithEmail();
+                                else setSelectedIds(new Set());
+                              }}
+                            />
+                          </TableHead>
+                          <TableHead>ID</TableHead>
+                          <TableHead>First name</TableHead>
+                          <TableHead>Last name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Job title</TableHead>
+                          {clientId === 'all' && <TableHead>Client</TableHead>}
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {visibleLeads.map((lead) => {
+                          const hasEmail = Boolean(lead.email);
+                          const sent = isSheetSent(lead);
+                          const status = sheetStatus(lead);
+                          return (
+                            <TableRow
+                              key={lead.id}
+                              className={!hasEmail ? 'opacity-50' : 'cursor-pointer hover:bg-slate-50'}
+                              onClick={() => hasEmail && toggleLead(lead.id, !selectedIds.has(lead.id))}
+                            >
+                              <TableCell onClick={(event) => event.stopPropagation()}>
+                                <Checkbox
+                                  checked={selectedIds.has(lead.id)}
+                                  disabled={!hasEmail}
+                                  onCheckedChange={(checked) => toggleLead(lead.id, Boolean(checked))}
+                                />
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-xs text-slate-500">
+                                {lead.unique_lead_id || lead.id}
+                              </TableCell>
+                              <TableCell>{lead.first_name || '—'}</TableCell>
+                              <TableCell>{lead.last_name || '—'}</TableCell>
+                              <TableCell className="max-w-[180px] truncate">{lead.email || 'No email'}</TableCell>
+                              <TableCell className="max-w-[140px] truncate">{lead.company || '—'}</TableCell>
+                              <TableCell className="max-w-[140px] truncate">{lead.job_title || '—'}</TableCell>
+                              {clientId === 'all' && (
+                                <TableCell className="max-w-[140px] truncate">{lead.client_name || '—'}</TableCell>
+                              )}
+                              <TableCell>
+                                <span className={sent ? 'text-emerald-700' : 'text-slate-500'}>
+                                  {status || 'Ready'}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </div>
+
+              <p className="text-xs text-slate-500">
+                {selectedClient ? `${selectedClient.name} · ` : 'All clients · '}
+                {readyLeadCount} ready · {sentLeadCount} already Sent ·{' '}
+                {leads.filter((lead) => lead.email).length} of {leads.length} loaded have an email
+              </p>
             </div>
 
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input
-                className="pl-9"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={
-                  selectedClient
-                    ? `Search ${selectedClient.name} leads`
-                    : 'Search loaded leads'
-                }
-              />
-            </div>
-
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="min-w-[220px] flex-1">
-                <Label>Client / lead list</Label>
-                <Select
-                  value={clientId}
-                  onValueChange={(value) => {
-                    setClientId(value);
-                    setSelectedIds(new Set());
-                    setSearch('');
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All clients</SelectItem>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={String(client.id)}>
-                        {client.name}
-                        {typeof client.lead_count === 'number' ? ` (${client.lead_count})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="min-w-[160px]">
-                <Label>Status filter</Label>
-                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'ready' | 'all' | 'sent')}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ready">Ready to send ({readyLeadCount})</SelectItem>
-                    <SelectItem value="sent">Already Sent ({sentLeadCount})</SelectItem>
-                    <SelectItem value="all">All loaded ({leads.length})</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="min-w-[180px]">
-                <Label>Personality</Label>
-                <Select value={personalityFilter} onValueChange={setPersonalityFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All personalities" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All personalities</SelectItem>
-                    {personalityOptions.map((label) => (
-                      <SelectItem key={label} value={label}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={selectVisibleWithEmail}>
-                Select visible with email
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={selectAllLoaded}>
-                Select all loaded
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
-                Clear
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => refetchLeads()}
-                disabled={leadsFetching}
-              >
-                {leadsFetching ? 'Refreshing…' : 'Refresh leads'}
-              </Button>
-            </div>
-
-            <div className="max-h-[28rem] overflow-auto rounded-md border">
-              {leadsLoading ? (
-                <div className="flex items-center justify-center p-8 text-sm text-gray-500">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading leads…
+            <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">Add people</h3>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Imports land on the client list above
+                    {selectedClient ? ` (${selectedClient.name})` : ''}. Preview columns, then confirm.
+                  </p>
                 </div>
-              ) : visibleLeads.length === 0 ? (
-                <p className="p-4 text-sm text-gray-500">
-                  {selectedClient
-                    ? `No leads for ${selectedClient.name} match this filter. Choose another client or import a sheet onto this client.`
-                    : 'No leads match this filter.'}
-                </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10">
-                        <Checkbox
-                          checked={
-                            visibleLeads.filter((lead) => lead.email).length > 0 &&
-                            visibleLeads.filter((lead) => lead.email).every((lead) => selectedIds.has(lead.id))
+                {clientId === 'all' && (
+                  <p className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                    Choose a specific client list before importing.
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-1 rounded-md border border-slate-200 bg-white p-1">
+                {(
+                  [
+                    { id: 'paste', label: 'Paste' },
+                    { id: 'csv', label: 'CSV file' },
+                    { id: 'sheet', label: 'Google Sheet' },
+                  ] as const
+                ).map((method) => (
+                  <button
+                    key={method.id}
+                    type="button"
+                    className={`rounded px-3 py-1.5 text-sm ${
+                      addPeopleMethod === method.id
+                        ? 'bg-slate-900 text-white'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                    onClick={() => setAddPeopleMethod(method.id)}
+                  >
+                    {method.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-3 space-y-3">
+                {addPeopleMethod === 'paste' && (
+                  <>
+                    <Label>Paste emails or a CSV table</Label>
+                    <Textarea
+                      value={pasteEmails}
+                      onChange={(event) => setPasteEmails(event.target.value)}
+                      placeholder={'email,first_name,last_name,company\nada@example.com,Ada,Lovelace,Analytical\n\nAli Attia <ali@the-leadlab.com>'}
+                      className="min-h-[110px] bg-white font-mono text-xs"
+                    />
+                    <Button
+                      type="button"
+                      disabled={!pasteEmails.trim() || previewMutation.isPending || importTextMutation.isPending}
+                      onClick={() => openPreviewFromText(pasteEmails, 'outreach_paste')}
+                    >
+                      {previewMutation.isPending ? (
+                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="mr-1 h-4 w-4" />
+                      )}
+                      Preview &amp; add to list
+                    </Button>
+                  </>
+                )}
+
+                {addPeopleMethod === 'csv' && (
+                  <>
+                    <p className="text-sm text-slate-600">
+                      Upload a CSV with email, first name, last name, and company columns. We will preview the mapping before saving.
+                    </p>
+                    <label className="inline-flex cursor-pointer items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50">
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Choose CSV file
+                      <input
+                        type="file"
+                        accept=".csv,text/csv,text/plain"
+                        className="hidden"
+                        onChange={(event) => {
+                          if (!ensureImportClient()) {
+                            event.target.value = '';
+                            return;
                           }
-                          onCheckedChange={(checked) => {
-                            if (checked) selectVisibleWithEmail();
-                            else setSelectedIds(new Set());
-                          }}
+                          onCsvFile(event.target.files?.[0]);
+                          event.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </>
+                )}
+
+                {addPeopleMethod === 'sheet' && (
+                  <>
+                    {sheetsReady ? (
+                      <div className="space-y-2">
+                        {googleStatus?.connected && googleStatus?.can_write_sheets === false && (
+                          <p className="text-xs text-amber-800">
+                            Reconnect Google so LeadLab can write Sent back into the Status column after each send.
+                          </p>
+                        )}
+                        {sheetFiles.length > 0 && (
+                          <Select value={sheetChoice || undefined} onValueChange={setSheetChoice}>
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Choose a spreadsheet" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {sheetFiles.map((file) => (
+                                <SelectItem key={file.id} value={file.id}>
+                                  {file.name || file.id}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        <Input
+                          className="bg-white"
+                          value={sheetUrl}
+                          onChange={(event) => setSheetUrl(event.target.value)}
+                          placeholder="Paste a Google Sheets URL"
                         />
-                      </TableHead>
-                      <TableHead>ID</TableHead>
-                      <TableHead>First name</TableHead>
-                      <TableHead>Last name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Job title</TableHead>
-                      {clientId === 'all' && <TableHead>Client</TableHead>}
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {visibleLeads.map((lead) => {
-                      const hasEmail = Boolean(lead.email);
-                      const sent = isSheetSent(lead);
-                      const status = sheetStatus(lead);
-                      return (
-                        <TableRow
-                          key={lead.id}
-                          className={!hasEmail ? 'opacity-50' : 'cursor-pointer'}
-                          onClick={() => hasEmail && toggleLead(lead.id, !selectedIds.has(lead.id))}
-                        >
-                          <TableCell onClick={(event) => event.stopPropagation()}>
-                            <Checkbox
-                              checked={selectedIds.has(lead.id)}
-                              disabled={!hasEmail}
-                              onCheckedChange={(checked) => toggleLead(lead.id, Boolean(checked))}
-                            />
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-xs text-gray-500">
-                            {lead.unique_lead_id || lead.id}
-                          </TableCell>
-                          <TableCell>{lead.first_name || '—'}</TableCell>
-                          <TableCell>{lead.last_name || '—'}</TableCell>
-                          <TableCell className="max-w-[180px] truncate">{lead.email || 'No email'}</TableCell>
-                          <TableCell className="max-w-[140px] truncate">{lead.company || '—'}</TableCell>
-                          <TableCell className="max-w-[140px] truncate">{lead.job_title || '—'}</TableCell>
-                          {clientId === 'all' && (
-                            <TableCell className="max-w-[140px] truncate">{lead.client_name || '—'}</TableCell>
+                        {sheetTabs.length > 0 && (
+                          <Select value={sheetTab || undefined} onValueChange={setSheetTab}>
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Choose a tab" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {sheetTabs.map((tab) => (
+                                <SelectItem key={`${tab.sheet_id || tab.title}`} value={tab.title}>
+                                  {tab.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        <Input
+                          className="bg-white"
+                          value={sheetRange}
+                          onChange={(event) => setSheetRange(event.target.value)}
+                          placeholder="Cleaned - Lucas!A1:Z500"
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            disabled={!selectedSheetId || previewMutation.isPending}
+                            onClick={openPreviewFromSheet}
+                          >
+                            {previewMutation.isPending ? (
+                              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                            ) : (
+                              <FileSpreadsheet className="mr-1 h-4 w-4" />
+                            )}
+                            Preview &amp; add to list
+                          </Button>
+                          {googleStatus?.can_write_sheets === false && (
+                            <Button type="button" variant="outline" onClick={() => void connectGoogle()} disabled={connectingGoogle}>
+                              {connectingGoogle ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
+                              Reconnect Google
+                            </Button>
                           )}
-                          <TableCell>
-                            <span className={sent ? 'text-emerald-700' : 'text-gray-500'}>
-                              {status || 'Ready'}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Rows marked Sent are skipped. After a successful send we write Sent into that cell.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Button type="button" variant="outline" onClick={() => void connectGoogle()} disabled={connectingGoogle}>
+                          {connectingGoogle ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-1 h-4 w-4" />}
+                          Connect Google Sheets
+                        </Button>
+                        <p className="text-xs text-slate-500">
+                          Google opens a permission page. Scroll to the bottom and click Continue, then Allow.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-            <p className="text-sm text-gray-600">
-              {selectedClient ? `${selectedClient.name} · ` : 'All clients · '}
-              {selectedIds.size} selected · {readyLeadCount} ready · {sentLeadCount} already Sent ·{' '}
-              {leads.filter((lead) => lead.email).length} of {leads.length} loaded have an email
-            </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Mail className="h-5 w-5" />
-              Email
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="border-b border-slate-100 pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg text-slate-900">
+              <Mail className="h-5 w-5 text-slate-700" />
+              Compose &amp; send
             </CardTitle>
+            <p className="text-sm text-slate-500">
+              Write once, preview as the recipient will see it, then send to the selected people.
+            </p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             <div>
               <Label>Send from</Label>
               <Select value={accountId} onValueChange={setAccountId}>
@@ -1073,8 +1196,8 @@ export function ColdOutreachPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="mt-1 text-xs text-gray-500">
-                Recipients see {selectedAccount?.email || 'this mailbox'} as the sender, not the LeadLab no-reply address.
+              <p className="mt-1 text-xs text-slate-500">
+                Recipients see {selectedAccount?.email || 'this mailbox'} as the sender.
               </p>
             </div>
 
@@ -1304,7 +1427,13 @@ export function ColdOutreachPage() {
               </p>
             )}
 
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-2 border-t border-slate-100 pt-4">
+              {sendBlockedReason && (
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  {sendBlockedReason}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -1345,12 +1474,7 @@ export function ColdOutreachPage() {
                 )}
                 {scheduleAt || useQueue ? `Queue ${selectedIds.size || 0}` : `Send to ${selectedIds.size || 0}`}
               </Button>
-              <Button type="button" variant="outline" onClick={() => navigate('/email-sequences')}>
-                Open Sequences
-              </Button>
-              <Button type="button" variant="outline" onClick={() => navigate('/emails/scenarios')}>
-                Scenarios
-              </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1359,12 +1483,12 @@ export function ColdOutreachPage() {
       <Dialog open={Boolean(importPreview)} onOpenChange={(open) => !open && closeImportPreview()}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Match columns</DialogTitle>
+            <DialogTitle>Add people to {selectedClient?.name || 'this list'}</DialogTitle>
             <DialogDescription>
               We found {importPreview?.total_rows || 0} rows
               {importPreview?.has_status
-                ? `, including ${importPreview.sent_count || 0} already marked Sent and ${importPreview.ready_count ?? importPreview.total_rows} ready to send`
-                : ''}. Map first name, last name, email, Status, and any ID column, then import.
+                ? ` (${importPreview.sent_count || 0} already Sent, ${importPreview.ready_count ?? importPreview.total_rows} ready)`
+                : ''}. Confirm the column mapping, then add them under your client list so you can select and send.
             </DialogDescription>
           </DialogHeader>
           {importPreview && (
@@ -1431,7 +1555,7 @@ export function ColdOutreachPage() {
                   {(importTextMutation.isPending || importSheetMutation.isPending) && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Import {importPreview.total_rows} rows
+                  Import {importPreview.total_rows} people onto {selectedClient?.name || 'list'}
                 </Button>
               </div>
             </div>
