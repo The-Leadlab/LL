@@ -3,6 +3,7 @@ from app.services.google_workspace import (
     column_field_map,
     column_index_to_letter,
     is_sent_status,
+    merged_google_oauth_scopes,
     parse_pasted_lead_rows,
     parse_spreadsheet_id,
     preview_mapped_rows,
@@ -98,3 +99,10 @@ def test_sheet_cell_helpers_for_status_writeback():
     assert range_start_row("'Cleaned - Lucas'!A1:Z500") == 1
     assert a1_cell_range("Cleaned - Lucas", "J", 3) == "'Cleaned - Lucas'!J3"
     assert a1_cell_range("Sheet1", "J", 2) == "Sheet1!J2"
+
+
+def test_merged_oauth_scopes_exclude_calendar():
+    scopes = merged_google_oauth_scopes()
+    assert "gmail.send" in scopes
+    assert "spreadsheets" in scopes
+    assert "auth/calendar" not in scopes

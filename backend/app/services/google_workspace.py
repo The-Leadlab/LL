@@ -36,9 +36,14 @@ SPREADSHEET_ID_QUERY_RE = re.compile(r"[?&]id=([a-zA-Z0-9\-_]+)")
 
 
 def merged_google_oauth_scopes() -> str:
+    """Gmail + Sheets only. Calendar stays on the calendar OAuth endpoint.
+
+    Asking for calendar here makes Google's consent page too long (Continue sits
+    under the privacy warning) and requests deleting every calendar when the user
+    only wanted to send mail or write Sent back into a sheet.
+    """
     merged: List[str] = []
     for scope_line in [
-        settings.GOOGLE_CALENDAR_SCOPES,
         settings.GOOGLE_EMAIL_SCOPES,
         settings.GOOGLE_SHEETS_SCOPES,
     ]:

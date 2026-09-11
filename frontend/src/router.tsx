@@ -94,6 +94,14 @@ export const router = createBrowserRouter([
     element: <Legal />,
   },
   {
+    path: '/privacy',
+    element: <Navigate to="/legal?policy=privacy" replace />,
+  },
+  {
+    path: '/terms',
+    element: <Navigate to="/legal?policy=terms" replace />,
+  },
+  {
     path: '/contact',
     element: <Contact />,
   },

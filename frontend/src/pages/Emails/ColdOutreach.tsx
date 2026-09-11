@@ -731,7 +731,8 @@ export function ColdOutreachPage() {
                     {googleStatus?.connected && googleStatus?.can_write_sheets === false && (
                       <p className="text-xs text-amber-800">
                         Google is connected, but LeadLab cannot write Sent back into the Status column yet.
-                        Reconnect Google so outreach can skip rows that already say Sent, the same way Make.com did.
+                        Reconnect Google so outreach can skip rows that already say Sent. On Google's page, scroll
+                        to the bottom and click Continue, then Allow — the button sits under the privacy warning.
                       </p>
                     )}
                     {sheetFiles.length > 0 && (
@@ -802,10 +803,15 @@ export function ColdOutreachPage() {
                     )}
                   </>
                 ) : (
-                  <Button type="button" variant="outline" size="sm" onClick={() => void connectGoogle()} disabled={connectingGoogle}>
-                    {connectingGoogle ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileSpreadsheet className="mr-1 h-3 w-3" />}
-                    Connect Google Sheets
-                  </Button>
+                  <div className="space-y-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => void connectGoogle()} disabled={connectingGoogle}>
+                      {connectingGoogle ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileSpreadsheet className="mr-1 h-3 w-3" />}
+                      Connect Google Sheets
+                    </Button>
+                    <p className="text-xs text-gray-500">
+                      Google opens a permission page. Scroll to the bottom and click Continue, then Allow.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
