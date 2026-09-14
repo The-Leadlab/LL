@@ -124,7 +124,7 @@ def google_auth_init(remember_me: bool = False) -> Any:
         "redirect_uri": _google_auth_redirect_uri(),
         "response_type": "code",
         "access_type": "offline",
-        "prompt": "consent",
+        "prompt": "select_account consent",
         "include_granted_scopes": "true",
         "scope": _google_combined_scopes(),
         "state": _build_oauth_state(remember_me=remember_me),
@@ -142,7 +142,11 @@ def google_auth_callback(
 ) -> Any:
     redirect_base = f"{settings.FRONTEND_URL.rstrip('/')}/signin/google/callback"
     if error:
-        return RedirectResponse(url=f"{redirect_base}?status=error&reason={error}")
+        from urllib.parse import quote
+        reason = error
+        if error in ("org_internal", "access_denied"):
+            reason = "org_internal"
+        return RedirectResponse(url=f"{redirect_base}?status=error&reason={quote(reason)}")
     if not code or not state:
         return RedirectResponse(url=f"{redirect_base}?status=error&reason=missing_code")
 

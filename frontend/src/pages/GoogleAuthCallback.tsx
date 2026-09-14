@@ -4,6 +4,34 @@ import { toast } from 'react-hot-toast';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/auth';
 
+function friendlyOAuthError(reason: string | null): string {
+  if (!reason) return 'Google sign-in failed. Please try again.';
+  switch (reason) {
+    case 'org_internal':
+      return (
+        'Google sign-in is restricted to accounts inside the app\'s Google Workspace organization. ' +
+        'Your email domain is not part of that organization. ' +
+        'Please ask your admin to switch the Google Cloud OAuth consent screen to "External", ' +
+        'or sign in with email and password instead.'
+      );
+    case 'access_denied':
+      return (
+        'Access was denied by Google. You may have cancelled the sign-in, or your account ' +
+        'is not permitted to use this app. Please try again or use email/password sign-in.'
+      );
+    case 'token_exchange':
+      return 'Could not complete sign-in with Google (token exchange failed). Please try again.';
+    case 'userinfo':
+      return 'Could not retrieve your Google profile. Please try again.';
+    case 'no_email':
+      return 'Google did not return an email address. Please try a different Google account.';
+    case 'missing_code':
+      return 'Google sign-in did not return an authorization code. Please try again.';
+    default:
+      return `Google sign-in failed: ${reason}`;
+  }
+}
+
 export function GoogleAuthCallback() {
   const navigate = useNavigate();
 
@@ -16,7 +44,10 @@ export function GoogleAuthCallback() {
 
     const finish = async () => {
       if (status !== 'success' || !token) {
-        toast.error(`Google sign in failed${reason ? `: ${reason}` : ''}`);
+        const isOrgError = reason === 'org_internal' || reason === 'access_denied';
+        toast.error(friendlyOAuthError(reason), {
+          duration: isOrgError ? 10000 : 5000,
+        });
         navigate('/signin', { replace: true });
         return;
       }
