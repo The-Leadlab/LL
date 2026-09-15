@@ -333,6 +333,8 @@ export function ColdOutreachPage() {
       if (typeof s.send_window_end === 'string') setSendWindowEnd(s.send_window_end);
     }
 
+    setShowAdvancedSend(true);
+
     toast({ title: 'Campaign loaded', description: campaignSource.name });
   }, [campaignId, campaignSource, campaignMode, accounts, campaignStepsMissing, campaignDetail, toast]);
 
