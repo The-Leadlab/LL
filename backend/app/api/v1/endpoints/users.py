@@ -1,7 +1,6 @@
 from typing import List, Optional, Any
 from pathlib import Path
 import mimetypes
-import base64
 from datetime import datetime
 import time
 from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
@@ -13,6 +12,12 @@ from app.models.user import User as UserModel
 from app.schemas.user import User, UserCreate, UserUpdate, UserInDB, UserList, UserResponse
 from app.core.security import get_password_hash
 from app.core.config import settings
+from app.core.avatars import initials_avatar_svg
+from app.core.workspace import (
+    PERSONAL_ORG_SENTINEL,
+    provision_personal_organization,
+    record_team_membership,
+)
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
@@ -58,10 +63,24 @@ _EXT_TO_MIME = {
     ".webp": "image/webp",
 }
 
-# 1×1 transparent PNG — returned when no avatar file exists (avoids 404 noise in browsers).
-_PLACEHOLDER_AVATAR_PNG = base64.b64decode(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X2ZkAAAAASUVORK5CYII="
-)
+def _resolve_workspace_org_id(
+    db: Session,
+    *,
+    requested_org_id: Optional[int],
+    first_name: Optional[str],
+    last_name: Optional[str],
+    email: Optional[str],
+) -> tuple[int, bool]:
+    """Return (organization_id, joining_existing_team)."""
+    if requested_org_id in (None, PERSONAL_ORG_SENTINEL):
+        org = provision_personal_organization(
+            db,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+        )
+        return int(org.id), False
+    return int(requested_org_id), True
 
 
 def _mime_from_filename(filename: str) -> Optional[str]:
@@ -172,7 +191,24 @@ def create_user(
             detail="A user with this email already exists"
         )
     
+    requested_org = user_in.organization_id
+    org_id, joining_existing_team = _resolve_workspace_org_id(
+        db,
+        requested_org_id=requested_org,
+        first_name=user_in.first_name,
+        last_name=user_in.last_name,
+        email=str(user_in.email),
+    )
+    user_in.organization_id = org_id
+
     user = crud_user.user.create(db, obj_in=user_in)
+    if joining_existing_team:
+        record_team_membership(
+            db,
+            user=user,
+            organization_id=int(user.organization_id),
+            invited_by_id=int(current_user.id),
+        )
     return user
 
 @router.get("/me", response_model=UserInDB)
@@ -238,12 +274,21 @@ def get_my_avatar(
 ) -> Any:
     """
     Return the current user's avatar image (requires Authorization).
-    If none uploaded, returns 200 with a 1×1 transparent PNG so clients and <img> tags
-    do not treat the response as a hard error (Render disk is ephemeral — see docs).
+    If none uploaded, return a generated initials SVG so the UI never shows a blank/white circle.
     """
     path = _find_avatar_file(int(current_user.id))
     if not path:
-        return Response(content=_PLACEHOLDER_AVATAR_PNG, media_type="image/png")
+        svg = initials_avatar_svg(
+            user_id=int(current_user.id),
+            first_name=getattr(current_user, "first_name", None),
+            last_name=getattr(current_user, "last_name", None),
+            email=getattr(current_user, "email", None),
+        )
+        return Response(
+            content=svg,
+            media_type="image/svg+xml",
+            headers={"Cache-Control": "no-store"},
+        )
     media = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
     return FileResponse(path, media_type=media)
 
@@ -365,7 +410,26 @@ def update_user(
     # Password will be hashed directly by CRUD service
     # No need to assign hashed_password
 
+    previous_org = int(user.organization_id) if user.organization_id else None
+    incoming_org = user_in.organization_id
+    joining_existing_team = False
+    if incoming_org is not None:
+        org_id, joining_existing_team = _resolve_workspace_org_id(
+            db,
+            requested_org_id=incoming_org,
+            first_name=user_in.first_name or user.first_name,
+            last_name=user_in.last_name or user.last_name,
+            email=str(user_in.email or user.email),
+        )
+        user_in.organization_id = org_id
     user = crud_user.user.update(db, db_obj=user, obj_in=user_in)
+    if joining_existing_team and user.organization_id and int(user.organization_id) != previous_org:
+        record_team_membership(
+            db,
+            user=user,
+            organization_id=int(user.organization_id),
+            invited_by_id=int(current_user.id),
+        )
     return user
 
 @router.patch("/{user_id}", response_model=UserInDB)
@@ -396,9 +460,26 @@ def patch_user(
     # not assigning hashed_password because the model doesn't support this field
     # and the CRUD service already hashes the password
 
-    # Convert to dict and remove None values for partial update
+    previous_org = int(user.organization_id) if user.organization_id else None
     update_data = user_in.dict(exclude_unset=True)
+    joining_existing_team = False
+    if "organization_id" in update_data:
+        org_id, joining_existing_team = _resolve_workspace_org_id(
+            db,
+            requested_org_id=update_data.get("organization_id"),
+            first_name=update_data.get("first_name") or user.first_name,
+            last_name=update_data.get("last_name") or user.last_name,
+            email=str(update_data.get("email") or user.email),
+        )
+        update_data["organization_id"] = org_id
     user = crud_user.user.update(db, db_obj=user, obj_in=update_data)
+    if joining_existing_team and user.organization_id and int(user.organization_id) != previous_org:
+        record_team_membership(
+            db,
+            user=user,
+            organization_id=int(user.organization_id),
+            invited_by_id=int(current_user.id),
+        )
     return user
 
 @router.delete("/{user_id}", response_model=UserInDB)

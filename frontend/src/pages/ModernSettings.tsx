@@ -32,6 +32,7 @@ import { useAuthStore } from '@/store/auth';
 import api from '@/lib/axios';
 import emailAPI from '@/services/emailAPI';
 import { calendarIntegrationsAPI } from '@/services/calendarIntegrations';
+import { UserAvatar, useCurrentUserAvatar } from '@/components/UserAvatar';
 
 type Tab = 'profile' | 'notifications' | 'company' | 'security' | 'billing' | 'team' | 'integrations';
 
@@ -129,8 +130,6 @@ export function ModernSettings() {
 function ProfileSettings() {
   const { user, fetchUser } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const avatarBlobRef = useRef<string | null>(null);
-  const [avatarObjectUrl, setAvatarObjectUrl] = useState<string | null>(null);
   const [avatarVersion, setAvatarVersion] = useState(0);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -141,6 +140,7 @@ function ProfileSettings() {
     phone: '',
     bio: ''
   });
+  const avatarObjectUrl = useCurrentUserAvatar(user?.id, avatarVersion);
 
   useEffect(() => {
     if (!user) {
@@ -160,54 +160,6 @@ function ProfileSettings() {
       }));
     }
   }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    const cacheKey = `avatar-cache-${user.id}`;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await api.get('/users/me/avatar', { responseType: 'blob' });
-        if (cancelled) return;
-        if (avatarBlobRef.current) {
-          URL.revokeObjectURL(avatarBlobRef.current);
-        }
-        const url = URL.createObjectURL(res.data);
-        avatarBlobRef.current = url;
-        setAvatarObjectUrl(url);
-        try {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            if (typeof reader.result === 'string') {
-              localStorage.setItem(cacheKey, reader.result);
-            }
-          };
-          reader.readAsDataURL(res.data);
-        } catch {
-          // ignore cache write failures
-        }
-      } catch {
-        if (cancelled) return;
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-          setAvatarObjectUrl(cached);
-        } else {
-          if (avatarBlobRef.current) {
-            URL.revokeObjectURL(avatarBlobRef.current);
-            avatarBlobRef.current = null;
-          }
-          setAvatarObjectUrl(null);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-      if (avatarBlobRef.current) {
-        URL.revokeObjectURL(avatarBlobRef.current);
-        avatarBlobRef.current = null;
-      }
-    };
-  }, [user?.id, avatarVersion]);
 
   const handleAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -305,13 +257,12 @@ function ProfileSettings() {
             Profile Photo
           </label>
           <div className="flex items-center space-x-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center overflow-hidden shrink-0">
-              {avatarObjectUrl ? (
-                <img src={avatarObjectUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <User className="w-10 h-10 text-white" />
-              )}
-            </div>
+            <UserAvatar
+              user={user}
+              photoUrl={avatarObjectUrl}
+              className="w-20 h-20"
+              textClassName="text-xl"
+            />
             <div>
               <input
                 ref={fileInputRef}

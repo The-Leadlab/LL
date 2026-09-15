@@ -93,7 +93,7 @@ async def get_dashboard_stats(
         future_range = "next90d"
         
         # Organization bazlı filtreleme için temel koşul
-        org_filter = True if current_user.is_admin else Lead.organization_id == current_user.organization_id
+        org_filter = Lead.organization_id == current_user.organization_id
         
         # LEADS - Total count
         lead_count = db.query(func.count(Lead.id)).filter(org_filter).scalar() or 0
@@ -141,7 +141,7 @@ async def get_dashboard_stats(
         try:
             inspector = inspect(db.get_bind())
             if 'tasks' in inspector.get_table_names():
-                task_org_filter = True if current_user.is_admin else Task.organization_id == current_user.organization_id
+                task_org_filter = Task.organization_id == current_user.organization_id
                 task_count = db.query(func.count(Task.id)).filter(
                     and_(
                         task_org_filter,
@@ -181,7 +181,7 @@ async def get_dashboard_stats(
         try:
             inspector = inspect(db.get_bind())
             if 'deals' in inspector.get_table_names():
-                deal_org_filter = True if current_user.is_admin else Deal.organization_id == current_user.organization_id
+                deal_org_filter = Deal.organization_id == current_user.organization_id
                 deal_count = db.query(func.count(Deal.id)).filter(deal_org_filter).scalar() or 0
                 
                 # Closed won deals
@@ -347,7 +347,7 @@ async def get_dashboard_stats(
         try:
             inspector = inspect(db.get_bind())
             if 'activities' in inspector.get_table_names():
-                activity_org_filter = True if current_user.is_admin else Activity.organization_id == current_user.organization_id
+                activity_org_filter = Activity.organization_id == current_user.organization_id
                 recent_activities = db.query(Activity).filter(activity_org_filter).order_by(Activity.created_at.desc()).limit(10).all()
             else:
                 recent_activities = []
@@ -374,7 +374,7 @@ async def get_dashboard_stats(
         try:
             inspector = inspect(db.get_bind())
             if 'deals' in inspector.get_table_names():
-                deal_org_filter = True if current_user.is_admin else Deal.organization_id == current_user.organization_id
+                deal_org_filter = Deal.organization_id == current_user.organization_id
                 recent_deals = db.query(Deal).filter(deal_org_filter).order_by(Deal.created_at.desc()).limit(5).all()
             else:
                 recent_deals = []

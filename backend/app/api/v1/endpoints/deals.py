@@ -95,9 +95,7 @@ def create_deal(
     """
     Create new deal.
     """
-    # Set the organization_id to the current user's organization
-    if not current_user.is_admin:
-        deal_in.organization_id = current_user.organization_id
+    deal_in.organization_id = current_user.organization_id
 
     resolved_currency = _resolve_currency_id(db, deal_in.currency_id)
     if resolved_currency != deal_in.currency_id:
@@ -176,7 +174,7 @@ def update_deal(
         )
     
     # Check if user has permission to update this deal
-    if not current_user.is_admin and deal.organization_id != current_user.organization_id:
+    if deal.organization_id != current_user.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
@@ -241,7 +239,7 @@ def delete_deal(
     deal = crud_deal.deal.get(db, deal_id=deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
-    if not current_user.is_admin and deal.organization_id != current_user.organization_id:
+    if deal.organization_id != current_user.organization_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     deal = crud_deal.deal.delete(db, deal_id=deal_id)
     

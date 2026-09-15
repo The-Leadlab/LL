@@ -24,16 +24,11 @@ async def get_tags(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all tags for the current user's organization. Admin users can see all tags."""
+    """Get all tags for the current user's organization."""
     try:
-        # Admin users can see all tags across all organizations
-        if current_user.is_admin:
-            tags = db.query(Tag).all()
-        else:
-            # Regular users can only see tags from their organization
-            tags = db.query(Tag).filter(
-                Tag.organization_id == current_user.organization_id
-            ).all()
+        tags = db.query(Tag).filter(
+            Tag.organization_id == current_user.organization_id
+        ).all()
             
         # Get organization names for all tags
         for tag in tags:
@@ -246,7 +241,7 @@ async def remove_lead_tag(
         
         # Admin kullanıcılar tüm leadler üzerinde işlem yapabilir
         # Normal kullanıcılar sadece kendi organizasyonlarındaki leadler üzerinde işlem yapabilir
-        if not current_user.is_admin and lead.organization_id != current_user.organization_id:
+        if lead.organization_id != current_user.organization_id:
             logger.error(f"Authorization failed: Lead {lead_id} belongs to organization {lead.organization_id}, but user {current_user.id} belongs to organization {current_user.organization_id}")
             raise HTTPException(status_code=403, detail="Not authorized to modify this lead")
 
@@ -257,7 +252,7 @@ async def remove_lead_tag(
         
         # Admin kullanıcılar tüm etiketler üzerinde işlem yapabilir
         # Normal kullanıcılar sadece kendi organizasyonlarındaki etiketler üzerinde işlem yapabilir
-        if not current_user.is_admin and tag.organization_id != current_user.organization_id:
+        if tag.organization_id != current_user.organization_id:
             logger.error(f"Authorization failed: Tag {tag_id} belongs to organization {tag.organization_id}, but user {current_user.id} belongs to organization {current_user.organization_id}")
             raise HTTPException(status_code=403, detail="Not authorized to use this tag")
 

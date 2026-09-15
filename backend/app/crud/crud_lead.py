@@ -77,8 +77,9 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
             # If no tag filter, start with normal query
             query = db.query(Lead).filter(Lead.is_deleted == False)
         
-        # Add organization filter only if user is not admin
-        if organization_id is not None and not is_admin:
+        # Add organization filter whenever an organization is provided.
+        # Org-admin is not a global CRM bypass — each workspace stays isolated.
+        if organization_id is not None:
             query = query.filter(Lead.organization_id == organization_id)
 
         if client_id is not None and client_id > 0:
@@ -138,15 +139,9 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
         """
         Get total count of leads with filters.
         """
-        query = db.query(func.count(Lead.id))
-        
-        # Admin users can see all leads in the database (including deleted ones)
-        if not is_admin:
-            # Normal users can only see non-deleted leads from their organization
-            query = query.filter(
-                Lead.organization_id == organization_id,
-                Lead.is_deleted == False
-            )
+        query = db.query(func.count(Lead.id)).filter(Lead.is_deleted == False)  # noqa: E712
+        if organization_id is not None:
+            query = query.filter(Lead.organization_id == organization_id)
 
         if search:
             search_filter = or_(

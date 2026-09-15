@@ -3,10 +3,9 @@
  * Clean, intuitive, professional
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
-import api from '@/lib/axios';
 import {
   LayoutDashboard,
   Users,
@@ -20,7 +19,6 @@ import {
   Zap,
   Search,
   LogOut,
-  User,
   Building2,
   Settings2,
   Workflow,
@@ -39,6 +37,7 @@ import {
   FileStack,
 } from 'lucide-react';
 import { featureFlags } from '@/config/featureFlags';
+import { UserAvatar, useCurrentUserAvatar } from '@/components/UserAvatar';
 
 interface NavItem {
   name: string;
@@ -169,11 +168,10 @@ const bottomNavigation: NavItem[] = [
 export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const [sidebarAvatarUrl, setSidebarAvatarUrl] = useState<string | null>(null);
-  const sidebarAvatarRef = useRef<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, avatarRevision } = useAuthStore();
+  const sidebarAvatarUrl = useCurrentUserAvatar(user?.id, avatarRevision);
   const adminOnlyNavNames = new Set(['Company']);
   const baseNavigation = user?.is_admin
     ? navigation
@@ -181,40 +179,6 @@ export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const visibleNavigation = user?.is_admin
     ? [...baseNavigation, { name: 'Admin Users', icon: Users, path: '/admin' }]
     : baseNavigation;
-
-  useEffect(() => {
-    if (!user?.id) {
-      if (sidebarAvatarRef.current) {
-        URL.revokeObjectURL(sidebarAvatarRef.current);
-        sidebarAvatarRef.current = null;
-      }
-      setSidebarAvatarUrl(null);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await api.get('/users/me/avatar', { responseType: 'blob' });
-        if (cancelled) return;
-        if (sidebarAvatarRef.current) {
-          URL.revokeObjectURL(sidebarAvatarRef.current);
-        }
-        const url = URL.createObjectURL(res.data);
-        sidebarAvatarRef.current = url;
-        setSidebarAvatarUrl(url);
-      } catch {
-        if (cancelled) return;
-        if (sidebarAvatarRef.current) {
-          URL.revokeObjectURL(sidebarAvatarRef.current);
-          sidebarAvatarRef.current = null;
-        }
-        setSidebarAvatarUrl(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id, avatarRevision]);
 
   const handleLogout = async () => {
     await logout();
@@ -391,13 +355,12 @@ export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
             onClick={handleLogout}
             className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer transition-colors"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center overflow-hidden shrink-0">
-              {sidebarAvatarUrl ? (
-                <img src={sidebarAvatarUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <User className="w-5 h-5 text-white" />
-              )}
-            </div>
+            <UserAvatar
+              user={user}
+              photoUrl={sidebarAvatarUrl}
+              className="w-10 h-10"
+              textClassName="text-sm"
+            />
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50 truncate">
                 {user?.first_name && user?.last_name

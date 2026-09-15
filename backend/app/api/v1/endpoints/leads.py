@@ -80,18 +80,14 @@ def get_lead_statistics(
     current_user: models.User = Depends(deps.get_current_user)
 ) -> Any:
     """
-    Lead statistics for the dashboard. Non-admin users are scoped to their organization;
-    admins see all leads (same as legacy behavior).
+    Lead statistics for the dashboard. Scoped to the current user's organization.
     """
     try:
         # Build organization filter
         filters = [
-            models.Lead.is_deleted == False
+            models.Lead.is_deleted == False,
+            models.Lead.organization_id == current_user.organization_id,
         ]
-
-        # Add organization filter for non-admin users
-        if not current_user.is_admin:
-            filters.append(models.Lead.organization_id == current_user.organization_id)
 
         leads = (
             db.query(models.Lead)
@@ -191,8 +187,7 @@ def read_leads(
     client_id: Optional[int] = Query(None, description="Filter by client id"),
 ) -> Any:
     """
-    Retrieve leads.
-    Admin users can see all leads, normal users only see their organization's leads.
+    Retrieve leads for the current user's organization (team workspace).
     """
     try:
         # Convert tag to tag_id if provided
@@ -217,7 +212,7 @@ def read_leads(
             sort_desc=sort_desc,
             tag_id=tag_id,
             client_id=client_id,
-            is_admin=current_user.is_admin
+            is_admin=False
         )
 
         # Psychometrics is now automatically corrected via hybrid_property
@@ -322,7 +317,7 @@ def export_leads_csv(
                     sort_desc=sort_desc,
                     tag_id=tag_id,
                     client_id=client_id,
-                    is_admin=current_user.is_admin,
+                    is_admin=False,
                 )
                 if not leads:
                     break
@@ -436,7 +431,7 @@ def create_lead(
                 # Add tags to the lead
                 for tag_id in lead_in.tags:
                     tag = crud.tag.get(db=db, id=tag_id)
-                    if tag and (current_user.is_admin or tag.organization_id == current_user.organization_id):
+                    if tag and tag.organization_id == current_user.organization_id:
                         # Insert new association with organization_id
                         db.execute(
                             models.associations.lead_tags.insert().values(
@@ -516,12 +511,9 @@ def read_lead(
         logger.warning(f"Lead with ID {id} not found")
         raise HTTPException(status_code=404, detail="Lead not found")
     
-    # Admin users can access any lead
-    if not current_user.is_admin:
-        # Non-admin users can only access leads from their organization
-        if lead.organization_id != current_user.organization_id:
-            logger.warning(f"User {current_user.id} attempted to access lead {id} from organization {lead.organization_id}")
-            raise HTTPException(status_code=403, detail="Not enough permissions")
+    if lead.organization_id != current_user.organization_id:
+        logger.warning(f"User {current_user.id} attempted to access lead {id} from organization {lead.organization_id}")
+        raise HTTPException(status_code=403, detail="Not enough permissions")
     
     # Convert lead object to dictionary
     lead_dict = {
@@ -631,10 +623,8 @@ def update_lead(
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
         
-    # Check if user has permission to update this lead
-    # Admin kullanıcılar herhangi bir lead'i güncelleyebilir
-    # Normal kullanıcılar sadece kendi organizasyonlarındaki lead'leri güncelleyebilir
-    if not current_user.is_admin and lead.organization_id != current_user.organization_id:
+    # Users can only update leads in their own workspace.
+    if lead.organization_id != current_user.organization_id:
         logger.warning(f"Permission denied: User {current_user.id} attempted to update lead {lead_id} from organization {lead.organization_id}, but belongs to organization {current_user.organization_id}")
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
@@ -679,7 +669,7 @@ def update_lead_tags(
             raise HTTPException(status_code=404, detail="Lead not found")
         
         # Check permissions
-        if not current_user.is_admin and lead.organization_id != current_user.organization_id:
+        if lead.organization_id != current_user.organization_id:
             raise HTTPException(status_code=403, detail="Not enough permissions")
         
         # First, delete existing tag associations for this lead
@@ -692,7 +682,7 @@ def update_lead_tags(
         # Add new tags
         for tag_id in tag_update.tags:
             tag = crud.tag.get(db=db, id=tag_id)
-            if tag and (current_user.is_admin or tag.organization_id == current_user.organization_id):
+            if tag and tag.organization_id == current_user.organization_id:
                 # Insert new association with organization_id
                 db.execute(
                     models.associations.lead_tags.insert().values(
@@ -774,7 +764,7 @@ def bulk_move_leads_to_client(
         lead = crud.lead.get(db=db, id=lid)
         if not lead:
             continue
-        if lead.organization_id != current_user.organization_id and not current_user.is_admin:
+        if lead.organization_id != current_user.organization_id:
             raise HTTPException(status_code=403, detail=f"Not enough permissions for lead {lid}")
         if body.from_client_id is not None and lead.client_id != body.from_client_id:
             continue
@@ -915,8 +905,8 @@ def delete_lead(
     lead = crud.lead.get(db=db, id=lead_id)
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-    # Check permissions: Admin can delete any lead, regular users can only delete leads in their organization
-    if not current_user.is_admin and lead.organization_id != current_user.organization_id:
+    # Users can only delete leads in their own workspace
+    if lead.organization_id != current_user.organization_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
     # If not confirmed, return a confirmation request

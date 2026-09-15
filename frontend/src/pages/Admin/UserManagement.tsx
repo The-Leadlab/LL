@@ -156,7 +156,7 @@ export function UserManagement() {
       password: '',
       is_active: true,
       is_admin: false,
-      organization_id: Array.isArray(organizations) && organizations.length > 0 ? organizations[0].id : undefined
+      organization_id: 0,
     });
     setIsDialogOpen(true);
   };
@@ -287,7 +287,7 @@ export function UserManagement() {
                   name="organization_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Organization</FormLabel>
+                      <FormLabel>Workspace</FormLabel>
                       <Select
                         value={field.value?.toString()}
                         onValueChange={(value) => field.onChange(Number(value))}
@@ -296,9 +296,10 @@ export function UserManagement() {
                           <SelectValue placeholder="Select an organization" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="0">New personal workspace (starts empty)</SelectItem>
                           {Array.isArray(organizations) && organizations.map((org: any) => (
                             <SelectItem key={org.id} value={org.id.toString()}>
-                              {org.name}
+                              Join team: {org.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

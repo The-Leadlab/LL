@@ -185,7 +185,10 @@ async def get_current_user(
         if not user:
             logger.error(f"Failed to load ORM user object for ID: {token_data.sub}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="User data error")
-        
+
+        from app.core.workspace import ensure_personal_workspace_if_needed
+        user = ensure_personal_workspace_if_needed(db, user)
+
         process_time = time.time() - start_time
         logger.debug(f"Authentication completed for user {user.id} in {process_time:.4f}s")
         
