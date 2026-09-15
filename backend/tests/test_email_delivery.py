@@ -38,8 +38,8 @@ class _FakeDB:
         return None
 
 
-def _build_account():
-    return SimpleNamespace(
+def _build_account(**overrides):
+    defaults = dict(
         id=1,
         email="user@example.com",
         display_name="User",
@@ -48,14 +48,21 @@ def _build_account():
         smtp_use_tls=False,
         password_encrypted="encrypted",
         organization_id=1,
+        auth_type="password",
+        oauth_refresh_token=None,
+        provider_type="gmail",
     )
+    defaults.update(overrides)
+    return SimpleNamespace(**defaults)
 
 
-def test_send_email_auto_falls_back_to_api(monkeypatch):
-    account = _build_account()
+def test_send_email_auto_falls_back_to_api_when_from_matches(monkeypatch):
+    """API fallback is allowed when Resend From matches the account email."""
+    account = _build_account(email="noreply@the-leadlab.com")
     service = EmailService(_FakeDB(account))
 
     monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
     monkeypatch.setattr(service, "_send_email_smtp", lambda *args, **kwargs: False)
     monkeypatch.setattr(service, "_send_email_provider_api", lambda *args, **kwargs: True)
     monkeypatch.setattr(service, "_persist_sent_email", lambda *args, **kwargs: None)
@@ -268,3 +275,166 @@ def test_invitation_wrapper_raises_http_exception_when_send_returns_false(monkey
         assert False, "Expected HTTPException when invitation delivery fails"
     except HTTPException as exc:
         assert exc.status_code == 502
+
+
+# ---------------------------------------------------------------------------
+# Custom SMTP fallback guard: From-rewrite prevention
+# ---------------------------------------------------------------------------
+
+
+def test_custom_smtp_account_no_resend_fallback_on_from_mismatch(monkeypatch):
+    """Custom SMTP account must NOT fall back to Resend when From would change."""
+    account = _build_account(
+        email="contact@serenidien.ch",
+        provider_type="custom",
+        smtp_host="mail.infomaniak.com",
+        smtp_port=465,
+    )
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
+    monkeypatch.setattr(service, "_send_email_smtp", lambda *args, **kwargs: False)
+
+    api_called = {"value": False}
+
+    def _spy_api(*args, **kwargs):
+        api_called["value"] = True
+        return True
+
+    monkeypatch.setattr(service, "_send_email_provider_api", _spy_api)
+    monkeypatch.setattr(service, "_persist_sent_email", lambda *args, **kwargs: None)
+
+    result = service.send_email(1, ["lead@example.com"], "Hello", "body", "<p>body</p>")
+    assert result["sent"] is False, "Should NOT silently send as noreply"
+    assert api_called["value"] is False, "Provider API must not be called"
+    assert "rewrite" in (service.last_send_error or "").lower()
+
+
+def test_custom_smtp_account_allows_fallback_when_from_matches(monkeypatch):
+    """If Resend From happens to match the custom account email, fallback is fine."""
+    account = _build_account(
+        email="contact@serenidien.ch",
+        provider_type="custom",
+        smtp_host="mail.infomaniak.com",
+        smtp_port=465,
+    )
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "contact@serenidien.ch")
+    monkeypatch.setattr(service, "_send_email_smtp", lambda *args, **kwargs: False)
+    monkeypatch.setattr(service, "_send_email_provider_api", lambda *args, **kwargs: True)
+    monkeypatch.setattr(service, "_persist_sent_email", lambda *args, **kwargs: None)
+
+    result = service.send_email(1, ["lead@example.com"], "Hello", "body", "<p>body</p>")
+    assert result["sent"] is True
+    assert result["transport"] == "api"
+
+
+def test_google_oauth_path_unchanged(monkeypatch):
+    """Google OAuth accounts still use Gmail API regardless of provider mode."""
+    account = _build_account(
+        auth_type="oauth",
+        oauth_refresh_token="refresh-token",
+        provider_type="gmail",
+    )
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(service, "_send_email_gmail_api", lambda *args, **kwargs: True)
+
+    def _must_not_call(*args, **kwargs):
+        raise AssertionError("Should not reach SMTP or Resend for Google OAuth")
+
+    monkeypatch.setattr(service, "_send_email_smtp", _must_not_call)
+    monkeypatch.setattr(service, "_send_email_provider_api", _must_not_call)
+    monkeypatch.setattr(service, "_persist_sent_email", lambda *args, **kwargs: None)
+
+    result = service.send_email(1, ["to@example.com"], "Subject", "Text", "Html")
+    assert result["sent"] is True
+    assert result["transport"] == "gmail_api"
+
+
+def test_explicit_smtp_mode_no_fallback(monkeypatch):
+    """provider_mode=smtp never tries the API, even for non-custom accounts."""
+    account = _build_account()
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "smtp")
+    monkeypatch.setattr(service, "_send_email_smtp", lambda *args, **kwargs: False)
+
+    api_called = {"value": False}
+
+    def _spy_api(*args, **kwargs):
+        api_called["value"] = True
+        return True
+
+    monkeypatch.setattr(service, "_send_email_provider_api", _spy_api)
+
+    result = service.send_email(1, ["to@example.com"], "Subject", "Text", "Html")
+    assert result["sent"] is False
+    assert api_called["value"] is False
+
+
+def test_explicit_api_mode_still_works(monkeypatch):
+    """provider_mode=api sends via API directly (explicit opt-in)."""
+    account = _build_account(
+        email="contact@serenidien.ch",
+        provider_type="custom",
+    )
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "api")
+    monkeypatch.setattr(service, "_send_email_provider_api", lambda *args, **kwargs: True)
+    monkeypatch.setattr(service, "_persist_sent_email", lambda *args, **kwargs: None)
+
+    result = service.send_email(1, ["to@example.com"], "Subject", "Text", "Html")
+    assert result["sent"] is True
+    assert result["transport"] == "api"
+
+
+def test_persist_records_actual_from_when_api_transport(monkeypatch):
+    """_persist_sent_email records the actual Resend from, not account.email."""
+    account = _build_account(email="noreply@the-leadlab.com")
+    db = _FakeDB(account)
+    service = EmailService(db)
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "api")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
+    monkeypatch.setattr(service, "_send_email_provider_api", lambda *args, **kwargs: True)
+
+    result = service.send_email(1, ["to@example.com"], "Subject", "Text", "Html")
+    assert result["sent"] is True
+    assert result["persisted"] is True
+    assert len(db.added) >= 1
+    persisted_email = db.added[-1]
+    assert persisted_email.from_email == "noreply@the-leadlab.com"
+
+
+def test_smtp_failure_surfaces_error_for_custom_account(monkeypatch):
+    """last_send_error must clearly describe why the send was not attempted via API."""
+    account = _build_account(
+        email="contact@serenidien.ch",
+        provider_type="custom",
+        smtp_host="mail.infomaniak.com",
+        smtp_port=465,
+    )
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
+
+    def _smtp_timeout(*args, **kwargs):
+        service._set_send_error("SMTP_TIMEOUT", "Connection timed out", True, 503)
+        return False
+
+    monkeypatch.setattr(service, "_send_email_smtp", _smtp_timeout)
+    monkeypatch.setattr(service, "_send_email_provider_api", lambda *args, **kwargs: True)
+
+    result = service.send_email(1, ["lead@example.com"], "Hello", "body", "<p>body</p>")
+    assert result["sent"] is False
+    assert service.last_send_error is not None
+    assert "rewrite" in service.last_send_error.lower()
+    assert "noreply@the-leadlab.com" in service.last_send_error
+    assert "SMTP" in (service.last_send_error_code or "")
