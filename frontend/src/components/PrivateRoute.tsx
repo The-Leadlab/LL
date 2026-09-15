@@ -39,9 +39,17 @@ export default function PrivateRoute() {
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }
 
-  // Admin sayfaları kontrolü
-  const adminOnlyPaths = ['/admin', '/settings'];
-  const isAdminRoute = adminOnlyPaths.some(path => location.pathname.startsWith(path));
+  const userAllowedSettingsPaths = new Set([
+    '/settings',
+    '/settings/profile',
+    '/settings/notifications',
+    '/settings/security',
+    '/settings/integrations',
+  ]);
+
+  const isAdminRoute = location.pathname.startsWith('/admin')
+    || (location.pathname.startsWith('/settings')
+        && !userAllowedSettingsPaths.has(location.pathname));
 
   if (isAdminRoute && !user.is_admin) {
     return <Navigate to="/dashboard" replace />;

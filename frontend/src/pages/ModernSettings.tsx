@@ -48,22 +48,20 @@ const tabs = [
 export function ModernSettings() {
   const { tab } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<Tab>('profile');
 
+  const adminOnlyTabs = new Set<Tab>(['company', 'billing', 'team']);
+  const visibleTabs = user?.is_admin
+    ? tabs
+    : tabs.filter((t) => !adminOnlyTabs.has(t.id));
+
   useEffect(() => {
-    const allowed = new Set<Tab>([
-      'profile',
-      'notifications',
-      'company',
-      'security',
-      'billing',
-      'team',
-      'integrations',
-    ]);
-    if (tab && allowed.has(tab as Tab)) {
+    const allowedIds = new Set(visibleTabs.map((t) => t.id));
+    if (tab && allowedIds.has(tab as Tab)) {
       setActiveTab(tab as Tab);
     }
-  }, [tab]);
+  }, [tab, visibleTabs]);
 
   const goToTab = (id: Tab) => {
     setActiveTab(id);
@@ -87,7 +85,7 @@ export function ModernSettings() {
         <div className="col-span-3">
           <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700 p-2">
             <nav className="space-y-1">
-              {tabs.map((tab) => {
+              {visibleTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
 
@@ -953,7 +951,7 @@ type IntegrationTile = {
 function EmailIntegrationPanel() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [provider, setProvider] = useState<'gmail' | 'outlook' | 'yahoo' | 'custom'>('gmail');
+  const [provider, setProvider] = useState<'gmail' | 'outlook' | 'yahoo' | 'custom'>('custom');
   const [emailAddr, setEmailAddr] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -1025,8 +1023,9 @@ function EmailIntegrationPanel() {
     <div className="mb-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/50 p-6">
       <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-1">Email (IMAP / SMTP)</h3>
       <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-        Connect here so you are not sent back to Inbox before credentials are saved. Gmail requires an{' '}
-        <span className="font-medium">App Password</span> (Google Account → Security → 2-Step Verification → App passwords).
+        Connect your mailbox to send outreach and sync your inbox. Use <span className="font-medium">Custom SMTP / IMAP</span> for
+        providers like Infomaniak, OVH, or any standard mail server. Gmail users can connect via OAuth below, or use
+        an <span className="font-medium">App Password</span> (Google Account → Security → 2-Step Verification → App passwords).
       </p>
 
       {isLoading ? (
@@ -1057,10 +1056,10 @@ function EmailIntegrationPanel() {
             onChange={(e) => setProvider(e.target.value as typeof provider)}
             className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
           >
+            <option value="custom">Custom SMTP / IMAP (Infomaniak, OVH, etc.)</option>
             <option value="gmail">Gmail (IMAP)</option>
             <option value="outlook">Outlook / Microsoft 365</option>
             <option value="yahoo">Yahoo</option>
-            <option value="custom">Custom SMTP / IMAP</option>
           </select>
         </div>
         <div>
@@ -1098,44 +1097,52 @@ function EmailIntegrationPanel() {
       </div>
 
       {provider === 'custom' && (
-        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">IMAP host</label>
-            <input
-              type="text"
-              value={imapHost}
-              onChange={(e) => setImapHost(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
-              placeholder="imap.example.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">IMAP port</label>
-            <input
-              type="number"
-              value={imapPort}
-              onChange={(e) => setImapPort(Number(e.target.value) || 993)}
-              className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">SMTP host</label>
-            <input
-              type="text"
-              value={smtpHost}
-              onChange={(e) => setSmtpHost(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
-              placeholder="smtp.example.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">SMTP port</label>
-            <input
-              type="number"
-              value={smtpPort}
-              onChange={(e) => setSmtpPort(Number(e.target.value) || 587)}
-              className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
-            />
+        <div className="mt-4 space-y-4">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            For Infomaniak: IMAP mail.infomaniak.com:993, SMTP mail.infomaniak.com:587 (STARTTLS).
+            Use your full email address as username.
+          </p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">IMAP host</label>
+              <input
+                type="text"
+                value={imapHost}
+                onChange={(e) => setImapHost(e.target.value)}
+                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                placeholder="mail.infomaniak.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">IMAP port</label>
+              <input
+                type="number"
+                value={imapPort}
+                onChange={(e) => setImapPort(Number(e.target.value) || 993)}
+                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                placeholder="993"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">SMTP host</label>
+              <input
+                type="text"
+                value={smtpHost}
+                onChange={(e) => setSmtpHost(e.target.value)}
+                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                placeholder="mail.infomaniak.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">SMTP port</label>
+              <input
+                type="number"
+                value={smtpPort}
+                onChange={(e) => setSmtpPort(Number(e.target.value) || 587)}
+                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                placeholder="587"
+              />
+            </div>
           </div>
         </div>
       )}
