@@ -1251,6 +1251,7 @@ class EmailService:
                 provider_mode = "auto"
 
             transport_used = ""
+            actual_from_email = account.email
             sent = False
             if use_gmail_api:
                 sent = self._send_email_gmail_api(account, msg, to_emails, cc_emails, bcc_emails)
@@ -1261,13 +1262,45 @@ class EmailService:
             elif provider_mode == "api":
                 sent = self._send_email_provider_api(account, to_emails, cc_emails, bcc_emails, subject, body_text, body_html)
                 transport_used = "api"
+                actual_from_email = (
+                    getattr(settings, "RESEND_FROM_EMAIL", None)
+                    or getattr(settings, "EMAILS_FROM_EMAIL", None)
+                    or account.email
+                )
             else:
+                # auto mode: try SMTP first, then conditionally fall back
                 sent = self._send_email_smtp(account, msg, to_emails, cc_emails, bcc_emails)
                 transport_used = "smtp"
                 if not sent:
-                    logger.warning("SMTP delivery failed for account %s, trying provider API fallback", account.id)
-                    sent = self._send_email_provider_api(account, to_emails, cc_emails, bcc_emails, subject, body_text, body_html)
-                    transport_used = "api"
+                    smtp_error = self.last_send_error
+                    smtp_error_code = self.last_send_error_code
+                    if self._is_custom_smtp_account(account) and not self._api_from_matches_account(account):
+                        self._set_send_error(
+                            code=smtp_error_code or "SMTP_SEND_FAILED",
+                            message=(
+                                f"SMTP delivery failed for {account.email} and API fallback "
+                                f"is blocked because it would rewrite the sender to "
+                                f"{getattr(settings, 'RESEND_FROM_EMAIL', None) or getattr(settings, 'EMAILS_FROM_EMAIL', '')}. "
+                                f"Original SMTP error: {smtp_error}"
+                            ),
+                            retryable=self.last_send_retryable,
+                            status_code=self.last_send_status_code,
+                        )
+                        logger.warning(
+                            "SMTP failed for custom account %s (%s); API fallback blocked to prevent From rewrite",
+                            account.id,
+                            account.email,
+                        )
+                    else:
+                        logger.warning("SMTP delivery failed for account %s, trying provider API fallback", account.id)
+                        sent = self._send_email_provider_api(account, to_emails, cc_emails, bcc_emails, subject, body_text, body_html)
+                        transport_used = "api"
+                        if sent:
+                            actual_from_email = (
+                                getattr(settings, "RESEND_FROM_EMAIL", None)
+                                or getattr(settings, "EMAILS_FROM_EMAIL", None)
+                                or account.email
+                            )
 
             if not sent:
                 return {"sent": False, "persisted": False, "transport": transport_used}
@@ -1285,6 +1318,8 @@ class EmailService:
                     bcc_emails=bcc_emails,
                     message_id=msg.get("Message-ID"),
                     lead_id=lead_id,
+                    actual_from_email=actual_from_email,
+                    transport=transport_used,
                 )
             except Exception as persist_err:
                 self.db.rollback()
@@ -1341,6 +1376,26 @@ class EmailService:
             return False
         provider = str(getattr(account, "provider_type", None) or "").lower()
         return provider in {EmailProviderType.GMAIL.value, "gmail", "google"}
+
+    def _is_custom_smtp_account(self, account: EmailAccount) -> bool:
+        """True when the account uses its own SMTP server (not Google OAuth)."""
+        if self._is_google_oauth_mailbox(account):
+            return False
+        provider = str(getattr(account, "provider_type", None) or "").lower()
+        return provider not in {EmailProviderType.GMAIL.value, "gmail", "google"}
+
+    def _api_from_matches_account(self, account: EmailAccount) -> bool:
+        """True when the Resend/API from-address equals the account's email.
+
+        If the domains don't match we'd silently rewrite the sender identity,
+        so the API path must not be used as a fallback.
+        """
+        resend_from = (
+            getattr(settings, "RESEND_FROM_EMAIL", None)
+            or getattr(settings, "EMAILS_FROM_EMAIL", None)
+            or ""
+        ).strip().lower()
+        return resend_from == account.email.strip().lower()
 
     def _send_email_gmail_api(
         self,
@@ -1595,12 +1650,19 @@ class EmailService:
         bcc_emails: Optional[List[str]],
         message_id: Optional[str],
         lead_id: Optional[int] = None,
+        actual_from_email: Optional[str] = None,
+        transport: Optional[str] = None,
     ) -> None:
+        from_email = actual_from_email or account.email
+        from_name = account.display_name
+        if transport == "api" and from_email != account.email:
+            from_name = getattr(settings, "SMTP_FROM_NAME", "LeadLab")
+
         sent_email = Email(
             message_id=message_id or f"sent-{datetime.utcnow().timestamp()}",
             subject=subject,
-            from_email=account.email,
-            from_name=account.display_name,
+            from_email=from_email,
+            from_name=from_name,
             to_emails=json.dumps(to_emails) if to_emails else json.dumps([]),
             cc_emails=json.dumps(cc_emails) if cc_emails else json.dumps([]),
             bcc_emails=json.dumps(bcc_emails) if bcc_emails else json.dumps([]),
