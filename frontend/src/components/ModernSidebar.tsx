@@ -157,7 +157,7 @@ const bottomNavigation: NavItem[] = [
   {
     name: 'Settings',
     icon: Settings,
-    path: '/settings',
+    path: '/settings/profile',
   },
   {
     name: 'Notifications',
@@ -174,9 +174,13 @@ export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, avatarRevision } = useAuthStore();
+  const adminOnlyNavNames = new Set(['Company']);
+  const baseNavigation = user?.is_admin
+    ? navigation
+    : navigation.filter((item) => !adminOnlyNavNames.has(item.name));
   const visibleNavigation = user?.is_admin
-    ? [...navigation, { name: 'Admin Users', icon: Users, path: '/admin' }]
-    : navigation;
+    ? [...baseNavigation, { name: 'Admin Users', icon: Users, path: '/admin' }]
+    : baseNavigation;
 
   useEffect(() => {
     if (!user?.id) {
