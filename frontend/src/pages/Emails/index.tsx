@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Plus, RefreshCw, Mail, Inbox, Send, FileText, AlertCircle, Trash2, Archive, Star, Loader2 } from 'lucide-react';
+import { Plus, RefreshCw, Inbox, Send, FileText, AlertCircle, Trash2, Archive, Star, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Label } from '../../components/ui/Label';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/Select';
 import EmailComposeModal from './EmailComposeModal';
 import EmailDetailModal from './EmailDetailModal';
 import { useNavigate } from 'react-router-dom';
-import emailAPI, { EmailMessage, EmailAccount } from '../../services/emailAPI';
+import emailAPI, { EmailMessage } from '../../services/emailAPI';
 
 const FOLDERS = [
   { name: 'inbox', label: 'Inbox', icon: Inbox },
@@ -30,7 +28,6 @@ export const EmailsPage: React.FC = () => {
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [composeReplyTo, setComposeReplyTo] = useState<{ to: string; subject: string; messageId: string } | undefined>(undefined);
   const [composeForward, setComposeForward] = useState<{ from: string; subject: string; body: string } | undefined>(undefined);
-  const [searchQuery, setSearchQuery] = useState('');
   const [customLabels, setCustomLabels] = useState<string[]>([]);
   const [syncProgress, setSyncProgress] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -260,39 +257,6 @@ export const EmailsPage: React.FC = () => {
               <Plus className="h-4 w-4 mr-2" />
               New Email
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-2 w-full justify-start font-medium"
-              onClick={() => navigate('/emails/outreach')}
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Cold Outreach
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="mt-1 w-full justify-start text-sm font-normal"
-              onClick={() => navigate('/email-sequences')}
-            >
-              Campaigns
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="mt-1 w-full justify-start text-sm font-normal"
-              onClick={() => navigate('/emails/runs')}
-            >
-              Runs
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="mt-1 w-full justify-start text-sm font-normal"
-              onClick={() => navigate('/emails/templates')}
-            >
-              Templates
-            </Button>
           </div>
 
           {/* Account Selector */}
@@ -336,6 +300,26 @@ export const EmailsPage: React.FC = () => {
                   </button>
                 );
               })}
+            </div>
+            <div className="mt-4">
+              <Button variant="outline" size="sm" className="w-full" onClick={addLabel}>
+                Create label
+              </Button>
+              {customLabels.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {customLabels.map((label) => (
+                    <button
+                      key={label}
+                      onClick={() => setSelectedFolder(label.toLowerCase())}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm border ${
+                        selectedFolder === label.toLowerCase() ? 'bg-blue-50 text-blue-700 border-blue-200' : 'hover:bg-gray-100 border-transparent'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -434,27 +418,7 @@ export const EmailsPage: React.FC = () => {
                         <p className="text-sm text-gray-600 line-clamp-2">
                           {email.body_text?.substring(0, 150)}...
                         </p>
-            </div>
-            <div className="mt-4">
-              <Button variant="outline" size="sm" className="w-full" onClick={addLabel}>
-                Create label
-              </Button>
-              {customLabels.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {customLabels.map((label) => (
-                    <button
-                      key={label}
-                      onClick={() => setSelectedFolder(label.toLowerCase())}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm border ${
-                        selectedFolder === label.toLowerCase() ? 'bg-blue-50 text-blue-700 border-blue-200' : 'hover:bg-gray-100 border-transparent'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                      </div>
                     </div>
                   </div>
                 ))}

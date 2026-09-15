@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, FileSpreadsheet, Link2, Loader2, Mail, PlayCircle, Search, Send, Sparkles, Upload, Users } from 'lucide-react';
+import { Eye, FileSpreadsheet, Loader2, Mail, Search, Send, Sparkles, Upload, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -150,19 +150,6 @@ a{color:#0b57d0}
 </style></head><body>${trimmed}</body></html>`;
 }
 
-function leadPersonalityLabel(lead: Lead): string {
-  const psycho = lead.psychometrics || {};
-  const raw =
-    psycho.personality_type ||
-    psycho.personality ||
-    psycho.type ||
-    psycho.disc ||
-    psycho.profile ||
-    lead.wpi ||
-    '';
-  return String(raw || '').trim();
-}
-
 async function fetchAllLeads(clientId?: number): Promise<Lead[]> {
   const collected: Lead[] = [];
   let skip = 0;
@@ -198,6 +185,8 @@ export function ColdOutreachPage() {
   const bodyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const listSectionRef = useRef<HTMLDivElement | null>(null);
   const [addPeopleMethod, setAddPeopleMethod] = useState<'paste' | 'csv' | 'sheet'>('paste');
+  const [showAddPeople, setShowAddPeople] = useState(false);
+  const [showAdvancedSend, setShowAdvancedSend] = useState(false);
   const [delayMinutes, setDelayMinutes] = useState('1');
   const [emailsPerMinute, setEmailsPerMinute] = useState('1');
   const [scheduleAt, setScheduleAt] = useState('');
@@ -217,7 +206,6 @@ export function ColdOutreachPage() {
   const [sheetRange, setSheetRange] = useState('Sheet1!A1:Z500');
   const [sheetTab, setSheetTab] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ready' | 'all' | 'sent'>('ready');
-  const [personalityFilter, setPersonalityFilter] = useState<string>('all');
   const [skipIfSent, setSkipIfSent] = useState(true);
   const [campaignMode, setCampaignMode] = useState<'existing' | 'new'>('new');
   const [campaignId, setCampaignId] = useState<string>('');
@@ -267,7 +255,6 @@ export function ColdOutreachPage() {
   const {
     data: leads = [],
     isLoading: leadsLoading,
-    isFetching: leadsFetching,
     refetch: refetchLeads,
   } = useQuery({
     queryKey: ['outreach-leads', parsedClientId ?? 'all'],
@@ -348,21 +335,11 @@ export function ColdOutreachPage() {
     setSheetRange(`${quoteSheetTitle(sheetTab)}!A1:Z500`);
   }, [sheetTab]);
 
-  const personalityOptions = useMemo(() => {
-    const values = new Set<string>();
-    for (const lead of leads) {
-      const label = leadPersonalityLabel(lead);
-      if (label) values.add(label);
-    }
-    return Array.from(values).sort((a, b) => a.localeCompare(b));
-  }, [leads]);
-
   const visibleLeads = useMemo(() => {
     const q = search.trim().toLowerCase();
     return leads.filter((lead) => {
       if (statusFilter === 'sent' && !isSheetSent(lead, activeCampaignId)) return false;
       if (statusFilter === 'ready' && isSheetSent(lead, activeCampaignId)) return false;
-      if (personalityFilter !== 'all' && leadPersonalityLabel(lead) !== personalityFilter) return false;
       if (!q) return true;
       const hay = [
         lead.first_name,
@@ -374,14 +351,13 @@ export function ColdOutreachPage() {
         lead.unique_lead_id,
         sheetStatus(lead),
         campaignStatus(lead, activeCampaignId),
-        leadPersonalityLabel(lead),
       ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [leads, search, statusFilter, personalityFilter, activeCampaignId]);
+  }, [leads, search, statusFilter, activeCampaignId]);
 
   const readyLeadCount = leads.filter(
     (lead) => Boolean(lead.email) && !isSheetSent(lead, activeCampaignId),
@@ -454,16 +430,6 @@ export function ColdOutreachPage() {
     setSelectedIds(
       new Set(
         visibleLeads
-          .filter((lead) => Boolean(lead.email) && (!skipIfSent || !isSheetSent(lead, activeCampaignId)))
-          .map((lead) => lead.id),
-      ),
-    );
-  };
-
-  const selectAllLoaded = () => {
-    setSelectedIds(
-      new Set(
-        leads
           .filter((lead) => Boolean(lead.email) && (!skipIfSent || !isSheetSent(lead, activeCampaignId)))
           .map((lead) => lead.id),
       ),
@@ -809,35 +775,12 @@ export function ColdOutreachPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-7xl space-y-5 p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Cold Outreach</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">
-            Name a campaign, choose a client list, add people if needed, then send. History shows under Runs and Campaigns.
-          </p>
-          <ol className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-            <li className="rounded-full border border-slate-200 bg-white px-3 py-1">1. Campaign</li>
-            <li className="rounded-full border border-slate-200 bg-white px-3 py-1">2. People</li>
-            <li className="rounded-full border border-slate-200 bg-white px-3 py-1">3. Write &amp; send</li>
-          </ol>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={() => navigate('/emails')}>
-            Back to Inbox
-          </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/emails/connections')}>
-            <Link2 className="mr-1 h-4 w-4" />
-            Connections
-          </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/emails/runs')}>
-            <PlayCircle className="mr-1 h-4 w-4" />
-            Runs
-          </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/email-sequences')}>
-            Campaigns
-          </Button>
-        </div>
+    <div className="container mx-auto max-w-6xl space-y-4 p-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Cold Outreach</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          Pick a list, write one email, send. Campaigns, Runs, and Templates live in the Email menu.
+        </p>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
@@ -853,8 +796,8 @@ export function ColdOutreachPage() {
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div ref={listSectionRef} className="space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="sm:col-span-2 xl:col-span-2">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
                   <Label>Client list</Label>
                   <Select
                     value={clientId}
@@ -891,22 +834,6 @@ export function ColdOutreachPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label>Personality</Label>
-                  <Select value={personalityFilter} onValueChange={setPersonalityFilter}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="All" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All personalities</SelectItem>
-                      {personalityOptions.map((label) => (
-                        <SelectItem key={label} value={label}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               <div className="relative">
@@ -927,20 +854,8 @@ export function ColdOutreachPage() {
                 <Button type="button" variant="outline" size="sm" onClick={selectVisibleWithEmail}>
                   Select visible
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={selectAllLoaded}>
-                  Select all loaded
-                </Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
                   Clear
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => refetchLeads()}
-                  disabled={leadsFetching}
-                >
-                  {leadsFetching ? 'Refreshing…' : 'Refresh'}
                 </Button>
                 <span className="ml-auto text-sm font-medium text-slate-700">
                   {selectedIds.size} selected
@@ -963,18 +878,19 @@ export function ColdOutreachPage() {
                     </h3>
                     <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
                       {clientId === 'all'
-                        ? 'Pick a client list above, then add people with paste, CSV, or Google Sheet below.'
-                        : 'Use Add people below the table. After import, ready rows are selected so you can send.'}
+                        ? 'Pick a client list above, then add people.'
+                        : 'Add people, then select who should receive this email.'}
                     </p>
-                    <div className="mt-4 flex flex-wrap justify-center gap-2">
-                      <Button type="button" size="sm" onClick={() => setAddPeopleMethod('paste')}>
-                        Paste emails
-                      </Button>
-                      <Button type="button" size="sm" variant="outline" onClick={() => setAddPeopleMethod('csv')}>
-                        Upload CSV
-                      </Button>
-                      <Button type="button" size="sm" variant="outline" onClick={() => setAddPeopleMethod('sheet')}>
-                        Google Sheet
+                    <div className="mt-4">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          setShowAddPeople(true);
+                          setAddPeopleMethod('paste');
+                        }}
+                      >
+                        Add people
                       </Button>
                     </div>
                   </div>
@@ -995,12 +911,9 @@ export function ColdOutreachPage() {
                               }}
                             />
                           </TableHead>
-                          <TableHead>ID</TableHead>
-                          <TableHead>First name</TableHead>
-                          <TableHead>Last name</TableHead>
+                          <TableHead>Name</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Company</TableHead>
-                          <TableHead>Job title</TableHead>
                           {clientId === 'all' && <TableHead>Client</TableHead>}
                           <TableHead>Status</TableHead>
                         </TableRow>
@@ -1024,14 +937,11 @@ export function ColdOutreachPage() {
                                   onCheckedChange={(checked) => toggleLead(lead.id, Boolean(checked))}
                                 />
                               </TableCell>
-                              <TableCell className="whitespace-nowrap text-xs text-slate-500">
-                                {lead.unique_lead_id || lead.id}
+                              <TableCell>
+                                {[lead.first_name, lead.last_name].filter(Boolean).join(' ') || '—'}
                               </TableCell>
-                              <TableCell>{lead.first_name || '—'}</TableCell>
-                              <TableCell>{lead.last_name || '—'}</TableCell>
                               <TableCell className="max-w-[180px] truncate">{lead.email || 'No email'}</TableCell>
                               <TableCell className="max-w-[140px] truncate">{lead.company || '—'}</TableCell>
-                              <TableCell className="max-w-[140px] truncate">{lead.job_title || '—'}</TableCell>
                               {clientId === 'all' && (
                                 <TableCell className="max-w-[140px] truncate">{lead.client_name || '—'}</TableCell>
                               )}
@@ -1057,20 +967,27 @@ export function ColdOutreachPage() {
             </div>
 
             <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between text-left"
+                onClick={() => setShowAddPeople((open) => !open)}
+              >
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900">Add people</h3>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    Imports land on the client list above
-                    {selectedClient ? ` (${selectedClient.name})` : ''}. Preview columns, then confirm.
+                    Paste, CSV, or Google Sheet onto {selectedClient ? selectedClient.name : 'a client list'}.
                   </p>
                 </div>
-                {clientId === 'all' && (
-                  <p className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                <span className="text-sm text-slate-500">{showAddPeople ? 'Hide' : 'Show'}</span>
+              </button>
+
+              {showAddPeople && (
+              <div className="mt-3">
+              {clientId === 'all' && (
+                  <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
                     Choose a specific client list before importing.
                   </p>
-                )}
-              </div>
+              )}
 
               <div className="mt-3 flex flex-wrap gap-1 rounded-md border border-slate-200 bg-white p-1">
                 {(
@@ -1232,6 +1149,8 @@ export function ColdOutreachPage() {
                   </>
                 )}
               </div>
+              </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1247,13 +1166,8 @@ export function ColdOutreachPage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
-            <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-3 space-y-3">
-              <div>
-                <Label>Campaign</Label>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Every send belongs to a campaign. A new campaign can email the same person again; skip-already-sent only applies inside the selected campaign.
-                </p>
-              </div>
+            <div className="space-y-3">
+              <Label>Campaign</Label>
               <div className="flex flex-wrap gap-1 rounded-md border border-slate-200 bg-white p-1">
                 <button
                   type="button"
@@ -1316,7 +1230,59 @@ export function ColdOutreachPage() {
             </div>
 
             <div>
-              <Label>Load template (optional)</Label>
+              <Label>Subject</Label>
+              <Input
+                value={subject}
+                onChange={(event) => setSubject(event.target.value)}
+                placeholder="Quick intro from {{company}}'s network"
+              />
+            </div>
+
+            <div>
+              <Label>Message</Label>
+              <Textarea
+                ref={bodyTextareaRef}
+                className="min-h-[160px] text-sm"
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+                placeholder={'Hi {{first_name}},\n\nI wanted to reach out…'}
+              />
+              <div className="mt-2">
+                <Select onValueChange={(token) => token && insertMergeToken(token)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Insert field" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MERGE_FIELDS.map((field) => (
+                      <SelectItem key={field.token} value={field.token}>
+                        {field.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={skipIfSent}
+                onCheckedChange={(checked) => setSkipIfSent(Boolean(checked))}
+              />
+              <Label className="font-normal">Skip people already sent in this campaign</Label>
+            </div>
+
+            <button
+              type="button"
+              className="text-sm text-slate-600 underline-offset-2 hover:underline"
+              onClick={() => setShowAdvancedSend((open) => !open)}
+            >
+              {showAdvancedSend ? 'Hide extra options' : 'Pace, schedule, template…'}
+            </button>
+
+            {showAdvancedSend && (
+              <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+            <div>
+              <Label>Load template</Label>
               <Select value={templateId || 'none'} onValueChange={applyTemplate}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a template" />
@@ -1333,15 +1299,6 @@ export function ColdOutreachPage() {
             </div>
 
             <div>
-              <Label>Subject</Label>
-              <Input
-                value={subject}
-                onChange={(event) => setSubject(event.target.value)}
-                placeholder="Quick intro from {{company}}'s network"
-              />
-            </div>
-
-            <div>
               <Label>Format</Label>
               <Select value={format} onValueChange={(value) => setFormat(value as 'text' | 'html')}>
                 <SelectTrigger>
@@ -1352,38 +1309,6 @@ export function ColdOutreachPage() {
                   <SelectItem value="html">HTML</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div>
-              <Label>{format === 'html' ? 'HTML body' : 'Message'}</Label>
-              <Textarea
-                ref={bodyTextareaRef}
-                className="min-h-[220px] font-mono text-sm"
-                value={body}
-                onChange={(event) => setBody(event.target.value)}
-                placeholder={
-                  format === 'html'
-                    ? '<p>Hi {{first_name}},</p><p>I wanted to reach out…</p>'
-                    : 'Hi {{first_name}},\n\nI wanted to reach out…'
-                }
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Click a merge field to insert it at the cursor. HTML mode is recommended for logos and styled emails.
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {MERGE_FIELDS.map((field) => (
-                  <Button
-                    key={field.token}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => insertMergeToken(field.token)}
-                  >
-                    {`{{${field.token}}}`}
-                  </Button>
-                ))}
-              </div>
             </div>
 
             <div>
@@ -1504,22 +1429,14 @@ export function ColdOutreachPage() {
 
             <div className="flex items-center gap-2">
               <Checkbox
-                checked={skipIfSent}
-                onCheckedChange={(checked) => setSkipIfSent(Boolean(checked))}
-              />
-              <Label className="font-normal">
-                Skip people already sent in this campaign
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Checkbox
                 checked={useQueue || Boolean(scheduleAt)}
                 disabled={Boolean(scheduleAt)}
                 onCheckedChange={(checked) => setUseQueue(Boolean(checked))}
               />
-              <Label className="font-normal">Queue via worker (Make-style delayed campaign)</Label>
+              <Label className="font-normal">Queue via worker</Label>
             </div>
+              </div>
+            )}
 
             {lastBatchId && (
               <p className="text-xs text-gray-600">
