@@ -275,6 +275,67 @@ export function ColdOutreachPage() {
   const activeCampaignId =
     campaignMode === 'existing' && campaignId ? Number(campaignId) : null;
 
+  // Fetch full campaign detail when the list response lacks step bodies.
+  const campaignStepsMissing =
+    campaignMode === 'existing' &&
+    Boolean(campaignId) &&
+    Boolean(selectedCampaign) &&
+    (!Array.isArray(selectedCampaign?.steps) ||
+      selectedCampaign.steps.length === 0 ||
+      !selectedCampaign.steps[0]?.body);
+
+  const { data: campaignDetail } = useQuery({
+    queryKey: ['email-sequence-detail', campaignId],
+    queryFn: () => emailSequencesAPI.getById(Number(campaignId)),
+    enabled: campaignStepsMissing,
+  });
+
+  const campaignSource = campaignStepsMissing ? campaignDetail : selectedCampaign;
+
+  const lastHydratedCampaignRef = useRef<string>('');
+
+  useEffect(() => {
+    if (campaignMode !== 'existing') {
+      lastHydratedCampaignRef.current = '';
+      return;
+    }
+    if (!campaignId || !campaignSource) return;
+    if (lastHydratedCampaignRef.current === campaignId) return;
+    if (campaignStepsMissing && !campaignDetail) return;
+
+    lastHydratedCampaignRef.current = campaignId;
+
+    const firstStep = campaignSource.steps?.[0];
+    if (firstStep) {
+      setSubject(firstStep.subject || '');
+      setBody(firstStep.body || '');
+      setFormat(looksLikeHtml(firstStep.body || '') ? 'html' : 'text');
+    }
+
+    if (campaignSource.email_account_id != null) {
+      const aid = String(campaignSource.email_account_id);
+      if (accounts.some((a) => String(a.id) === aid)) {
+        setAccountId(aid);
+      }
+    }
+
+    const s = campaignSource.settings;
+    if (s && typeof s === 'object') {
+      const mph = typeof s.max_per_hour === 'number' ? s.max_per_hour : 0;
+      if (mph > 0) {
+        setMaxPerHour(String(mph));
+        const mins = 60 / mph;
+        setDelayMinutes(roundPace(mins));
+        setEmailsPerMinute(roundPace(1 / mins));
+      }
+      if (typeof s.weekdays_only === 'boolean') setWeekdaysOnly(s.weekdays_only);
+      if (typeof s.send_window_start === 'string') setSendWindowStart(s.send_window_start);
+      if (typeof s.send_window_end === 'string') setSendWindowEnd(s.send_window_end);
+    }
+
+    toast({ title: 'Campaign loaded', description: campaignSource.name });
+  }, [campaignId, campaignSource, campaignMode, accounts, campaignStepsMissing, campaignDetail, toast]);
+
   const { data: googleStatus } = useQuery({
     queryKey: ['outreach-google-status'],
     queryFn: outreachAPI.googleStatus,
