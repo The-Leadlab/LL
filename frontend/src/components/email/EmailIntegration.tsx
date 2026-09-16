@@ -72,7 +72,7 @@ export const EmailIntegration: React.FC = () => {
     custom_imap_host: '',
     custom_imap_port: 993,
     custom_smtp_host: '',
-    custom_smtp_port: 587
+    custom_smtp_port: 465
   });
 
   useEffect(() => {
@@ -126,7 +126,7 @@ export const EmailIntegration: React.FC = () => {
           smtp: {
             smtp_host: formData.custom_smtp_host,
             smtp_port: formData.custom_smtp_port,
-            smtp_use_tls: true
+            smtp_use_tls: formData.custom_smtp_port !== 465
           }
         } : null
       };
@@ -146,7 +146,7 @@ export const EmailIntegration: React.FC = () => {
         custom_imap_host: '',
         custom_imap_port: 993,
         custom_smtp_host: '',
-        custom_smtp_port: 587
+        custom_smtp_port: 465
       });
       loadEmailAccounts();
     } catch (error: any) {
@@ -505,7 +505,7 @@ export const EmailIntegration: React.FC = () => {
                         type="number"
                         value={formData.custom_smtp_port}
                         onChange={(e) => setFormData({ ...formData, custom_smtp_port: parseInt(e.target.value) })}
-                        placeholder="587"
+                        placeholder="465"
                       />
                     </div>
                   </div>
