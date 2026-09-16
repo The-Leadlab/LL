@@ -604,6 +604,21 @@ export function LeadDetail() {
   const lead = response.data;
   const initials = `${lead.first_name?.[0] || ''}${lead.last_name?.[0] || ''}`;
 
+  if (isEditModalOpen) {
+    return (
+      <LeadEditForm
+        lead={lead}
+        onSuccess={() => {
+          closeEditModal();
+          queryClient.invalidateQueries({ queryKey: ['lead', id] });
+          queryClient.invalidateQueries({ queryKey: ['leads'] });
+          queryClient.invalidateQueries({ queryKey: ['clients'] });
+        }}
+        onCancel={closeEditModal}
+      />
+    );
+  }
+
   const handleDelete = () => {
     if (window.confirm('Are you sure you want to delete this lead?')) {
       deleteMutation.mutate(leadId);
@@ -704,10 +719,15 @@ export function LeadDetail() {
                   <AvatarFallback className="text-xl font-medium">{initials}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2 flex-wrap">
                     {lead.first_name} {lead.last_name}
+                    {lead.client_name && (
+                      <Badge variant="secondary" className="font-medium">
+                        {lead.client_name}
+                      </Badge>
+                    )}
                     {lead.source && (
-                      <Badge variant="outline" className="ml-2">
+                      <Badge variant="outline">
                         {lead.source}
                       </Badge>
                     )}
@@ -884,29 +904,6 @@ export function LeadDetail() {
           <PsychometricInsights leadId={leadId} leadName={`${lead.first_name} ${lead.last_name}`} />
         </div>
       </div>
-
-      {/* Edit Modal */}
-      <Dialog
-        open={isEditModalOpen}
-        onOpenChange={(open) => {
-          if (open) setIsEditModalOpen(true);
-          else closeEditModal();
-        }}
-      >
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Edit Lead</DialogTitle>
-          </DialogHeader>
-          <LeadEditForm
-            lead={lead}
-            onSuccess={() => {
-              closeEditModal();
-              queryClient.invalidateQueries({queryKey: ['lead', id]});
-            }}
-            onCancel={closeEditModal}
-          />
-        </DialogContent>
-      </Dialog>
 
       {/* LinkedIn Connection Dialog */}
       <LinkedInConnectionDialog
