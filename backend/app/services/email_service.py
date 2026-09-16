@@ -28,8 +28,8 @@ from app.services.email_html import wrap_outbound_html
 
 logger = logging.getLogger(__name__)
 
-SMTP_CONNECT_TIMEOUT_SECONDS = 12
-SMTP_FALLBACK_TIMEOUT_SECONDS = 8
+SMTP_CONNECT_TIMEOUT_SECONDS = 30
+SMTP_FALLBACK_TIMEOUT_SECONDS = 20
 
 
 def _ipv4_create_connection(
@@ -1465,6 +1465,53 @@ class EmailService:
         )
         return False
 
+    def _try_smtp_send(
+        self,
+        host: str,
+        port: int,
+        use_ssl: bool,
+        use_starttls: bool,
+        password: str,
+        email_addr: str,
+        msg: MIMEMultipart,
+        recipients: List[str],
+        timeout: float,
+    ) -> Tuple[bool, Optional[str], Optional[str]]:
+        """Try a single SMTP connect+login+send.
+
+        Returns ``(success, error_type, error_message)`` where
+        *error_type* is one of ``"timeout"``, ``"auth"``, or ``"other"``.
+        """
+        smtp = None
+        try:
+            if use_ssl:
+                smtp = _SMTP_SSL_IPv4(host, port, timeout=timeout)
+            else:
+                smtp = _SMTP_IPv4(host, port, timeout=timeout)
+                if use_starttls:
+                    smtp.ehlo()
+                    smtp.starttls()
+                    smtp.ehlo()
+
+            smtp.login(email_addr, password)
+            smtp.send_message(msg, to_addrs=recipients)
+            return True, None, None
+        except (TimeoutError, socket.timeout, OSError) as e:
+            if isinstance(e, OSError) and not isinstance(e, (TimeoutError, socket.timeout)):
+                if "timed out" not in str(e).lower():
+                    return False, "other", f"{type(e).__name__}: {e}"
+            return False, "timeout", str(e)
+        except smtplib.SMTPAuthenticationError as e:
+            return False, "auth", str(e)
+        except Exception as e:
+            return False, "other", f"{type(e).__name__}: {e}"
+        finally:
+            if smtp is not None:
+                try:
+                    smtp.quit()
+                except Exception:
+                    pass
+
     def _send_email_smtp(
         self,
         account: EmailAccount,
@@ -1473,75 +1520,84 @@ class EmailService:
         cc_emails: Optional[List[str]],
         bcc_emails: Optional[List[str]],
     ) -> bool:
-        smtp = None
-        try:
-            password = decrypt_password(account.password_encrypted)
-            smtp_timeout = SMTP_CONNECT_TIMEOUT_SECONDS
-            if account.smtp_port == 465:
-                try:
-                    smtp = _SMTP_SSL_IPv4(account.smtp_host, account.smtp_port, timeout=smtp_timeout)
-                    logger.info("SMTP SSL connection successful")
-                except Exception as e:
-                    logger.warning(
-                        "SMTP SSL failed on %s:%s for %s (%s), trying STARTTLS on 587",
-                        account.smtp_host,
-                        account.smtp_port,
-                        account.email,
-                        type(e).__name__,
-                    )
-                    smtp = _SMTP_IPv4(account.smtp_host, 587, timeout=SMTP_FALLBACK_TIMEOUT_SECONDS)
-                    smtp.ehlo()
-                    smtp.starttls()
-                    smtp.ehlo()
-            else:
-                smtp = _SMTP_IPv4(account.smtp_host, account.smtp_port, timeout=smtp_timeout)
-                if account.smtp_use_tls:
-                    smtp.ehlo()
-                    smtp.starttls()
-                    smtp.ehlo()
+        """Send via the account's SMTP server with port-fallback and retry on timeout.
 
-            smtp.login(account.email, password)
-            all_recipients = to_emails + (cc_emails or []) + (bcc_emails or [])
-            smtp.send_message(msg, to_addrs=all_recipients)
-            return True
-        except TimeoutError as e:
+        Attempt sequence:
+          1. Configured port (465 SSL **or** 587 STARTTLS)
+          2. Alternate port on timeout/connection failure (587↔465)
+          3. Configured port one more time (final retry)
+
+        Authentication errors abort immediately; all other failures advance
+        to the next attempt.
+        """
+        password = decrypt_password(account.password_encrypted)
+        all_recipients = to_emails + (cc_emails or []) + (bcc_emails or [])
+        host = account.smtp_host
+        configured_port = account.smtp_port or 587
+        alt_port = 587 if configured_port == 465 else 465
+
+        attempts: List[Tuple[str, int, float]] = [
+            ("primary", configured_port, SMTP_CONNECT_TIMEOUT_SECONDS),
+            ("alt", alt_port, SMTP_FALLBACK_TIMEOUT_SECONDS),
+            ("retry", configured_port, SMTP_CONNECT_TIMEOUT_SECONDS),
+        ]
+
+        last_err_type: Optional[str] = None
+        last_err_msg: Optional[str] = None
+
+        for label, port, timeout in attempts:
+            use_ssl = port == 465
+            use_starttls = not use_ssl and (account.smtp_use_tls or port == 587)
+
+            ok, err_type, err_msg = self._try_smtp_send(
+                host, port, use_ssl, use_starttls,
+                password, account.email, msg, all_recipients, timeout,
+            )
+
+            if ok:
+                if label != "primary":
+                    logger.info(
+                        "SMTP send succeeded on %s attempt (port %d) for %s",
+                        label, port, account.email,
+                    )
+                return True
+
+            last_err_type = err_type
+            last_err_msg = err_msg
+
+            if err_type == "auth":
+                self._set_send_error(
+                    code="SMTP_AUTH_FAILED",
+                    message=f"SMTP authentication failed: {err_msg}",
+                    retryable=False,
+                    status_code=503,
+                )
+                return False
+
+            logger.warning(
+                "SMTP %s on %s port %d for %s (attempt %s/%d)",
+                err_type, label, port, account.email,
+                label, len(attempts),
+            )
+
+        if last_err_type == "timeout":
             self._set_send_error(
                 code="SMTP_TIMEOUT",
-                message=f"SMTP timeout: {str(e)}",
+                message=(
+                    f"SMTP timeout after {len(attempts)} attempts "
+                    f"(ports {configured_port}/{alt_port})"
+                ),
                 retryable=True,
                 status_code=503,
             )
-            return False
-        except socket.timeout as e:
-            self._set_send_error(
-                code="SMTP_TIMEOUT",
-                message=f"SMTP timeout: {str(e)}",
-                retryable=True,
-                status_code=503,
-            )
-            return False
-        except smtplib.SMTPAuthenticationError as e:
-            self._set_send_error(
-                code="SMTP_AUTH_FAILED",
-                message=f"SMTP authentication failed: {str(e)}",
-                retryable=False,
-                status_code=503,
-            )
-            return False
-        except Exception as e:
+        else:
             self._set_send_error(
                 code="SMTP_SEND_FAILED",
-                message=f"SMTP send failed: {type(e).__name__}: {str(e)}",
+                message=f"SMTP send failed: {last_err_msg}",
                 retryable=True,
                 status_code=503,
             )
-            return False
-        finally:
-            if smtp:
-                try:
-                    smtp.quit()
-                except Exception:
-                    pass
+        return False
 
     def _send_email_provider_api(
         self,

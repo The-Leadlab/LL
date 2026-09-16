@@ -514,3 +514,192 @@ def test_wrap_outbound_html_envelope_matches_preview():
     full = "<html><body><p>Designed</p></body></html>"
     assert wrap_outbound_html(full) == full
     assert wrap_outbound_html("  ") == ""
+
+
+# ---------------------------------------------------------------------------
+# SMTP timeout → port-fallback and retry tests
+# ---------------------------------------------------------------------------
+
+
+def _build_infomaniak_account(**overrides):
+    defaults = dict(
+        id=3,
+        email="contact@serenidien.ch",
+        display_name="Serenidien",
+        smtp_host="mail.infomaniak.com",
+        smtp_port=465,
+        smtp_use_tls=False,
+        password_encrypted="encrypted",
+        organization_id=1,
+        auth_type="password",
+        oauth_refresh_token=None,
+        provider_type="custom",
+    )
+    defaults.update(overrides)
+    return SimpleNamespace(**defaults)
+
+
+def test_smtp_timeout_on_587_falls_back_to_465_ssl(monkeypatch):
+    """When configured port 587 times out, retry on 465 SSL should succeed."""
+    account = _build_infomaniak_account(smtp_port=587, smtp_use_tls=True)
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(
+        "app.services.email_service.decrypt_password", lambda _: "password"
+    )
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
+
+    call_log = []
+
+    def _fake_try(self, host, port, use_ssl, use_starttls, pw, addr, msg, recip, timeout):
+        call_log.append((port, use_ssl))
+        if port == 587:
+            return False, "timeout", "timed out"
+        return True, None, None
+
+    monkeypatch.setattr(EmailService, "_try_smtp_send", _fake_try)
+    monkeypatch.setattr(service, "_persist_sent_email", lambda **kw: None)
+
+    result = service.send_email(3, ["lead@example.com"], "Hello", "body", "<p>body</p>")
+    assert result["sent"] is True
+    assert result["transport"] == "smtp"
+    assert call_log[0] == (587, False), "First attempt should be configured port 587"
+    assert call_log[1] == (465, True), "Fallback should be 465 SSL"
+
+
+def test_smtp_timeout_on_465_falls_back_to_587_starttls(monkeypatch):
+    """When configured port 465 times out, retry on 587 STARTTLS should succeed."""
+    account = _build_infomaniak_account(smtp_port=465)
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(
+        "app.services.email_service.decrypt_password", lambda _: "password"
+    )
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
+
+    call_log = []
+
+    def _fake_try(self, host, port, use_ssl, use_starttls, pw, addr, msg, recip, timeout):
+        call_log.append((port, use_ssl))
+        if port == 465:
+            return False, "timeout", "timed out"
+        return True, None, None
+
+    monkeypatch.setattr(EmailService, "_try_smtp_send", _fake_try)
+    monkeypatch.setattr(service, "_persist_sent_email", lambda **kw: None)
+
+    result = service.send_email(3, ["lead@example.com"], "Hello", "body", "<p>body</p>")
+    assert result["sent"] is True
+    assert result["transport"] == "smtp"
+    assert call_log[0] == (465, True), "First attempt should be configured port 465 SSL"
+    assert call_log[1] == (587, False), "Fallback should be 587 STARTTLS"
+
+
+def test_smtp_all_attempts_timeout_reports_retryable(monkeypatch):
+    """When all 3 attempts time out the job should be retryable."""
+    account = _build_infomaniak_account(smtp_port=465)
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(
+        "app.services.email_service.decrypt_password", lambda _: "password"
+    )
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
+
+    call_log = []
+
+    def _fake_try(self, host, port, use_ssl, use_starttls, pw, addr, msg, recip, timeout):
+        call_log.append(port)
+        return False, "timeout", "timed out"
+
+    monkeypatch.setattr(EmailService, "_try_smtp_send", _fake_try)
+
+    result = service.send_email(3, ["lead@example.com"], "Hello", "body", "<p>body</p>")
+    assert result["sent"] is False
+    assert len(call_log) == 3, "Should make 3 attempts (primary, alt, retry)"
+    assert service.last_send_error_code == "SMTP_TIMEOUT"
+    assert service.last_send_retryable is True
+
+
+def test_smtp_timeout_no_noreply_rewrite_on_custom_account(monkeypatch):
+    """Custom SMTP timeout must NOT fall back to Resend noreply — From would change."""
+    account = _build_infomaniak_account()
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
+
+    def _smtp_always_timeout(*args, **kwargs):
+        service._set_send_error("SMTP_TIMEOUT", "timed out", True, 503)
+        return False
+
+    monkeypatch.setattr(service, "_send_email_smtp", _smtp_always_timeout)
+
+    api_called = {"value": False}
+
+    def _spy_api(*args, **kwargs):
+        api_called["value"] = True
+        return True
+
+    monkeypatch.setattr(service, "_send_email_provider_api", _spy_api)
+
+    result = service.send_email(3, ["lead@example.com"], "Hello", "body", "<p>body</p>")
+    assert result["sent"] is False, "Must not silently send as noreply"
+    assert api_called["value"] is False, "Provider API must not be called"
+    assert "rewrite" in (service.last_send_error or "").lower()
+    assert "noreply@the-leadlab.com" in (service.last_send_error or "")
+
+
+def test_smtp_auth_error_aborts_immediately(monkeypatch):
+    """Authentication errors should not try further ports."""
+    account = _build_infomaniak_account(smtp_port=465)
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(
+        "app.services.email_service.decrypt_password", lambda _: "password"
+    )
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
+
+    call_log = []
+
+    def _fake_try(self, host, port, use_ssl, use_starttls, pw, addr, msg, recip, timeout):
+        call_log.append(port)
+        return False, "auth", "bad credentials"
+
+    monkeypatch.setattr(EmailService, "_try_smtp_send", _fake_try)
+
+    result = service.send_email(3, ["lead@example.com"], "Hello", "body", "<p>body</p>")
+    assert result["sent"] is False
+    assert len(call_log) == 1, "Auth error should abort after first attempt"
+    assert service.last_send_error_code == "SMTP_AUTH_FAILED"
+    assert service.last_send_retryable is False
+
+
+def test_smtp_retry_succeeds_on_third_attempt(monkeypatch):
+    """Both primary and alt fail, but the final retry of the primary port works."""
+    account = _build_infomaniak_account(smtp_port=465)
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(
+        "app.services.email_service.decrypt_password", lambda _: "password"
+    )
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
+
+    call_count = {"n": 0}
+
+    def _fake_try(self, host, port, use_ssl, use_starttls, pw, addr, msg, recip, timeout):
+        call_count["n"] += 1
+        if call_count["n"] <= 2:
+            return False, "timeout", "timed out"
+        return True, None, None
+
+    monkeypatch.setattr(EmailService, "_try_smtp_send", _fake_try)
+    monkeypatch.setattr(service, "_persist_sent_email", lambda **kw: None)
+
+    result = service.send_email(3, ["lead@example.com"], "Hello", "body", "<p>body</p>")
+    assert result["sent"] is True
+    assert call_count["n"] == 3
