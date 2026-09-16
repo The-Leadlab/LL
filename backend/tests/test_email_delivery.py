@@ -73,10 +73,11 @@ def test_send_email_auto_falls_back_to_api_when_from_matches(monkeypatch):
 
 
 def test_send_email_returns_provider_error_when_all_transports_fail(monkeypatch):
-    account = _build_account()
+    account = _build_account(email="noreply@the-leadlab.com")
     service = EmailService(_FakeDB(account))
 
     monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
     monkeypatch.setattr(service, "_send_email_smtp", lambda *args, **kwargs: False)
 
     def _provider_fail(*args, **kwargs):
@@ -377,39 +378,102 @@ def test_explicit_smtp_mode_no_fallback(monkeypatch):
     assert api_called["value"] is False
 
 
-def test_explicit_api_mode_still_works(monkeypatch):
-    """provider_mode=api sends via API directly (explicit opt-in)."""
+def test_explicit_api_mode_uses_mailbox_smtp_when_from_would_rewrite(monkeypatch):
+    """EMAIL_PROVIDER=api must still send from the linked mailbox, not no-reply."""
     account = _build_account(
         email="contact@serenidien.ch",
         provider_type="custom",
+        smtp_host="mail.infomaniak.com",
+        smtp_port=465,
     )
     service = EmailService(_FakeDB(account))
 
     monkeypatch.setattr(settings, "EMAIL_PROVIDER", "api")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
+    monkeypatch.setattr(service, "_send_email_smtp", lambda *args, **kwargs: True)
+
+    api_called = {"value": False}
+
+    def _spy_api(*args, **kwargs):
+        api_called["value"] = True
+        return True
+
+    monkeypatch.setattr(service, "_send_email_provider_api", _spy_api)
+    monkeypatch.setattr(service, "_persist_sent_email", lambda *args, **kwargs: None)
+
+    result = service.send_email(1, ["to@example.com"], "Subject", "Text", "<p>Hi</p>")
+    assert result["sent"] is True
+    assert result["transport"] == "smtp"
+    assert api_called["value"] is False
+
+
+def test_explicit_api_mode_uses_api_when_from_matches(monkeypatch):
+    """provider_mode=api sends via API only when From stays the linked address."""
+    account = _build_account(email="noreply@the-leadlab.com")
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "api")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
     monkeypatch.setattr(service, "_send_email_provider_api", lambda *args, **kwargs: True)
     monkeypatch.setattr(service, "_persist_sent_email", lambda *args, **kwargs: None)
+
+    def _must_not_smtp(*args, **kwargs):
+        raise AssertionError("Matching From may use API directly")
+
+    monkeypatch.setattr(service, "_send_email_smtp", _must_not_smtp)
 
     result = service.send_email(1, ["to@example.com"], "Subject", "Text", "Html")
     assert result["sent"] is True
     assert result["transport"] == "api"
 
 
+def test_gmail_password_account_no_resend_fallback_on_from_mismatch(monkeypatch):
+    """Password Gmail accounts must not fall back to no-reply either."""
+    account = _build_account(
+        email="user@gmail.com",
+        provider_type="gmail",
+        auth_type="password",
+    )
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
+    monkeypatch.setattr(service, "_send_email_smtp", lambda *args, **kwargs: False)
+
+    api_called = {"value": False}
+
+    def _spy_api(*args, **kwargs):
+        api_called["value"] = True
+        return True
+
+    monkeypatch.setattr(service, "_send_email_provider_api", _spy_api)
+    monkeypatch.setattr(service, "_persist_sent_email", lambda *args, **kwargs: None)
+
+    result = service.send_email(1, ["lead@example.com"], "Hello", "body", "<p>body</p>")
+    assert result["sent"] is False
+    assert api_called["value"] is False
+    assert "rewrite" in (service.last_send_error or "").lower()
+
+
 def test_persist_records_actual_from_when_api_transport(monkeypatch):
-    """_persist_sent_email records the actual Resend from, not account.email."""
+    """API sends persist the Resend From address, not a rewritten local copy."""
     account = _build_account(email="noreply@the-leadlab.com")
-    db = _FakeDB(account)
-    service = EmailService(db)
+    service = EmailService(_FakeDB(account))
+    captured = {}
+
+    def _capture_persist(**kwargs):
+        captured.update(kwargs)
 
     monkeypatch.setattr(settings, "EMAIL_PROVIDER", "api")
     monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
     monkeypatch.setattr(service, "_send_email_provider_api", lambda *args, **kwargs: True)
+    monkeypatch.setattr(service, "_persist_sent_email", _capture_persist)
 
     result = service.send_email(1, ["to@example.com"], "Subject", "Text", "Html")
     assert result["sent"] is True
     assert result["persisted"] is True
-    assert len(db.added) >= 1
-    persisted_email = db.added[-1]
-    assert persisted_email.from_email == "noreply@the-leadlab.com"
+    assert captured.get("actual_from_email") == "noreply@the-leadlab.com"
+    assert captured.get("transport") == "api"
 
 
 def test_smtp_failure_surfaces_error_for_custom_account(monkeypatch):
@@ -438,3 +502,15 @@ def test_smtp_failure_surfaces_error_for_custom_account(monkeypatch):
     assert "rewrite" in service.last_send_error.lower()
     assert "noreply@the-leadlab.com" in service.last_send_error
     assert "SMTP" in (service.last_send_error_code or "")
+
+
+def test_wrap_outbound_html_envelope_matches_preview():
+    from app.services.email_html import wrap_outbound_html
+
+    wrapped = wrap_outbound_html("<p>Hello {{first_name}}</p>")
+    assert wrapped.startswith("<!DOCTYPE html>")
+    assert "Georgia" in wrapped
+    assert "<p>Hello {{first_name}}</p>" in wrapped
+    full = "<html><body><p>Designed</p></body></html>"
+    assert wrap_outbound_html(full) == full
+    assert wrap_outbound_html("  ") == ""

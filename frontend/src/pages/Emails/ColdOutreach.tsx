@@ -143,11 +143,28 @@ function wrapHtmlPreviewDocument(html: string): string {
     return '<!DOCTYPE html><html><body><p style="color:#666">(empty message)</p></body></html>';
   }
   if (/<html[\s>]/i.test(trimmed)) return trimmed;
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><base target="_blank"><style>
-body{margin:16px;font-family:Georgia,serif;color:#111;line-height:1.5;background:#fff}
-img{max-width:100%;height:auto}
-a{color:#0b57d0}
-</style></head><body>${trimmed}</body></html>`;
+  // Must stay in sync with backend/app/services/email_html.py wrap_outbound_html.
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base target="_blank">
+<style type="text/css">
+img { max-width: 100%; height: auto; }
+a { color: #0b57d0; }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#ffffff;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#ffffff;">
+<tr>
+<td style="padding:16px;font-family:Georgia,'Times New Roman',Times,serif;font-size:16px;line-height:1.5;color:#111111;">
+${trimmed}
+</td>
+</tr>
+</table>
+</body>
+</html>`;
 }
 
 async function fetchAllLeads(clientId?: number): Promise<Lead[]> {
@@ -1670,6 +1687,14 @@ export function ColdOutreachPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
+            <div>
+              <div className="text-xs uppercase text-gray-500">From</div>
+              <div className="text-sm">
+                {selectedAccount
+                  ? `${selectedAccount.display_name ? `${selectedAccount.display_name} ` : ''}<${selectedAccount.email}>`
+                  : 'Choose a connected mailbox before sending.'}
+              </div>
+            </div>
             <div>
               <div className="text-xs uppercase text-gray-500">Subject</div>
               <div className="font-medium">{previewSubject || '(empty subject)'}</div>

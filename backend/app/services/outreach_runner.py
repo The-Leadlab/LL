@@ -30,6 +30,7 @@ _TOKEN_RE = re.compile(r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}")
 def lead_tokens(lead: Lead) -> Dict[str, str]:
     first = (lead.first_name or "").strip()
     last = (lead.last_name or "").strip()
+    unique_id = (getattr(lead, "unique_lead_id", None) or "").strip()
     return {
         "first_name": first,
         "last_name": last,
@@ -37,6 +38,8 @@ def lead_tokens(lead: Lead) -> Dict[str, str]:
         "company": (lead.company or "").strip(),
         "email": (lead.email or "").strip(),
         "job_title": (lead.job_title or "").strip(),
+        "id": str(getattr(lead, "id", "") or ""),
+        "unique_lead_id": unique_id,
     }
 
 

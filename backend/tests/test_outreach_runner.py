@@ -2,7 +2,9 @@
 
 from datetime import datetime
 
-from app.services.outreach_runner import apply_tokens, next_send_slot
+from types import SimpleNamespace
+
+from app.services.outreach_runner import apply_tokens, lead_tokens, next_send_slot
 
 
 def test_apply_tokens_plain():
@@ -14,6 +16,23 @@ def test_apply_tokens_html_escapes():
     out = apply_tokens("Hi {{first_name}}", {"first_name": "A <b>B</b>"}, as_html=True)
     assert "<b>" not in out
     assert "&lt;b&gt;" in out
+
+
+def test_lead_tokens_include_ids():
+    lead = SimpleNamespace(
+        id=42,
+        first_name="Ada",
+        last_name="Lovelace",
+        company="Analytica",
+        email="ada@example.com",
+        job_title="Engineer",
+        unique_lead_id="SHEET-9",
+    )
+    tokens = lead_tokens(lead)
+    assert tokens["id"] == "42"
+    assert tokens["unique_lead_id"] == "SHEET-9"
+    assert tokens["full_name"] == "Ada Lovelace"
+    assert apply_tokens("Ref {{unique_lead_id}} / {{id}}", tokens, False) == "Ref SHEET-9 / 42"
 
 
 def test_next_send_slot_noop_without_settings():

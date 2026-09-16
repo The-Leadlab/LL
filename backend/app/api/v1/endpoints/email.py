@@ -33,6 +33,7 @@ from app.schemas.email import (
 )
 from app.models.lead import Lead
 from app.services.google_workspace import lead_already_sent_for_campaign, mark_lead_sent_on_sheet
+from app.services.outreach_runner import apply_tokens, lead_tokens
 from app.schemas.email_integration import (
     EmailAccountCreate, EmailAccountUpdate, EmailAccountOut,
     EmailOut, EmailSend, EmailSuggestion, OutreachSend
@@ -546,32 +547,6 @@ async def send_email(
     )
 
 
-_TOKEN_RE = re.compile(r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}")
-
-
-def _lead_tokens(lead: Lead) -> Dict[str, str]:
-    first = (lead.first_name or "").strip()
-    last = (lead.last_name or "").strip()
-    full = f"{first} {last}".strip()
-    return {
-        "first_name": first,
-        "last_name": last,
-        "full_name": full,
-        "company": (lead.company or "").strip(),
-        "email": (lead.email or "").strip(),
-        "job_title": (lead.job_title or "").strip(),
-    }
-
-
-def _apply_outreach_tokens(template: str, tokens: Dict[str, str], as_html: bool) -> str:
-    def repl(match: re.Match) -> str:
-        key = match.group(1).lower()
-        value = tokens.get(key, "")
-        return html_lib.escape(value) if as_html else value
-
-    return _TOKEN_RE.sub(repl, template or "")
-
-
 @router.post("/outreach")
 async def send_cold_outreach(
     outreach: OutreachSend,
@@ -711,9 +686,9 @@ async def send_cold_outreach(
             continue
 
         to_email = (lead.email or "").strip()
-        tokens = _lead_tokens(lead)
-        subject = _apply_outreach_tokens(outreach.subject, tokens, as_html=False)
-        body = _apply_outreach_tokens(outreach.body, tokens, as_html=as_html)
+        tokens = lead_tokens(lead)
+        subject = apply_tokens(outreach.subject, tokens, as_html=False)
+        body = apply_tokens(outreach.body, tokens, as_html=as_html)
         body_html = body if as_html else f"<p>{html_lib.escape(body).replace(chr(10), '<br>')}</p>"
         body_text = body if not as_html else re.sub(r"<[^>]+>", " ", body)
 
