@@ -191,6 +191,9 @@ class InternalPsychometricAnalyzer:
                 new_insight = AIInsight(**db_data)
                 db.add(new_insight)
                 logger.info(f"💾 Created new psychometric record for lead {lead.id}")
+
+            # Persist full analysis on the lead so API/UI filters (psychometrics.combined_insights) work
+            lead.psychometrics = result
             
             db.commit()
             
@@ -292,7 +295,7 @@ class InternalPsychometricAnalyzer:
             "email": getattr(lead, 'email', '') or '',
             "job_title": getattr(lead, 'job_title', '') or '',
             "company": getattr(lead, 'company', '') or '',
-            "industry": getattr(lead, 'industry', '') or '',
+            "industry": getattr(lead, 'industry', None) or getattr(lead, 'sector', '') or '',
             "linkedin_url": getattr(lead, 'linkedin', '') or '',
             "phone": getattr(lead, 'phone', '') or '',
             "notes": getattr(lead, 'notes', '') or ''
