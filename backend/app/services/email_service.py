@@ -1280,13 +1280,14 @@ class EmailService:
                 elif not sent and not can_use_api:
                     smtp_error = self.last_send_error
                     smtp_error_code = self.last_send_error_code
+                    smtp_host = account.smtp_host or "unknown"
                     self._set_send_error(
                         code=smtp_error_code or "SMTP_SEND_FAILED",
                         message=(
-                            f"SMTP delivery failed for {account.email} and API fallback "
-                            f"is blocked because it would rewrite the sender to "
-                            f"{resend_from}. "
-                            f"Original SMTP error: {smtp_error}"
+                            f"SMTP delivery via {smtp_host} failed for {account.email}; "
+                            f"API/Resend fallback blocked (would rewrite From to "
+                            f"{resend_from}). "
+                            f"SMTP error: {smtp_error}"
                         ),
                         retryable=self.last_send_retryable,
                         status_code=self.last_send_status_code,
@@ -1584,7 +1585,7 @@ class EmailService:
             self._set_send_error(
                 code="SMTP_TIMEOUT",
                 message=(
-                    f"SMTP timeout after {len(attempts)} attempts "
+                    f"SMTP timeout connecting to {host} after {len(attempts)} attempts "
                     f"(ports {configured_port}/{alt_port})"
                 ),
                 retryable=True,
@@ -1593,7 +1594,7 @@ class EmailService:
         else:
             self._set_send_error(
                 code="SMTP_SEND_FAILED",
-                message=f"SMTP send failed: {last_err_msg}",
+                message=f"SMTP send via {host} failed: {last_err_msg}",
                 retryable=True,
                 status_code=503,
             )
