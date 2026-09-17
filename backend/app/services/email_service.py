@@ -25,6 +25,11 @@ from app.core.security import decrypt_password, encrypt_password
 from app.core.config import settings
 from app.db.session import get_db
 from app.services.email_html import wrap_outbound_html
+from app.services.infomaniak_mail import (
+    InfomaniakMailClient,
+    InfomaniakMailError,
+    _get_client as _get_infomaniak_client,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1256,6 +1261,7 @@ class EmailService:
 
             can_use_api = self._api_from_matches_account(account)
             resend_from = self._resend_from_address()
+            infomaniak_configured = self._is_infomaniak_account(account) and self._infomaniak_token()
             transport_used = ""
             actual_from_email = account.email
             sent = False
@@ -1266,11 +1272,36 @@ class EmailService:
                 sent = self._send_email_provider_api(account, to_emails, cc_emails, bcc_emails, subject, body_text, body_html)
                 transport_used = "api"
                 actual_from_email = resend_from or account.email
+            elif infomaniak_configured:
+                # Infomaniak HTTPS preferred: skip SMTP entirely when the
+                # token is set — avoids multi-second SMTP timeouts on hosts
+                # that block ports 465/587 (e.g. Render free).
+                sent = self._send_email_infomaniak_api(account, to_emails, cc_emails, bcc_emails, subject, body_html)
+                transport_used = "infomaniak_api"
+                if not sent and provider_mode != "smtp":
+                    # Infomaniak HTTPS failed — try SMTP as a last resort
+                    ik_error = self.last_send_error
+                    logger.warning(
+                        "Infomaniak HTTPS failed for %s (%s), trying SMTP fallback",
+                        account.id, ik_error,
+                    )
+                    sent = self._send_email_smtp(account, msg, to_emails, cc_emails, bcc_emails)
+                    if sent:
+                        transport_used = "smtp"
             else:
                 # Mailbox SMTP first. Resend/API is only allowed when From would
                 # stay the linked account — never rewrite to no-reply@.
                 sent = self._send_email_smtp(account, msg, to_emails, cc_emails, bcc_emails)
                 transport_used = "smtp"
+                if not sent and self._is_infomaniak_account(account) and self._infomaniak_token():
+                    # SMTP failed on an Infomaniak account — try HTTPS API
+                    logger.warning(
+                        "SMTP failed for Infomaniak account %s, trying HTTPS API",
+                        account.id,
+                    )
+                    sent = self._send_email_infomaniak_api(account, to_emails, cc_emails, bcc_emails, subject, body_html)
+                    if sent:
+                        transport_used = "infomaniak_api"
                 if not sent and provider_mode != "smtp" and can_use_api:
                     logger.warning("SMTP delivery failed for account %s, trying provider API fallback", account.id)
                     sent = self._send_email_provider_api(account, to_emails, cc_emails, bcc_emails, subject, body_text, body_html)
@@ -1395,6 +1426,85 @@ class EmailService:
             or getattr(settings, "EMAILS_FROM_EMAIL", None)
             or ""
         ).strip()
+
+    def _is_infomaniak_account(self, account: EmailAccount) -> bool:
+        """True when the account's SMTP host points to Infomaniak."""
+        host = (getattr(account, "smtp_host", None) or "").lower()
+        return "infomaniak" in host
+
+    def _infomaniak_token(self) -> Optional[str]:
+        return (getattr(settings, "INFOMANIAK_MAIL_TOKEN", None) or "").strip() or None
+
+    def _send_email_infomaniak_api(
+        self,
+        account: EmailAccount,
+        to_emails: List[str],
+        cc_emails: Optional[List[str]],
+        bcc_emails: Optional[List[str]],
+        subject: str,
+        body_html: Optional[str],
+    ) -> bool:
+        """Send via Infomaniak HTTPS webmail API (create draft → send draft).
+
+        Returns True on success, False on failure (with last_send_error populated).
+        """
+        token = self._infomaniak_token()
+        if not token:
+            self._set_send_error(
+                code="INFOMANIAK_NOT_CONFIGURED",
+                message="INFOMANIAK_MAIL_TOKEN is not set. Cannot use Infomaniak HTTPS transport.",
+                retryable=False,
+                status_code=503,
+            )
+            return False
+
+        try:
+            client = _get_infomaniak_client(token)
+            mailbox_uuid = client.find_mailbox_uuid(account.email)
+            if not mailbox_uuid:
+                self._set_send_error(
+                    code="INFOMANIAK_MAILBOX_NOT_FOUND",
+                    message=(
+                        f"No Infomaniak mailbox found for {account.email}. "
+                        "Verify the INFOMANIAK_MAIL_TOKEN has access to this mailbox."
+                    ),
+                    retryable=False,
+                    status_code=400,
+                )
+                return False
+
+            to_list = [{"name": "", "email": e.strip()} for e in to_emails if e.strip()]
+            cc_list = [{"name": "", "email": e.strip()} for e in (cc_emails or []) if e.strip()] or None
+            bcc_list = [{"name": "", "email": e.strip()} for e in (bcc_emails or []) if e.strip()] or None
+
+            client.send_email(
+                mailbox_uuid=mailbox_uuid,
+                from_name=account.display_name or account.email.split("@")[0],
+                from_email=account.email,
+                to=to_list,
+                subject=subject,
+                body_html=body_html or "<p></p>",
+                cc=cc_list,
+                bcc=bcc_list,
+            )
+            return True
+
+        except InfomaniakMailError as exc:
+            self._set_send_error(
+                code="INFOMANIAK_API_ERROR",
+                message=str(exc),
+                retryable=exc.retryable,
+                status_code=503 if exc.retryable else 400,
+            )
+            return False
+        except Exception as exc:
+            self._set_send_error(
+                code="INFOMANIAK_UNEXPECTED",
+                message=f"Infomaniak send failed: {type(exc).__name__}: {exc}",
+                retryable=False,
+                status_code=503,
+            )
+            return False
 
     def _send_email_gmail_api(
         self,
