@@ -107,6 +107,13 @@ class Settings(BaseSettings):
     )
     EMAIL_PROVIDER: str = Field(default="smtp", description="Email transport mode: smtp, api, or auto")
     EMAIL_PROVIDER_TIMEOUT_SECONDS: int = Field(default=12, description="Timeout (seconds) for provider API requests")
+    # Infomaniak HTTPS webmail API (bypasses blocked SMTP ports on Render free)
+    INFOMANIAK_MAIL_TOKEN: Optional[str] = Field(
+        default=None,
+        description="Bearer token for Infomaniak mail API (mail.infomaniak.com/api). "
+        "Required to send from Infomaniak-hosted mailboxes when SMTP ports are blocked.",
+    )
+
     # Outreach / sequence worker (Render cron → POST /api/v1/outreach/worker/tick)
     OUTREACH_WORKER_SECRET: Optional[str] = Field(
         default=None,
