@@ -28,8 +28,8 @@ from app.services.email_html import wrap_outbound_html
 
 logger = logging.getLogger(__name__)
 
-SMTP_CONNECT_TIMEOUT_SECONDS = 30
-SMTP_FALLBACK_TIMEOUT_SECONDS = 20
+SMTP_CONNECT_TIMEOUT_SECONDS = 10
+SMTP_FALLBACK_TIMEOUT_SECONDS = 8
 
 
 def _ipv4_create_connection(

@@ -267,7 +267,11 @@ class OutreachRunner:
         self.db.commit()
         return {"batch_id": batch_id, "recorded": len(job_ids), "job_ids": job_ids}
 
-    def process_due_outreach_jobs(self, limit: int = 25) -> Dict[str, Any]:
+    def process_due_outreach_jobs(
+        self,
+        limit: int = 25,
+        deadline: Optional[datetime] = None,
+    ) -> Dict[str, Any]:
         now = datetime.utcnow()
         jobs = (
             self.db.query(OutreachJob)
@@ -280,9 +284,13 @@ class OutreachRunner:
             .all()
         )
         sent = failed = skipped = deferred = 0
+        budget_exhausted = False
         results: List[Dict[str, Any]] = []
 
         for job in jobs:
+            if deadline and datetime.utcnow() >= deadline:
+                budget_exhausted = True
+                break
             # Claim
             job.status = "processing"
             job.attempts = (job.attempts or 0) + 1
@@ -400,11 +408,13 @@ class OutreachRunner:
                 results.append({"job_id": job.id, "status": "failed", "reason": job.last_error})
 
         return {
-            "processed": len(jobs),
+            "processed": sent + failed + skipped + deferred,
+            "queued": len(jobs),
             "sent": sent,
             "failed": failed,
             "skipped": skipped,
             "deferred": deferred,
+            "budget_exhausted": budget_exhausted,
             "results": results,
         }
 
@@ -1001,16 +1011,27 @@ class OutreachRunner:
             run.finished_at = datetime.utcnow()
             self.db.add(run)
 
-    def tick(self, limit: int = 25) -> Dict[str, Any]:
+    def tick(
+        self,
+        limit: int = 25,
+        budget_seconds: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        deadline = (
+            datetime.utcnow() + timedelta(seconds=budget_seconds)
+            if budget_seconds
+            else None
+        )
         third = max(1, limit // 3)
-        jobs = self.process_due_outreach_jobs(limit=third)
+        jobs = self.process_due_outreach_jobs(limit=third, deadline=deadline)
         seq = self.process_due_sequence_steps(limit=third)
         scenarios = self.process_due_scenario_steps(limit=limit - 2 * third)
+        budget_exhausted = jobs.get("budget_exhausted", False)
         return {
             "outreach_jobs": jobs,
             "sequence_steps": seq,
             "scenario_steps": scenarios,
             "sent_total": jobs.get("sent", 0) + seq.get("sent", 0) + scenarios.get("sent", 0),
+            "budget_exhausted": budget_exhausted,
         }
 
 

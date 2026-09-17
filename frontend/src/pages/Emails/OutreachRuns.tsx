@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/hooks/use-toast';
-import { outreachAPI, type OutreachRun, type OutreachRunStep } from '@/services/api/outreach';
+import { outreachAPI, type OutreachRun, type OutreachRunStep, type ProcessNowResult } from '@/services/api/outreach';
 import emailAPI from '@/services/emailAPI';
 
 type JobRow = {
@@ -138,14 +138,47 @@ export function OutreachRunsPage() {
   }, [jobsPayload]);
 
   const processMutation = useMutation({
-    mutationFn: () => outreachAPI.processNow(25),
-    onSuccess: () => {
+    mutationFn: () => outreachAPI.processNow(5),
+    onSuccess: (data: ProcessNowResult) => {
       queryClient.invalidateQueries({ queryKey: ['outreach-runs'] });
       queryClient.invalidateQueries({ queryKey: ['outreach-jobs'] });
-      toast({ title: 'Queue processed', description: 'Due jobs and steps were processed.' });
+
+      const sent = data.sent_total ?? 0;
+      const jobsFailed = data.outreach_jobs?.failed ?? 0;
+      const jobsDeferred = data.outreach_jobs?.deferred ?? 0;
+      const hasFails = jobsFailed > 0 || (data.failed_reasons?.length ?? 0) > 0;
+
+      const parts: string[] = [];
+      if (sent > 0) parts.push(`${sent} sent`);
+      if (jobsFailed > 0) parts.push(`${jobsFailed} failed`);
+      if (jobsDeferred > 0) parts.push(`${jobsDeferred} deferred`);
+      if (data.budget_exhausted) parts.push('time budget reached — run again for remaining');
+
+      const description = parts.length > 0
+        ? parts.join(', ') + '.'
+        : 'No due jobs found.';
+
+      const failSnippet = data.failed_reasons?.length
+        ? `\n${data.failed_reasons.slice(0, 3).join('\n')}${data.failed_reasons.length > 3 ? `\n…and ${data.failed_reasons.length - 3} more` : ''}`
+        : '';
+
+      toast({
+        title: hasFails ? 'Queue processed with errors' : 'Queue processed',
+        description: description + failSnippet,
+        variant: hasFails ? 'destructive' : 'default',
+      });
     },
-    onError: () => {
-      toast({ title: 'Could not process queue', variant: 'destructive' });
+    onError: (err: unknown) => {
+      const axiosErr = err as { response?: { data?: { detail?: string } }; message?: string };
+      const detail =
+        axiosErr?.response?.data?.detail
+        || axiosErr?.message
+        || 'Unknown error';
+      toast({
+        title: 'Could not process queue',
+        description: detail,
+        variant: 'destructive',
+      });
     },
   });
 
