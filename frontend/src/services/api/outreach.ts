@@ -196,6 +196,23 @@ export interface OutreachJobsResponse {
   items: OutreachJobItem[];
 }
 
+export interface ProcessNowResult {
+  sent_total: number;
+  budget_exhausted: boolean;
+  failed_reasons: string[];
+  outreach_jobs?: {
+    processed?: number;
+    queued?: number;
+    sent?: number;
+    failed?: number;
+    skipped?: number;
+    deferred?: number;
+    budget_exhausted?: boolean;
+  };
+  sequence_steps?: { sent?: number; failed?: number };
+  scenario_steps?: { sent?: number; failed?: number };
+}
+
 export const outreachAPI = {
   // Connections
   listConnections: async (): Promise<OutreachConnection[]> => {
@@ -361,8 +378,11 @@ export const outreachAPI = {
     return response.data;
   },
 
-  processNow: async (limit = 25): Promise<Record<string, unknown>> => {
-    const response = await api.post('/outreach/worker/process-now', null, { params: { limit } });
+  processNow: async (limit = 5): Promise<ProcessNowResult> => {
+    const response = await api.post('/outreach/worker/process-now', null, {
+      params: { limit },
+      timeout: 90_000,
+    });
     return response.data;
   },
 

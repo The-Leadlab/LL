@@ -519,16 +519,28 @@ def outreach_worker_tick(
 def outreach_process_now(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
-    limit: int = Query(25, ge=1, le=100),
+    limit: int = Query(5, ge=1, le=25),
 ) -> Dict[str, Any]:
     """
-    Authenticated tick for the current org — use from the Runs UI while cron is warming up.
-    Processes global due work (same runner); safe because sends are org-scoped on each job/step.
+    Authenticated tick for the current org — use from the Runs UI.
+
+    Caps the batch at 5 jobs and imposes a 45-second wall-clock budget so
+    slow SMTP connections cannot wedge the HTTP response.  The UI shows a
+    structured summary (sent/failed/remaining) instead of a generic toast.
     """
     runner = OutreachRunner(db)
-    result = runner.tick(limit=limit)
+    result = runner.tick(limit=limit, budget_seconds=45)
     result["requested_by"] = current_user.id
     result["organization_id"] = current_user.organization_id
+
+    failed_details = []
+    for section_key in ("outreach_jobs", "sequence_steps", "scenario_steps"):
+        section = result.get(section_key) or {}
+        for item in section.get("results", []):
+            if item.get("status") == "failed":
+                failed_details.append(item.get("reason", "Unknown error"))
+
+    result["failed_reasons"] = failed_details
     return result
 
 
