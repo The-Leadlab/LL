@@ -519,17 +519,18 @@ def outreach_worker_tick(
 def outreach_process_now(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
-    limit: int = Query(5, ge=1, le=25),
+    limit: int = Query(25, ge=1, le=100),
 ) -> Dict[str, Any]:
     """
     Authenticated tick for the current org — use from the Runs UI.
 
-    Caps the batch at 5 jobs and imposes a 45-second wall-clock budget so
-    slow SMTP connections cannot wedge the HTTP response.  The UI shows a
-    structured summary (sent/failed/remaining) instead of a generic toast.
+    Processes up to *limit* pending outreach jobs (default 25) within a
+    55-second wall-clock budget.  The tick now gives outreach jobs priority
+    over sequence/scenario steps, so clicking "Process queue now" actually
+    drains the cold-outreach backlog instead of sending only 1 email.
     """
     runner = OutreachRunner(db)
-    result = runner.tick(limit=limit, budget_seconds=45)
+    result = runner.tick(limit=limit, budget_seconds=55)
     result["requested_by"] = current_user.id
     result["organization_id"] = current_user.organization_id
 
@@ -579,6 +580,30 @@ def list_outreach_jobs(
             for job in rows
         ],
     }
+
+
+@router.post("/jobs/cancel-all")
+def cancel_all_pending_jobs(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Dict[str, Any]:
+    """Cancel every pending/deferred outreach job for the current organization."""
+    jobs = (
+        db.query(OutreachJob)
+        .filter(
+            OutreachJob.organization_id == current_user.organization_id,
+            OutreachJob.status.in_(["pending", "deferred"]),
+        )
+        .all()
+    )
+    batch_ids = set()
+    for job in jobs:
+        job.status = "cancelled"
+        if job.batch_id:
+            batch_ids.add(job.batch_id)
+        db.add(job)
+    db.commit()
+    return {"cancelled": len(jobs), "batch_ids": sorted(batch_ids)}
 
 
 @router.post("/jobs/{batch_id}/cancel")
