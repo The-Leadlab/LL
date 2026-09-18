@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import secrets
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
@@ -519,30 +519,71 @@ def outreach_worker_tick(
 def outreach_process_now(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
-    limit: int = Query(25, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=200),
 ) -> Dict[str, Any]:
     """
     Authenticated tick for the current org — use from the Runs UI.
 
-    Processes up to *limit* pending outreach jobs (default 25) within a
-    55-second wall-clock budget.  The tick now gives outreach jobs priority
-    over sequence/scenario steps, so clicking "Process queue now" actually
-    drains the cold-outreach backlog instead of sending only 1 email.
+    Loops until every due outreach job has been processed (or the 55-second
+    wall-clock budget runs out).  Each iteration processes up to *limit*
+    jobs.  The response aggregates totals across all iterations so the UI
+    gets the full picture in one toast.
     """
+    deadline = datetime.utcnow() + timedelta(seconds=55)
     runner = OutreachRunner(db)
-    result = runner.tick(limit=limit, budget_seconds=55)
-    result["requested_by"] = current_user.id
-    result["organization_id"] = current_user.organization_id
 
-    failed_details = []
-    for section_key in ("outreach_jobs", "sequence_steps", "scenario_steps"):
-        section = result.get(section_key) or {}
-        for item in section.get("results", []):
-            if item.get("status") == "failed":
-                failed_details.append(item.get("reason", "Unknown error"))
+    total_sent = 0
+    total_failed = 0
+    total_deferred = 0
+    total_skipped = 0
+    total_processed = 0
+    budget_exhausted = False
+    failed_details: List[str] = []
+    last_result: Dict[str, Any] = {}
 
-    result["failed_reasons"] = failed_details
-    return result
+    while datetime.utcnow() < deadline:
+        remaining_secs = max(1.0, (deadline - datetime.utcnow()).total_seconds())
+        result = runner.tick(limit=limit, budget_seconds=remaining_secs)
+        last_result = result
+
+        jobs_section = result.get("outreach_jobs") or {}
+        processed = jobs_section.get("processed", 0)
+        total_sent += result.get("sent_total", 0)
+        total_failed += jobs_section.get("failed", 0)
+        total_deferred += jobs_section.get("deferred", 0)
+        total_skipped += jobs_section.get("skipped", 0)
+        total_processed += processed
+
+        for section_key in ("outreach_jobs", "sequence_steps", "scenario_steps"):
+            section = result.get(section_key) or {}
+            for item in section.get("results", []):
+                if item.get("status") == "failed":
+                    failed_details.append(item.get("reason", "Unknown error"))
+
+        if result.get("budget_exhausted"):
+            budget_exhausted = True
+            break
+        if processed == 0:
+            break
+
+    merged = dict(last_result)
+    merged.update({
+        "sent_total": total_sent,
+        "total_processed": total_processed,
+        "budget_exhausted": budget_exhausted,
+        "failed_reasons": failed_details,
+        "requested_by": current_user.id,
+        "organization_id": current_user.organization_id,
+    })
+    if merged.get("outreach_jobs"):
+        merged["outreach_jobs"] = {
+            **merged["outreach_jobs"],
+            "sent": total_sent,
+            "failed": total_failed,
+            "deferred": total_deferred,
+            "skipped": total_skipped,
+        }
+    return merged
 
 
 @router.get("/jobs")

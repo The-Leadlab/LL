@@ -547,9 +547,35 @@ async def send_email(
     )
 
 
+def _drain_due_outreach_jobs() -> None:
+    """Background task: process all due outreach jobs using a fresh DB session.
+
+    Runs in a loop (up to 120 s) so the queue drains without depending on
+    the Render cron.  Each iteration processes up to 50 jobs; the loop
+    stops when there are no more due pending jobs.
+    """
+    from app.db.session import SessionLocal
+    from app.services.outreach_runner import OutreachRunner as _Runner
+
+    db = SessionLocal()
+    try:
+        deadline = datetime.utcnow() + timedelta(seconds=120)
+        while datetime.utcnow() < deadline:
+            runner = _Runner(db)
+            result = runner.tick(limit=50, budget_seconds=30)
+            processed = (result.get("outreach_jobs") or {}).get("processed", 0)
+            if processed == 0:
+                break
+    except Exception:
+        logger.exception("Background outreach drain failed")
+    finally:
+        db.close()
+
+
 @router.post("/outreach")
 async def send_cold_outreach(
     outreach: OutreachSend,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
@@ -644,6 +670,12 @@ async def send_cold_outreach(
             delay_seconds=outreach.delay_seconds,
             settings=settings_snapshot,
         )
+
+        # Auto-drain: process due jobs in the background so the queue
+        # doesn't depend on the Render cron being alive.
+        if queued.get("queued", 0) > 0 and not outreach.schedule_at:
+            background_tasks.add_task(_drain_due_outreach_jobs)
+
         return {
             "mode": "queued",
             "sent": 0,
