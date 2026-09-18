@@ -378,7 +378,7 @@ export const outreachAPI = {
     return response.data;
   },
 
-  processNow: async (limit = 25): Promise<ProcessNowResult> => {
+  processNow: async (limit = 50): Promise<ProcessNowResult> => {
     const response = await api.post('/outreach/worker/process-now', null, {
       params: { limit },
       timeout: 90_000,

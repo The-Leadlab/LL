@@ -143,7 +143,7 @@ export function OutreachRunsPage() {
   );
 
   const processMutation = useMutation({
-    mutationFn: () => outreachAPI.processNow(25),
+    mutationFn: () => outreachAPI.processNow(50),
     onSuccess: (data: ProcessNowResult) => {
       queryClient.invalidateQueries({ queryKey: ['outreach-runs'] });
       queryClient.invalidateQueries({ queryKey: ['outreach-jobs'] });
