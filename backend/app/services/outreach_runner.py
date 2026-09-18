@@ -142,7 +142,7 @@ class OutreachRunner:
         body: str,
         format: str = "text",
         start_at: Optional[datetime] = None,
-        delay_seconds: float = 1.0,
+        delay_seconds: float = 300.0,
         settings: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         start = start_at or datetime.utcnow()

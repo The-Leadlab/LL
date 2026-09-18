@@ -226,13 +226,13 @@ export function ColdOutreachPage() {
   const [addPeopleMethod, setAddPeopleMethod] = useState<'paste' | 'csv' | 'sheet'>('paste');
   const [showAddPeople, setShowAddPeople] = useState(false);
   const [showAdvancedSend, setShowAdvancedSend] = useState(false);
-  const [delayMinutes, setDelayMinutes] = useState('1');
-  const [emailsPerMinute, setEmailsPerMinute] = useState('1');
+  const [delayMinutes, setDelayMinutes] = useState('5');
+  const [emailsPerMinute, setEmailsPerMinute] = useState('0.2');
   const [scheduleAt, setScheduleAt] = useState('');
   const [weekdaysOnly, setWeekdaysOnly] = useState(false);
   const [sendWindowStart, setSendWindowStart] = useState('');
   const [sendWindowEnd, setSendWindowEnd] = useState('');
-  const [maxPerHour, setMaxPerHour] = useState('60');
+  const [maxPerHour, setMaxPerHour] = useState('12');
   const [useQueue, setUseQueue] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -751,7 +751,7 @@ export function ColdOutreachPage() {
       }
       const minutes = Math.max(
         0,
-        Math.min(parsePositiveNumber(delayMinutes) || 1, MAX_MINUTES_BETWEEN_SENDS),
+        Math.min(parsePositiveNumber(delayMinutes) || 5, MAX_MINUTES_BETWEEN_SENDS),
       );
       const delay = Math.round(minutes * 60 * 100) / 100;
       const scheduleIso = scheduleAt ? new Date(scheduleAt).toISOString() : null;
@@ -1535,13 +1535,21 @@ export function ColdOutreachPage() {
               <Label className="font-normal">Skip people already sent in this campaign</Label>
             </div>
 
-            <button
-              type="button"
-              className="text-sm text-slate-600 underline-offset-2 hover:underline"
-              onClick={() => setShowAdvancedSend((open) => !open)}
-            >
-              {showAdvancedSend ? 'Hide extra options' : 'Pace, schedule, template…'}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="text-sm text-slate-600 underline-offset-2 hover:underline"
+                onClick={() => setShowAdvancedSend((open) => !open)}
+              >
+                {showAdvancedSend ? 'Hide extra options' : 'Pace, schedule, template…'}
+              </button>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                {parsePositiveNumber(delayMinutes)
+                  ? `${delayMinutes} min between emails`
+                  : '5 min between emails'}
+              </span>
+            </div>
 
             {showAdvancedSend && (
               <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50/70 p-3">

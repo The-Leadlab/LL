@@ -221,7 +221,7 @@ export function OutreachRunsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Runs</h1>
           <p className="mt-1 text-sm text-gray-600">
-            History of every cold outreach campaign launch.
+            History of every cold outreach campaign launch. Emails are spaced 5 min apart — only due jobs are sent.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -238,7 +238,7 @@ export function OutreachRunsPage() {
             ) : (
               <Play className="mr-2 h-4 w-4" />
             )}
-            Process queue now
+            Process due emails
           </Button>
           {totalPending > 0 && (
             <Button
