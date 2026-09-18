@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, FileSpreadsheet, Loader2, Mail, Search, Send, Sparkles, Upload, Users } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
+import { Eye, FileSpreadsheet, GripVertical, Loader2, Mail, Search, Send, Sparkles, Upload, Users, X } from 'lucide-react';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -137,6 +139,24 @@ function looksLikeHtml(value: string): boolean {
   return /<\/?[a-z][\s\S]*>/i.test((value || '').trim());
 }
 
+const DISC_LABELS: Record<string, { label: string; color: string }> = {
+  D: { label: 'D', color: 'bg-red-100 text-red-800 border-red-200' },
+  I: { label: 'I', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  S: { label: 'S', color: 'bg-green-100 text-green-800 border-green-200' },
+  C: { label: 'C', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+};
+
+function getLeadPersonality(lead: Lead): string {
+  const p = lead.psychometrics as Record<string, any> | null | undefined;
+  const raw =
+    p?.combined_insights?.personality_type ||
+    p?.personality_type ||
+    '';
+  if (!raw || typeof raw !== 'string') return '';
+  const letter = raw.trim().charAt(0).toUpperCase();
+  return 'DISC'.includes(letter) ? letter : '';
+}
+
 function wrapHtmlPreviewDocument(html: string): string {
   const trimmed = (html || '').trim();
   if (!trimmed) {
@@ -195,7 +215,9 @@ export function ColdOutreachPage() {
   const [accountId, setAccountId] = useState<string>('');
   const [clientId, setClientId] = useState<string>('all');
   const [search, setSearch] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selectedOrder, setSelectedOrder] = useState<number[]>([]);
+  const selectedIds = useMemo(() => new Set(selectedOrder), [selectedOrder]);
+  const [personalityFilter, setPersonalityFilter] = useState<string>('all');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [format, setFormat] = useState<'text' | 'html'>('html');
@@ -420,6 +442,14 @@ export function ColdOutreachPage() {
     return leads.filter((lead) => {
       if (statusFilter === 'sent' && !isSheetSent(lead, activeCampaignId)) return false;
       if (statusFilter === 'ready' && isSheetSent(lead, activeCampaignId)) return false;
+      if (personalityFilter !== 'all') {
+        const lp = getLeadPersonality(lead);
+        if (personalityFilter === 'unknown') {
+          if (lp) return false;
+        } else if (lp !== personalityFilter) {
+          return false;
+        }
+      }
       if (!q) return true;
       const hay = [
         lead.first_name,
@@ -437,7 +467,7 @@ export function ColdOutreachPage() {
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [leads, search, statusFilter, activeCampaignId]);
+  }, [leads, search, statusFilter, personalityFilter, activeCampaignId]);
 
   const readyLeadCount = leads.filter(
     (lead) => Boolean(lead.email) && !isSheetSent(lead, activeCampaignId),
@@ -497,23 +527,21 @@ export function ColdOutreachPage() {
     },
   });
 
-  const toggleLead = (id: number, checked: boolean) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
+  const toggleLead = useCallback((id: number, checked: boolean) => {
+    setSelectedOrder((prev) => {
+      if (checked) {
+        if (prev.includes(id)) return prev;
+        return [...prev, id];
+      }
+      return prev.filter((x) => x !== id);
     });
-  };
+  }, []);
 
   const selectVisibleWithEmail = () => {
-    setSelectedIds(
-      new Set(
-        visibleLeads
-          .filter((lead) => Boolean(lead.email) && (!skipIfSent || !isSheetSent(lead, activeCampaignId)))
-          .map((lead) => lead.id),
-      ),
-    );
+    const ids = visibleLeads
+      .filter((lead) => Boolean(lead.email) && (!skipIfSent || !isSheetSent(lead, activeCampaignId)))
+      .map((lead) => lead.id);
+    setSelectedOrder(ids);
   };
 
   const importClientId = parsedClientId;
@@ -536,7 +564,7 @@ export function ColdOutreachPage() {
     closeImportPreview();
     await refetchLeads();
     const idsToSelect = (result.ready_ids?.length ? result.ready_ids : result.lead_ids) || [];
-    setSelectedIds(new Set(idsToSelect));
+    setSelectedOrder(idsToSelect);
     setStatusFilter(idsToSelect.length ? 'ready' : 'all');
     const updated = result.updated || 0;
     const alreadySent = result.already_sent || 0;
@@ -713,7 +741,7 @@ export function ColdOutreachPage() {
   const sendMutation = useMutation({
     mutationFn: async () => {
       if (!accountId) throw new Error('Choose a sending mailbox first.');
-      const ids = Array.from(selectedIds);
+      const ids = selectedOrder;
       if (!ids.length) throw new Error('Select at least one lead.');
       if (campaignMode === 'existing' && !campaignId) {
         throw new Error('Choose a campaign, or switch to New campaign and name it.');
@@ -883,7 +911,7 @@ export function ColdOutreachPage() {
                     value={clientId}
                     onValueChange={(value) => {
                       setClientId(value);
-                      setSelectedIds(new Set());
+                      setSelectedOrder([]);
                       setSearch('');
                     }}
                   >
@@ -901,18 +929,52 @@ export function ColdOutreachPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label>Status</Label>
-                  <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'ready' | 'all' | 'sent')}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ready">Ready ({readyLeadCount})</SelectItem>
-                      <SelectItem value="sent">Sent ({sentLeadCount})</SelectItem>
-                      <SelectItem value="all">All ({leads.length})</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label>Status</Label>
+                    <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'ready' | 'all' | 'sent')}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ready">Ready ({readyLeadCount})</SelectItem>
+                        <SelectItem value="sent">Sent ({sentLeadCount})</SelectItem>
+                        <SelectItem value="all">All ({leads.length})</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Personality</Label>
+                    <Select value={personalityFilter} onValueChange={setPersonalityFilter}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="D">
+                          <span className="flex items-center gap-1.5">
+                            <span className="inline-block h-2 w-2 rounded-full bg-red-500" /> Dominant
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="I">
+                          <span className="flex items-center gap-1.5">
+                            <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" /> Influential
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="S">
+                          <span className="flex items-center gap-1.5">
+                            <span className="inline-block h-2 w-2 rounded-full bg-green-500" /> Steady
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="C">
+                          <span className="flex items-center gap-1.5">
+                            <span className="inline-block h-2 w-2 rounded-full bg-blue-500" /> Conscientious
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="unknown">Unknown</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
@@ -934,7 +996,7 @@ export function ColdOutreachPage() {
                 <Button type="button" variant="outline" size="sm" onClick={selectVisibleWithEmail}>
                   Select visible
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
+                <Button type="button" variant="outline" size="sm" onClick={() => setSelectedOrder([])}>
                   Clear
                 </Button>
                 <span className="ml-auto text-sm font-medium text-slate-700">
@@ -987,13 +1049,14 @@ export function ColdOutreachPage() {
                               }
                               onCheckedChange={(checked) => {
                                 if (checked) selectVisibleWithEmail();
-                                else setSelectedIds(new Set());
+                                else setSelectedOrder([]);
                               }}
                             />
                           </TableHead>
                           <TableHead>Name</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Company</TableHead>
+                          <TableHead className="w-12 text-center">DISC</TableHead>
                           {clientId === 'all' && <TableHead>Client</TableHead>}
                           <TableHead>Status</TableHead>
                         </TableRow>
@@ -1004,24 +1067,43 @@ export function ColdOutreachPage() {
                           const sent = isSheetSent(lead, activeCampaignId);
                           const status =
                             campaignStatus(lead, activeCampaignId) || sheetStatus(lead);
+                          const personality = getLeadPersonality(lead);
+                          const discStyle = personality ? DISC_LABELS[personality] : null;
+                          const queuePos = selectedOrder.indexOf(lead.id);
                           return (
                             <TableRow
                               key={lead.id}
                               className={!hasEmail ? 'opacity-50' : 'cursor-pointer hover:bg-slate-50'}
                               onClick={() => hasEmail && toggleLead(lead.id, !selectedIds.has(lead.id))}
                             >
-                              <TableCell onClick={(event) => event.stopPropagation()}>
-                                <Checkbox
-                                  checked={selectedIds.has(lead.id)}
-                                  disabled={!hasEmail}
-                                  onCheckedChange={(checked) => toggleLead(lead.id, Boolean(checked))}
-                                />
+                              <TableCell onClick={(event) => event.stopPropagation()} className="w-10">
+                                <div className="flex items-center gap-1.5">
+                                  <Checkbox
+                                    checked={selectedIds.has(lead.id)}
+                                    disabled={!hasEmail}
+                                    onCheckedChange={(checked) => toggleLead(lead.id, Boolean(checked))}
+                                  />
+                                  {queuePos >= 0 && (
+                                    <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded bg-slate-800 px-1 text-[10px] font-bold tabular-nums text-white">
+                                      {queuePos + 1}
+                                    </span>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell>
                                 {[lead.first_name, lead.last_name].filter(Boolean).join(' ') || '—'}
                               </TableCell>
                               <TableCell className="max-w-[180px] truncate">{lead.email || 'No email'}</TableCell>
                               <TableCell className="max-w-[140px] truncate">{lead.company || '—'}</TableCell>
+                              <TableCell className="text-center">
+                                {discStyle ? (
+                                  <Badge variant="outline" className={`text-[10px] font-bold ${discStyle.color}`}>
+                                    {discStyle.label}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-xs text-slate-300">—</span>
+                                )}
+                              </TableCell>
                               {clientId === 'all' && (
                                 <TableCell className="max-w-[140px] truncate">{lead.client_name || '—'}</TableCell>
                               )}
@@ -1045,6 +1127,108 @@ export function ColdOutreachPage() {
                 {leads.filter((lead) => lead.email).length} of {leads.length} loaded have an email
               </p>
             </div>
+
+            {selectedOrder.length > 0 && (
+              <div className="rounded-lg border border-slate-200 bg-white">
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      Send queue
+                      <span className="ml-1.5 text-xs font-normal text-slate-500">
+                        ({selectedOrder.length} lead{selectedOrder.length !== 1 ? 's' : ''})
+                      </span>
+                    </h3>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      Drag to reorder — #1 is emailed first.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-slate-500"
+                    onClick={() => setSelectedOrder([])}
+                  >
+                    Clear all
+                  </Button>
+                </div>
+                <DragDropContext
+                  onDragEnd={(result: DropResult) => {
+                    if (!result.destination) return;
+                    const from = result.source.index;
+                    const to = result.destination.index;
+                    if (from === to) return;
+                    setSelectedOrder((prev) => {
+                      const next = [...prev];
+                      const [moved] = next.splice(from, 1);
+                      next.splice(to, 0, moved);
+                      return next;
+                    });
+                  }}
+                >
+                  <Droppable droppableId="send-queue">
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className="max-h-[20rem] divide-y divide-slate-100 overflow-auto"
+                      >
+                        {selectedOrder.map((id, index) => {
+                          const lead = leads.find((l) => l.id === id);
+                          if (!lead) return null;
+                          const personality = getLeadPersonality(lead);
+                          const discStyle = personality ? DISC_LABELS[personality] : null;
+                          return (
+                            <Draggable key={id} draggableId={String(id)} index={index}>
+                              {(dragProvided, snapshot) => (
+                                <div
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  className={`flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
+                                    snapshot.isDragging ? 'bg-slate-50 shadow-sm' : 'bg-white'
+                                  }`}
+                                >
+                                  <div
+                                    {...dragProvided.dragHandleProps}
+                                    className="flex cursor-grab items-center text-slate-400 hover:text-slate-600 active:cursor-grabbing"
+                                  >
+                                    <GripVertical className="h-4 w-4" />
+                                  </div>
+                                  <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded bg-slate-800 px-1.5 text-[11px] font-bold tabular-nums text-white">
+                                    {index + 1}
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <span className="font-medium text-slate-900">
+                                      {[lead.first_name, lead.last_name].filter(Boolean).join(' ') || '—'}
+                                    </span>
+                                    <span className="ml-2 text-slate-500">{lead.email || ''}</span>
+                                  </div>
+                                  {discStyle && (
+                                    <Badge variant="outline" className={`shrink-0 text-[10px] font-bold ${discStyle.color}`}>
+                                      {discStyle.label}
+                                    </Badge>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className="shrink-0 rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                    onClick={() =>
+                                      setSelectedOrder((prev) => prev.filter((x) => x !== id))
+                                    }
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              )}
+                            </Draggable>
+                          );
+                        })}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              </div>
+            )}
 
             <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
               <button
