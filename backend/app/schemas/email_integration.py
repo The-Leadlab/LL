@@ -106,7 +106,7 @@ class OutreachSend(BaseModel):
     subject: str
     body: str
     format: str = "text"  # text | html
-    delay_seconds: float = 1.0
+    delay_seconds: float = 300.0
     # When set (ISO datetime UTC) or queue=True, jobs go to outreach_jobs worker queue
     schedule_at: Optional[datetime] = None
     queue: bool = False
@@ -147,7 +147,7 @@ class OutreachSend(BaseModel):
         try:
             delay = float(v)
         except (TypeError, ValueError):
-            return 1.0
+            return 300.0
         return max(0.0, min(delay, 3600.0))
 
     @validator("subject", "body")
