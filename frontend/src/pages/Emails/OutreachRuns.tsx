@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Loader2, Play } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Play, Square } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -137,8 +137,13 @@ export function OutreachRunsPage() {
     });
   }, [jobsPayload]);
 
+  const totalPending = useMemo(
+    () => jobBatches.reduce((sum, b) => sum + b.pending, 0),
+    [jobBatches],
+  );
+
   const processMutation = useMutation({
-    mutationFn: () => outreachAPI.processNow(5),
+    mutationFn: () => outreachAPI.processNow(25),
     onSuccess: (data: ProcessNowResult) => {
       queryClient.invalidateQueries({ queryKey: ['outreach-runs'] });
       queryClient.invalidateQueries({ queryKey: ['outreach-jobs'] });
@@ -182,6 +187,34 @@ export function OutreachRunsPage() {
     },
   });
 
+  const stopAllMutation = useMutation({
+    mutationFn: () => outreachAPI.cancelAllPending(),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['outreach-jobs'] });
+      toast({
+        title: 'Sending stopped',
+        description: `${data.cancelled} pending job${data.cancelled === 1 ? '' : 's'} cancelled.`,
+      });
+    },
+    onError: () => {
+      toast({ title: 'Could not stop sending', variant: 'destructive' });
+    },
+  });
+
+  const stopBatchMutation = useMutation({
+    mutationFn: (batchId: string) => outreachAPI.cancelBatch(batchId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['outreach-jobs'] });
+      toast({
+        title: 'Batch stopped',
+        description: `${data.cancelled} pending job${data.cancelled === 1 ? '' : 's'} cancelled.`,
+      });
+    },
+    onError: () => {
+      toast({ title: 'Could not stop batch', variant: 'destructive' });
+    },
+  });
+
   return (
     <div className="container mx-auto space-y-6 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -207,6 +240,21 @@ export function OutreachRunsPage() {
             )}
             Process queue now
           </Button>
+          {totalPending > 0 && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => stopAllMutation.mutate()}
+              disabled={stopAllMutation.isPending}
+            >
+              {stopAllMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Square className="mr-2 h-4 w-4" />
+              )}
+              Stop all ({totalPending})
+            </Button>
+          )}
         </div>
       </div>
 
@@ -237,6 +285,7 @@ export function OutreachRunsPage() {
                     <th className="px-4 py-3">Failed</th>
                     <th className="px-4 py-3">Skipped</th>
                     <th className="px-4 py-3">Latest</th>
+                    <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody>
@@ -250,6 +299,25 @@ export function OutreachRunsPage() {
                       <td className="px-4 py-3">{batch.skipped}</td>
                       <td className="px-4 py-3 text-gray-600">
                         {batch.latest ? new Date(batch.latest).toLocaleString() : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {batch.pending > 0 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => stopBatchMutation.mutate(batch.batchId)}
+                            disabled={stopBatchMutation.isPending}
+                          >
+                            {stopBatchMutation.isPending ? (
+                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            ) : (
+                              <Square className="mr-1 h-3 w-3" />
+                            )}
+                            Stop
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -378,11 +378,21 @@ export const outreachAPI = {
     return response.data;
   },
 
-  processNow: async (limit = 5): Promise<ProcessNowResult> => {
+  processNow: async (limit = 25): Promise<ProcessNowResult> => {
     const response = await api.post('/outreach/worker/process-now', null, {
       params: { limit },
       timeout: 90_000,
     });
+    return response.data;
+  },
+
+  cancelBatch: async (batchId: string): Promise<{ cancelled: number; batch_id: string }> => {
+    const response = await api.post(`/outreach/jobs/${batchId}/cancel`);
+    return response.data;
+  },
+
+  cancelAllPending: async (): Promise<{ cancelled: number; batch_ids: string[] }> => {
+    const response = await api.post('/outreach/jobs/cancel-all');
     return response.data;
   },
 

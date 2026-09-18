@@ -1031,19 +1031,31 @@ class OutreachRunner:
             if budget_seconds
             else None
         )
-        third = max(1, limit // 3)
 
-        jobs = self.process_due_outreach_jobs(limit=third, deadline=deadline)
+        empty_section: Dict[str, Any] = {
+            "sent": 0, "failed": 0, "processed": 0,
+            "budget_exhausted": True, "results": [],
+        }
 
-        if deadline and datetime.utcnow() >= deadline:
-            seq = {"sent": 0, "failed": 0, "budget_exhausted": True, "results": []}
-            scenarios = {"sent": 0, "failed": 0, "budget_exhausted": True, "results": []}
+        # Give outreach jobs the full limit first; allocate the remainder
+        # to sequence steps and scenario steps.  The old rigid 1/3 split
+        # meant process-now with limit=5 only sent 1 outreach job per click.
+        jobs = self.process_due_outreach_jobs(limit=limit, deadline=deadline)
+        used = jobs.get("processed", 0)
+
+        remaining = max(0, limit - used)
+        if remaining == 0 or (deadline and datetime.utcnow() >= deadline):
+            seq = dict(empty_section)
+            scenarios = dict(empty_section)
         else:
-            seq = self.process_due_sequence_steps(limit=third, deadline=deadline)
-            if deadline and datetime.utcnow() >= deadline:
-                scenarios = {"sent": 0, "failed": 0, "budget_exhausted": True, "results": []}
+            half = max(1, remaining // 2)
+            seq = self.process_due_sequence_steps(limit=half, deadline=deadline)
+            used2 = seq.get("processed", 0)
+            remaining2 = max(0, remaining - used2)
+            if remaining2 == 0 or (deadline and datetime.utcnow() >= deadline):
+                scenarios = dict(empty_section)
             else:
-                scenarios = self.process_due_scenario_steps(limit=limit - 2 * third)
+                scenarios = self.process_due_scenario_steps(limit=remaining2)
 
         budget_exhausted = (
             jobs.get("budget_exhausted", False)
