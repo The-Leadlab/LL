@@ -55,3 +55,14 @@ def test_next_send_slot_defers_outside_window():
     )
     assert slot.hour == 9
     assert slot.day == 10
+
+
+def test_tick_gate_debounces():
+    from app.services.outreach_scheduler import TickGate
+
+    gate = TickGate(min_interval=30)
+    t0 = datetime(2026, 9, 21, 12, 0, 0)
+    assert gate.should_run(t0) is True
+    assert gate.should_run(t0) is False
+    assert gate.should_run(datetime(2026, 9, 21, 12, 0, 20)) is False
+    assert gate.should_run(datetime(2026, 9, 21, 12, 0, 31)) is True

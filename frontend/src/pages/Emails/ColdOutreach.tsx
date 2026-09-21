@@ -814,7 +814,7 @@ export function ColdOutreachPage() {
       if (summary.mode === 'queued' || (summary.queued || 0) > 0) {
         toast({
           title: 'Campaign queued',
-          description: `Queued ${summary.queued || summary.total} emails. Track progress under Runs.`,
+          description: `Queued ${summary.queued || summary.total} emails, 5 minutes apart. The first goes out now; the rest send automatically.`,
         });
       } else {
         toast({
@@ -1705,7 +1705,7 @@ export function ColdOutreachPage() {
                 disabled={Boolean(scheduleAt)}
                 onCheckedChange={(checked) => setUseQueue(Boolean(checked))}
               />
-              <Label className="font-normal">Queue via worker</Label>
+              <Label className="font-normal">Queue and send automatically (5 min apart)</Label>
             </div>
               </div>
             )}

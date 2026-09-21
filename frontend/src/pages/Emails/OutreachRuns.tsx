@@ -109,6 +109,13 @@ export function OutreachRunsPage() {
   const { data: jobsPayload, isLoading: jobsLoading } = useQuery({
     queryKey: ['outreach-jobs'],
     queryFn: () => emailAPI.listOutreachJobs({ limit: 200 }),
+    refetchInterval: (query) => {
+      const items = (query.state.data as { items?: JobRow[] } | undefined)?.items || [];
+      const pending = items.some((job) =>
+        ['pending', 'deferred', 'processing'].includes(job.status),
+      );
+      return pending ? 15000 : false;
+    },
   });
 
   const jobBatches = useMemo(() => {
@@ -214,7 +221,7 @@ export function OutreachRunsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Runs</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Emails are sent one at a time with a 5-minute gap. Click "Send next" to release the next due email.
+            Emails send automatically, one every 5 minutes. Use Send next only if a job is due and the queue looks stuck.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

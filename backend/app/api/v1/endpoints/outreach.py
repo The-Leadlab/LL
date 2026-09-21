@@ -512,7 +512,7 @@ def outreach_worker_tick(
     _assert_worker_secret(x_outreach_worker_secret)
     batch = getattr(settings, "OUTREACH_WORKER_BATCH_SIZE", 25) or 25
     runner = OutreachRunner(db)
-    return runner.tick(limit=min(limit, batch))
+    return runner.tick(limit=min(limit, batch), budget_seconds=45)
 
 
 @router.post("/worker/process-now")
@@ -524,11 +524,9 @@ def outreach_process_now(
     """
     Authenticated single-tick for the current org — use from the Runs UI.
 
-    Sends **at most one** due outreach email per email account and defers
-    the remaining jobs with 5-minute staggered spacing.  This prevents
-    burst sends when a backlog has accumulated and keeps the HTTP request
-    short.  The UI can be clicked again after ~5 min to release the next
-    email.
+    Sends **at most one** due outreach email per email account this request
+    and defers the rest with 5-minute spacing. The in-process scheduler and
+    cron keep draining the queue automatically — you do not need to click again.
     """
     runner = OutreachRunner(db)
     result = runner.tick(limit=limit, budget_seconds=15)

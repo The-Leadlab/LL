@@ -644,6 +644,7 @@ async def send_cold_outreach(
         "campaign_id": campaign.id,
         "campaign_name": campaign.name,
         "sequence_id": campaign.id,
+        "delay_seconds": float(outreach.delay_seconds or 300),
     }
     # Drop empty window keys so runner treats unset as no window
     if not settings_snapshot.get("send_window_start"):

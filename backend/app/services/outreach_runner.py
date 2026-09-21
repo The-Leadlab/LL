@@ -151,6 +151,8 @@ class OutreachRunner:
         skipped = 0
         jobs: List[OutreachJob] = []
         delay = max(0.0, float(delay_seconds or 0))
+        job_settings = dict(settings or {})
+        job_settings["delay_seconds"] = delay
 
         for index, lead_id in enumerate(lead_ids):
             lead = (
@@ -183,7 +185,7 @@ class OutreachRunner:
                     status="skipped",
                     last_error=reason,
                     idempotency_key=key,
-                    settings=settings or {},
+                    settings=job_settings,
                 )
                 self.db.add(job)
                 jobs.append(job)
@@ -203,7 +205,7 @@ class OutreachRunner:
                 scheduled_at=scheduled,
                 status="pending",
                 idempotency_key=key,
-                settings=settings or {},
+                settings=job_settings,
             )
             self.db.add(job)
             jobs.append(job)
@@ -273,6 +275,29 @@ class OutreachRunner:
     # default 300 s.
     # ------------------------------------------------------------------
     MIN_SEND_GAP_SECONDS: int = 300
+    STALE_PROCESSING_SECONDS: int = 10 * 60
+
+    def reclaim_stale_jobs(self) -> int:
+        """Re-queue jobs left in processing if a worker died mid-send."""
+        cutoff = datetime.utcnow() - timedelta(seconds=self.STALE_PROCESSING_SECONDS)
+        rows = (
+            self.db.query(OutreachJob)
+            .filter(
+                OutreachJob.status == "processing",
+                OutreachJob.updated_at <= cutoff,
+            )
+            .all()
+        )
+        now = datetime.utcnow()
+        for job in rows:
+            job.status = "pending"
+            job.last_error = "Reclaimed after stalled processing"
+            job.updated_at = now
+            self.db.add(job)
+        if rows:
+            self.db.commit()
+            logger.warning("Reclaimed %s stale outreach jobs stuck in processing", len(rows))
+        return len(rows)
 
     def _account_next_allowed(self, account_id: int, min_gap: timedelta) -> datetime:
         """Return the earliest UTC time another email may be sent from *account_id*."""
@@ -328,6 +353,7 @@ class OutreachRunner:
         limit: int = 25,
         deadline: Optional[datetime] = None,
     ) -> Dict[str, Any]:
+        self.reclaim_stale_jobs()
         now = datetime.utcnow()
         jobs = (
             self.db.query(OutreachJob)
@@ -381,12 +407,27 @@ class OutreachRunner:
                 })
                 continue
 
-            # Claim
+            # Claim atomically so the in-process ticker and process-now cannot double-send.
+            claimed = (
+                self.db.query(OutreachJob)
+                .filter(
+                    OutreachJob.id == job.id,
+                    OutreachJob.status.in_(["pending", "deferred"]),
+                )
+                .update(
+                    {
+                        "status": "processing",
+                        "attempts": (job.attempts or 0) + 1,
+                        "updated_at": datetime.utcnow(),
+                    },
+                    synchronize_session=False,
+                )
+            )
+            self.db.commit()
+            if not claimed:
+                continue
             job.status = "processing"
             job.attempts = (job.attempts or 0) + 1
-            job.updated_at = datetime.utcnow()
-            self.db.add(job)
-            self.db.commit()
 
             lead = self.db.query(Lead).filter(Lead.id == job.lead_id).first()
             ok, reason = lead_can_email(lead)

@@ -27,15 +27,15 @@ services:
       - key: OUTREACH_WORKER_BATCH_SIZE
         value: "25"
 
-  # Processes due outreach_jobs + sequence_steps every minute.
-  # Requires OUTREACH_WORKER_SECRET and API base URL on the cron job.
+  # Processes due outreach_jobs + sequence_steps every minute so 5-min
+  # spaced campaigns keep sending after the first email.
   - type: cron
     name: leadlab-outreach-worker
     env: python
     region: frankfurt
     plan: free
     rootDir: backend
-    schedule: "*/2 * * * *"
+    schedule: "* * * * *"
     buildCommand: pip install -r requirements.txt
     startCommand: python -c "import os,urllib.request; req=urllib.request.Request(os.environ['OUTREACH_TICK_URL'], method='POST', headers={'X-Outreach-Worker-Secret': os.environ['OUTREACH_WORKER_SECRET']}); urllib.request.urlopen(req, timeout=55); print('tick ok')"
     envVars:

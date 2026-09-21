@@ -6,6 +6,7 @@ from app.middleware.url_normalizer import URLNormalizerMiddleware
 from app.middleware.security import SecurityMiddleware
 import logging
 import os
+import asyncio
 from datetime import datetime
 from sqlalchemy import text
 
@@ -117,6 +118,14 @@ async def startup_sequence_guard() -> None:
     except Exception as exc:
         logger.warning("Could not ensure outreach platform schema: %s", exc)
 
+    try:
+        from app.services.outreach_scheduler import outreach_tick_loop
+
+        app.state.outreach_scheduler = asyncio.create_task(outreach_tick_loop())
+        logger.info("Started in-process outreach scheduler")
+    except Exception as exc:
+        logger.warning("Could not start outreach scheduler: %s", exc)
+
 # Health check endpoint - Keep both versions for compatibility
 @app.get("/")
 async def root():
@@ -145,6 +154,13 @@ async def health_check():
         # Simple query to test database connection
         db.execute(text("SELECT 1"))
         db.close()
+
+        try:
+            from app.services.outreach_scheduler import maybe_tick_in_background
+
+            maybe_tick_in_background()
+        except Exception:
+            pass
 
         return {
             "status": "healthy",
