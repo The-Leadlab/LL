@@ -150,25 +150,18 @@ export function OutreachRunsPage() {
 
       const sent = data.sent_total ?? 0;
       const jobsFailed = data.outreach_jobs?.failed ?? 0;
-      const jobsDeferred = data.outreach_jobs?.deferred ?? 0;
       const hasFails = jobsFailed > 0 || (data.failed_reasons?.length ?? 0) > 0;
 
-      const parts: string[] = [];
-      if (sent > 0) parts.push(`${sent} sent`);
-      if (jobsFailed > 0) parts.push(`${jobsFailed} failed`);
-      if (jobsDeferred > 0) parts.push(`${jobsDeferred} deferred`);
-      if (data.budget_exhausted) parts.push('time budget reached — run again for remaining');
-
-      const description = parts.length > 0
-        ? parts.join(', ') + '.'
-        : 'No due jobs found.';
+      const description =
+        (data as Record<string, unknown>).message as string
+        || (sent > 0 ? `${sent} sent.` : 'No due jobs found.');
 
       const failSnippet = data.failed_reasons?.length
         ? `\n${data.failed_reasons.slice(0, 3).join('\n')}${data.failed_reasons.length > 3 ? `\n…and ${data.failed_reasons.length - 3} more` : ''}`
         : '';
 
       toast({
-        title: hasFails ? 'Queue processed with errors' : 'Queue processed',
+        title: hasFails ? 'Sent with errors' : sent > 0 ? 'Email sent' : 'Nothing due',
         description: description + failSnippet,
         variant: hasFails ? 'destructive' : 'default',
       });
@@ -221,7 +214,7 @@ export function OutreachRunsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Runs</h1>
           <p className="mt-1 text-sm text-gray-600">
-            History of every cold outreach campaign launch. Emails are spaced 5 min apart — only due jobs are sent.
+            Emails are sent one at a time with a 5-minute gap. Click "Send next" to release the next due email.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -238,7 +231,7 @@ export function OutreachRunsPage() {
             ) : (
               <Play className="mr-2 h-4 w-4" />
             )}
-            Process due emails
+            Send next due email
           </Button>
           {totalPending > 0 && (
             <Button

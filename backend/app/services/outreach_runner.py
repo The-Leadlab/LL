@@ -267,6 +267,62 @@ class OutreachRunner:
         self.db.commit()
         return {"batch_id": batch_id, "recorded": len(job_ids), "job_ids": job_ids}
 
+    # ------------------------------------------------------------------
+    # Minimum gap (wall clock) between sends for one email account.
+    # Respects campaign-level delay_seconds when it is longer than the
+    # default 300 s.
+    # ------------------------------------------------------------------
+    MIN_SEND_GAP_SECONDS: int = 300
+
+    def _account_next_allowed(self, account_id: int, min_gap: timedelta) -> datetime:
+        """Return the earliest UTC time another email may be sent from *account_id*."""
+        row = (
+            self.db.query(OutreachJob.sent_at)
+            .filter(
+                OutreachJob.account_id == account_id,
+                OutreachJob.status == "sent",
+                OutreachJob.sent_at.isnot(None),
+            )
+            .order_by(OutreachJob.sent_at.desc())
+            .limit(1)
+            .first()
+        )
+        if row and row[0]:
+            return row[0] + min_gap
+        return datetime.utcnow()
+
+    def _stagger_remaining_jobs(
+        self,
+        jobs: List[OutreachJob],
+        base_time: datetime,
+        gap_seconds: int,
+        results: List[Dict[str, Any]],
+    ) -> int:
+        """Re-schedule *jobs* at staggered intervals starting from *base_time*.
+
+        Returns the number of jobs deferred.
+        """
+        count = 0
+        for i, job in enumerate(jobs):
+            if job.status in ("sent", "failed", "skipped", "cancelled", "processing"):
+                continue
+            new_time = base_time + timedelta(seconds=gap_seconds * (i + 1))
+            job.status = "deferred"
+            job.scheduled_at = new_time
+            job.last_error = "Pacing: staggered to enforce 5-min gap"
+            job.updated_at = datetime.utcnow()
+            self.db.add(job)
+            results.append({
+                "job_id": job.id,
+                "status": "deferred",
+                "reason": "pacing",
+                "scheduled_at": new_time.isoformat(),
+            })
+            count += 1
+        if count:
+            self.db.commit()
+        return count
+
     def process_due_outreach_jobs(
         self,
         limit: int = 25,
@@ -287,10 +343,44 @@ class OutreachRunner:
         budget_exhausted = False
         results: List[Dict[str, Any]] = []
 
-        for job in jobs:
+        # Track per-account next-allowed send time to stagger within a single tick
+        account_next_slot: Dict[int, datetime] = {}
+
+        for idx, job in enumerate(jobs):
             if deadline and datetime.utcnow() >= deadline:
                 budget_exhausted = True
                 break
+
+            # --- Wall-clock pacing: enforce minimum gap per account ---
+            gap_secs = max(
+                self.MIN_SEND_GAP_SECONDS,
+                int((job.settings or {}).get("delay_seconds") or self.MIN_SEND_GAP_SECONDS),
+            )
+            min_gap = timedelta(seconds=gap_secs)
+
+            if job.account_id not in account_next_slot:
+                account_next_slot[job.account_id] = self._account_next_allowed(
+                    job.account_id, min_gap,
+                )
+
+            next_allowed = account_next_slot[job.account_id]
+            if next_allowed > datetime.utcnow() + timedelta(seconds=10):
+                job.status = "deferred"
+                job.scheduled_at = next_allowed
+                job.last_error = "Pacing: 5-min minimum gap between sends"
+                job.updated_at = datetime.utcnow()
+                self.db.add(job)
+                self.db.commit()
+                account_next_slot[job.account_id] = next_allowed + min_gap
+                deferred += 1
+                results.append({
+                    "job_id": job.id,
+                    "status": "deferred",
+                    "reason": "pacing",
+                    "scheduled_at": next_allowed.isoformat(),
+                })
+                continue
+
             # Claim
             job.status = "processing"
             job.attempts = (job.attempts or 0) + 1
@@ -338,14 +428,13 @@ class OutreachRunner:
                     .count()
                 )
                 if recent >= max_per_hour:
-                    job.status = "deferred"
-                    job.scheduled_at = datetime.utcnow() + timedelta(minutes=5)
-                    job.last_error = "Rate limit: max_per_hour reached"
-                    job.updated_at = datetime.utcnow()
-                    self.db.add(job)
-                    self.db.commit()
-                    deferred += 1
-                    results.append({"job_id": job.id, "status": "deferred", "reason": "rate_limit"})
+                    base = datetime.utcnow()
+                    remaining_in_batch = [j for j in jobs[idx:] if j.account_id == job.account_id
+                                          and j.status in ("pending", "deferred", "processing")]
+                    staggered = self._stagger_remaining_jobs(
+                        remaining_in_batch, base, gap_secs, results,
+                    )
+                    deferred += staggered
                     continue
 
             tokens = lead_tokens(lead)
@@ -398,6 +487,10 @@ class OutreachRunner:
                 self.db.commit()
                 sent += 1
                 results.append({"job_id": job.id, "lead_id": lead.id, "status": "sent"})
+
+                # After a successful send, advance the pacing clock so any
+                # remaining jobs for this account in the same tick get deferred.
+                account_next_slot[job.account_id] = datetime.utcnow() + min_gap
             else:
                 job.status = "failed"
                 job.last_error = self.email_service.last_send_error or "Delivery failed"
