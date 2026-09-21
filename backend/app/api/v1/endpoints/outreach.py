@@ -522,67 +522,46 @@ def outreach_process_now(
     limit: int = Query(50, ge=1, le=200),
 ) -> Dict[str, Any]:
     """
-    Authenticated tick for the current org — use from the Runs UI.
+    Authenticated single-tick for the current org — use from the Runs UI.
 
-    Loops until every due outreach job has been processed (or the 55-second
-    wall-clock budget runs out).  Each iteration processes up to *limit*
-    jobs.  The response aggregates totals across all iterations so the UI
-    gets the full picture in one toast.
+    Sends **at most one** due outreach email per email account and defers
+    the remaining jobs with 5-minute staggered spacing.  This prevents
+    burst sends when a backlog has accumulated and keeps the HTTP request
+    short.  The UI can be clicked again after ~5 min to release the next
+    email.
     """
-    deadline = datetime.utcnow() + timedelta(seconds=55)
     runner = OutreachRunner(db)
+    result = runner.tick(limit=limit, budget_seconds=15)
 
-    total_sent = 0
-    total_failed = 0
-    total_deferred = 0
-    total_skipped = 0
-    total_processed = 0
-    budget_exhausted = False
+    jobs_section = result.get("outreach_jobs") or {}
+    sent = result.get("sent_total", 0)
     failed_details: List[str] = []
-    last_result: Dict[str, Any] = {}
+    for section_key in ("outreach_jobs", "sequence_steps", "scenario_steps"):
+        section = result.get(section_key) or {}
+        for item in section.get("results", []):
+            if item.get("status") == "failed":
+                failed_details.append(item.get("reason", "Unknown error"))
 
-    while datetime.utcnow() < deadline:
-        remaining_secs = max(1.0, (deadline - datetime.utcnow()).total_seconds())
-        result = runner.tick(limit=limit, budget_seconds=remaining_secs)
-        last_result = result
+    deferred_count = jobs_section.get("deferred", 0)
+    if sent > 0 and deferred_count > 0:
+        message = f"Sent {sent} email(s). {deferred_count} remaining — spaced 5 min apart."
+    elif sent > 0:
+        message = f"Sent {sent} email(s)."
+    elif deferred_count > 0:
+        message = f"No emails due right now. {deferred_count} deferred — next one in ~5 min."
+    else:
+        message = "No due jobs found."
 
-        jobs_section = result.get("outreach_jobs") or {}
-        processed = jobs_section.get("processed", 0)
-        total_sent += result.get("sent_total", 0)
-        total_failed += jobs_section.get("failed", 0)
-        total_deferred += jobs_section.get("deferred", 0)
-        total_skipped += jobs_section.get("skipped", 0)
-        total_processed += processed
-
-        for section_key in ("outreach_jobs", "sequence_steps", "scenario_steps"):
-            section = result.get(section_key) or {}
-            for item in section.get("results", []):
-                if item.get("status") == "failed":
-                    failed_details.append(item.get("reason", "Unknown error"))
-
-        if result.get("budget_exhausted"):
-            budget_exhausted = True
-            break
-        if processed == 0:
-            break
-
-    merged = dict(last_result)
+    merged = dict(result)
     merged.update({
-        "sent_total": total_sent,
-        "total_processed": total_processed,
-        "budget_exhausted": budget_exhausted,
+        "sent_total": sent,
+        "total_processed": jobs_section.get("processed", 0),
+        "budget_exhausted": False,
         "failed_reasons": failed_details,
         "requested_by": current_user.id,
         "organization_id": current_user.organization_id,
+        "message": message,
     })
-    if merged.get("outreach_jobs"):
-        merged["outreach_jobs"] = {
-            **merged["outreach_jobs"],
-            "sent": total_sent,
-            "failed": total_failed,
-            "deferred": total_deferred,
-            "skipped": total_skipped,
-        }
     return merged
 
 
