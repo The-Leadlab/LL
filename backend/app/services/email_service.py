@@ -1223,8 +1223,13 @@ class EmailService:
         bcc_emails: Optional[List[str]] = None,
         reply_to: Optional[str] = None,
         lead_id: Optional[int] = None,
+        mailbox_only: bool = False,
     ) -> Dict[str, Any]:
-        """Send email via SMTP, API provider, or auto fallback."""
+        """Send email via the linked mailbox (Gmail API / SMTP).
+
+        When mailbox_only=True (Cold Outreach / campaigns), Resend/API is never used —
+        only Gmail OAuth API, Infomaniak mailbox API, or SMTP for that account.
+        """
         self.last_send_error = None
         self.last_send_error_code = None
         self.last_send_retryable = False
@@ -1259,7 +1264,10 @@ class EmailService:
             if provider_mode not in {"smtp", "api", "auto"}:
                 provider_mode = "auto"
 
-            can_use_api = self._api_from_matches_account(account)
+            # Cold outreach must use the linked mailbox identity — never Resend.
+            can_use_api = (
+                False if mailbox_only else self._api_from_matches_account(account)
+            )
             resend_from = self._resend_from_address()
             infomaniak_configured = self._is_infomaniak_account(account) and self._infomaniak_token()
             transport_used = ""
@@ -1308,25 +1316,39 @@ class EmailService:
                     if sent:
                         transport_used = "api"
                         actual_from_email = resend_from or account.email
-                elif not sent and not can_use_api:
+                elif not sent and (mailbox_only or not can_use_api):
                     smtp_error = self.last_send_error
                     smtp_error_code = self.last_send_error_code
                     smtp_host = account.smtp_host or "unknown"
-                    self._set_send_error(
-                        code=smtp_error_code or "SMTP_SEND_FAILED",
-                        message=(
-                            f"SMTP delivery via {smtp_host} failed for {account.email}; "
-                            f"API/Resend fallback blocked (would rewrite From to "
-                            f"{resend_from}). "
-                            f"SMTP error: {smtp_error}"
-                        ),
-                        retryable=self.last_send_retryable,
-                        status_code=self.last_send_status_code,
-                    )
+                    if mailbox_only:
+                        self._set_send_error(
+                            code=smtp_error_code or "SMTP_SEND_FAILED",
+                            message=(
+                                f"Mailbox delivery failed for {account.email} via "
+                                f"{'Gmail' if use_gmail_api else smtp_host}. "
+                                f"Cold outreach does not use Resend. "
+                                f"Error: {smtp_error}"
+                            ),
+                            retryable=self.last_send_retryable,
+                            status_code=self.last_send_status_code,
+                        )
+                    else:
+                        self._set_send_error(
+                            code=smtp_error_code or "SMTP_SEND_FAILED",
+                            message=(
+                                f"SMTP delivery via {smtp_host} failed for {account.email}; "
+                                f"API/Resend fallback blocked (would rewrite From to "
+                                f"{resend_from}). "
+                                f"SMTP error: {smtp_error}"
+                            ),
+                            retryable=self.last_send_retryable,
+                            status_code=self.last_send_status_code,
+                        )
                     logger.warning(
-                        "SMTP failed for mailbox %s (%s); API fallback blocked to prevent From rewrite",
+                        "SMTP failed for mailbox %s (%s); API/Resend fallback blocked%s",
                         account.id,
                         account.email,
+                        " (mailbox_only)" if mailbox_only else "",
                     )
 
             if not sent:

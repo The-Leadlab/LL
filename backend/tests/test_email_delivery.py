@@ -427,6 +427,65 @@ def test_explicit_api_mode_uses_api_when_from_matches(monkeypatch):
     assert result["transport"] == "api"
 
 
+def test_mailbox_only_never_uses_resend_even_when_from_matches(monkeypatch):
+    """Cold outreach mailbox_only forces SMTP/Gmail — never Resend."""
+    account = _build_account(
+        email="ali@the-leadlab.com",
+        provider_type="custom",
+        smtp_host="mail.infomaniak.com",
+        smtp_port=465,
+    )
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "api")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "ali@the-leadlab.com")
+    monkeypatch.setattr(settings, "INFOMANIAK_MAIL_TOKEN", None)
+    monkeypatch.setattr(service, "_send_email_smtp", lambda *args, **kwargs: True)
+    monkeypatch.setattr(service, "_persist_sent_email", lambda *args, **kwargs: None)
+
+    api_called = {"value": False}
+
+    def _spy_api(*args, **kwargs):
+        api_called["value"] = True
+        return True
+
+    monkeypatch.setattr(service, "_send_email_provider_api", _spy_api)
+
+    result = service.send_email(
+        1, ["to@example.com"], "Subject", "Text", "Html", mailbox_only=True
+    )
+    assert result["sent"] is True
+    assert result["transport"] == "smtp"
+    assert api_called["value"] is False
+
+
+def test_mailbox_only_gmail_oauth_uses_gmail_api(monkeypatch):
+    account = _build_account(
+        email="ali@gmail.com",
+        provider_type="gmail",
+        auth_type="oauth",
+    )
+    account.oauth_refresh_token = "refresh"
+    service = EmailService(_FakeDB(account))
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "api")
+    monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@the-leadlab.com")
+    monkeypatch.setattr(service, "_send_email_gmail_api", lambda *args, **kwargs: True)
+    monkeypatch.setattr(service, "_persist_sent_email", lambda *args, **kwargs: None)
+
+    def _must_not(*args, **kwargs):
+        raise AssertionError("mailbox_only Gmail must not use SMTP/Resend")
+
+    monkeypatch.setattr(service, "_send_email_smtp", _must_not)
+    monkeypatch.setattr(service, "_send_email_provider_api", _must_not)
+
+    result = service.send_email(
+        1, ["to@example.com"], "Subject", "Text", "Html", mailbox_only=True
+    )
+    assert result["sent"] is True
+    assert result["transport"] == "gmail_api"
+
+
 def test_gmail_password_account_no_resend_fallback_on_from_mismatch(monkeypatch):
     """Password Gmail accounts must not fall back to no-reply either."""
     account = _build_account(

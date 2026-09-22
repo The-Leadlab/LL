@@ -498,6 +498,7 @@ class OutreachRunner:
                     body_text=body_text,
                     body_html=body_html,
                     lead_id=lead.id,
+                    mailbox_only=True,
                 )
             except Exception as exc:
                 logger.error("Outreach job %s failed: %s", job.id, exc, exc_info=True)
@@ -692,6 +693,7 @@ class OutreachRunner:
                     body_text=body_text,
                     body_html=body_html,
                     lead_id=lead.id,
+                    mailbox_only=True,
                 )
             except Exception as exc:
                 logger.error("Sequence step %s failed: %s", step.id, exc, exc_info=True)
@@ -1114,6 +1116,7 @@ class OutreachRunner:
                         body_text=body_text,
                         body_html=body_html,
                         lead_id=lead.id,
+                        mailbox_only=True,
                     )
                     if send_result.get("sent"):
                         step.status = "sent"

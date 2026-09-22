@@ -1025,7 +1025,7 @@ export function ColdOutreachPage() {
                 </>
               )}
               {timeFilter !== 'all' ? ` in the last ${timeFilter} days` : ''}.
-              Filter to Bounced and use Resend to clear flags and queue again.
+              Filter to Bounced and use Retry to clear flags and queue again.
             </p>
             <Button
               type="button"
@@ -1198,7 +1198,7 @@ export function ColdOutreachPage() {
                     ) : (
                       <RotateCcw className="h-3.5 w-3.5" />
                     )}
-                    Resend selected
+                    Retry selected
                   </Button>
                 )}
                 <span className="ml-auto text-sm font-medium text-slate-700">
@@ -1351,7 +1351,7 @@ export function ColdOutreachPage() {
                                     onClick={() => clearBounceMutation.mutate([lead.id])}
                                   >
                                     <RotateCcw className="h-3 w-3" />
-                                    Resend
+                                    Retry
                                   </Button>
                                 )}
                               </TableCell>
@@ -1733,7 +1733,7 @@ export function ColdOutreachPage() {
                 </SelectContent>
               </Select>
               <p className="mt-1 text-xs text-slate-500">
-                Recipients see {selectedAccount?.email || 'this mailbox'} as the sender.
+                Sends as {selectedAccount?.email || 'this mailbox'} via Gmail or SMTP — never Resend / no-reply.
               </p>
             </div>
 

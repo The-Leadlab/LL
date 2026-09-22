@@ -733,6 +733,7 @@ async def send_cold_outreach(
                 body_text=body_text,
                 body_html=body_html,
                 lead_id=lead.id,
+                mailbox_only=True,
             )
         except Exception as exc:
             failed += 1
