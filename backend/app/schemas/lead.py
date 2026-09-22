@@ -51,6 +51,8 @@ class LeadBase(BaseModel):
     email_guidelines: Optional[str] = None
     sales_intelligence: Optional[Dict[str, Any]] = None
     outreach_meta: Optional[Dict[str, Any]] = None
+    do_not_email: Optional[bool] = False
+    email_bounced: Optional[bool] = False
 
     @staticmethod
     def _coerce_json_object(v: Any) -> Dict[str, Any]:

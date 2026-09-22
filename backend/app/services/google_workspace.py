@@ -689,3 +689,94 @@ def mark_lead_sent_on_sheet(
     flag_modified(lead, "outreach_meta")
     db.add(lead)
     return wrote
+
+
+_BOUNCE_ERROR_HINTS = (
+    "bounce",
+    "bounced",
+    "undeliverable",
+    "mailbox unavailable",
+    "user unknown",
+    "recipient rejected",
+    "550 ",
+    "551 ",
+    "552 ",
+    "553 ",
+    "554 ",
+    "invalid recipient",
+    "address rejected",
+    "does not exist",
+    "no such user",
+)
+
+
+def looks_like_bounce_error(message: Optional[str]) -> bool:
+    text = (message or "").lower()
+    return any(hint in text for hint in _BOUNCE_ERROR_HINTS)
+
+
+def mark_lead_delivery_outcome(
+    db: Session,
+    lead: Any,
+    *,
+    status: str,
+    campaign_id: Optional[int] = None,
+    campaign_name: Optional[str] = None,
+    error: Optional[str] = None,
+    mark_bounced: bool = False,
+) -> None:
+    """Record sent/failed/bounced on lead.outreach_meta (+ optional email_bounced)."""
+    meta = dict(getattr(lead, "outreach_meta", None) or {})
+    if not isinstance(meta, dict):
+        meta = {}
+    normalized = (status or "").strip() or "Failed"
+    meta["status"] = normalized
+    if campaign_id:
+        campaigns = dict(meta.get("campaigns") or {})
+        campaigns[str(campaign_id)] = {
+            "status": normalized,
+            "name": campaign_name or "",
+            "at": datetime.utcnow().isoformat(),
+            "error": (error or "")[:500] or None,
+        }
+        meta["campaigns"] = campaigns
+    lead.outreach_meta = meta
+    flag_modified(lead, "outreach_meta")
+    if mark_bounced:
+        lead.email_bounced = True
+    db.add(lead)
+
+
+def clear_lead_bounce_for_resend(
+    db: Session,
+    lead: Any,
+    *,
+    campaign_id: Optional[int] = None,
+) -> None:
+    """Allow a bounced/failed lead to be queued again."""
+    lead.email_bounced = False
+    meta = dict(getattr(lead, "outreach_meta", None) or {})
+    if not isinstance(meta, dict):
+        meta = {}
+    current = str(meta.get("status") or "").strip().lower()
+    if current in {"bounced", "failed", "bounce"}:
+        meta["status"] = "Ready"
+    if campaign_id:
+        campaigns = dict(meta.get("campaigns") or {})
+        entry = campaigns.get(str(campaign_id))
+        if isinstance(entry, dict):
+            entry_status = str(entry.get("status") or "").strip().lower()
+            if entry_status in {"bounced", "failed", "bounce", "sent"}:
+                campaigns[str(campaign_id)] = {
+                    **entry,
+                    "status": "Ready",
+                    "error": None,
+                    "cleared_at": datetime.utcnow().isoformat(),
+                }
+                meta["campaigns"] = campaigns
+        elif entry is not None:
+            campaigns[str(campaign_id)] = {"status": "Ready"}
+            meta["campaigns"] = campaigns
+    lead.outreach_meta = meta
+    flag_modified(lead, "outreach_meta")
+    db.add(lead)

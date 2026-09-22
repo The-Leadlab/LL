@@ -163,6 +163,8 @@ class Lead(Base):
                 "is_deleted": self.is_deleted,
                 "visible": self.visible,
                 "source": self.source or "",
+                "do_not_email": bool(getattr(self, "do_not_email", False)),
+                "email_bounced": bool(getattr(self, "email_bounced", False)),
                 "full_name": self.full_name,
                 "stage": {
                     "id": self.stage.id,

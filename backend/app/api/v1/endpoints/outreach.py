@@ -646,6 +646,128 @@ def cancel_outreach_batch(
     return {"cancelled": len(jobs), "batch_id": batch_id}
 
 
+class ClearBounceBody(BaseModel):
+    lead_ids: List[int] = Field(..., min_length=1)
+    campaign_id: Optional[int] = None
+
+
+@router.post("/leads/clear-bounce")
+def clear_bounce_for_resend(
+    body: ClearBounceBody,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Dict[str, Any]:
+    """Clear bounce/failed flags so leads can be selected and re-queued."""
+    from app.services.google_workspace import clear_lead_bounce_for_resend
+
+    leads = (
+        db.query(Lead)
+        .filter(
+            Lead.id.in_(body.lead_ids),
+            Lead.organization_id == current_user.organization_id,
+            Lead.is_deleted.is_(False),
+        )
+        .all()
+    )
+    for lead in leads:
+        clear_lead_bounce_for_resend(db, lead, campaign_id=body.campaign_id)
+    db.commit()
+    return {"cleared": len(leads), "lead_ids": [lead.id for lead in leads]}
+
+
+@router.get("/delivery-stats")
+def outreach_delivery_stats(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+    client_id: Optional[int] = Query(None),
+    campaign_id: Optional[int] = Query(None),
+    days: Optional[int] = Query(None, ge=1, le=365),
+) -> Dict[str, Any]:
+    """Aggregate sent/failed/bounced tracking for Cold Outreach."""
+    from app.models.client import Client
+
+    org_id = current_user.organization_id
+    lead_q = db.query(Lead).filter(Lead.organization_id == org_id, Lead.is_deleted.is_(False))
+    if client_id:
+        lead_q = lead_q.filter(Lead.client_id == client_id)
+    if days:
+        since = datetime.utcnow() - timedelta(days=days)
+        lead_q = lead_q.filter(Lead.created_at >= since)
+
+    leads = lead_q.all()
+    bounced_leads = [lead for lead in leads if getattr(lead, "email_bounced", False)]
+    failed_leads = []
+    for lead in leads:
+        meta = lead.outreach_meta or {}
+        status_val = ""
+        if campaign_id and isinstance(meta, dict):
+            entry = (meta.get("campaigns") or {}).get(str(campaign_id))
+            if isinstance(entry, dict):
+                status_val = str(entry.get("status") or "")
+            elif entry:
+                status_val = str(entry)
+        if not status_val and isinstance(meta, dict):
+            status_val = str(meta.get("status") or "")
+        if status_val.strip().lower() in {"failed", "bounced", "bounce"}:
+            failed_leads.append(lead)
+
+    job_q = db.query(OutreachJob).filter(OutreachJob.organization_id == org_id)
+    if campaign_id:
+        # settings JSON — filter in Python for portability
+        jobs = job_q.order_by(OutreachJob.scheduled_at.desc()).limit(2000).all()
+        jobs = [j for j in jobs if (j.settings or {}).get("campaign_id") == campaign_id]
+    else:
+        jobs = job_q.order_by(OutreachJob.scheduled_at.desc()).limit(2000).all()
+    if days:
+        since = datetime.utcnow() - timedelta(days=days)
+        jobs = [j for j in jobs if (j.sent_at or j.scheduled_at or datetime.min) >= since]
+    if client_id:
+        lead_ids = {lead.id for lead in leads}
+        jobs = [j for j in jobs if j.lead_id in lead_ids]
+
+    by_status: Dict[str, int] = {}
+    for job in jobs:
+        by_status[job.status] = by_status.get(job.status, 0) + 1
+
+    client_name = None
+    if client_id:
+        client = db.query(Client).filter(Client.id == client_id, Client.organization_id == org_id).first()
+        client_name = client.name if client else None
+
+    bounce_samples = [
+        {
+            "id": lead.id,
+            "email": lead.email,
+            "name": f"{lead.first_name or ''} {lead.last_name or ''}".strip(),
+            "company": lead.company,
+            "status": (lead.outreach_meta or {}).get("status") if isinstance(lead.outreach_meta, dict) else None,
+        }
+        for lead in bounced_leads[:50]
+    ]
+
+    return {
+        "client_id": client_id,
+        "client_name": client_name,
+        "campaign_id": campaign_id,
+        "days": days,
+        "leads_total": len(leads),
+        "leads_bounced": len(bounced_leads),
+        "leads_failed_or_bounced_meta": len(failed_leads),
+        "jobs_by_status": by_status,
+        "jobs_failed_errors": [
+            {
+                "job_id": j.id,
+                "lead_id": j.lead_id,
+                "error": j.last_error,
+                "scheduled_at": j.scheduled_at.isoformat() if j.scheduled_at else None,
+            }
+            for j in jobs
+            if j.status == "failed"
+        ][:40],
+        "bounced_samples": bounce_samples,
+    }
+
+
 # ---------- connections ----------
 
 @router.get("/connections")

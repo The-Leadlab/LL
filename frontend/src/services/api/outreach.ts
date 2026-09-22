@@ -406,6 +406,45 @@ export const outreachAPI = {
     const response = await api.get('/outreach/jobs', { params });
     return response.data;
   },
+
+  clearBounce: async (data: {
+    lead_ids: number[];
+    campaign_id?: number | null;
+  }): Promise<{ cleared: number; lead_ids: number[] }> => {
+    const response = await api.post('/outreach/leads/clear-bounce', data);
+    return response.data;
+  },
+
+  deliveryStats: async (params?: {
+    client_id?: number;
+    campaign_id?: number;
+    days?: number;
+  }): Promise<{
+    client_id?: number | null;
+    client_name?: string | null;
+    campaign_id?: number | null;
+    days?: number | null;
+    leads_total: number;
+    leads_bounced: number;
+    leads_failed_or_bounced_meta: number;
+    jobs_by_status: Record<string, number>;
+    jobs_failed_errors: Array<{
+      job_id: number;
+      lead_id: number;
+      error?: string | null;
+      scheduled_at?: string | null;
+    }>;
+    bounced_samples: Array<{
+      id: number;
+      email?: string | null;
+      name?: string;
+      company?: string | null;
+      status?: string | null;
+    }>;
+  }> => {
+    const response = await api.get('/outreach/delivery-stats', { params });
+    return response.data;
+  },
 };
 
 export default outreachAPI;

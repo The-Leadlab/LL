@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
-import { Eye, FileSpreadsheet, GripVertical, Loader2, Mail, Search, Send, Sparkles, Upload, Users, X } from 'lucide-react';
+import { Eye, FileSpreadsheet, GripVertical, Loader2, Mail, RefreshCw, RotateCcw, Search, Send, Sparkles, Upload, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -89,6 +89,32 @@ function isSheetSent(lead: Lead, campaignId?: number | null): boolean {
     return SENT_STATUS_VALUES.has(campaignStatus(lead, campaignId).toLowerCase());
   }
   return SENT_STATUS_VALUES.has(sheetStatus(lead).toLowerCase());
+}
+
+function deliveryLabel(lead: Lead, campaignId?: number | null): string {
+  if (lead.email_bounced) return 'Bounced';
+  const status = (campaignStatus(lead, campaignId) || sheetStatus(lead) || '').trim();
+  if (!status) return lead.email ? 'Ready' : 'No email';
+  return status;
+}
+
+function isBouncedLead(lead: Lead, campaignId?: number | null): boolean {
+  if (lead.email_bounced) return true;
+  const status = deliveryLabel(lead, campaignId).toLowerCase();
+  return status === 'bounced' || status === 'bounce';
+}
+
+function isFailedLead(lead: Lead, campaignId?: number | null): boolean {
+  if (isBouncedLead(lead, campaignId)) return false;
+  const status = deliveryLabel(lead, campaignId).toLowerCase();
+  return status === 'failed' || status === 'error';
+}
+
+function withinDays(iso: string | null | undefined, days: number): boolean {
+  if (!iso || days <= 0) return true;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return true;
+  return Date.now() - t <= days * 24 * 60 * 60 * 1000;
 }
 
 function quoteSheetTitle(title: string): string {
@@ -244,7 +270,8 @@ export function ColdOutreachPage() {
   const [sheetUrl, setSheetUrl] = useState('');
   const [sheetRange, setSheetRange] = useState('Sheet1!A1:Z500');
   const [sheetTab, setSheetTab] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ready' | 'all' | 'sent'>('ready');
+  const [statusFilter, setStatusFilter] = useState<'ready' | 'all' | 'sent' | 'bounced' | 'failed'>('ready');
+  const [timeFilter, setTimeFilter] = useState<'all' | '7' | '30' | '90'>('all');
   const [skipIfSent, setSkipIfSent] = useState(true);
   const [campaignMode, setCampaignMode] = useState<'existing' | 'new'>('new');
   const [campaignId, setCampaignId] = useState<string>('');
@@ -439,9 +466,16 @@ export function ColdOutreachPage() {
 
   const visibleLeads = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const days = timeFilter === 'all' ? 0 : Number(timeFilter);
     return leads.filter((lead) => {
-      if (statusFilter === 'sent' && !isSheetSent(lead, activeCampaignId)) return false;
-      if (statusFilter === 'ready' && isSheetSent(lead, activeCampaignId)) return false;
+      if (days > 0 && !withinDays(lead.created_at || lead.updated_at, days)) return false;
+      const bounced = isBouncedLead(lead, activeCampaignId);
+      const failed = isFailedLead(lead, activeCampaignId);
+      const sent = isSheetSent(lead, activeCampaignId);
+      if (statusFilter === 'bounced' && !bounced) return false;
+      if (statusFilter === 'failed' && !failed) return false;
+      if (statusFilter === 'sent' && (!sent || bounced || failed)) return false;
+      if (statusFilter === 'ready' && (sent || bounced || failed || !lead.email || lead.do_not_email)) return false;
       if (personalityFilter !== 'all') {
         const lp = getLeadPersonality(lead);
         if (personalityFilter === 'unknown') {
@@ -467,12 +501,60 @@ export function ColdOutreachPage() {
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [leads, search, statusFilter, personalityFilter, activeCampaignId]);
+  }, [leads, search, statusFilter, personalityFilter, activeCampaignId, timeFilter]);
 
   const readyLeadCount = leads.filter(
-    (lead) => Boolean(lead.email) && !isSheetSent(lead, activeCampaignId),
+    (lead) =>
+      Boolean(lead.email) &&
+      !lead.do_not_email &&
+      !isSheetSent(lead, activeCampaignId) &&
+      !isBouncedLead(lead, activeCampaignId) &&
+      !isFailedLead(lead, activeCampaignId),
   ).length;
-  const sentLeadCount = leads.filter((lead) => isSheetSent(lead, activeCampaignId)).length;
+  const sentLeadCount = leads.filter(
+    (lead) => isSheetSent(lead, activeCampaignId) && !isBouncedLead(lead, activeCampaignId),
+  ).length;
+  const bouncedLeadCount = leads.filter((lead) => isBouncedLead(lead, activeCampaignId)).length;
+  const failedLeadCount = leads.filter((lead) => isFailedLead(lead, activeCampaignId)).length;
+
+  const timeDays = timeFilter === 'all' ? undefined : Number(timeFilter);
+
+  const { data: deliveryStats, isFetching: deliveryStatsLoading, refetch: refetchDeliveryStats } = useQuery({
+    queryKey: ['outreach-delivery-stats', parsedClientId ?? 'all', activeCampaignId ?? null, timeDays ?? 'all'],
+    queryFn: () =>
+      outreachAPI.deliveryStats({
+        client_id: parsedClientId,
+        campaign_id: activeCampaignId || undefined,
+        days: timeDays,
+      }),
+    staleTime: 30_000,
+  });
+
+  const clearBounceMutation = useMutation({
+    mutationFn: (leadIds: number[]) =>
+      outreachAPI.clearBounce({
+        lead_ids: leadIds,
+        campaign_id: activeCampaignId || undefined,
+      }),
+    onSuccess: async (result) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['outreach-leads'] }),
+        queryClient.invalidateQueries({ queryKey: ['outreach-delivery-stats'] }),
+      ]);
+      toast({
+        title: 'Ready to resend',
+        description: `Cleared bounce/failed flags on ${result.cleared} lead${result.cleared === 1 ? '' : 's'}. Select them and send again.`,
+      });
+      setStatusFilter('ready');
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'Could not clear bounce',
+        description: extractEmailErrorMessage(error),
+        variant: 'destructive',
+      });
+    },
+  });
 
   const selectedLeads = useMemo(
     () => leads.filter((lead) => selectedIds.has(lead.id)),
@@ -810,6 +892,8 @@ export function ColdOutreachPage() {
         queryClient.invalidateQueries({ queryKey: ['email-sequences'] }),
         queryClient.invalidateQueries({ queryKey: ['outreach-jobs'] }),
         queryClient.invalidateQueries({ queryKey: ['outreach-runs'] }),
+        queryClient.invalidateQueries({ queryKey: ['outreach-delivery-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['outreach-leads'] }),
       ]);
       if (summary.mode === 'queued' || (summary.queued || 0) > 0) {
         toast({
@@ -883,15 +967,85 @@ export function ColdOutreachPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-6xl space-y-4 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Cold Outreach</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Pick a list, write one email, send. Campaigns, Runs, and Templates live in the Email menu.
-        </p>
+    <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Cold Outreach</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Choose recipients, write the email, send — track delivery, bounces, and resends in one place.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => {
+            void refetchLeads();
+            void refetchDeliveryStats();
+          }}
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${deliveryStatsLoading || leadsLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {[
+          { label: 'Ready', value: readyLeadCount, tone: 'text-slate-900' },
+          { label: 'Sent', value: sentLeadCount, tone: 'text-emerald-700' },
+          { label: 'Bounced', value: bouncedLeadCount, tone: 'text-rose-700' },
+          { label: 'Failed', value: failedLeadCount, tone: 'text-amber-700' },
+          {
+            label: 'Jobs tracked',
+            value: Object.values(deliveryStats?.jobs_by_status || {}).reduce((a, b) => a + b, 0),
+            tone: 'text-indigo-700',
+          },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-3 shadow-sm"
+          >
+            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{stat.label}</p>
+            <p className={`mt-1 text-2xl font-semibold tabular-nums ${stat.tone}`}>{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {deliveryStats && (deliveryStats.leads_bounced > 0 || (deliveryStats.jobs_by_status?.failed || 0) > 0) && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50/70 px-4 py-3 text-sm text-rose-900">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p>
+              <span className="font-semibold">{deliveryStats.leads_bounced}</span> bounced lead
+              {deliveryStats.leads_bounced === 1 ? '' : 's'}
+              {(deliveryStats.jobs_by_status?.failed || 0) > 0 && (
+                <>
+                  {' '}
+                  · <span className="font-semibold">{deliveryStats.jobs_by_status.failed}</span> failed jobs
+                </>
+              )}
+              {timeFilter !== 'all' ? ` in the last ${timeFilter} days` : ''}.
+              Filter to Bounced and use Resend to clear flags and queue again.
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-rose-300 bg-white text-rose-800 hover:bg-rose-50"
+              onClick={() => setStatusFilter('bounced')}
+            >
+              View bounced
+            </Button>
+          </div>
+          {deliveryStats.jobs_failed_errors?.length > 0 && (
+            <p className="mt-2 truncate text-xs text-rose-800/80">
+              Latest error: {deliveryStats.jobs_failed_errors[0].error || 'Unknown'}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
         <Card className="border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-100 pb-4">
             <CardTitle className="flex items-center gap-2 text-lg text-slate-900">
@@ -899,12 +1053,12 @@ export function ColdOutreachPage() {
               Recipients
             </CardTitle>
             <p className="text-sm text-slate-500">
-              People live on a client list. Add them under the table, then tick who should get this email.
+              Full list with delivery status. Filter by time, bounce, or failure — then resend.
             </p>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div ref={listSectionRef} className="space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <div>
                   <Label>Client list</Label>
                   <Select
@@ -929,52 +1083,74 @@ export function ColdOutreachPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label>Status</Label>
-                    <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'ready' | 'all' | 'sent')}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ready">Ready ({readyLeadCount})</SelectItem>
-                        <SelectItem value="sent">Sent ({sentLeadCount})</SelectItem>
-                        <SelectItem value="all">All ({leads.length})</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Personality</Label>
-                    <Select value={personalityFilter} onValueChange={setPersonalityFilter}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="D">
-                          <span className="flex items-center gap-1.5">
-                            <span className="inline-block h-2 w-2 rounded-full bg-red-500" /> Dominant
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="I">
-                          <span className="flex items-center gap-1.5">
-                            <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" /> Influential
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="S">
-                          <span className="flex items-center gap-1.5">
-                            <span className="inline-block h-2 w-2 rounded-full bg-green-500" /> Steady
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="C">
-                          <span className="flex items-center gap-1.5">
-                            <span className="inline-block h-2 w-2 rounded-full bg-blue-500" /> Conscientious
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="unknown">Unknown</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select
+                    value={statusFilter}
+                    onValueChange={(value) =>
+                      setStatusFilter(value as 'ready' | 'all' | 'sent' | 'bounced' | 'failed')
+                    }
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ready">Ready ({readyLeadCount})</SelectItem>
+                      <SelectItem value="sent">Sent ({sentLeadCount})</SelectItem>
+                      <SelectItem value="bounced">Bounced ({bouncedLeadCount})</SelectItem>
+                      <SelectItem value="failed">Failed ({failedLeadCount})</SelectItem>
+                      <SelectItem value="all">All ({leads.length})</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Added in</Label>
+                  <Select
+                    value={timeFilter}
+                    onValueChange={(value) => setTimeFilter(value as 'all' | '7' | '30' | '90')}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All time</SelectItem>
+                      <SelectItem value="7">Last 7 days</SelectItem>
+                      <SelectItem value="30">Last 30 days</SelectItem>
+                      <SelectItem value="90">Last 90 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Personality</Label>
+                  <Select value={personalityFilter} onValueChange={setPersonalityFilter}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="D">
+                        <span className="flex items-center gap-1.5">
+                          <span className="inline-block h-2 w-2 rounded-full bg-red-500" /> Dominant
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="I">
+                        <span className="flex items-center gap-1.5">
+                          <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" /> Influential
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="S">
+                        <span className="flex items-center gap-1.5">
+                          <span className="inline-block h-2 w-2 rounded-full bg-green-500" /> Steady
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="C">
+                        <span className="flex items-center gap-1.5">
+                          <span className="inline-block h-2 w-2 rounded-full bg-blue-500" /> Conscientious
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="unknown">Unknown</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -999,12 +1175,38 @@ export function ColdOutreachPage() {
                 <Button type="button" variant="outline" size="sm" onClick={() => setSelectedOrder([])}>
                   Clear
                 </Button>
+                {(statusFilter === 'bounced' || statusFilter === 'failed' || bouncedLeadCount > 0) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 border-rose-200 text-rose-800 hover:bg-rose-50"
+                    disabled={
+                      clearBounceMutation.isPending ||
+                      selectedLeads.filter((l) => isBouncedLead(l, activeCampaignId) || isFailedLead(l, activeCampaignId))
+                        .length === 0
+                    }
+                    onClick={() => {
+                      const ids = selectedLeads
+                        .filter((l) => isBouncedLead(l, activeCampaignId) || isFailedLead(l, activeCampaignId))
+                        .map((l) => l.id);
+                      if (ids.length) clearBounceMutation.mutate(ids);
+                    }}
+                  >
+                    {clearBounceMutation.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    )}
+                    Resend selected
+                  </Button>
+                )}
                 <span className="ml-auto text-sm font-medium text-slate-700">
-                  {selectedIds.size} selected
+                  {selectedIds.size} selected · {visibleLeads.length} shown
                 </span>
               </div>
 
-              <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                 {leadsLoading ? (
                   <div className="flex items-center justify-center p-10 text-sm text-slate-500">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1021,7 +1223,7 @@ export function ColdOutreachPage() {
                     <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
                       {clientId === 'all'
                         ? 'Pick a client list above, then add people.'
-                        : 'Add people, then select who should receive this email.'}
+                        : 'Try another status or time range, or add people below.'}
                     </p>
                     <div className="mt-4">
                       <Button
@@ -1037,10 +1239,10 @@ export function ColdOutreachPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="max-h-[26rem] overflow-auto">
+                  <div className="max-h-[min(70vh,52rem)] overflow-auto">
                     <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-50/80">
+                      <TableHeader className="sticky top-0 z-10">
+                        <TableRow className="bg-slate-50/95 backdrop-blur">
                           <TableHead className="w-10">
                             <Checkbox
                               checked={
@@ -1059,21 +1261,31 @@ export function ColdOutreachPage() {
                           <TableHead className="w-12 text-center">DISC</TableHead>
                           {clientId === 'all' && <TableHead>Client</TableHead>}
                           <TableHead>Status</TableHead>
+                          <TableHead className="w-24 text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {visibleLeads.map((lead) => {
                           const hasEmail = Boolean(lead.email);
                           const sent = isSheetSent(lead, activeCampaignId);
-                          const status =
-                            campaignStatus(lead, activeCampaignId) || sheetStatus(lead);
+                          const bounced = isBouncedLead(lead, activeCampaignId);
+                          const failed = isFailedLead(lead, activeCampaignId);
+                          const status = deliveryLabel(lead, activeCampaignId);
                           const personality = getLeadPersonality(lead);
                           const discStyle = personality ? DISC_LABELS[personality] : null;
                           const queuePos = selectedOrder.indexOf(lead.id);
                           return (
                             <TableRow
                               key={lead.id}
-                              className={!hasEmail ? 'opacity-50' : 'cursor-pointer hover:bg-slate-50'}
+                              className={
+                                !hasEmail
+                                  ? 'opacity-50'
+                                  : bounced
+                                    ? 'cursor-pointer bg-rose-50/40 hover:bg-rose-50'
+                                    : failed
+                                      ? 'cursor-pointer bg-amber-50/40 hover:bg-amber-50'
+                                      : 'cursor-pointer hover:bg-slate-50'
+                              }
                               onClick={() => hasEmail && toggleLead(lead.id, !selectedIds.has(lead.id))}
                             >
                               <TableCell onClick={(event) => event.stopPropagation()} className="w-10">
@@ -1090,11 +1302,13 @@ export function ColdOutreachPage() {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="font-medium text-slate-900">
                                 {[lead.first_name, lead.last_name].filter(Boolean).join(' ') || '—'}
                               </TableCell>
-                              <TableCell className="max-w-[180px] truncate">{lead.email || 'No email'}</TableCell>
-                              <TableCell className="max-w-[140px] truncate">{lead.company || '—'}</TableCell>
+                              <TableCell className="max-w-[220px] truncate font-mono text-xs text-slate-600">
+                                {lead.email || 'No email'}
+                              </TableCell>
+                              <TableCell className="max-w-[160px] truncate">{lead.company || '—'}</TableCell>
                               <TableCell className="text-center">
                                 {discStyle ? (
                                   <Badge variant="outline" className={`text-[10px] font-bold ${discStyle.color}`}>
@@ -1108,9 +1322,38 @@ export function ColdOutreachPage() {
                                 <TableCell className="max-w-[140px] truncate">{lead.client_name || '—'}</TableCell>
                               )}
                               <TableCell>
-                                <span className={sent ? 'text-emerald-700' : 'text-slate-500'}>
-                                  {status || 'Ready'}
-                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    bounced
+                                      ? 'border-rose-200 bg-rose-50 text-rose-800'
+                                      : failed
+                                        ? 'border-amber-200 bg-amber-50 text-amber-800'
+                                        : sent
+                                          ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                                          : 'border-slate-200 bg-slate-50 text-slate-600'
+                                  }
+                                >
+                                  {status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell
+                                className="text-right"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                {(bounced || failed) && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 gap-1 px-2 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-900"
+                                    disabled={clearBounceMutation.isPending}
+                                    onClick={() => clearBounceMutation.mutate([lead.id])}
+                                  >
+                                    <RotateCcw className="h-3 w-3" />
+                                    Resend
+                                  </Button>
+                                )}
                               </TableCell>
                             </TableRow>
                           );
@@ -1123,8 +1366,9 @@ export function ColdOutreachPage() {
 
               <p className="text-xs text-slate-500">
                 {selectedClient ? `${selectedClient.name} · ` : 'All clients · '}
-                {readyLeadCount} ready · {sentLeadCount} already Sent ·{' '}
-                {leads.filter((lead) => lead.email).length} of {leads.length} loaded have an email
+                {readyLeadCount} ready · {sentLeadCount} sent · {bouncedLeadCount} bounced · {failedLeadCount}{' '}
+                failed · {leads.filter((lead) => lead.email).length} of {leads.length} have an email
+                {timeFilter !== 'all' ? ` · time filter: last ${timeFilter}d` : ''}
               </p>
             </div>
 

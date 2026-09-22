@@ -20,7 +20,12 @@ from app.models.email_sequence import EmailSequence, SequenceEnrollment, Sequenc
 from app.models.lead import Lead
 from app.models.outreach_job import OutreachJob
 from app.services.email_service import EmailService
-from app.services.google_workspace import lead_already_sent_for_campaign, mark_lead_sent_on_sheet
+from app.services.google_workspace import (
+    lead_already_sent_for_campaign,
+    mark_lead_sent_on_sheet,
+    mark_lead_delivery_outcome,
+    looks_like_bounce_error,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -499,6 +504,17 @@ class OutreachRunner:
                 job.status = "failed"
                 job.last_error = str(exc)
                 job.updated_at = datetime.utcnow()
+                if lead is not None:
+                    bounced = looks_like_bounce_error(str(exc))
+                    mark_lead_delivery_outcome(
+                        self.db,
+                        lead,
+                        status="Bounced" if bounced else "Failed",
+                        campaign_id=campaign_id,
+                        campaign_name=(job.settings or {}).get("campaign_name"),
+                        error=str(exc),
+                        mark_bounced=bounced,
+                    )
                 self.db.add(job)
                 self.db.commit()
                 failed += 1
@@ -533,9 +549,20 @@ class OutreachRunner:
                 # remaining jobs for this account in the same tick get deferred.
                 account_next_slot[job.account_id] = datetime.utcnow() + min_gap
             else:
+                err = self.email_service.last_send_error or "Delivery failed"
                 job.status = "failed"
-                job.last_error = self.email_service.last_send_error or "Delivery failed"
+                job.last_error = err
                 job.updated_at = datetime.utcnow()
+                bounced = looks_like_bounce_error(err)
+                mark_lead_delivery_outcome(
+                    self.db,
+                    lead,
+                    status="Bounced" if bounced else "Failed",
+                    campaign_id=campaign_id,
+                    campaign_name=(job.settings or {}).get("campaign_name"),
+                    error=err,
+                    mark_bounced=bounced,
+                )
                 self.db.add(job)
                 self.db.commit()
                 failed += 1
