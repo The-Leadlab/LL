@@ -40,6 +40,7 @@ export function Legal() {
 
 4. Payments and Fees
 - All payments must be made in accordance with the pricing and terms specified in the relevant service agreement or on the Website.
+- Monthly packages renew at the price shown next to the button until you cancel. Cancel before the renewal date to stop the next charge.
 - Late payments may incur additional fees as outlined in the applicable agreement.
 - All prices are exclusive of taxes, which are the User’s responsibility unless stated otherwise.
 
@@ -285,6 +286,25 @@ We may update this Cookie Policy from time to time. Any changes will be posted o
 6. Contact Us
 If you have questions about this Cookie Policy, please contact us.
       `
+    },
+    dmca: {
+      id: 'dmca',
+      title: "Copyright / DMCA",
+      effectiveDate: "02.10.2026",
+      content: `Lead Lab respects copyright. If you believe material on www.the-leadlab.com infringes a copyright you own, email info@the-leadlab.com with:
+
+- Your name and a way to reach you
+- The work you believe is infringed
+- The URL of the material on this site
+- A statement that you have a good-faith belief the use is not authorized
+- A statement that the notice is accurate and that you are the owner or authorized to act for the owner
+- Your physical or electronic signature
+
+Postal address already published for this service: Elite Park Plaza Floor 5, Umraniye, Istanbul.
+
+A US DMCA designated agent is registered separately. Open the Designated Agent Directory on copyright.gov, enter the service name, this postal address, a phone number, and info@the-leadlab.com, then pay the filing fee (currently 6 US dollars). This page does not submit that filing.
+
+These pages are operational drafts for the product. They are not legal advice. Have a lawyer review them before you rely on them.`
     }
   };
 

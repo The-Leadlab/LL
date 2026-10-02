@@ -814,6 +814,12 @@ export function HomePage() {
                     >
                       Get Started
                     </button>
+                    {product.unit === "per month" && (
+                      <p className="text-xs text-gray-500 mt-3">
+                        This monthly price renews until you cancel. Cancel before the renewal date to stop the next charge.{" "}
+                        <Link to="/legal?policy=terms" className="underline">Terms</Link>
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -860,6 +866,10 @@ export function HomePage() {
                   >
                     Get Started
                   </button>
+                  <p className="text-xs text-gray-500 mt-3">
+                    $200 renews each month until you cancel. Cancel before the renewal date to stop the next charge.{" "}
+                    <Link to="/legal?policy=terms" className="underline">Terms</Link>
+                  </p>
                 </div>
 
                 <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-blue-200 transform scale-105">
@@ -892,6 +902,10 @@ export function HomePage() {
                   >
                     Get Started
                   </button>
+                  <p className="text-xs text-gray-500 mt-3">
+                    $2,000 renews each month until you cancel. Cancel before the renewal date to stop the next charge.{" "}
+                    <Link to="/legal?policy=terms" className="underline">Terms</Link>
+                  </p>
                 </div>
 
                 <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100">
@@ -1007,6 +1021,7 @@ export function HomePage() {
                   <li><Link to="/legal?policy=kvkk" className="text-gray-600 hover:text-blue-600">Data Protection Policy Turkiye</Link></li>
                   <li><Link to="/legal?policy=internationalDataProtection" className="text-gray-600 hover:text-blue-600">Data Protection Policy International</Link></li>
                   <li><Link to="/legal?policy=cookie" className="text-gray-600 hover:text-blue-600">Cookie Policy</Link></li>
+                  <li><Link to="/legal?policy=dmca" className="text-gray-600 hover:text-blue-600">Copyright / DMCA</Link></li>
                 </ul>
               </div>
             </div>

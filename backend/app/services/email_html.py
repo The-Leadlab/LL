@@ -26,15 +26,34 @@ OUTBOUND_HTML_WRAPPER_END = """
 </td>
 </tr>
 </table>
-</body>
-</html>"""
+"""
+
+# Postal address already published on the-leadlab.com legal page.
+MARKETING_FOOTER = """<p style="margin:24px 0 0;font-family:Georgia,'Times New Roman',Times,serif;font-size:12px;line-height:1.5;color:#666666;">
+Lead Lab, Elite Park Plaza Floor 5, Umraniye, Istanbul.
+<a href="https://www.the-leadlab.com/legal?policy=privacy" style="color:#0b57d0;">Privacy</a>
+· <a href="mailto:info@the-leadlab.com?subject=Unsubscribe" style="color:#0b57d0;">Unsubscribe</a>
+</p>
+"""
+
+
+def _with_marketing_footer(html: str) -> str:
+    """CAN-SPAM: every outbound marketing message names a postal address and an unsubscribe path."""
+    if re.search(r"unsubscribe", html, re.IGNORECASE) and re.search(r"Umraniye", html, re.IGNORECASE):
+        return html
+    footer = MARKETING_FOOTER
+    if re.search(r"</body>", html, re.IGNORECASE):
+        return re.sub(r"</body>", footer + "</body>", html, count=1, flags=re.IGNORECASE)
+    return html + footer
 
 
 def wrap_outbound_html(html: str) -> str:
-    """Wrap a fragment in the outbound envelope; leave full HTML documents alone."""
+    """Wrap a fragment in the outbound envelope and attach the marketing footer."""
     trimmed = (html or "").strip()
     if not trimmed:
         return ""
     if _HTML_DOC_RE.search(trimmed):
-        return trimmed
-    return f"{OUTBOUND_HTML_WRAPPER_START}{trimmed}{OUTBOUND_HTML_WRAPPER_END}"
+        return _with_marketing_footer(trimmed)
+    return _with_marketing_footer(
+        f"{OUTBOUND_HTML_WRAPPER_START}{trimmed}{OUTBOUND_HTML_WRAPPER_END}</body>\n</html>"
+    )

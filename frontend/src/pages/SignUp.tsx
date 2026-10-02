@@ -21,6 +21,7 @@ export function SignUp() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [birthDate, setBirthDate] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formData, setFormData] = useState<SignUpForm>({
@@ -38,6 +39,17 @@ export function SignUp() {
     e.preventDefault()
     if (formData.password !== confirmPassword) {
       toast.error('Passwords do not match')
+      return
+    }
+    if (!birthDate) {
+      toast.error('Enter your date of birth. Lead Lab accounts are for people 18 or older.')
+      return
+    }
+    const dob = new Date(birthDate)
+    const adult = new Date()
+    adult.setFullYear(adult.getFullYear() - 18)
+    if (Number.isNaN(dob.getTime()) || dob > adult) {
+      toast.error('You need to be 18 or older to create an account.')
       return
     }
     setIsLoading(true)
@@ -200,6 +212,23 @@ export function SignUp() {
                       required
                     />
                   </div>
+                </div>
+                <div>
+                  <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Date of birth
+                  </label>
+                  <input
+                    type="date"
+                    id="birth_date"
+                    name="birth_date"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    We ask this to confirm you are 18 or older and not a child under 13. We do not store the date.
+                  </p>
                 </div>
                 <div>
                   <label

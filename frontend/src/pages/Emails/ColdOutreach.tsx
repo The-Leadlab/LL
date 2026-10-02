@@ -183,14 +183,26 @@ function getLeadPersonality(lead: Lead): string {
   return 'DISC'.includes(letter) ? letter : '';
 }
 
+const MARKETING_FOOTER = `<p style="margin:24px 0 0;font-family:Georgia,'Times New Roman',Times,serif;font-size:12px;line-height:1.5;color:#666666;">
+Lead Lab, Elite Park Plaza Floor 5, Umraniye, Istanbul.
+<a href="https://www.the-leadlab.com/legal?policy=privacy" style="color:#0b57d0;">Privacy</a>
+· <a href="mailto:info@the-leadlab.com?subject=Unsubscribe" style="color:#0b57d0;">Unsubscribe</a>
+</p>`;
+
+function withMarketingFooter(html: string): string {
+  if (/unsubscribe/i.test(html) && /Umraniye/i.test(html)) return html;
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${MARKETING_FOOTER}</body>`);
+  return html + MARKETING_FOOTER;
+}
+
 function wrapHtmlPreviewDocument(html: string): string {
   const trimmed = (html || '').trim();
   if (!trimmed) {
     return '<!DOCTYPE html><html><body><p style="color:#666">(empty message)</p></body></html>';
   }
-  if (/<html[\s>]/i.test(trimmed)) return trimmed;
+  if (/<html[\s>]/i.test(trimmed)) return withMarketingFooter(trimmed);
   // Must stay in sync with backend/app/services/email_html.py wrap_outbound_html.
-  return `<!DOCTYPE html>
+  return withMarketingFooter(`<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -210,7 +222,7 @@ ${trimmed}
 </tr>
 </table>
 </body>
-</html>`;
+</html>`);
 }
 
 async function fetchAllLeads(clientId?: number): Promise<Lead[]> {

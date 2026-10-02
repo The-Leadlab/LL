@@ -570,8 +570,13 @@ def test_wrap_outbound_html_envelope_matches_preview():
     assert wrapped.startswith("<!DOCTYPE html>")
     assert "Georgia" in wrapped
     assert "<p>Hello {{first_name}}</p>" in wrapped
+    assert "Unsubscribe" in wrapped
+    assert "Umraniye" in wrapped
     full = "<html><body><p>Designed</p></body></html>"
-    assert wrap_outbound_html(full) == full
+    stamped = wrap_outbound_html(full)
+    assert "Designed" in stamped
+    assert "Unsubscribe" in stamped
+    assert "Umraniye" in stamped
     assert wrap_outbound_html("  ") == ""
 
 

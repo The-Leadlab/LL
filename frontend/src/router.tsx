@@ -100,6 +100,10 @@ export const router = createBrowserRouter([
     element: <Navigate to="/legal?policy=terms" replace />,
   },
   {
+    path: '/dmca',
+    element: <Navigate to="/legal?policy=dmca" replace />,
+  },
+  {
     path: '/contact',
     element: <Contact />,
   },
