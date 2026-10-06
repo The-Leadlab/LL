@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
-import { Eye, FileSpreadsheet, GripVertical, Loader2, Mail, RefreshCw, RotateCcw, Search, Send, Sparkles, Upload, Users, X } from 'lucide-react';
+import { ArrowUpDown, Eye, FileSpreadsheet, GripVertical, Layers, Loader2, Mail, RefreshCw, RotateCcw, Search, Send, Sparkles, Upload, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -24,8 +24,12 @@ import { extractEmailErrorMessage } from '@/lib/emailError';
 import { clientsAPI, type Client } from '@/services/api/clients';
 import { emailSequencesAPI, type EmailSequence } from '@/services/api/email-sequences';
 import { leadsAPI, type Lead } from '@/services/api/leads';
+import { stagesAPI, type Stage } from '@/services/api/stages';
 import emailAPI from '@/services/emailAPI';
 import { outreachAPI, type LeadImportPreview } from '@/services/api/outreach';
+
+type LeadGroupBy = 'none' | 'personality' | 'source' | 'sector' | 'stage';
+type LeadSortBy = 'first_name' | 'company' | 'job_title' | 'source' | 'sector' | 'created_at';
 
 const MERGE_FIELDS = [
   { token: 'first_name', label: 'First name' },
@@ -177,10 +181,93 @@ function getLeadPersonality(lead: Lead): string {
   const raw =
     p?.combined_insights?.personality_type ||
     p?.personality_type ||
+    p?.personality ||
+    p?.DISC ||
     '';
   if (!raw || typeof raw !== 'string') return '';
   const letter = raw.trim().charAt(0).toUpperCase();
   return 'DISC'.includes(letter) ? letter : '';
+}
+
+function getLeadPersonalityLabel(lead: Lead): string {
+  const letter = getLeadPersonality(lead);
+  if (letter && DISC_LABELS[letter]) {
+    const names: Record<string, string> = {
+      D: 'Dominant (D)',
+      I: 'Influential (I)',
+      S: 'Steady (S)',
+      C: 'Conscientious (C)',
+    };
+    return names[letter] || letter;
+  }
+  if (lead.wpi && String(lead.wpi).trim()) return String(lead.wpi).trim();
+  return 'Unknown';
+}
+
+function getLeadGroupKey(lead: Lead, groupBy: LeadGroupBy): string {
+  switch (groupBy) {
+    case 'personality':
+      return getLeadPersonalityLabel(lead);
+    case 'source':
+      return (lead.source && lead.source.trim()) || 'No type / source';
+    case 'sector':
+      return (lead.sector && lead.sector.trim()) || 'No sector';
+    case 'stage':
+      return lead.stage?.name || 'No stage';
+    default:
+      return 'All leads';
+  }
+}
+
+function groupLeads(leads: Lead[], groupBy: LeadGroupBy): { key: string; leads: Lead[] }[] {
+  if (groupBy === 'none') {
+    return [{ key: 'All leads', leads }];
+  }
+  const map = new Map<string, Lead[]>();
+  for (const lead of leads) {
+    const key = getLeadGroupKey(lead, groupBy);
+    const bucket = map.get(key);
+    if (bucket) bucket.push(lead);
+    else map.set(key, [lead]);
+  }
+  return Array.from(map.entries())
+    .map(([key, items]) => ({ key, leads: items }))
+    .sort((a, b) => a.key.localeCompare(b.key));
+}
+
+function sortLeads(leads: Lead[], sortBy: LeadSortBy, sortDesc: boolean): Lead[] {
+  const sorted = [...leads];
+  const cmp = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+  sorted.sort((left, right) => {
+    let result = 0;
+    switch (sortBy) {
+      case 'company':
+        result = cmp(left.company || '', right.company || '');
+        break;
+      case 'job_title':
+        result = cmp(left.job_title || '', right.job_title || '');
+        break;
+      case 'source':
+        result = cmp(left.source || '', right.source || '');
+        break;
+      case 'sector':
+        result = cmp(left.sector || '', right.sector || '');
+        break;
+      case 'created_at': {
+        const a = Date.parse(left.created_at || '') || 0;
+        const b = Date.parse(right.created_at || '') || 0;
+        result = a - b;
+        break;
+      }
+      default:
+        result = cmp(
+          `${left.first_name || ''} ${left.last_name || ''}`.trim(),
+          `${right.first_name || ''} ${right.last_name || ''}`.trim(),
+        );
+    }
+    return sortDesc ? -result : result;
+  });
+  return sorted;
 }
 
 const MARKETING_FOOTER = `<p style="margin:24px 0 0;font-family:Georgia,'Times New Roman',Times,serif;font-size:12px;line-height:1.5;color:#666666;">
@@ -256,6 +343,13 @@ export function ColdOutreachPage() {
   const [selectedOrder, setSelectedOrder] = useState<number[]>([]);
   const selectedIds = useMemo(() => new Set(selectedOrder), [selectedOrder]);
   const [personalityFilter, setPersonalityFilter] = useState<string>('all');
+  const [filterStageId, setFilterStageId] = useState<number | null>(null);
+  const [filterSource, setFilterSource] = useState('');
+  const [filterSector, setFilterSector] = useState('');
+  const [sortBy, setSortBy] = useState<LeadSortBy>('first_name');
+  const [sortDesc, setSortDesc] = useState(false);
+  const [groupBy, setGroupBy] = useState<LeadGroupBy>('none');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [format, setFormat] = useState<'text' | 'html'>('html');
@@ -348,6 +442,21 @@ export function ColdOutreachPage() {
     queryKey: ['email-sequences'],
     queryFn: () => emailSequencesAPI.getAll(),
   });
+
+  const { data: stagesRaw } = useQuery({
+    queryKey: ['lead-stages'],
+    queryFn: () => stagesAPI.getAll(),
+  });
+  const stages: Stage[] = useMemo(() => {
+    if (Array.isArray(stagesRaw)) return stagesRaw as Stage[];
+    if (stagesRaw && Array.isArray((stagesRaw as { items?: Stage[] }).items)) {
+      return (stagesRaw as { items: Stage[] }).items;
+    }
+    if (stagesRaw && Array.isArray((stagesRaw as { results?: Stage[] }).results)) {
+      return (stagesRaw as { results: Stage[] }).results;
+    }
+    return [];
+  }, [stagesRaw]);
 
   const selectedCampaign = campaigns.find((item: EmailSequence) => String(item.id) === campaignId);
   const activeCampaignId =
@@ -479,7 +588,9 @@ export function ColdOutreachPage() {
   const visibleLeads = useMemo(() => {
     const q = search.trim().toLowerCase();
     const days = timeFilter === 'all' ? 0 : Number(timeFilter);
-    return leads.filter((lead) => {
+    const sourceNeedle = filterSource.trim().toLowerCase();
+    const sectorNeedle = filterSector.trim().toLowerCase();
+    const filtered = leads.filter((lead) => {
       if (days > 0 && !withinDays(lead.created_at || lead.updated_at, days)) return false;
       const bounced = isBouncedLead(lead, activeCampaignId);
       const failed = isFailedLead(lead, activeCampaignId);
@@ -496,6 +607,9 @@ export function ColdOutreachPage() {
           return false;
         }
       }
+      if (filterStageId != null && lead.stage_id !== filterStageId) return false;
+      if (sourceNeedle && !(lead.source || '').toLowerCase().includes(sourceNeedle)) return false;
+      if (sectorNeedle && !(lead.sector || '').toLowerCase().includes(sectorNeedle)) return false;
       if (!q) return true;
       const hay = [
         lead.first_name,
@@ -505,6 +619,9 @@ export function ColdOutreachPage() {
         lead.job_title,
         lead.client_name,
         lead.unique_lead_id,
+        lead.source,
+        lead.sector,
+        lead.stage?.name,
         sheetStatus(lead),
         campaignStatus(lead, activeCampaignId),
       ]
@@ -513,7 +630,45 @@ export function ColdOutreachPage() {
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [leads, search, statusFilter, personalityFilter, activeCampaignId, timeFilter]);
+    return sortLeads(filtered, sortBy, sortDesc);
+  }, [
+    leads,
+    search,
+    statusFilter,
+    personalityFilter,
+    activeCampaignId,
+    timeFilter,
+    filterStageId,
+    filterSource,
+    filterSector,
+    sortBy,
+    sortDesc,
+  ]);
+
+  const leadGroups = useMemo(() => groupLeads(visibleLeads, groupBy), [visibleLeads, groupBy]);
+
+  const sourceOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const lead of leads) {
+      if (lead.source?.trim()) set.add(lead.source.trim());
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [leads]);
+
+  const sectorOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const lead of leads) {
+      if (lead.sector?.trim()) set.add(lead.sector.trim());
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [leads]);
+
+  const organizeFilterCount =
+    (filterStageId ? 1 : 0) +
+    (filterSource.trim() ? 1 : 0) +
+    (filterSector.trim() ? 1 : 0) +
+    (personalityFilter !== 'all' ? 1 : 0) +
+    (groupBy !== 'none' ? 1 : 0);
 
   const readyLeadCount = leads.filter(
     (lead) =>
@@ -1002,6 +1157,85 @@ export function ColdOutreachPage() {
         </Button>
       </div>
 
+      <Card className="border-slate-200 shadow-sm ring-1 ring-slate-900/5">
+        <CardContent className="space-y-4 pt-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Campaign</p>
+              <h2 className="mt-0.5 text-lg font-semibold text-slate-900">
+                Start here — new or existing
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Pick how this send is tracked before selecting people or writing the email.
+              </p>
+            </div>
+            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 shadow-inner">
+              <button
+                type="button"
+                className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                  campaignMode === 'new'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                onClick={() => setCampaignMode('new')}
+              >
+                New campaign
+              </button>
+              <button
+                type="button"
+                className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                  campaignMode === 'existing'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                onClick={() => setCampaignMode('existing')}
+              >
+                Existing campaign
+              </button>
+            </div>
+          </div>
+          {campaignMode === 'new' ? (
+            <div className="max-w-xl">
+              <Label htmlFor="outreach-campaign-name">Campaign name</Label>
+              <Input
+                id="outreach-campaign-name"
+                className="mt-1"
+                value={campaignName}
+                onChange={(event) => setCampaignName(event.target.value)}
+                placeholder="e.g. Paystack Lucas wave 2"
+              />
+            </div>
+          ) : (
+            <div className="max-w-xl">
+              <Label>Choose campaign</Label>
+              <Select value={campaignId || undefined} onValueChange={setCampaignId}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select an existing campaign" />
+                </SelectTrigger>
+                <SelectContent>
+                  {campaigns.length === 0 ? (
+                    <SelectItem value="__none" disabled>
+                      No campaigns yet — create a new one
+                    </SelectItem>
+                  ) : (
+                    campaigns.map((item: EmailSequence) => (
+                      <SelectItem key={item.id} value={String(item.id)}>
+                        {item.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              {selectedCampaign && (
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Loads subject, body, and send pace from this campaign when available.
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {[
           { label: 'Ready', value: readyLeadCount, tone: 'text-slate-900' },
@@ -1065,7 +1299,7 @@ export function ColdOutreachPage() {
               Recipients
             </CardTitle>
             <p className="text-sm text-slate-500">
-              Full list with delivery status. Filter by time, bounce, or failure — then resend.
+              Organize like Leads: filter by personality, type/source, sector, and stage — then sort or group the list.
             </p>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
@@ -1164,6 +1398,129 @@ export function ColdOutreachPage() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div>
+                  <Label>Pipeline stage</Label>
+                  <Select
+                    value={filterStageId != null ? String(filterStageId) : 'all'}
+                    onValueChange={(value) =>
+                      setFilterStageId(value === 'all' ? null : Number(value))
+                    }
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="All stages" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All stages</SelectItem>
+                      {stages.map((stage) => (
+                        <SelectItem key={stage.id} value={String(stage.id)}>
+                          {stage.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Lead type / source</Label>
+                  <Select
+                    value={filterSource || 'all'}
+                    onValueChange={(value) => setFilterSource(value === 'all' ? '' : value)}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="All types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All types</SelectItem>
+                      {sourceOptions.map((source) => (
+                        <SelectItem key={source} value={source}>
+                          {source}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Sector</Label>
+                  <Select
+                    value={filterSector || 'all'}
+                    onValueChange={(value) => setFilterSector(value === 'all' ? '' : value)}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="All sectors" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All sectors</SelectItem>
+                      {sectorOptions.map((sector) => (
+                        <SelectItem key={sector} value={sector}>
+                          {sector}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                  <ArrowUpDown className="h-4 w-4 text-slate-500" />
+                  <span className="text-slate-500">Sort</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as LeadSortBy)}
+                    className="bg-transparent text-slate-800 outline-none"
+                  >
+                    <option value="first_name">Name</option>
+                    <option value="company">Company</option>
+                    <option value="job_title">Job title</option>
+                    <option value="source">Lead type / source</option>
+                    <option value="sector">Sector</option>
+                    <option value="created_at">Newest</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setSortDesc((v) => !v)}
+                    className="rounded px-1.5 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                  >
+                    {sortDesc ? 'Desc' : 'Asc'}
+                  </button>
+                </label>
+                <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                  <Layers className="h-4 w-4 text-slate-500" />
+                  <span className="text-slate-500">Group</span>
+                  <select
+                    value={groupBy}
+                    onChange={(e) => {
+                      setGroupBy(e.target.value as LeadGroupBy);
+                      setCollapsedGroups({});
+                    }}
+                    className="bg-transparent text-slate-800 outline-none"
+                  >
+                    <option value="none">None</option>
+                    <option value="personality">Personality</option>
+                    <option value="source">Lead type / source</option>
+                    <option value="sector">Sector</option>
+                    <option value="stage">Stage</option>
+                  </select>
+                </label>
+                {organizeFilterCount > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPersonalityFilter('all');
+                      setFilterStageId(null);
+                      setFilterSource('');
+                      setFilterSector('');
+                      setGroupBy('none');
+                      setCollapsedGroups({});
+                    }}
+                  >
+                    Clear organize ({organizeFilterCount})
+                  </Button>
+                )}
               </div>
 
               <div className="relative">
@@ -1277,7 +1634,37 @@ export function ColdOutreachPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {visibleLeads.map((lead) => {
+                        {leadGroups.map((group) => {
+                          const collapsed = Boolean(collapsedGroups[group.key]);
+                          return (
+                            <React.Fragment key={group.key}>
+                              {groupBy !== 'none' && (
+                                <TableRow className="bg-slate-100/90 hover:bg-slate-100">
+                                  <TableCell
+                                    colSpan={clientId === 'all' ? 8 : 7}
+                                    className="py-2"
+                                  >
+                                    <button
+                                      type="button"
+                                      className="flex w-full items-center gap-2 text-left text-sm font-semibold text-slate-800"
+                                      onClick={() =>
+                                        setCollapsedGroups((prev) => ({
+                                          ...prev,
+                                          [group.key]: !prev[group.key],
+                                        }))
+                                      }
+                                    >
+                                      <span className="text-slate-500">{collapsed ? '▸' : '▾'}</span>
+                                      {group.key}
+                                      <span className="ml-1 rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-600">
+                                        {group.leads.length}
+                                      </span>
+                                    </button>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                              {!collapsed &&
+                                group.leads.map((lead) => {
                           const hasEmail = Boolean(lead.email);
                           const sent = isSheetSent(lead, activeCampaignId);
                           const bounced = isBouncedLead(lead, activeCampaignId);
@@ -1368,6 +1755,9 @@ export function ColdOutreachPage() {
                                 )}
                               </TableCell>
                             </TableRow>
+                          );
+                                })}
+                            </React.Fragment>
                           );
                         })}
                       </TableBody>
@@ -1686,48 +2076,16 @@ export function ColdOutreachPage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
-            <div className="space-y-3">
-              <Label>Campaign</Label>
-              <div className="flex flex-wrap gap-1 rounded-md border border-slate-200 bg-white p-1">
-                <button
-                  type="button"
-                  className={`rounded px-3 py-1.5 text-sm ${
-                    campaignMode === 'new' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                  onClick={() => setCampaignMode('new')}
-                >
-                  New campaign
-                </button>
-                <button
-                  type="button"
-                  className={`rounded px-3 py-1.5 text-sm ${
-                    campaignMode === 'existing' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                  onClick={() => setCampaignMode('existing')}
-                >
-                  Existing campaign
-                </button>
-              </div>
-              {campaignMode === 'new' ? (
-                <Input
-                  value={campaignName}
-                  onChange={(event) => setCampaignName(event.target.value)}
-                  placeholder="e.g. Paystack Lucas wave 2"
-                />
-              ) : (
-                <Select value={campaignId || undefined} onValueChange={setCampaignId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a campaign" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {campaigns.map((item: EmailSequence) => (
-                      <SelectItem key={item.id} value={String(item.id)}>
-                        {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+            <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Campaign</p>
+              <p className="mt-0.5 font-medium text-slate-900">
+                {campaignMode === 'new'
+                  ? campaignName.trim() || 'Name this campaign above'
+                  : selectedCampaign?.name || 'Choose an existing campaign above'}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {campaignMode === 'new' ? 'New campaign' : 'Existing campaign'} — change it in the bar at the top of this page.
+              </p>
             </div>
 
             <div>
