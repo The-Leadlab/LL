@@ -232,6 +232,8 @@ export const leadsAPI = {
     limit?: number;
     tag?: string;
     client_id?: number;
+    source?: string;
+    sector?: string;
   }): Promise<any> => {
     return api.get('/leads/', { params });
   },
@@ -246,6 +248,8 @@ export const leadsAPI = {
     limit?: number;
     tag?: string;
     client_id?: number;
+    source?: string;
+    sector?: string;
   }): Promise<any> => {
     const response = await api.get('/leads/', { params });
     const data = response.data;
@@ -305,6 +309,11 @@ export const leadsAPI = {
     search?: string;
     tag?: string;
     client_id?: number;
+    stage_id?: number;
+    source?: string;
+    sector?: string;
+    sort_by?: string;
+    sort_desc?: boolean;
     filters?: any;
   }): Promise<Blob> => {
     const response = await api.get('/leads/export/csv', {

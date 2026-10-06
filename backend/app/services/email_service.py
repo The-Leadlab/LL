@@ -14,6 +14,7 @@ from email import encoders
 from typing import List, Dict, Optional, Tuple, Any
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 import logging
 import base64
 from sqlalchemy import and_
@@ -35,6 +36,21 @@ logger = logging.getLogger(__name__)
 
 SMTP_CONNECT_TIMEOUT_SECONDS = 10
 SMTP_FALLBACK_TIMEOUT_SECONDS = 8
+# Keep IMAP sync batches small on Render free (512MB) to avoid OOM.
+IMAP_SYNC_BATCH_SIZE = 15
+
+
+def normalize_message_id(raw: Optional[str]) -> Optional[str]:
+    """Normalize Message-ID so existence checks match the unique DB index.
+
+    Headers often include angle brackets (``<id@host>``) while stored rows
+    strip them. Comparing without normalizing causes false misses, duplicate
+    inserts, IntegrityError storms, and memory spikes during sync.
+    """
+    if not raw:
+        return None
+    normalized = str(raw).strip().strip("<>").strip()
+    return normalized or None
 
 
 def _ipv4_create_connection(
@@ -494,8 +510,9 @@ class EmailService:
             configured_days = int(account.days_to_sync or days_back or 30)
             effective_days_back = max(int(days_back or 0), configured_days)
             if account.provider_type == EmailProviderType.GMAIL.value and not previous_last_sync:
-                # First Gmail sync should import sufficient history.
-                effective_days_back = max(effective_days_back, 365)
+                # First Gmail sync: cap history so free-tier (512MB) instances don't OOM.
+                effective_days_back = max(effective_days_back, 90)
+                effective_days_back = min(effective_days_back, 90)
             
             # Refresh to get current values
             self.db.refresh(account)
@@ -765,10 +782,15 @@ class EmailService:
                         if name:
                             header_map[name] = h.get("value") or ""
 
-                    message_id = header_map.get("message-id") or payload.get("id")
-                    existing = self.db.query(Email).filter(
+                    message_id = normalize_message_id(
+                        header_map.get("message-id") or payload.get("id")
+                    )
+                    if not message_id:
+                        error_count += 1
+                        continue
+                    # Unique index is global on message_id — do not scope by account.
+                    existing = self.db.query(Email.id).filter(
                         Email.message_id == message_id,
-                        Email.email_account_id == account.id,
                     ).first()
                     if existing:
                         continue
@@ -812,8 +834,16 @@ class EmailService:
                         has_attachments=False,
                     )
                     self.db.add(db_email)
-                    self.db.commit()
-                    synced_count += 1
+                    try:
+                        self.db.commit()
+                        synced_count += 1
+                    except IntegrityError:
+                        self.db.rollback()
+                        logger.debug(
+                            "Skipping duplicate Gmail message_id=%s account=%s",
+                            message_id,
+                            account.id,
+                        )
                 except Exception:
                     self.db.rollback()
                     error_count += 1
@@ -859,9 +889,10 @@ class EmailService:
             email_ids = data[0].split()
             synced_count = 0
             error_count = 0
+            skipped_existing = 0
             
-            # Process emails in batches to avoid memory issues
-            batch_size = 50
+            # Process emails in small batches to stay under Render free memory.
+            batch_size = IMAP_SYNC_BATCH_SIZE
             for i in range(0, len(email_ids), batch_size):
                 batch = email_ids[i:i + batch_size]
                 
@@ -873,21 +904,23 @@ class EmailService:
                         if typ != 'OK':
                             error_count += 1
                             continue
-                            
-                        message_id = email.message_from_bytes(msg_data[0][1]).get('Message-ID')
+
+                        raw_header = email.message_from_bytes(msg_data[0][1]).get('Message-ID')
+                        # Drop header bytes ASAP — sync storms were OOMing at ~437MB/512MB.
+                        del msg_data
+                        message_id = normalize_message_id(raw_header)
                         if not message_id:
                             error_count += 1
                             continue
                             
-                        # Check if email already exists
-                        existing_email = self.db.query(Email).filter(
+                        # Unique index is global on message_id — match stored normalized form.
+                        existing_email = self.db.query(Email.id).filter(
                             Email.message_id == message_id,
-                            Email.email_account_id == account.id
                         ).first()
                         
                         # Skip if email already exists
                         if existing_email:
-                            logger.debug(f"Skipping existing email with Message-ID: {message_id}")
+                            skipped_existing += 1
                             continue
                             
                         # If email doesn't exist, fetch full message
@@ -898,8 +931,22 @@ class EmailService:
                             
                     except Exception as e:
                         logger.error(f"Error processing email {email_id}: {str(e)}")
+                        self.db.rollback()
                         error_count += 1
                         continue
+
+                # Release ORM identity map between batches on small instances.
+                self.db.expire_all()
+
+            if skipped_existing:
+                logger.info(
+                    "IMAP folder=%s account=%s skipped_existing=%s synced=%s errors=%s",
+                    folder,
+                    account.id,
+                    skipped_existing,
+                    synced_count,
+                    error_count,
+                )
             
             return synced_count, error_count
             
@@ -917,18 +964,29 @@ class EmailService:
                 return False
             
             email_body = msg_data[0][1]
+            del msg_data
             email_message = email.message_from_bytes(email_body)
+            del email_body
             
             # Parse email data
             parsed_data = self._parse_email(email_message, account, folder)
             if not parsed_data:
                 return False
+
+            message_id = normalize_message_id(parsed_data.get('message_id'))
+            if not message_id:
+                return False
+            parsed_data['message_id'] = message_id
+
+            # Race-safe existence check (global unique on message_id).
+            if self.db.query(Email.id).filter(Email.message_id == message_id).first():
+                return True
             
             # Create email record
             db_email = Email(
                 email_account_id=account.id,
                 organization_id=account.organization_id,
-                message_id=parsed_data['message_id'],
+                message_id=message_id,
                 subject=parsed_data['subject'],
                 from_email=parsed_data['from_email'],
                 from_name=parsed_data['from_name'],
@@ -945,7 +1003,16 @@ class EmailService:
             )
             
             self.db.add(db_email)
-            self.db.commit()
+            try:
+                self.db.commit()
+            except IntegrityError:
+                self.db.rollback()
+                logger.debug(
+                    "Skipping duplicate IMAP message_id=%s account=%s",
+                    message_id,
+                    account.id,
+                )
+                return True
             
             # Process attachments if any
             if parsed_data.get('has_attachments'):
@@ -954,6 +1021,11 @@ class EmailService:
             # Analyze content for smart features
             self._analyze_email_content(db_email)
             
+            return True
+
+        except IntegrityError:
+            self.db.rollback()
+            logger.debug("Skipping duplicate email insert for account=%s", account.id)
             return True
             
         except Exception as e:
@@ -1009,8 +1081,8 @@ class EmailService:
     def _parse_email(self, msg: email.message.Message, account: EmailAccount, folder: str) -> Optional[Dict]:
         """Parse email message and extract relevant data"""
         try:
-            # Get message ID
-            message_id = msg.get('Message-ID', '').strip('<>')
+            # Get message ID (normalized to match DB unique index)
+            message_id = normalize_message_id(msg.get('Message-ID', ''))
             if not message_id:
                 return None
             
@@ -1168,14 +1240,16 @@ class EmailService:
     
     def _analyze_email_content(self, db_email: Email):
         """Analyze email content for meetings, tasks, etc."""
-        content = (db_email.body_text or '') + ' ' + (db_email.body_html or '')
+        # Cap analyzed text — full HTML bodies during bulk sync inflate RSS on free plan.
+        raw = ((db_email.body_text or '') + ' ' + (db_email.body_html or ''))[:8000]
+        content = raw.lower()
         
         # Prepare update data
         update_data = {}
         
         # Check for meeting-related keywords
         meeting_keywords = ['meeting', 'call', 'appointment', 'schedule', 'toplantı', 'randevu', 'görüşme']
-        contains_meeting = any(keyword in content.lower() for keyword in meeting_keywords)
+        contains_meeting = any(keyword in content for keyword in meeting_keywords)
         
         if contains_meeting:
             update_data['contains_meeting_info'] = True

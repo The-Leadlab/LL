@@ -1,9 +1,11 @@
-from typing import Dict, List, Any
-import pandas as pd
-import numpy as np
-from sklearn.pipeline import Pipeline
+from typing import Dict, List, Any, TYPE_CHECKING
 from datetime import datetime
 import re
+
+if TYPE_CHECKING:
+    from sklearn.pipeline import Pipeline
+    import pandas as pd
+
 
 def extract_features_from_lead(lead: Any) -> Dict[str, Any]:
     """Extract features from real Lead model"""
@@ -323,8 +325,10 @@ def extract_features(lead_data: Dict[str, Any]) -> Dict[str, Any]:
     
     return features
 
-def preprocess_features(features: Dict[str, Any]) -> pd.DataFrame:
+def preprocess_features(features: Dict[str, Any]) -> "pd.DataFrame":
     """Feature'ları ön işlemden geçir"""
+    import pandas as pd
+
     df = pd.DataFrame([features])
     
     # Kategorik kolonları dönüştür
@@ -359,7 +363,7 @@ def preprocess_features(features: Dict[str, Any]) -> pd.DataFrame:
     
     return df
 
-def create_feature_importance(model: Pipeline,
+def create_feature_importance(model: "Pipeline",
                             feature_names: List[str]) -> Dict[str, float]:
     """Model feature importance değerlerini hesapla"""
     if not hasattr(model, 'named_steps') or \

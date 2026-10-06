@@ -11,7 +11,6 @@ from app.services import crystal_service, enhanced_personality_service
 from app.services.internal_psychometric_analyzer import InternalPsychometricAnalyzer
 from app.crud.crud_lead import lead as crud_lead
 from app.crud.crud_ai_insights import ai_insights as crud_ai_insights
-from app.ml.features import extract_features_from_lead
 from app.services.free_ai_service import free_ai_service
 from app.schemas.ai_insights import AIInsightsResponse, LeadScoreResponse, PersonalityResponse, RecommendationsResponse
 from app.services.crystal_service import crystal_service
@@ -56,7 +55,8 @@ async def get_lead_ai_insights(
         # Perform new analysis
         logger.info(f"Generating new AI insights for lead {lead_id}")
         
-        # Lead verilerinden feature'ları çıkar
+        # Lead verilerinden feature'ları çıkar (lazy import — avoid sklearn/pandas at boot)
+        from app.ml.features import extract_features_from_lead
         features = extract_features_from_lead(lead)
         
         # Lead data hazırla
@@ -366,6 +366,7 @@ async def batch_analyze_leads_task(
                 ai_analysis = await free_ai_service.analyze_lead_personality(lead_data)
                 
                 # Features ve scoring
+                from app.ml.features import extract_features_from_lead
                 features = extract_features_from_lead(lead)
                 lead_scores = calculate_lead_scores(features, ai_analysis)
                 

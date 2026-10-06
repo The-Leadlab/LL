@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 from typing import Optional
-import pandas as pd
-import numpy as np
 import logging
 from datetime import datetime
 import traceback
@@ -56,6 +54,8 @@ def truncate_lead_strings(lead_data: dict, row_index: int) -> int:
 
 def clean_value(value):
     """Clean value from NaN, empty strings, and whitespace."""
+    import pandas as pd
+
     if pd.isna(value) or value == "" or (isinstance(value, str) and value.strip() == ""):
         return None
     if isinstance(value, str):
@@ -100,6 +100,8 @@ async def import_leads_from_csv(
     - If form `client_id` is omitted, per-row CSV client/client_id is used,
       falling back to the org General client.
     """
+    import pandas as pd
+
     # Non-admins can only assign to themselves
     if not current_user.is_admin and assigned_user_id != current_user.id:
         raise HTTPException(

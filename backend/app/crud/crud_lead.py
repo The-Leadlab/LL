@@ -50,6 +50,7 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
         organization_id: Optional[int] = None,
         tag_id: Optional[int] = None,
         client_id: Optional[int] = None,
+        stage_id: Optional[int] = None,
         search: Optional[str] = None,
         sort_by: Optional[str] = None,
         sort_desc: bool = False,
@@ -84,6 +85,9 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
 
         if client_id is not None and client_id > 0:
             query = query.filter(Lead.client_id == client_id)
+
+        if stage_id is not None and stage_id > 0:
+            query = query.filter(Lead.stage_id == stage_id)
 
         # Add search filter if provided
         if search:

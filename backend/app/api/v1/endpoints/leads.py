@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 import csv
 import io
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -185,6 +185,9 @@ def read_leads(
     sort_desc: bool = True,
     tag: Optional[str] = None,
     client_id: Optional[int] = Query(None, description="Filter by client id"),
+    stage_id: Optional[int] = Query(None, description="Filter by pipeline stage id"),
+    source: Optional[str] = Query(None, description="Filter by lead source / type"),
+    sector: Optional[str] = Query(None, description="Filter by sector"),
 ) -> Any:
     """
     Retrieve leads for the current user's organization (team workspace).
@@ -201,6 +204,12 @@ def read_leads(
                     detail="Invalid tag ID format"
                 )
 
+        filters: Dict[str, Any] = {}
+        if source and source.strip() and source.strip().lower() != "all":
+            filters["source"] = source.strip()
+        if sector and sector.strip() and sector.strip().lower() != "all":
+            filters["sector"] = sector.strip()
+
         # Get leads with organization filter
         leads, total = crud.lead.get_multi(
             db=db,
@@ -212,6 +221,8 @@ def read_leads(
             sort_desc=sort_desc,
             tag_id=tag_id,
             client_id=client_id,
+            stage_id=stage_id,
+            filters=filters or None,
             is_admin=False
         )
 
@@ -243,6 +254,9 @@ def export_leads_csv(
     sort_desc: bool = True,
     tag: Optional[str] = None,
     client_id: Optional[int] = Query(None, description="Filter by client id"),
+    stage_id: Optional[int] = Query(None, description="Filter by pipeline stage id"),
+    source: Optional[str] = Query(None, description="Filter by lead source / type"),
+    sector: Optional[str] = Query(None, description="Filter by sector"),
 ) -> Any:
     """
     Export leads matching list filters as CSV (same scoping as GET /leads/).
@@ -306,6 +320,11 @@ def export_leads_csv(
 
             skip = 0
             batch_size = 2000
+            filters: Dict[str, Any] = {}
+            if source and source.strip() and source.strip().lower() != "all":
+                filters["source"] = source.strip()
+            if sector and sector.strip() and sector.strip().lower() != "all":
+                filters["sector"] = sector.strip()
             while True:
                 leads, _total = crud.lead.get_multi(
                     db=db,
@@ -317,6 +336,8 @@ def export_leads_csv(
                     sort_desc=sort_desc,
                     tag_id=tag_id,
                     client_id=client_id,
+                    stage_id=stage_id,
+                    filters=filters or None,
                     is_admin=False,
                 )
                 if not leads:

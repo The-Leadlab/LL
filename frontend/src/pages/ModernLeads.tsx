@@ -9,11 +9,12 @@
  * - Full backend integration
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { leadsAPI, type Lead } from '@/services/api/leads';
 import { clientsAPI, type Client } from '@/services/api/clients';
+import { stagesAPI, type Stage } from '@/services/api/stages';
 import type { LeadListResponse } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/auth';
@@ -32,11 +33,14 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Settings2,
   FolderInput,
   Eye,
   Pencil,
   Trash2,
+  Layers,
+  ArrowUpDown,
 } from 'lucide-react';
 import {
   Dialog,
@@ -58,6 +62,61 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 
 const SELECTED_CLIENT_KEY = 'leadlab.leads.selectedClientId';
+const LEADS_SORT_KEY = 'leadlab.leads.sortBy';
+const LEADS_GROUP_KEY = 'leadlab.leads.groupBy';
+
+type LeadGroupBy = 'none' | 'personality' | 'source' | 'sector' | 'stage';
+type LeadSortBy = 'created_at' | 'updated_at' | 'first_name' | 'company' | 'job_title' | 'source' | 'sector';
+
+function getLeadPersonality(lead: Lead): string {
+  const psycho = lead.psychometrics;
+  if (psycho && typeof psycho === 'object') {
+    const combined = (psycho as Record<string, unknown>).combined_insights;
+    const fromCombined =
+      combined && typeof combined === 'object'
+        ? (combined as Record<string, unknown>).personality_type
+        : undefined;
+    const direct =
+      (psycho as Record<string, unknown>).personality_type ||
+      (psycho as Record<string, unknown>).personality ||
+      (psycho as Record<string, unknown>).DISC;
+    const value = fromCombined || direct;
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  if (lead.wpi && String(lead.wpi).trim()) return String(lead.wpi).trim();
+  return 'Unknown';
+}
+
+function getLeadGroupKey(lead: Lead, groupBy: LeadGroupBy): string {
+  switch (groupBy) {
+    case 'personality':
+      return getLeadPersonality(lead);
+    case 'source':
+      return (lead.source && lead.source.trim()) || 'No type / source';
+    case 'sector':
+      return (lead.sector && lead.sector.trim()) || 'No sector';
+    case 'stage':
+      return lead.stage?.name || 'No stage';
+    default:
+      return 'All leads';
+  }
+}
+
+function groupLeads(leads: Lead[], groupBy: LeadGroupBy): { key: string; leads: Lead[] }[] {
+  if (groupBy === 'none') {
+    return [{ key: 'All leads', leads }];
+  }
+  const map = new Map<string, Lead[]>();
+  for (const lead of leads) {
+    const key = getLeadGroupKey(lead, groupBy);
+    const bucket = map.get(key);
+    if (bucket) bucket.push(lead);
+    else map.set(key, [lead]);
+  }
+  return Array.from(map.entries())
+    .map(([key, items]) => ({ key, leads: items }))
+    .sort((a, b) => a.key.localeCompare(b.key));
+}
 function parseTotalCount(val: unknown, fallback: number): number {
   if (typeof val === 'number' && Number.isFinite(val)) return val;
   if (typeof val === 'string' && val.trim() !== '') {
@@ -202,6 +261,29 @@ export function ModernLeads() {
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
   const [moveTargetClientId, setMoveTargetClientId] = useState<number | null>(null);
   const [moveMode, setMoveMode] = useState<'selected' | 'all_in_client'>('selected');
+  const [sortBy, setSortBy] = useState<LeadSortBy>(() => {
+    try {
+      const stored = sessionStorage.getItem(LEADS_SORT_KEY) as LeadSortBy | null;
+      if (stored && ['created_at', 'updated_at', 'first_name', 'company', 'job_title', 'source', 'sector'].includes(stored)) {
+        return stored;
+      }
+    } catch { /* ignore */ }
+    return 'created_at';
+  });
+  const [sortDesc, setSortDesc] = useState(true);
+  const [groupBy, setGroupBy] = useState<LeadGroupBy>(() => {
+    try {
+      const stored = sessionStorage.getItem(LEADS_GROUP_KEY) as LeadGroupBy | null;
+      if (stored && ['none', 'personality', 'source', 'sector', 'stage'].includes(stored)) {
+        return stored;
+      }
+    } catch { /* ignore */ }
+    return 'none';
+  });
+  const [filterStageId, setFilterStageId] = useState<number | null>(null);
+  const [filterSource, setFilterSource] = useState('');
+  const [filterSector, setFilterSector] = useState('');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
@@ -211,12 +293,32 @@ export function ModernLeads() {
   useEffect(() => {
     setPage(0);
     setSelectedLeads([]);
-  }, [debouncedSearch, selectedClientId]);
+  }, [debouncedSearch, selectedClientId, sortBy, sortDesc, groupBy, filterStageId, filterSource, filterSector]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(LEADS_SORT_KEY, sortBy);
+      sessionStorage.setItem(LEADS_GROUP_KEY, groupBy);
+    } catch { /* ignore */ }
+  }, [sortBy, groupBy]);
 
   const { data: clientsData } = useQuery({
     queryKey: ['clients', 'with-archived'],
     queryFn: () => clientsAPI.list(true),
   });
+
+  const { data: stagesData } = useQuery({
+    queryKey: ['lead-stages'],
+    queryFn: async () => {
+      const res = await stagesAPI.getAll();
+      const raw = res?.data ?? res;
+      if (Array.isArray(raw)) return raw as Stage[];
+      if (Array.isArray(raw?.results)) return raw.results as Stage[];
+      if (Array.isArray(raw?.items)) return raw.items as Stage[];
+      return [] as Stage[];
+    },
+  });
+  const stages: Stage[] = stagesData ?? [];
 
   const allClients: Client[] = clientsData?.items ?? [];
   const activeClients = allClients.filter((c) => !c.is_archived);
@@ -261,17 +363,33 @@ export function ModernLeads() {
   }, [selectedClientId]);
 
   // Fetch leads from backend (paginated; debounced search avoids remounting the page each keystroke)
+  const effectivePageSize = groupBy === 'none' ? pageSize : Math.max(pageSize, 100);
   const { data: leadsPage, isLoading: isLoadingLeads, isFetching: isFetchingLeads } = useQuery({
-    queryKey: ['leads', debouncedSearch, page, pageSize, selectedClientId],
+    queryKey: [
+      'leads',
+      debouncedSearch,
+      page,
+      effectivePageSize,
+      selectedClientId,
+      sortBy,
+      sortDesc,
+      filterStageId,
+      filterSource,
+      filterSector,
+      groupBy,
+    ],
     enabled: selectedClientId != null,
     queryFn: async () => {
       const res = await leadsAPI.getAll({
         search: debouncedSearch || undefined,
-        skip: page * pageSize,
-        limit: pageSize,
-        sort_by: 'created_at',
-        sort_desc: true,
+        skip: page * effectivePageSize,
+        limit: effectivePageSize,
+        sort_by: sortBy,
+        sort_desc: sortDesc,
         client_id: selectedClientId ?? undefined,
+        stage_id: filterStageId ?? undefined,
+        source: filterSource.trim() || undefined,
+        sector: filterSector.trim() || undefined,
       });
       return normalizeLeadListPayload(res.data) as LeadListResponse;
     },
@@ -279,8 +397,13 @@ export function ModernLeads() {
   });
   const leads: Lead[] = leadsPage?.results ?? [];
   const totalLeads = leadsPage?.total ?? 0;
-  const pageStart = totalLeads === 0 ? 0 : page * pageSize + 1;
-  const pageEnd = page * pageSize + leads.length;
+  const pageStart = totalLeads === 0 ? 0 : page * effectivePageSize + 1;
+  const pageEnd = page * effectivePageSize + leads.length;
+  const leadGroups = useMemo(() => groupLeads(leads, groupBy), [leads, groupBy]);
+  const activeFilterCount =
+    (filterStageId ? 1 : 0) +
+    (filterSource.trim() ? 1 : 0) +
+    (filterSector.trim() ? 1 : 0);
 
   // Upload mutation
   const uploadMutation = useMutation({
@@ -546,6 +669,11 @@ export function ModernLeads() {
       const blob = await leadsAPI.exportCSV({
         search: debouncedSearch || undefined,
         client_id: selectedClientId ?? undefined,
+        stage_id: filterStageId ?? undefined,
+        source: filterSource.trim() || undefined,
+        sector: filterSector.trim() || undefined,
+        sort_by: sortBy,
+        sort_desc: sortDesc,
       });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -566,7 +694,7 @@ export function ModernLeads() {
   };
 
   const hasMore = leadsPage?.has_more === true;
-  const pagesFromTotal = Math.max(1, Math.ceil(totalLeads / pageSize));
+  const pagesFromTotal = Math.max(1, Math.ceil(totalLeads / effectivePageSize));
   const totalPages = Math.max(pagesFromTotal, page + (hasMore ? 2 : 1));
   const canPrev = page > 0;
   const canNext = hasMore || (totalLeads > 0 && page < pagesFromTotal - 1);
@@ -659,7 +787,7 @@ export function ModernLeads() {
         </div>
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between mt-4">
+        <div className="flex flex-col gap-3 mt-4 lg:flex-row lg:items-center lg:justify-between">
           {/* Search & Filter */}
           <div className="flex items-center space-x-3 flex-1 max-w-2xl">
             <div className="relative flex-1">
@@ -678,8 +806,56 @@ export function ModernLeads() {
               className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
             >
               <Filter className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-              <span className="text-neutral-700 dark:text-neutral-300">Filters</span>
+              <span className="text-neutral-700 dark:text-neutral-300">
+                Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+              </span>
             </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800">
+              <ArrowUpDown className="h-4 w-4 text-neutral-500" />
+              <span className="text-neutral-500 dark:text-neutral-400">Sort</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as LeadSortBy)}
+                className="bg-transparent text-neutral-800 outline-none dark:text-neutral-100"
+              >
+                <option value="created_at">Newest</option>
+                <option value="updated_at">Recently updated</option>
+                <option value="first_name">Name</option>
+                <option value="company">Company</option>
+                <option value="job_title">Job title</option>
+                <option value="source">Lead type / source</option>
+                <option value="sector">Sector</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => setSortDesc((v) => !v)}
+                className="rounded px-1.5 py-0.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                title={sortDesc ? 'Descending' : 'Ascending'}
+              >
+                {sortDesc ? 'Desc' : 'Asc'}
+              </button>
+            </label>
+            <label className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800">
+              <Layers className="h-4 w-4 text-neutral-500" />
+              <span className="text-neutral-500 dark:text-neutral-400">Group</span>
+              <select
+                value={groupBy}
+                onChange={(e) => {
+                  setGroupBy(e.target.value as LeadGroupBy);
+                  setCollapsedGroups({});
+                }}
+                className="bg-transparent text-neutral-800 outline-none dark:text-neutral-100"
+              >
+                <option value="none">None</option>
+                <option value="personality">Personality</option>
+                <option value="source">Lead type / source</option>
+                <option value="sector">Sector</option>
+                <option value="stage">Stage</option>
+              </select>
+            </label>
           </div>
 
           <div className="flex items-center space-x-3">
@@ -746,148 +922,209 @@ export function ModernLeads() {
         />
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-          <table className="w-full min-w-[640px]">
-            <thead className="bg-neutral-50 dark:bg-neutral-700/50 border-b border-neutral-200 dark:border-neutral-700">
-              <tr>
-                <th className="px-6 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    className="rounded"
-                    checked={leads.length > 0 && leads.every((l) => selectedLeads.includes(l.id))}
-                    onChange={toggleSelectAll}
-                    aria-label="Select all leads on this page"
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  Lead
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  Contact
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  Job Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  Stage
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  Assigned
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
-              {leads.map((lead) => (
-                <tr
-                  key={lead.id}
-                  onClick={() => navigate(`/leads/${lead.id}`)}
-                  className="hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors cursor-pointer"
+      <div className="space-y-4">
+        {leadGroups.map((group) => {
+          const collapsed = Boolean(collapsedGroups[group.key]);
+          return (
+            <div
+              key={group.key}
+              className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-800"
+            >
+              {groupBy !== 'none' && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCollapsedGroups((prev) => ({
+                      ...prev,
+                      [group.key]: !prev[group.key],
+                    }))
+                  }
+                  className="flex w-full items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 text-left dark:border-neutral-700 dark:bg-neutral-700/40"
                 >
-                  <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      className="rounded"
-                      checked={selectedLeads.includes(lead.id)}
-                      onChange={() => toggleSelectLead(lead.id)}
-                      aria-label={`Select ${lead.full_name || lead.id}`}
+                  <span className="flex items-center gap-2 font-medium text-neutral-900 dark:text-neutral-50">
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${collapsed ? '-rotate-90' : ''}`}
                     />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                        <User className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-neutral-900 dark:text-neutral-50">
-                          {lead.full_name || `${lead.first_name} ${lead.last_name}`}
-                        </div>
-                        <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                          {lead.company || 'No company'}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-neutral-900 dark:text-neutral-50">{lead.email || '-'}</div>
-                    <div className="text-sm text-neutral-500 dark:text-neutral-400">{lead.telephone || lead.mobile || '-'}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-neutral-900 dark:text-neutral-50">{lead.job_title || '-'}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400">
-                      {lead.stage?.name || 'No stage'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-neutral-900 dark:text-neutral-50">
-                    {lead.user ? `${lead.user.first_name} ${lead.user.last_name}` : 'Unassigned'}
-                  </td>
-                  <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors"
-                          aria-label={`Actions for ${lead.full_name || lead.id}`}
-                        >
-                          <MoreVertical className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="z-[200] w-44">
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={() => navigate(`/leads/${lead.id}`)}
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={() => navigate(`/leads/${lead.id}?edit=1`)}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={() => {
-                            setSelectedLeads([lead.id]);
-                            setMoveMode('selected');
-                            setIsMoveDialogOpen(true);
-                          }}
-                        >
-                          <FolderInput className="mr-2 h-4 w-4" />
-                          Move to client
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="cursor-pointer text-red-600 focus:text-red-600"
-                          onClick={() => {
-                            const name = lead.full_name || `${lead.first_name} ${lead.last_name}`.trim() || 'this lead';
-                            if (window.confirm(`Delete ${name}?`)) {
-                              deleteLeadMutation.mutate(lead.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {leads.length === 0 && (
-            <div className="text-center py-12 text-neutral-500 dark:text-neutral-400">
-              No leads in this client yet. Click "Add Lead" or Import to get started.
+                    {group.key}
+                  </span>
+                  <span className="rounded-full bg-neutral-200 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-700 dark:bg-neutral-600 dark:text-neutral-100">
+                    {group.leads.length}
+                  </span>
+                </button>
+              )}
+              {!collapsed && (
+                <table className="w-full min-w-[640px]">
+                  {groupBy === 'none' && (
+                    <thead className="bg-neutral-50 dark:bg-neutral-700/50 border-b border-neutral-200 dark:border-neutral-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left">
+                          <input
+                            type="checkbox"
+                            className="rounded"
+                            checked={leads.length > 0 && leads.every((l) => selectedLeads.includes(l.id))}
+                            onChange={toggleSelectAll}
+                            aria-label="Select all leads on this page"
+                          />
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                          Lead
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                          Contact
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                          Job Title
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                          Stage
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                          Type / Personality
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                          Assigned
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                  )}
+                  {groupBy !== 'none' && (
+                    <thead className="bg-neutral-50/80 dark:bg-neutral-700/30 border-b border-neutral-200 dark:border-neutral-700">
+                      <tr>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Select</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Lead</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Contact</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Job Title</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Stage</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Type / Personality</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Assigned</th>
+                        <th className="px-6 py-2 text-right text-xs font-medium text-neutral-500 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                  )}
+                  <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
+                    {group.leads.map((lead) => (
+                      <tr
+                        key={lead.id}
+                        onClick={() => navigate(`/leads/${lead.id}`)}
+                        className="hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors cursor-pointer"
+                      >
+                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            className="rounded"
+                            checked={selectedLeads.includes(lead.id)}
+                            onChange={() => toggleSelectLead(lead.id)}
+                            aria-label={`Select ${lead.full_name || lead.id}`}
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
+                              <User className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                            </div>
+                            <div>
+                              <div className="font-medium text-neutral-900 dark:text-neutral-50">
+                                {lead.full_name || `${lead.first_name} ${lead.last_name}`}
+                              </div>
+                              <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                                {lead.company || 'No company'}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-neutral-900 dark:text-neutral-50">{lead.email || '-'}</div>
+                          <div className="text-sm text-neutral-500 dark:text-neutral-400">{lead.telephone || lead.mobile || '-'}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-neutral-900 dark:text-neutral-50">{lead.job_title || '-'}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400">
+                            {lead.stage?.name || 'No stage'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-neutral-900 dark:text-neutral-50">
+                            {lead.source || '—'}
+                          </div>
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                            {getLeadPersonality(lead)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-neutral-900 dark:text-neutral-50">
+                          {lead.user ? `${lead.user.first_name} ${lead.user.last_name}` : 'Unassigned'}
+                        </td>
+                        <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu modal={false}>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                                aria-label={`Actions for ${lead.full_name || lead.id}`}
+                              >
+                                <MoreVertical className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="z-[200] w-44">
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => navigate(`/leads/${lead.id}`)}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => navigate(`/leads/${lead.id}?edit=1`)}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  setSelectedLeads([lead.id]);
+                                  setMoveMode('selected');
+                                  setIsMoveDialogOpen(true);
+                                }}
+                              >
+                                <FolderInput className="mr-2 h-4 w-4" />
+                                Move to client
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="cursor-pointer text-red-600 focus:text-red-600"
+                                onClick={() => {
+                                  const name = lead.full_name || `${lead.first_name} ${lead.last_name}`.trim() || 'this lead';
+                                  if (window.confirm(`Delete ${name}?`)) {
+                                    deleteLeadMutation.mutate(lead.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
-          )}
-        </div>
+          );
+        })}
+        {leads.length === 0 && (
+          <div className="rounded-xl border border-neutral-200 bg-white py-12 text-center text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
+            No leads in this client yet. Click "Add Lead" or Import to get started.
+          </div>
+        )}
+      </div>
 
       <div className="mt-8 border-t border-neutral-200 pt-6 dark:border-neutral-700">
         <p className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
@@ -912,14 +1149,63 @@ export function ModernLeads() {
       <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
+            <DialogTitle>Organize leads</DialogTitle>
             <DialogDescription>
-              Use search and rows-per-page to narrow results. Stage, tag, and assignee filters are planned next; export respects the current search.
+              Filter by stage, lead type/source, and sector. Combine with Sort and Group in the toolbar to organize by personality or type.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsFiltersOpen(false)}>
-              Close
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="filter-stage">Pipeline stage</Label>
+              <select
+                id="filter-stage"
+                value={filterStageId ?? ''}
+                onChange={(e) =>
+                  setFilterStageId(e.target.value ? Number(e.target.value) : null)
+                }
+                className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+              >
+                <option value="">All stages</option>
+                {stages.map((stage) => (
+                  <option key={stage.id} value={stage.id}>
+                    {stage.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-source">Lead type / source</Label>
+              <Input
+                id="filter-source"
+                placeholder="e.g. inbound, referral, cold"
+                value={filterSource}
+                onChange={(e) => setFilterSource(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-sector">Sector</Label>
+              <Input
+                id="filter-sector"
+                placeholder="e.g. finance, tech"
+                value={filterSector}
+                onChange={(e) => setFilterSector(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setFilterStageId(null);
+                setFilterSource('');
+                setFilterSector('');
+              }}
+            >
+              Clear
+            </Button>
+            <Button type="button" onClick={() => setIsFiltersOpen(false)}>
+              Apply
             </Button>
           </DialogFooter>
         </DialogContent>
