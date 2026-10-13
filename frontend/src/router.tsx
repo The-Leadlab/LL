@@ -4,6 +4,7 @@ import { IntakeSelectPage } from './pages/IntakeSelectPage'
 import { IntakeFormPage } from './pages/IntakeFormPage'
 import { SignIn } from './pages/SignIn'
 import { SignUp } from './pages/SignUp'
+import { VerifyEmail } from './pages/VerifyEmail'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { ResetPassword } from './pages/ResetPassword'
 import { Legal } from './pages/Legal'
@@ -78,6 +79,10 @@ export const router = createBrowserRouter([
   {
     path: '/signup',
     element: <SignUp />,
+  },
+  {
+    path: '/verify-email',
+    element: <VerifyEmail />,
   },
   {
     path: '/forgot-password',

@@ -476,34 +476,34 @@ export function InvoiceMaker() {
       <div className="min-h-screen bg-gray-50">
         {/* Preview Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+            <div className="flex items-center gap-3 min-w-0">
               <Button
                 variant="outline"
                 onClick={() => setIsPreviewMode(false)}
                 className="flex items-center space-x-2"
               >
                 <X className="h-4 w-4" />
-                <span>Back to Edit</span>
+                <span className="hidden sm:inline">Back to Edit</span>
               </Button>
-              <h2 className="text-lg font-semibold text-gray-900">Invoice Preview</h2>
+              <h2 className="text-lg font-semibold text-gray-900 truncate">Invoice Preview</h2>
             </div>
             
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
               <Button
                 variant="outline"
                 onClick={generatePDF}
                 className="flex items-center space-x-2"
               >
                 <Download className="h-4 w-4" />
-                <span>Download PDF</span>
+                <span className="hidden sm:inline">Download PDF</span>
               </Button>
               <Button
                 onClick={sendInvoice}
                 className="flex items-center space-x-2"
               >
                 <Send className="h-4 w-4" />
-                <span>Send Invoice</span>
+                <span className="hidden sm:inline">Send Invoice</span>
               </Button>
             </div>
           </div>
@@ -518,25 +518,25 @@ export function InvoiceMaker() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <FileText className="h-8 w-8 text-blue-600" />
-          <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="flex items-center space-x-3 min-w-0">
+          <FileText className="h-8 w-8 shrink-0 text-blue-600" />
+          <div className="min-w-0">
             <h2 className="text-2xl font-bold text-gray-900">Invoice Maker</h2>
             <p className="text-gray-600">Create professional invoices for your clients</p>
           </div>
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
           <Button
             variant="outline"
             onClick={() => setInvoiceData({ ...initialInvoiceData, invoiceNumber: generateInvoiceNumber() })}
             className="flex items-center space-x-2"
           >
             <Plus className="h-4 w-4" />
-            <span>New Invoice</span>
+            <span className="hidden sm:inline">New Invoice</span>
           </Button>
           <Button
             variant="outline"
@@ -544,21 +544,21 @@ export function InvoiceMaker() {
             className="flex items-center space-x-2"
           >
             <Save className="h-4 w-4" />
-            <span>Save Draft</span>
+            <span className="hidden sm:inline">Save Draft</span>
           </Button>
           <Button
             onClick={() => setIsPreviewMode(true)}
             className="flex items-center space-x-2"
           >
             <Eye className="h-4 w-4" />
-            <span>Preview</span>
+            <span className="hidden sm:inline">Preview</span>
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Invoice Form */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 min-w-0">
           {/* Basic Invoice Details */}
           <Card>
             <CardHeader>
@@ -719,7 +719,7 @@ export function InvoiceMaker() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Quick select from leads */}
-              <div>
+              <div className="min-w-0 w-full">
                 <Label htmlFor="selectLead">Quick Select from Leads</Label>
                 <Select
                   value={selectedLead}
@@ -728,10 +728,10 @@ export function InvoiceMaker() {
                     populateFromLead(value);
                   }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full min-w-0">
                     <SelectValue placeholder="Select a lead to populate client info" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-w-[calc(100vw-2rem)]">
                     {(leads?.data?.results || []).map((lead: any) => (
                       <SelectItem key={lead.id} value={lead.id.toString()}>
                         {lead.first_name} {lead.last_name} - {lead.company || 'No Company'}

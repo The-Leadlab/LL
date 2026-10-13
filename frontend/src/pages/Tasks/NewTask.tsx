@@ -22,6 +22,13 @@ import tasksAPI, { TaskPriority, TaskStatus } from '@/services/tasks';
 import leadsAPI, { Lead } from '@/services/api/leads';
 import usersAPI, { User } from '@/services/api/users';
 import api from '@/services/axios';
+import {
+  displayUserInitials,
+  displayUserName,
+  extractUserList,
+  filterAssigneeUsers,
+  normalizeAssigneeUsers,
+} from '@/utils/assigneeUsers';
 
 interface NewTaskForm {
   title: string;
@@ -96,12 +103,7 @@ export const NewTaskPage = () => {
           organization_id: currentUser.organization_id
         });
 
-        if (!response || !response.items) {
-          console.warn('No data or items in response');
-          return [];
-        }
-
-        return response.items.filter((user: User) => user.is_active);
+        return normalizeAssigneeUsers(extractUserList(response), currentUser);
       } catch (error: any) {
         console.error('Error fetching organization users:', error);
         throw new Error(error.message || 'Failed to fetch organization users');
@@ -111,24 +113,19 @@ export const NewTaskPage = () => {
   });
 
   // Filter users based on search
-  const filteredUsers = useMemo(() => {
-    if (!usersData) return [];
-    
-    
-    return usersData.filter((user: User) => {
-      // Check if user has required fields
-      if (!user || !user.first_name || !user.last_name) {
-        console.warn('Skipping invalid user:', user);
-        return false;
-      }
-      
-      // Filter by search term if provided
-      if (!userSearchTerm) return true;
-      
-      const userFullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-      return userFullName.includes(userSearchTerm.toLowerCase());
-    });
-  }, [usersData, userSearchTerm]) || [];
+  const filteredUsers = useMemo(
+    () => filterAssigneeUsers(usersData || [], userSearchTerm),
+    [usersData, userSearchTerm],
+  );
+
+  useEffect(() => {
+    if (selectedUser || !currentUser) return;
+    const self = (usersData || []).find((user) => Number(user.id) === Number(currentUser.id));
+    if (self) {
+      setSelectedUser(self as User);
+      setValue('assigned_to_id', self.id);
+    }
+  }, [currentUser, selectedUser, setValue, usersData]);
 
   // User selection component
   const renderUserSelect = () => (
@@ -153,10 +150,10 @@ export const NewTaskPage = () => {
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center">
                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-2">
-                    {selectedUser.first_name[0]}{selectedUser.last_name[0]}
+                    {displayUserInitials(selectedUser)}
                   </div>
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">{selectedUser.first_name} {selectedUser.last_name}</span>
+                  <div className="flex flex-col items-start min-w-0">
+                    <span className="font-medium truncate">{displayUserName(selectedUser)}</span>
                     {selectedUser.job_title && (
                       <span className="text-xs text-gray-500">{selectedUser.job_title}</span>
                     )}
@@ -232,10 +229,10 @@ export const NewTaskPage = () => {
                 >
                   <div className="flex items-center w-full">
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-2">
-                      {user.first_name[0]}{user.last_name[0]}
+                      {displayUserInitials(user)}
                     </div>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{user.first_name} {user.last_name}</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-medium truncate">{displayUserName(user)}</span>
                       {user.job_title && (
                         <span className="text-xs text-gray-500">{user.job_title}</span>
                       )}
@@ -343,7 +340,7 @@ export const NewTaskPage = () => {
         priority: data.priority,
         status: data.status,
         organization_id: currentUser.organization_id,
-        assigned_to_id: data.assigned_to_id,
+        assigned_to_id: data.assigned_to_id || Number(currentUser.id),
         lead_id: data.lead_id,
       });
       
@@ -358,7 +355,7 @@ export const NewTaskPage = () => {
   };
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
+    <div className="p-4 max-w-4xl mx-auto min-w-0 overflow-x-hidden">
       <div className="flex items-center mb-6">
         <Button variant="ghost" onClick={() => navigate('/tasks')} className="mr-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -406,7 +403,7 @@ export const NewTaskPage = () => {
         </div>
 
         {/* Priority & Status */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
           <div className="space-y-2">
             <label htmlFor="priority" className="text-sm font-medium">Priority</label>
             <Select

@@ -109,6 +109,8 @@ class RegisterInput(BaseModel):
     first_name: str
     last_name: str
     company: Optional[str] = None
+    website: Optional[str] = None  # honeypot; bots fill this, humans never see it
+    cf_turnstile_response: Optional[str] = None
 
 class ChangePasswordInput(BaseModel):
     current_password: str
@@ -202,7 +204,8 @@ def google_auth_callback(
                 last_name=last,
                 organization_id=org.id,
                 is_active=True,
-                is_admin=True,
+                is_admin=False,
+                is_superuser=False,
             ),
         )
 
@@ -337,6 +340,7 @@ def google_auth_callback(
 @router.post("/register", response_model=schemas.User)
 async def register(
     *,
+    request: Request,
     db: Session = Depends(deps.get_db),
     background_tasks: BackgroundTasks,
     register_in: RegisterInput,
@@ -344,6 +348,18 @@ async def register(
     """
     Register new user with a new organization
     """
+    from app.core.signup_protection import (
+        check_register_rate_limit,
+        client_ip,
+        reject_honeypot,
+        verify_turnstile_token,
+    )
+
+    ip = client_ip(request)
+    reject_honeypot(register_in.website)
+    check_register_rate_limit(ip)
+    verify_turnstile_token(register_in.cf_turnstile_response, ip)
+
     try:
         # Check if user already exists
         user = crud.user.get_by_email(db, email=register_in.email)
@@ -357,7 +373,7 @@ async def register(
         org_name = register_in.company or f"{register_in.first_name}'s Organization"
         organization = crud.organization.create_with_owner(db, name=org_name)
 
-        # Create new user
+        # Org owner is a member/manager of their own workspace, not a platform admin.
         user_in = schemas.UserCreate(
             email=register_in.email,
             password=register_in.password,
@@ -365,17 +381,25 @@ async def register(
             last_name=register_in.last_name,
             organization_id=organization.id,
             is_active=True,
-            is_admin=True  # First user of organization is admin
+            is_admin=False,
+            is_superuser=False,
         )
         user = crud.user.create(db, obj_in=user_in)
         
-        # Send welcome email in background
         login_link = f"{settings.FRONTEND_URL}/signin"
         background_tasks.add_task(
             email_sender.send_welcome_email,
             user.email,
             user.first_name,
             login_link
+        )
+        verification_token = generate_email_verification_token(user.email)
+        verification_link = f"{settings.FRONTEND_URL}/verify-email?token={verification_token}"
+        background_tasks.add_task(
+            email_sender.send_email_verification,
+            user.email,
+            user.first_name or "there",
+            verification_link,
         )
         
         return User.model_validate(user)
@@ -958,8 +982,11 @@ async def verify_email(
                 detail="User not found"
             )
         
-        # Mark user as verified (you may want to add an email_verified field to User model)
-        # For now, we'll just return success
+        user.is_active = True
+        if hasattr(user, "updated_at"):
+            user.updated_at = datetime.utcnow()
+        db.add(user)
+        db.commit()
         
         return {"message": "Email verified successfully"}
     

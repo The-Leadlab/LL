@@ -276,6 +276,14 @@ export const usersAPI = {
     }
   },
 
+  moderateAccounts: async (data: {
+    user_ids: number[];
+    action: 'deactivate' | 'delete';
+    confirm: boolean;
+  }): Promise<AxiosResponse<{ success: boolean; message: string; affected: number; skipped: number }>> => {
+    return api.post('/users/actions/moderate-accounts', data);
+  },
+
   me: async (): Promise<AxiosResponse<User>> => {
     return api.get('/users/me');
   },

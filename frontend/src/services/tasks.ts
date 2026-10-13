@@ -155,7 +155,11 @@ export const createTask = async (data: TaskCreateInput): Promise<Task> => {
     assigned_to_id: data.assigned_to_id ?? undefined,
     lead_id: data.lead_id ?? undefined,
   });
-  return response.data;
+  const created = response.data;
+  if (!created || typeof created.id !== 'number' || created.id <= 0) {
+    throw new Error('Task was not created. Please try again.');
+  }
+  return created;
 };
 
 export const updateTask = async (id: number | string, data: TaskUpdateInput): Promise<Task> => {

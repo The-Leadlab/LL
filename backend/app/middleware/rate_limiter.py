@@ -8,6 +8,7 @@ class RateLimiter:
     def __init__(self):
         self.cache = MySQLCache()
         self.rate_limits = {
+            "/api/v1/auth/register": 5,  # signup is tighter than general auth
             "/api/v1/leads/": 100,     # 100 request/minute
             "/api/v1/auth/": 20,       # 20 request/minute
             "/api/v1/ml/": 50,         # 50 request/minute

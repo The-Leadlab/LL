@@ -128,6 +128,9 @@ class Settings(BaseSettings):
     # Email Token Configuration
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = Field(default=1, description="Password reset token expiry in hours")
     EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS: int = Field(default=24, description="Email verification token expiry in hours")
+
+    # Optional Cloudflare Turnstile (ignored when unset)
+    TURNSTILE_SECRET_KEY: Optional[str] = Field(default=None, description="Cloudflare Turnstile secret; optional")
     
     # File upload settings
     UPLOAD_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")

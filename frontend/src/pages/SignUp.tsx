@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { PublicHeader } from '../components/layout/PublicHeader'
 import api from '../services/axios'
 import { motion } from 'framer-motion'
 import { Mail, User, Briefcase, Lock, Building, Eye, EyeOff } from 'lucide-react'
+
+const TURNSTILE_SITE_KEY = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) || ''
 
 interface SignUpForm {
   email: string
@@ -34,6 +36,21 @@ export function SignUp() {
     is_active: true,
     is_admin: false
   })
+  const [honeypot, setHoneypot] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState('')
+
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY) return
+    const existing = document.querySelector('script[data-turnstile="true"]')
+    if (existing) return
+    const script = document.createElement('script')
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+    script.async = true
+    script.defer = true
+    script.setAttribute('data-turnstile', 'true')
+    document.head.appendChild(script)
+    ;(window as any).onLeadlabTurnstile = (token: string) => setTurnstileToken(token)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,10 +72,13 @@ export function SignUp() {
     setIsLoading(true)
 
     try {
-      // Register isteği
-      await api.post('/auth/register', formData)
+      await api.post('/auth/register', {
+        ...formData,
+        website: honeypot,
+        cf_turnstile_response: turnstileToken || undefined,
+      })
       
-      toast.success('Successfully signed up! Please sign in.')
+      toast.success('Account created. Check your email to verify, then sign in.')
       navigate('/signin')
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to sign up')
@@ -96,7 +116,19 @@ export function SignUp() {
               </p>
             </motion.div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="relative space-y-6">
+              <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
+                <label htmlFor="website">Website</label>
+                <input
+                  id="website"
+                  name="website"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
               <div className="space-y-4 mb-6">
                 <div>
                   <label
@@ -296,6 +328,13 @@ export function SignUp() {
                 </div>
               </div>
 
+              {TURNSTILE_SITE_KEY && (
+                <div
+                  className="cf-turnstile"
+                  data-sitekey={TURNSTILE_SITE_KEY}
+                  data-callback="onLeadlabTurnstile"
+                />
+              )}
               <div>
                 <button
                   type="submit"

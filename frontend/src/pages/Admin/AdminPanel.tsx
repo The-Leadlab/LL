@@ -73,7 +73,7 @@ export function AdminPanel() {
   const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component || tabs[0].component;
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6 min-w-0 overflow-x-hidden">
       <h1 className="text-2xl font-bold mb-6">Admin Panel</h1>
       
       {/* Tabs */}

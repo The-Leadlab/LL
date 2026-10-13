@@ -144,7 +144,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             first_name=obj_in.first_name,
             last_name=obj_in.last_name,
             is_active=obj_in.is_active if obj_in.is_active is not None else True,
-            is_superuser=bool(obj_in.is_superuser) or bool(payload.get("is_admin")),
+            is_superuser=bool(obj_in.is_superuser),
             role=role,
             created_at=now,
             updated_at=now,
