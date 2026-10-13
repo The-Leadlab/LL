@@ -70,7 +70,7 @@ export function ModernSettings() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-8 overflow-x-hidden">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">
@@ -81,9 +81,9 @@ export function ModernSettings() {
         </p>
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 min-w-0">
         {/* Sidebar Tabs */}
-        <div className="col-span-3">
+        <div className="md:col-span-3 min-w-0">
           <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700 p-2">
             <nav className="space-y-1">
               {visibleTabs.map((tab) => {
@@ -102,7 +102,7 @@ export function ModernSettings() {
                     }`}
                   >
                     <Icon className="w-5 h-5" />
-                    <span className="font-medium">{tab.name}</span>
+                    <span className="font-medium truncate">{tab.name}</span>
                   </button>
                 );
               })}
@@ -111,7 +111,7 @@ export function ModernSettings() {
         </div>
 
         {/* Content Area */}
-        <div className="col-span-9">
+        <div className="md:col-span-9 min-w-0">
           <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700">
             {activeTab === 'profile' && <ProfileSettings />}
             {activeTab === 'notifications' && <NotificationSettings />}
@@ -245,7 +245,7 @@ function ProfileSettings() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8 min-w-0">
       <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
         Profile Settings
       </h2>
@@ -256,7 +256,7 @@ function ProfileSettings() {
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
             Profile Photo
           </label>
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
             <UserAvatar
               user={user}
               photoUrl={avatarObjectUrl}
@@ -288,7 +288,7 @@ function ProfileSettings() {
         </div>
 
         {/* Name Fields */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
               First Name
@@ -355,7 +355,7 @@ function ProfileSettings() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end space-x-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
           <button
             type="button"
             onClick={handleCancel}

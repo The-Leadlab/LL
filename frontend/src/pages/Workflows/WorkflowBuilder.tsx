@@ -17,6 +17,8 @@ import {
   PenSquare,
   GitBranch,
   Unlink,
+  Keyboard,
+  Layers,
 } from 'lucide-react';
 import { bezierPath, deriveTriggerType, migrateLegacyFlow } from './mindMapUtils';
 import { MindMapFormattedText, toggleMindMapWrap } from './mindMapTextFormat';
@@ -92,6 +94,10 @@ const DEFAULT_TEMPLATES: MapTemplate[] = [
   },
 ];
 
+function touchDistance(a: React.Touch, b: React.Touch): number {
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+}
+
 function parseApiError(err: unknown): string {
   if (err && typeof err === 'object' && 'response' in err) {
     const data = (err as { response?: { data?: { detail?: unknown } } }).response?.data;
@@ -133,6 +139,10 @@ const WorkflowBuilder: React.FC = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState('brainstorm');
   const [customTemplates, setCustomTemplates] = useState<MapTemplate[]>([]);
   const [lastCanvasClick, setLastCanvasClick] = useState<{ x: number; y: number } | null>(null);
+  const [showMobilePalette, setShowMobilePalette] = useState(false);
+  const [showMobileShortcuts, setShowMobileShortcuts] = useState(false);
+  const pinchRef = useRef<{ distance: number; zoom: number } | null>(null);
+  const touchPanRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
 
   const allTemplates = useMemo(() => [...DEFAULT_TEMPLATES, ...customTemplates], [customTemplates]);
   const selectedNode = useMemo(() => nodes.find((n) => n.id === selectedNodeId) || null, [nodes, selectedNodeId]);
@@ -418,22 +428,44 @@ const WorkflowBuilder: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-neutral-50">
-      <div className="bg-white border-b border-neutral-200 px-5 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <Button variant="ghost" onClick={() => navigate('/workflows')}>
+    <div className="h-screen flex flex-col bg-neutral-50 overflow-x-hidden">
+      <div className="bg-white border-b border-neutral-200 px-3 sm:px-5 py-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <Button variant="ghost" onClick={() => navigate('/workflows')} className="shrink-0">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
-            <Input value={name} onChange={(e) => setName(e.target.value)} className="text-xl font-semibold border-none shadow-none min-w-[260px]" />
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} className="border-none shadow-none text-sm text-neutral-500 min-w-[280px]" placeholder="Describe this map..." />
+            <Input value={name} onChange={(e) => setName(e.target.value)} className="text-xl font-semibold border-none shadow-none min-w-0 flex-1" />
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} className="hidden md:block border-none shadow-none text-sm text-neutral-500 min-w-0 flex-1" placeholder="Describe this map..." />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <Button
+              variant="outline"
+              className="md:hidden"
+              onClick={() => {
+                setShowMobilePalette((open) => !open);
+                setShowMobileShortcuts(false);
+              }}
+            >
+              <Layers className="h-4 w-4 mr-2" />
+              Blocks
+            </Button>
+            <Button
+              variant="outline"
+              className="md:hidden"
+              onClick={() => {
+                setShowMobileShortcuts((open) => !open);
+                setShowMobilePalette(false);
+              }}
+            >
+              <Keyboard className="h-4 w-4 mr-2" />
+              Shortcuts
+            </Button>
             <Badge variant="secondary">Mind Map Mode</Badge>
             <Button variant="outline" onClick={saveCurrentAsTemplate}>
               <Copy className="h-4 w-4 mr-2" />
-              Save as Template
+              <span className="hidden sm:inline">Save as Template</span>
             </Button>
             <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
@@ -443,10 +475,10 @@ const WorkflowBuilder: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        <aside className="w-80 border-r border-neutral-200 bg-white p-4 overflow-y-auto space-y-4">
+      <div className="flex-1 flex overflow-hidden relative min-w-0">
+        <aside className={`${showMobilePalette ? 'absolute inset-y-0 left-0 z-20 w-[min(20rem,100%)] shadow-xl' : 'hidden'} md:static md:block md:shadow-none w-80 border-r border-neutral-200 bg-white p-4 overflow-y-auto space-y-4`}>
           <h3 className="text-sm font-semibold text-neutral-700">Mind Map Blocks</h3>
-          <div className="rounded-md bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-800">
+          <div className="hidden md:block rounded-md bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-800">
             Drag maps freely, double-click text to edit, drag from bottom handle to another node to connect.
           </div>
           <div>
@@ -504,7 +536,7 @@ const WorkflowBuilder: React.FC = () => {
 
         <div
           ref={canvasRef}
-          className="flex-1 relative overflow-hidden bg-[linear-gradient(rgba(0,0,0,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px)] bg-[size:20px_20px]"
+          className="flex-1 relative overflow-hidden min-w-0 touch-none bg-[linear-gradient(rgba(0,0,0,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px)] bg-[size:20px_20px]"
           onContextMenu={(e) => {
             e.preventDefault();
             setContextMenu({ x: e.clientX, y: e.clientY, nodeId: null });
@@ -570,6 +602,41 @@ const WorkflowBuilder: React.FC = () => {
             e.preventDefault();
             const delta = e.deltaY > 0 ? -0.08 : 0.08;
             setZoom((z) => Math.min(2.3, Math.max(0.35, z + delta)));
+          }}
+          onTouchStart={(e) => {
+            if (e.touches.length === 2) {
+              pinchRef.current = { distance: touchDistance(e.touches[0], e.touches[1]), zoom };
+              touchPanRef.current = null;
+              setPanning(false);
+              return;
+            }
+            if (e.touches.length === 1 && !(e.target as HTMLElement).closest('[data-canvas-node="true"]')) {
+              const t = e.touches[0];
+              touchPanRef.current = { x: t.clientX, y: t.clientY, panX: pan.x, panY: pan.y };
+              setPanning(true);
+            }
+          }}
+          onTouchMove={(e) => {
+            if (e.touches.length === 2 && pinchRef.current) {
+              e.preventDefault();
+              const dist = touchDistance(e.touches[0], e.touches[1]);
+              const ratio = dist / Math.max(1, pinchRef.current.distance);
+              setZoom(Math.min(2.3, Math.max(0.35, pinchRef.current.zoom * ratio)));
+              return;
+            }
+            if (e.touches.length === 1 && touchPanRef.current) {
+              e.preventDefault();
+              const t = e.touches[0];
+              setPan({
+                x: touchPanRef.current.panX + (t.clientX - touchPanRef.current.x),
+                y: touchPanRef.current.panY + (t.clientY - touchPanRef.current.y),
+              });
+            }
+          }}
+          onTouchEnd={() => {
+            pinchRef.current = null;
+            touchPanRef.current = null;
+            setPanning(false);
           }}
         >
           <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0' }} className="absolute inset-0">
@@ -847,7 +914,7 @@ const WorkflowBuilder: React.FC = () => {
             </div>
           )}
           {/* Minimap */}
-          <div className="absolute right-4 bottom-4 w-52 h-36 rounded-lg border border-neutral-300 bg-white/95 backdrop-blur p-2">
+          <div className="hidden md:block absolute right-4 bottom-4 w-52 h-36 rounded-lg border border-neutral-300 bg-white/95 backdrop-blur p-2">
             <div className="text-[10px] text-neutral-500 mb-1">Minimap</div>
             <svg viewBox={`0 0 ${Math.max(1, mapBounds.maxX - mapBounds.minX)} ${Math.max(1, mapBounds.maxY - mapBounds.minY)}`} className="w-full h-[112px] rounded bg-neutral-50">
               {edges.map((edge) => {
@@ -875,7 +942,7 @@ const WorkflowBuilder: React.FC = () => {
           </div>
         </div>
 
-        <aside className="w-72 border-l border-neutral-200 bg-white p-4 overflow-y-auto">
+        <aside className={`${showMobileShortcuts ? 'absolute inset-y-0 right-0 z-20 w-[min(18rem,100%)] shadow-xl' : 'hidden'} md:static md:block md:shadow-none w-72 border-l border-neutral-200 bg-white p-4 overflow-y-auto`}>
           <h3 className="text-sm font-semibold mb-3">Map Controls</h3>
           <div className="space-y-2">
             <Button variant="outline" className="w-full justify-start" onClick={addChildNode} disabled={!selectedNode}>

@@ -1,4 +1,4 @@
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Literal
 from pathlib import Path
 import mimetypes
 from datetime import datetime
@@ -10,6 +10,7 @@ from app.api import deps
 from app.crud import crud_user
 from app.models.user import User as UserModel
 from app.schemas.user import User, UserCreate, UserUpdate, UserInDB, UserList, UserResponse
+from pydantic import BaseModel, Field
 from app.core.security import get_password_hash
 from app.core.config import settings
 from app.core.avatars import initials_avatar_svg
@@ -149,11 +150,12 @@ def get_users(
         UserResponse(
             id=int(user.id),
             email=str(user.email),
-            first_name=str(user.first_name),
-            last_name=str(user.last_name),
+            first_name=user.first_name,
+            last_name=user.last_name,
             is_active=bool(user.is_active),
             is_admin=bool(user.is_admin),
-            organization_id=int(user.organization_id)
+            organization_id=int(user.organization_id),
+            created_at=getattr(user, "created_at", None),
         ) for user in users
     ]
     
@@ -172,17 +174,12 @@ def get_users(
 def create_user(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: UserModel = Depends(deps.get_current_user),
+    current_user: UserModel = Depends(deps.get_current_admin_user),
     user_in: UserCreate,
 ) -> UserInDB:
     """
     Create new user.
     """
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=403,
-            detail="Not enough permissions to create users"
-        )
     
     user = crud_user.user.get_by_email(db, email=user_in.email)
     if user:
@@ -387,18 +384,13 @@ def get_user(
 def update_user(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: UserModel = Depends(deps.get_current_user),
+    current_user: UserModel = Depends(deps.get_current_admin_user),
     user_id: int,
     user_in: UserUpdate,
 ) -> UserInDB:
     """
     Update user.
     """
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=403,
-            detail="Not enough permissions to update users"
-        )
     
     user = crud_user.user.get(db, id=user_id)
     if not user:
@@ -436,18 +428,13 @@ def update_user(
 def patch_user(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: UserModel = Depends(deps.get_current_user),
+    current_user: UserModel = Depends(deps.get_current_admin_user),
     user_id: int,
     user_in: UserUpdate,
 ) -> UserInDB:
     """
     Partially update user.
     """
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=403,
-            detail="Not enough permissions to update users"
-        )
     
     user = crud_user.user.get(db, id=user_id)
     if not user:
@@ -486,17 +473,12 @@ def patch_user(
 def delete_user(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: UserModel = Depends(deps.get_current_user),
+    current_user: UserModel = Depends(deps.get_current_admin_user),
     user_id: int,
 ) -> UserInDB:
     """
     Delete user.
     """
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=403,
-            detail="Not enough permissions to delete users"
-        )
     
     user = crud_user.user.get(db, id=user_id)
     if not user:
@@ -515,20 +497,74 @@ def delete_user(
     return user
 
 
+PROTECTED_ADMIN_EMAIL = "ali@the-leadlab.com"
+
+
+class ModerateAccountsInput(BaseModel):
+    user_ids: List[int] = Field(default_factory=list)
+    action: Literal["deactivate", "delete"]
+    confirm: bool = False
+
+
+@router.post("/actions/moderate-accounts", response_model=dict)
+def moderate_accounts(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: UserModel = Depends(deps.get_current_admin_user),
+    body: ModerateAccountsInput,
+) -> Any:
+    """Deactivate or delete selected accounts. Requires explicit confirmation."""
+    if not body.confirm:
+        raise HTTPException(status_code=400, detail="Confirmation is required")
+    if not body.user_ids:
+        raise HTTPException(status_code=400, detail="Select at least one account")
+    if len(body.user_ids) > 200:
+        raise HTTPException(status_code=400, detail="Too many accounts in one request")
+
+    affected = 0
+    skipped = 0
+    for user_id in body.user_ids:
+        user = crud_user.user.get(db, id=user_id)
+        if not user:
+            skipped += 1
+            continue
+        email = (user.email or "").strip().lower()
+        if email == PROTECTED_ADMIN_EMAIL or int(user.id) == int(current_user.id):
+            skipped += 1
+            continue
+        if body.action == "deactivate":
+            user.is_active = False
+            db.add(user)
+            affected += 1
+        else:
+            crud_user.user.remove(db=db, id=user_id)
+            affected += 1
+    db.commit()
+    return {
+        "success": True,
+        "action": body.action,
+        "affected": affected,
+        "skipped": skipped,
+        "message": f"{body.action.title()}d {affected} account(s)",
+    }
+
+
 @router.post("/actions/deactivate-all-except-ali", response_model=dict)
 @router.post("/actions/delete-all-except-ali", response_model=dict)
 def delete_all_except_ali(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: UserModel = Depends(deps.get_current_user),
+    current_user: UserModel = Depends(deps.get_current_admin_user),
 ) -> Any:
     """
     Permanently delete every user except ali@the-leadlab.com (and their dependent rows).
+    Development only — this endpoint is disabled in production.
     """
-    if not current_user.is_admin:
+    env = (getattr(settings, "ENV", "") or "").lower()
+    if env not in ("development", "dev", "local", "test"):
         raise HTTPException(
             status_code=403,
-            detail="Not enough permissions to delete users",
+            detail="This debug action is disabled outside development",
         )
 
     from app.services.user_purge_service import hard_delete_all_except_ali

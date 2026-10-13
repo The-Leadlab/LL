@@ -13,6 +13,14 @@ import type { Task } from '@/services/tasks';
 import { toast } from 'react-hot-toast';
 import usersAPI, { User } from '@/services/api/users';
 import { openAttachmentInNewTab, taskAttachmentUrl } from '@/lib/apiAttachmentUrls';
+import { useAuthStore } from '@/store/auth';
+import {
+  displayUserInitials,
+  displayUserName,
+  extractUserList,
+  filterAssigneeUsers,
+  normalizeAssigneeUsers,
+} from '@/utils/assigneeUsers';
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -22,6 +30,7 @@ interface TaskDetailModalProps {
 
 export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps) {
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<Task>>({});
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -82,11 +91,11 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
 
   // Fetch users for assignment
   const { data: usersData, isLoading: isLoadingUsers, error: usersError } = useQuery({
-    queryKey: ['organization-users'],
+    queryKey: ['organization-users', currentUser?.id],
     queryFn: async () => {
       try {
         const response = await usersAPI.getAll();
-        return response.items || [];
+        return normalizeAssigneeUsers(extractUserList(response), currentUser);
       } catch (error: any) {
         console.error('Error fetching users:', error);
         throw new Error(error.message || 'Failed to fetch users');
@@ -95,11 +104,7 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
   });
 
   // Filter users based on search
-  const filteredUsers = usersData?.filter((user: User) => 
-    userSearchTerm ? 
-    `${user.first_name} ${user.last_name}`.toLowerCase().includes(userSearchTerm.toLowerCase()) :
-    true
-  ) || [];
+  const filteredUsers = filterAssigneeUsers(usersData || [], userSearchTerm);
 
   useEffect(() => {
     if (currentTask && !isEditing) {
@@ -331,10 +336,10 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
                             <div className="flex items-center justify-between w-full">
                               <div className="flex items-center">
                                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-2">
-                                  {selectedUser.first_name[0]}{selectedUser.last_name[0]}
+                                  {displayUserInitials(selectedUser)}
                                 </div>
-                                <div className="flex flex-col items-start">
-                                  <span className="font-medium">{selectedUser.first_name} {selectedUser.last_name}</span>
+                                <div className="flex flex-col items-start min-w-0">
+                                  <span className="font-medium truncate">{displayUserName(selectedUser)}</span>
                                   {selectedUser.job_title && (
                                     <span className="text-xs text-gray-500">{selectedUser.job_title}</span>
                                   )}
@@ -397,10 +402,10 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
                               >
                                 <div className="flex items-center w-full">
                                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-2">
-                                    {user.first_name[0]}{user.last_name[0]}
+                                    {displayUserInitials(user)}
                                   </div>
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{user.first_name} {user.last_name}</span>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="font-medium truncate">{displayUserName(user)}</span>
                                     {user.job_title && (
                                       <span className="text-xs text-gray-500">{user.job_title}</span>
                                     )}

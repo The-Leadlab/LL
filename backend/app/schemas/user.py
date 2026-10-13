@@ -64,14 +64,15 @@ class UserResponse(BaseModel):
     id: int
     email: str
     username: Optional[str] = None
-    first_name: str
-    last_name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     organization_id: int
     is_active: bool = True
     is_admin: bool = False
     organization_role: str = "member"  # viewer, member, manager
     job_title: Optional[str] = None
     last_login: Optional[datetime] = None
+    created_at: Optional[datetime] = None
 
     # LinkedIn Integration fields
     linkedin_profile_id: Optional[str] = None

@@ -32,7 +32,7 @@ export function ModernTaskDetail() {
     );
   }
 
-  if (isError || !task) {
+  if (isError || !task || !task.id) {
     return (
       <div className="p-8">
         <p className="mb-4 text-red-600">Task not found or you don&apos;t have access.</p>

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.api import deps
-from app.crud import crud_task
+from app.crud import crud_task, crud_user
 from app.models.user import User
 from app.models.task import TaskStatus, TaskPriority
 from app.schemas.task import Task, TaskCreate, TaskUpdate, TaskList
@@ -77,9 +77,15 @@ def create_task(
     """
     Create a new task.
     """
-    # If user is not admin, ensure organization_id is set to current user's org
-    if not current_user.is_admin:
-        task_in.organization_id = current_user.organization_id
+    # Always scope new tasks to the caller's workspace. Client-supplied org ids
+    # previously created rows the creator could not read back.
+    task_in.organization_id = current_user.organization_id
+    if not task_in.assigned_to_id:
+        task_in.assigned_to_id = current_user.id
+    if task_in.assigned_to_id:
+        assignee = crud_user.user.get(db, id=task_in.assigned_to_id)
+        if not assignee or int(assignee.organization_id) != int(current_user.organization_id):
+            raise HTTPException(status_code=400, detail="Assignee must be a member of your organization")
     
     # Create the task
     task = crud_task.task.create(db, obj_in=task_in)

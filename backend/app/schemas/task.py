@@ -6,8 +6,8 @@ from app.models.task import TaskPriority, TaskStatus
 # Lead information schema
 class LeadInfo(BaseModel):
     id: int
-    first_name: str
-    last_name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     email: Optional[str] = None
     company: Optional[str] = None
 
@@ -17,9 +17,9 @@ class LeadInfo(BaseModel):
 # User information schema
 class UserInfo(BaseModel):
     id: int
-    first_name: str
-    last_name: str
-    email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
     job_title: Optional[str] = None
 
     class Config:

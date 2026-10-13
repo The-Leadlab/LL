@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/auth';
 import { getApiOrigin } from '@/lib/apiOrigin';
 import { EMPTY_LEAD_LIST_PAGE } from '@/lib/emptyApiFallbacks';
+import { shouldFakeTaskError } from '@/utils/axiosErrorPolicy';
 
 // Get API URL from environment variables or use proxy in development
 const isDevelopment = import.meta.env.DEV;
@@ -155,12 +156,7 @@ api.interceptors.response.use(
         if (currentUrl.includes('/activities')) {
           return Promise.resolve({ data: { items: [] } });
         }
-        if (currentUrl.includes('/tasks')) {
-          if (currentUrl.match(/\/tasks\/\d+/)) {
-            // For individual task requests
-            return Promise.resolve({ data: {} });
-          }
-          // For task list requests
+        if (shouldFakeTaskError(currentUrl, originalRequest?.method)) {
           return Promise.resolve({ data: { items: [], total: 0 } });
         }
 
@@ -194,12 +190,7 @@ api.interceptors.response.use(
         if (currentUrl.includes('/tags')) {
           return Promise.resolve({ data: { items: [], total: 0 } });
         }
-        if (currentUrl.includes('/tasks')) {
-          if (currentUrl.match(/\/tasks\/\d+/)) {
-            // Task detayı isteği için daha zengin bir varsayılan yanıt
-            return Promise.resolve({ data: taskDefaultResponses.single });
-          }
-          // Task listesi için boş liste
+        if (shouldFakeTaskError(currentUrl, originalRequest?.method)) {
           return Promise.resolve({ data: taskDefaultResponses.list });
         }
         if (currentUrl.includes('/organization-settings')) {

@@ -29,6 +29,8 @@ export function UserManagement() {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<any>(null);
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
+  const showDangerousDebug = import.meta.env.DEV;
   const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
   });
@@ -129,6 +131,19 @@ export function UserManagement() {
     },
   });
 
+  const moderateMutation = useMutation({
+    mutationFn: ({ action, user_ids }: { action: 'deactivate' | 'delete'; user_ids: number[] }) =>
+      usersAPI.moderateAccounts({ user_ids, action, confirm: true }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setSelectedIds([]);
+      toast.success(res.data?.message || 'Accounts updated');
+    },
+    onError: () => {
+      toast.error('Could not update the selected accounts');
+    },
+  });
+
   const onSubmit = async (data: UserFormData) => {
     try {
       if (editingUser) {
@@ -190,22 +205,72 @@ export function UserManagement() {
     }
   };
 
+  const toggleSelected = (userId: number, checked: boolean) => {
+    setSelectedIds((prev) => (checked ? [...new Set([...prev, userId])] : prev.filter((id) => id !== userId)));
+  };
+
+  const suspiciousUsers = filteredUsers.filter((user) => {
+    const email = (user.email || '').toLowerCase();
+    const hasName = Boolean((user.first_name || '').trim() || (user.last_name || '').trim());
+    return !user.is_active || !hasName || /[a-z]{12,}@gmail\.com/.test(email);
+  });
+
+  const handleSelectSuspicious = () => {
+    setSelectedIds(suspiciousUsers.map((user) => user.id));
+  };
+
+  const handleBulkAction = (action: 'deactivate' | 'delete') => {
+    if (!selectedIds.length) {
+      toast.error('Select at least one account');
+      return;
+    }
+    const label = action === 'delete' ? 'permanently delete' : 'deactivate';
+    if (
+      window.confirm(
+        `This will ${label} ${selectedIds.length} selected account(s). Protected admin accounts are skipped. Continue?`
+      )
+    ) {
+      moderateMutation.mutate({ action, user_ids: selectedIds });
+    }
+  };
+
   if (isUsersLoading || isOrgsLoading) {
     return <div className="p-6">Loading...</div>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center gap-3">
-        <div className="flex-1 max-w-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center min-w-0">
+        <div className="flex-1 max-w-sm min-w-0">
           <Input
             placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full"
+            className="w-full min-w-0"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <Button variant="outline" size="sm" onClick={handleSelectSuspicious}>
+            Select suspicious
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleBulkAction('deactivate')}
+            disabled={!selectedIds.length || moderateMutation.isPending}
+          >
+            Deactivate selected
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-red-600 border-red-300 hover:bg-red-50"
+            onClick={() => handleBulkAction('delete')}
+            disabled={!selectedIds.length || moderateMutation.isPending}
+          >
+            Delete selected
+          </Button>
+          {showDangerousDebug && (
           <Button
             variant="outline"
             className="text-red-600 border-red-300 hover:bg-red-50"
@@ -214,6 +279,7 @@ export function UserManagement() {
           >
             {deactivateAllExceptAliMutation.isPending ? 'Deleting...' : 'Delete all except Ali'}
           </Button>
+          )}
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             if (!open) {
               setIsDialogOpen(false);
@@ -383,10 +449,20 @@ export function UserManagement() {
         </div>
       </div>
 
-      <div className="rounded-md border">
-        <table className="w-full">
+      <div className="rounded-md border overflow-x-auto min-w-0">
+        <table className="w-full min-w-[640px]">
           <thead>
             <tr className="border-b bg-gray-50">
+              <th className="py-3 px-4 text-left w-10">
+                <input
+                  type="checkbox"
+                  aria-label="Select all visible users"
+                  checked={filteredUsers.length > 0 && selectedIds.length === filteredUsers.length}
+                  onChange={(e) => {
+                    setSelectedIds(e.target.checked ? filteredUsers.map((user) => user.id) : []);
+                  }}
+                />
+              </th>
               <th className="py-3 px-4 text-left">Name</th>
               <th className="py-3 px-4 text-left">Email</th>
               <th className="py-3 px-4 text-left">Status</th>
@@ -402,6 +478,14 @@ export function UserManagement() {
               ) : null;
               return (
                 <tr key={user.id} className="border-b">
+                  <td className="py-3 px-4">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${user.email}`}
+                      checked={selectedIds.includes(user.id)}
+                      onChange={(e) => toggleSelected(user.id, e.target.checked)}
+                    />
+                  </td>
                   <td className="py-3 px-4">{user.first_name} {user.last_name}</td>
                   <td className="py-3 px-4">{user.email}</td>
                   <td className="py-3 px-4">
