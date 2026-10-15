@@ -165,8 +165,15 @@ const bottomNavigation: NavItem[] = [
   },
 ];
 
-export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
+export function ModernSidebar({
+  onNavigate,
+  forceExpanded = false,
+}: {
+  onNavigate?: () => void;
+  forceExpanded?: boolean;
+}) {
   const [collapsed, setCollapsed] = useState(false);
+  const collapsedEffective = forceExpanded ? false : collapsed;
   const [quickSearch, setQuickSearch] = useState('');
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const location = useLocation();
@@ -201,29 +208,29 @@ export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div
       className={`${
-        collapsed ? 'w-20' : 'w-64'
-      } bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 flex flex-col transition-all duration-300 ease-in-out`}
+        collapsedEffective ? 'w-20' : 'w-64'
+      } h-full bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 flex flex-col transition-all duration-300 ease-in-out`}
     >
       {/* Header */}
       <div className="h-16 flex items-center justify-between gap-1 px-3 border-b border-neutral-200 dark:border-neutral-800">
         <Link
           to="/dashboard"
-          className={`flex items-center min-w-0 ${collapsed ? 'justify-center flex-1' : 'flex-1'}`}
+          className={`flex items-center min-w-0 ${collapsedEffective ? 'justify-center flex-1' : 'flex-1'}`}
         >
           <img
             src="/images/leadlab-logo.png"
             alt="LeadLab"
             className={`object-contain dark:brightness-0 dark:invert ${
-              collapsed ? 'h-9 w-12' : 'h-11 w-auto max-w-[148px]'
+              collapsedEffective ? 'h-9 w-12' : 'h-11 w-auto max-w-[148px]'
             }`}
           />
         </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors shrink-0"
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="hidden p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors shrink-0 md:inline-flex"
+          aria-label={collapsedEffective ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? (
+          {collapsedEffective ? (
             <ChevronRight className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
           ) : (
             <ChevronLeft className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
@@ -232,7 +239,7 @@ export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Search */}
-      {!collapsed && (
+      {!collapsedEffective && (
         <div className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -275,15 +282,15 @@ export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <div className="flex items-center space-x-3">
                       <Icon className="w-5 h-5" />
-                      {!collapsed && <span className="font-medium text-sm">{item.name}</span>}
+                      {!collapsedEffective && <span className="font-medium text-sm">{item.name}</span>}
                     </div>
-                    {!collapsed && (
+                    {!collapsedEffective && (
                       <ChevronRight
                         className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                       />
                     )}
                   </button>
-                  {isExpanded && !collapsed && (
+                  {isExpanded && !collapsedEffective && (
                     <div className="mt-1 ml-4 space-y-1">
                       {item.children?.map((child) => {
                         const ChildIcon = child.icon;
@@ -319,9 +326,9 @@ export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
                 >
                   <div className="flex items-center space-x-3">
                     <Icon className="w-5 h-5" />
-                    {!collapsed && <span className="font-medium text-sm">{item.name}</span>}
+                    {!collapsedEffective && <span className="font-medium text-sm">{item.name}</span>}
                   </div>
-                  {!collapsed && item.badge && (
+                  {!collapsedEffective && item.badge && (
                     <span className="px-2 py-0.5 bg-primary-600 text-white text-xs font-medium rounded-full">
                       {item.badge}
                     </span>
@@ -351,14 +358,14 @@ export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
               }`}
             >
               <Icon className="w-5 h-5" />
-              {!collapsed && <span className="font-medium text-sm">{item.name}</span>}
+              {!collapsedEffective && <span className="font-medium text-sm">{item.name}</span>}
             </Link>
           );
         })}
       </div>
 
       {/* User Profile */}
-      {!collapsed && (
+      {!collapsedEffective && (
         <div className="p-4 border-t border-neutral-200 dark:border-neutral-800">
           <div className="flex items-center space-x-3 p-3 rounded-lg">
             <button

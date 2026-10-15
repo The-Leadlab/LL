@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   User,
   Bell,
@@ -46,26 +46,31 @@ const tabs = [
   { id: 'integrations' as Tab, name: 'Integrations', icon: Zap },
 ];
 
+const TAB_IDS = new Set(tabs.map((t) => t.id));
+
+function tabFromPath(pathname: string, param?: string): Tab {
+  const fromParam = param && TAB_IDS.has(param as Tab) ? (param as Tab) : null;
+  if (fromParam) return fromParam;
+  const segment = pathname.replace(/^\/settings\/?/, '').split('/')[0];
+  return TAB_IDS.has(segment as Tab) ? (segment as Tab) : 'profile';
+}
+
 export function ModernSettings() {
   const { tab } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<Tab>('profile');
 
   const adminOnlyTabs = new Set<Tab>(['company', 'billing', 'team']);
   const visibleTabs = user?.is_admin
     ? tabs
     : tabs.filter((t) => !adminOnlyTabs.has(t.id));
 
-  useEffect(() => {
-    const allowedIds = new Set(visibleTabs.map((t) => t.id));
-    if (tab && allowedIds.has(tab as Tab)) {
-      setActiveTab(tab as Tab);
-    }
-  }, [tab, visibleTabs]);
+  const allowedIds = new Set(visibleTabs.map((t) => t.id));
+  const requestedTab = tabFromPath(location.pathname, tab);
+  const activeTab = allowedIds.has(requestedTab) ? requestedTab : 'profile';
 
   const goToTab = (id: Tab) => {
-    setActiveTab(id);
     navigate(`/settings/${id}`);
   };
 

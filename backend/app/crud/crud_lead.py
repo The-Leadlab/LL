@@ -36,6 +36,38 @@ def _lead_dict_for_orm(data: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def lead_search_tokens(search: Optional[str]) -> List[str]:
+    """Split a user query into tokens so 'QA TE' matches first_name QA + last_name TEST."""
+    if not search:
+        return []
+    return [token for token in search.strip().split() if token]
+
+
+def lead_search_filter(search: Optional[str]):
+    """AND across tokens; OR across name/email/company and concatenated full name."""
+    tokens = lead_search_tokens(search)
+    if not tokens:
+        return None
+    full_name = func.concat(
+        func.coalesce(Lead.first_name, ""),
+        " ",
+        func.coalesce(Lead.last_name, ""),
+    )
+    clauses = []
+    for token in tokens:
+        pattern = f"%{token}%"
+        clauses.append(
+            or_(
+                Lead.first_name.ilike(pattern),
+                Lead.last_name.ilike(pattern),
+                Lead.email.ilike(pattern),
+                Lead.company.ilike(pattern),
+                full_name.ilike(pattern),
+            )
+        )
+    return and_(*clauses) if len(clauses) > 1 else clauses[0]
+
+
 class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
     def get(self, db: Session, id: int) -> Optional[Lead]:
         """Get a lead by ID"""
@@ -89,15 +121,9 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
         if stage_id is not None and stage_id > 0:
             query = query.filter(Lead.stage_id == stage_id)
 
-        # Add search filter if provided
-        if search:
-            search_filter = or_(
-                Lead.first_name.ilike(f"%{search}%"),
-                Lead.last_name.ilike(f"%{search}%"),
-                Lead.email.ilike(f"%{search}%"),
-                Lead.company.ilike(f"%{search}%")
-            )
-            query = query.filter(search_filter)
+        search_clause = lead_search_filter(search)
+        if search_clause is not None:
+            query = query.filter(search_clause)
 
         # Add custom filters
         if filters:
@@ -125,13 +151,20 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
             order_by = desc(sort_expr) if sort_desc else asc(sort_expr)
             query = query.order_by(order_by)
 
-        # Add pagination
-        total = query.count()
-        logger.info(f"Total leads before pagination: {total}")
-        logger.info(f"Returning {limit} leads after pagination")
-
-        items = query.offset(skip).limit(limit).all()
-        return items, total
+        # One round-trip: page rows + window count (avoids a second ILIKE scan).
+        try:
+            counted = query.add_columns(func.count().over().label("_total"))
+            page = counted.offset(skip).limit(limit).all()
+            if not page:
+                return [], 0
+            items = [row[0] for row in page]
+            total = int(page[0][1] or 0)
+            return items, total
+        except Exception as exc:
+            logger.warning("Window count failed, falling back to query.count(): %s", exc)
+            total = query.count()
+            items = query.offset(skip).limit(limit).all()
+            return items, total
 
     def count(
         self,
@@ -151,14 +184,9 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
         if organization_id is not None:
             query = query.filter(Lead.organization_id == organization_id)
 
-        if search:
-            search_filter = or_(
-                Lead.first_name.ilike(f"%{search}%"),
-                Lead.last_name.ilike(f"%{search}%"),
-                Lead.email.ilike(f"%{search}%"),
-                Lead.company.ilike(f"%{search}%")
-            )
-            query = query.filter(search_filter)
+        search_clause = lead_search_filter(search)
+        if search_clause is not None:
+            query = query.filter(search_clause)
 
         if stage_id is not None:
             query = query.filter(Lead.stage_id == stage_id)
@@ -207,19 +235,11 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
         """
         Search leads by name, company, or email.
         """
-        query = (
-            db.query(self.model)
-            .filter(self.model.organization_id == organization_id)
-            .filter(
-                or_(
-                    self.model.first_name.ilike(f"%{search_term}%"),
-                    self.model.last_name.ilike(f"%{search_term}%"),
-                    self.model.company.ilike(f"%{search_term}%"),
-                    self.model.email.ilike(f"%{search_term}%"),
-                )
-            )
-            .order_by(self.model.created_at.desc())
-        )
+        query = db.query(self.model).filter(self.model.organization_id == organization_id)
+        clause = lead_search_filter(search_term)
+        if clause is not None:
+            query = query.filter(clause)
+        query = query.order_by(self.model.created_at.desc())
 
         if skip:
             query = query.offset(skip)
@@ -238,19 +258,13 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
         """
         Count total number of leads matching the search criteria.
         """
-        return (
-            db.query(func.count(self.model.id))
-            .filter(self.model.organization_id == organization_id)
-            .filter(
-                or_(
-                    self.model.first_name.ilike(f"%{search_term}%"),
-                    self.model.last_name.ilike(f"%{search_term}%"),
-                    self.model.company.ilike(f"%{search_term}%"),
-                    self.model.email.ilike(f"%{search_term}%"),
-                )
-            )
-            .scalar()
+        query = db.query(func.count(self.model.id)).filter(
+            self.model.organization_id == organization_id
         )
+        clause = lead_search_filter(search_term)
+        if clause is not None:
+            query = query.filter(clause)
+        return query.scalar()
 
     def check_duplicate(
         self,

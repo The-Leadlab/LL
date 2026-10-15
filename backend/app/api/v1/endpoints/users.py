@@ -457,17 +457,21 @@ def get_user(
     """
     Get user by ID.
     """
-    if not current_user.is_admin and current_user.id != user_id:
-        raise HTTPException(
-            status_code=403,
-            detail="Not enough permissions"
-        )
-    
     user = crud_user.user.get(db, id=user_id)
     if not user:
         raise HTTPException(
             status_code=404,
             detail="User not found"
+        )
+    same_org = (
+        getattr(current_user, "organization_id", None)
+        and getattr(user, "organization_id", None)
+        and int(current_user.organization_id) == int(user.organization_id)
+    )
+    if not current_user.is_admin and current_user.id != user_id and not same_org:
+        raise HTTPException(
+            status_code=403,
+            detail="Not enough permissions"
         )
     return user
 

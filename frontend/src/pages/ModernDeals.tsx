@@ -368,9 +368,9 @@ export function ModernDeals() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
+    <div className="min-h-screen overflow-x-hidden bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-8">
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">Deals</h1>
             <p className="text-neutral-600 dark:text-neutral-400">
@@ -420,9 +420,9 @@ export function ModernDeals() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 lg:grid-cols-3 xl:grid-cols-5">
           {dealsByStage.map((stage) => (
-            <div key={stage.id} className="flex flex-col">
+            <div key={stage.id} className="flex w-[min(100%,18rem)] flex-shrink-0 flex-col md:w-auto">
               <div className="bg-white dark:bg-neutral-800 rounded-t-xl p-4 border-x border-t border-neutral-200 dark:border-neutral-700">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">

@@ -6,7 +6,7 @@ services:
     plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn main:app -k uvicorn.workers.UvicornWorker -w 1 --bind 0.0.0.0:$PORT
+    startCommand: python -c "from app.db.session import engine; from app.core.task_attachment_schema import ensure_task_attachments_schema; ensure_task_attachments_schema(engine)" && gunicorn main:app -k uvicorn.workers.UvicornWorker -w 1 --bind 0.0.0.0:$PORT
     healthCheckPath: /health
     autoDeploy: true
     envVars:

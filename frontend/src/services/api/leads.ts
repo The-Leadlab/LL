@@ -238,8 +238,10 @@ export const leadsAPI = {
     client_id?: number;
     source?: string;
     sector?: string;
+    signal?: AbortSignal;
   }): Promise<any> => {
-    return api.get('/leads', { params });
+    const { signal, ...query } = params || {};
+    return api.get('/leads', { params: query, signal });
   },
 
   getLeads: async (params?: {

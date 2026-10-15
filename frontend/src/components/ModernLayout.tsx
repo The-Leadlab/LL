@@ -59,11 +59,12 @@ export function ModernLayout() {
       )}
 
       <div
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(100vw,18rem)] flex-shrink-0 transition-transform duration-200 ease-out md:static md:inset-auto md:z-auto md:w-auto md:translate-x-0 ${
-          mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0`}
+        className={`fixed top-0 bottom-0 z-50 w-64 max-w-[calc(100vw-env(safe-area-inset-left))] flex-shrink-0 overflow-y-auto overflow-x-hidden bg-white shadow-xl transition-[left] duration-200 ease-out dark:bg-neutral-900 md:static md:left-auto md:w-auto md:max-w-none md:overflow-visible md:shadow-none ${
+          mobileNavOpen ? 'left-0' : '-left-64'
+        } md:left-auto`}
+        style={{ paddingLeft: 'env(safe-area-inset-left)' }}
       >
-        <ModernSidebar onNavigate={closeMobile} />
+        <ModernSidebar onNavigate={closeMobile} forceExpanded />
       </div>
 
       <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto pt-14 md:pt-0">

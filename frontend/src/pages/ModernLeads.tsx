@@ -389,7 +389,7 @@ export function ModernLeads() {
       groupBy,
     ],
     enabled: selectedClientId != null,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const res = await leadsAPI.getAll({
         search: debouncedSearch || undefined,
         skip: page * effectivePageSize,
@@ -400,6 +400,7 @@ export function ModernLeads() {
         stage_id: filterStageId ?? undefined,
         source: filterSource.trim() || undefined,
         sector: filterSector.trim() || undefined,
+        signal,
       });
       return normalizeLeadListPayload(res.data) as LeadListResponse;
     },
@@ -811,8 +812,11 @@ export function ModernLeads() {
                 placeholder="Search leads by name, company, email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
+              {(isFetchingLeads || searchQuery.trim() !== debouncedSearch) && (
+                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary-600" />
+              )}
             </div>
             <button
               type="button"
@@ -949,8 +953,18 @@ export function ModernLeads() {
           return (
             <div
               key={group.key}
-              className="-mx-4 overflow-x-auto rounded-none border-y border-neutral-200 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:border dark:border-neutral-700 dark:bg-neutral-800"
+              className={`relative -mx-4 overflow-x-auto rounded-none border-y border-neutral-200 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:border dark:border-neutral-700 dark:bg-neutral-800 ${
+                isFetchingLeads ? 'opacity-70' : ''
+              }`}
             >
+              {isFetchingLeads && (
+                <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center bg-white/40 pt-16 dark:bg-neutral-900/40">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-medium text-neutral-700 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Updating results…
+                  </span>
+                </div>
+              )}
               {groupBy !== 'none' && (
                 <button
                   type="button"

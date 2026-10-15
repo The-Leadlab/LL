@@ -15,5 +15,5 @@ class TaskAttachment(Base):
     stored_name = Column(String(255), nullable=False, unique=True, index=True)
     content_type = Column(String(255), nullable=True)
     size_bytes = Column(BigInteger, nullable=False, default=0)
-    blob = Column(LargeBinary, nullable=False)
+    blob = Column(LargeBinary, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)

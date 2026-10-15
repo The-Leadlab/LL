@@ -12,6 +12,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { formatLocalDateTime } from '@/lib/localDateTime';
 import { leadsAPI, type LeadStats } from '@/services/api/leads';
 import api from '@/services/axios';
 import {
@@ -402,7 +403,7 @@ export function ModernDashboard() {
                 >
                   <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">{a.title}</p>
                   <p className="text-xs text-neutral-500 mt-1">
-                    {new Date(a.created_at).toLocaleString()}
+                    {formatLocalDateTime(a.created_at)}
                     {a.type ? ` · ${a.type}` : ''}
                   </p>
                 </div>
