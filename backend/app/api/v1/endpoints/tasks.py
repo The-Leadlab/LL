@@ -1,11 +1,12 @@
 from typing import List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from app.api import deps
 from app.crud import crud_task, crud_user
 from app.models.user import User
 from app.models.task import TaskStatus, TaskPriority
+from app.models.task_attachment import TaskAttachment
 from app.schemas.task import Task, TaskCreate, TaskUpdate, TaskList
 import logging
 from datetime import datetime
@@ -18,32 +19,36 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 router = APIRouter(redirect_slashes=False)
 
-TASK_ATTACHMENT_ROOT = Path(settings.UPLOAD_DIR) / "task_attachments"
-TASK_ATTACHMENT_ROOT.mkdir(parents=True, exist_ok=True)
+TASK_ATTACHMENT_ROOT = Path(os.environ.get("TASK_ATTACHMENT_DIR") or "/tmp/leadlab_task_attachments")
 
 
-def _task_attachment_dir(task_id: int) -> Path:
-    path = TASK_ATTACHMENT_ROOT / str(task_id)
-    path.mkdir(parents=True, exist_ok=True)
-    return path
-
-
-def _task_attachment_meta_path(task_id: int) -> Path:
-    return _task_attachment_dir(task_id) / "attachments.json"
-
-
-def _load_task_attachments(task_id: int) -> list[dict]:
-    meta = _task_attachment_meta_path(task_id)
-    if not meta.exists():
-        return []
+def _ensure_attachment_table(db: Session) -> None:
     try:
-        return json.loads(meta.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return []
+        TaskAttachment.__table__.create(bind=db.get_bind(), checkfirst=True)
+    except Exception as exc:
+        logger.warning("Could not ensure task_attachments table: %s", exc)
 
 
-def _save_task_attachments(task_id: int, attachments: list[dict]) -> None:
-    _task_attachment_meta_path(task_id).write_text(json.dumps(attachments), encoding="utf-8")
+def _row_to_item(row: TaskAttachment) -> dict:
+    return {
+        "filename": row.filename,
+        "stored_name": row.stored_name,
+        "size_bytes": int(row.size_bytes or 0),
+        "content_type": row.content_type or "application/octet-stream",
+        "uploaded_at": (row.uploaded_at or datetime.utcnow()).isoformat(),
+    }
+
+
+def _storage_error(exc: Exception) -> HTTPException:
+    logger.exception("Task attachment storage failed: %s", exc)
+    return HTTPException(
+        status_code=503,
+        detail=(
+            "Task attachments could not be stored. Disk uploads are not available on this "
+            "host (ephemeral/read-only filesystem). Database storage also failed — "
+            f"{type(exc).__name__}: {exc}"
+        ),
+    )
 
 @router.get("", response_model=TaskList)
 @router.get("/", response_model=TaskList)
@@ -323,7 +328,22 @@ def list_task_attachments(
         raise HTTPException(status_code=404, detail="Task not found")
     if task.organization_id != current_user.organization_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
-    return _load_task_attachments(task_id)
+    try:
+        _ensure_attachment_table(db)
+        rows = (
+            db.query(TaskAttachment)
+            .filter(
+                TaskAttachment.task_id == task_id,
+                TaskAttachment.organization_id == current_user.organization_id,
+            )
+            .order_by(TaskAttachment.uploaded_at.desc())
+            .all()
+        )
+        return [_row_to_item(row) for row in rows]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise _storage_error(exc)
 
 
 @router.post("/{task_id}/attachments")
@@ -350,20 +370,27 @@ async def upload_task_attachment(
 
     safe_name = os.path.basename(file.filename or "attachment")
     stored_name = f"{uuid.uuid4().hex}_{safe_name}"
-    file_path = _task_attachment_dir(task_id) / stored_name
-    file_path.write_bytes(content)
-
-    attachments = _load_task_attachments(task_id)
-    item = {
-        "filename": safe_name,
-        "stored_name": stored_name,
-        "size_bytes": len(content),
-        "content_type": file.content_type or "application/octet-stream",
-        "uploaded_at": datetime.utcnow().isoformat(),
-    }
-    attachments.append(item)
-    _save_task_attachments(task_id, attachments)
-    return item
+    try:
+        _ensure_attachment_table(db)
+        row = TaskAttachment(
+            task_id=task_id,
+            organization_id=current_user.organization_id,
+            filename=safe_name,
+            stored_name=stored_name,
+            content_type=file.content_type or "application/octet-stream",
+            size_bytes=len(content),
+            blob=content,
+            uploaded_at=datetime.utcnow(),
+        )
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+        return _row_to_item(row)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        db.rollback()
+        raise _storage_error(exc)
 
 
 @router.get("/{task_id}/attachments/{stored_name}")
@@ -380,20 +407,29 @@ def download_task_attachment(
     if task.organization_id != current_user.organization_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
-    attachments = _load_task_attachments(task_id)
-    match = next((a for a in attachments if a.get("stored_name") == stored_name), None)
-    if not match:
+    try:
+        _ensure_attachment_table(db)
+        row = (
+            db.query(TaskAttachment)
+            .filter(
+                TaskAttachment.task_id == task_id,
+                TaskAttachment.stored_name == stored_name,
+                TaskAttachment.organization_id == current_user.organization_id,
+            )
+            .first()
+        )
+    except Exception as exc:
+        raise _storage_error(exc)
+    if not row:
         raise HTTPException(status_code=404, detail="Attachment not found")
 
-    file_path = _task_attachment_dir(task_id) / stored_name
-    if not file_path.exists():
-        logger.error("Missing attachment file task=%s stored=%s", task_id, stored_name)
-        raise HTTPException(status_code=404, detail="Attachment file is missing")
-
-    return FileResponse(
-        path=str(file_path),
-        filename=match.get("filename") or stored_name,
-        media_type=match.get("content_type") or "application/octet-stream",
+    headers = {
+        "Content-Disposition": f'attachment; filename="{row.filename or stored_name}"'
+    }
+    return Response(
+        content=bytes(row.blob or b""),
+        media_type=row.content_type or "application/octet-stream",
+        headers=headers,
     )
 
 
@@ -411,14 +447,25 @@ def delete_task_attachment(
     if task.organization_id != current_user.organization_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
-    attachments = _load_task_attachments(task_id)
-    kept = [a for a in attachments if a.get("stored_name") != stored_name]
-    if len(kept) == len(attachments):
-        raise HTTPException(status_code=404, detail="Attachment not found")
-    _save_task_attachments(task_id, kept)
-
-    file_path = _task_attachment_dir(task_id) / stored_name
-    if file_path.exists():
-        file_path.unlink()
+    try:
+        _ensure_attachment_table(db)
+        row = (
+            db.query(TaskAttachment)
+            .filter(
+                TaskAttachment.task_id == task_id,
+                TaskAttachment.stored_name == stored_name,
+                TaskAttachment.organization_id == current_user.organization_id,
+            )
+            .first()
+        )
+        if not row:
+            raise HTTPException(status_code=404, detail="Attachment not found")
+        db.delete(row)
+        db.commit()
+    except HTTPException:
+        raise
+    except Exception as exc:
+        db.rollback()
+        raise _storage_error(exc)
 
     return {"message": "Attachment deleted"}

@@ -136,12 +136,21 @@ class User(Base):
 
     @property
     def is_linkedin_connected(self) -> bool:
-        """LinkedIn bağlantı durumunu kontrol et"""
-        return bool(
-            self.linkedin_token and 
-            self.linkedin_token_expires and 
-            self.linkedin_token_expires > datetime.utcnow()
-        )
+        """LinkedIn connection status — prefer linkedin_connections row; never 500 if columns are missing."""
+        try:
+            conn = getattr(self, "linkedin_connection", None)
+            if conn is not None:
+                expires = getattr(conn, "token_expires_at", None)
+                if not getattr(conn, "is_active", True):
+                    return False
+                if expires is None:
+                    return True
+                return expires > datetime.utcnow()
+            token = getattr(self, "linkedin_token", None)
+            expires = getattr(self, "linkedin_token_expires", None)
+            return bool(token and expires and expires > datetime.utcnow())
+        except Exception:
+            return False
 
     @property
     def is_organization_manager(self) -> bool:

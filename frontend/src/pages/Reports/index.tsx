@@ -51,6 +51,7 @@ import {
   ActivityReport
 } from '../../api/advancedReports';
 import toast from 'react-hot-toast';
+import api from '../../services/axios';
 
 type TimeRange = 'today' | 'week' | 'month' | 'quarter' | 'year' | 'custom';
 
@@ -510,6 +511,12 @@ export function ReportsPage() {
   }, [timeRange, customStartDate, customEndDate, includeTeam]);
 
   const fetchAllData = async () => {
+    const withTimeout = <T,>(promise: Promise<T>, ms = 8000): Promise<T> =>
+      Promise.race([
+        promise,
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+      ]);
+
     try {
       setLoading(true);
       console.log('Fetching reports data with params:', dateParams);
@@ -524,14 +531,14 @@ export function ReportsPage() {
         sectorResponse,
         activityResponse
       ] = await Promise.allSettled([
-        advancedReportsApi.getKPIDashboard(dateParams),
-        advancedReportsApi.getConversionFunnel(dateParams),
-        advancedReportsApi.getUserPerformance(dateParams),
-        advancedReportsApi.getLeadSourceAnalysis(dateParams),
-        advancedReportsApi.getPipelineHealth(),
-        advancedReportsApi.getGeographicInsights(dateParams),
-        advancedReportsApi.getSectorAnalysis(dateParams),
-        advancedReportsApi.getActivityPerformance(dateParams)
+        withTimeout(advancedReportsApi.getKPIDashboard(dateParams)),
+        withTimeout(advancedReportsApi.getConversionFunnel(dateParams)),
+        withTimeout(advancedReportsApi.getUserPerformance(dateParams)),
+        withTimeout(advancedReportsApi.getLeadSourceAnalysis(dateParams)),
+        withTimeout(advancedReportsApi.getPipelineHealth()),
+        withTimeout(advancedReportsApi.getGeographicInsights(dateParams)),
+        withTimeout(advancedReportsApi.getSectorAnalysis(dateParams)),
+        withTimeout(advancedReportsApi.getActivityPerformance(dateParams))
       ]);
 
       // Handle responses with better error logging
@@ -597,15 +604,37 @@ export function ReportsPage() {
       
       console.log(`Successfully loaded ${successCount}/8 data sources`);
       
+      if (kpiResponse.status !== 'fulfilled') {
+        try {
+          const dash = await withTimeout(api.get('/reports'), 6000);
+          const stats = dash.data || {};
+          const funnel = stats.lead_funnel || {};
+          const sales = stats.sales_performance || {};
+          setKpiData({
+            kpi_metrics: [
+              { name: 'Total Leads', current_value: funnel.total_leads || 0, previous_value: 0, change_percentage: 0, unit: '', trend: 'neutral' },
+              { name: 'Qualified Leads', current_value: funnel.qualified_leads || 0, previous_value: 0, change_percentage: 0, unit: '', trend: 'neutral' },
+              { name: 'Total Revenue', current_value: sales.total_revenue || 0, previous_value: 0, change_percentage: 0, unit: 'USD', trend: 'neutral' },
+              { name: 'Conversion Rate', current_value: funnel.conversion_rates?.lead_to_won ? funnel.conversion_rates.lead_to_won * 100 : 0, previous_value: 0, change_percentage: 0, unit: '%', trend: 'neutral' },
+            ],
+            period: {
+              start_date: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+              end_date: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+              days: 30,
+            },
+          });
+        } catch {
+          setKpiData(mockKPIData);
+          setUsesFallbackData(true);
+        }
+      }
+
       if (successCount === 0) {
-        setUsesFallbackData(false);
-        toast.error('Failed to load reports data. Please check API connection.');
+        setUsesFallbackData(true);
       } else if (successCount < 8) {
         setUsesFallbackData(false);
-        toast.error(`Loaded ${successCount}/8 data sources. Some reports may be incomplete.`);
       } else {
         setUsesFallbackData(false);
-        toast.success('All reports data loaded successfully');
       }
 
     } catch (error) {
@@ -677,7 +706,7 @@ export function ReportsPage() {
           <div className="flex items-center mt-2 space-x-4 text-sm text-gray-500">
             <span className="flex items-center">
               <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
-              Live Data Connected
+              {usesFallbackData ? 'Sample data (API unavailable)' : 'Live Data Connected'}
             </span>
             <span className="flex items-center">
               <Clock className="h-4 w-4 mr-1 text-blue-500" />

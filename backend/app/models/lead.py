@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean, TypeDecorator
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean, TypeDecorator, Index
 from sqlalchemy.orm import relationship, composite
 from app.models.base import Base
 from app.models.associations import lead_tags
@@ -8,6 +8,13 @@ from sqlalchemy.ext.hybrid import hybrid_property
 
 class Lead(Base):
     __tablename__ = "leads"
+    __table_args__ = (
+        Index("ix_leads_org_deleted", "organization_id", "is_deleted"),
+        Index("ix_leads_org_first_name", "organization_id", "first_name"),
+        Index("ix_leads_org_last_name", "organization_id", "last_name"),
+        Index("ix_leads_org_email", "organization_id", "email"),
+        Index("ix_leads_org_company", "organization_id", "company"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     first_name = Column(String(100), nullable=True)

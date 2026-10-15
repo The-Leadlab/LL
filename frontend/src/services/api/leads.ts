@@ -137,6 +137,10 @@ interface LeadQueryParams {
   limit?: number;
   sort_by?: string;
   sort_desc?: boolean;
+  client_id?: number;
+  stage_id?: number;
+  source?: string;
+  sector?: string;
 }
 
 interface LeadResponse {

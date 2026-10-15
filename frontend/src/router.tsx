@@ -215,6 +215,10 @@ export const router = createBrowserRouter([
             element: <ModernCustomization />
           },
           {
+            path: '/settings/team',
+            element: <ModernSettings />
+          },
+          {
             path: '/settings/:tab',
             element: <ModernSettings />
           },

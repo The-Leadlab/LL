@@ -179,7 +179,7 @@ def read_leads(
     db: Session = Depends(deps.get_db),
     current_user: models.User = Depends(deps.get_current_user),
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=200),
+    limit: int = Query(20, ge=1, le=500),
     search: Optional[str] = None,
     sort_by: Optional[str] = "created_at",
     sort_desc: bool = True,
