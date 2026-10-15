@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional
@@ -17,6 +18,18 @@ logger = logging.getLogger(__name__)
 
 PROTECTED_WORKSPACE_EMAILS = frozenset({"ali@the-leadlab.com"})
 PERSONAL_ORG_SENTINEL = 0
+MOVED_USER_LOG_RE = re.compile(
+    r"Moved user (\d+) from org (\d+) to personal workspace (\d+)",
+    re.IGNORECASE,
+)
+
+
+def parse_moved_user_log_lines(text: str) -> list[tuple[int, int, int]]:
+    """Parse isolation log lines into (user_id, from_org, to_org) tuples."""
+    return [
+        (int(user_id), int(from_org), int(to_org))
+        for user_id, from_org, to_org in MOVED_USER_LOG_RE.findall(text or "")
+    ]
 
 
 def _is_tombstone_email(email: Optional[str]) -> bool:
@@ -142,6 +155,37 @@ def _active_org_peer_ids(db: Session, user: User) -> list[int]:
     return [int(r[0]) for r in rows]
 
 
+def user_has_shared_org_work(db: Session, user: User) -> bool:
+    """True if the user already has tasks, leads, or activity in their current org."""
+    if not user.organization_id or not user.id:
+        return False
+    org_id = int(user.organization_id)
+    user_id = int(user.id)
+    from app.models.activity import Activity
+    from app.models.lead import Lead
+    from app.models.task import Task
+
+    if (
+        db.query(Task.id)
+        .filter(Task.assigned_to_id == user_id, Task.organization_id == org_id)
+        .first()
+    ):
+        return True
+    if (
+        db.query(Lead.id)
+        .filter(Lead.user_id == user_id, Lead.organization_id == org_id)
+        .first()
+    ):
+        return True
+    if (
+        db.query(Activity.id)
+        .filter(Activity.user_id == user_id, Activity.organization_id == org_id)
+        .first()
+    ):
+        return True
+    return False
+
+
 def user_should_keep_shared_org(db: Session, user: User) -> bool:
     if is_protected_workspace_user(user):
         return True
@@ -152,6 +196,8 @@ def user_should_keep_shared_org(db: Session, user: User) -> bool:
     if is_org_founder(db, user):
         return True
     if has_team_membership(db, user):
+        return True
+    if user_has_shared_org_work(db, user):
         return True
     return False
 

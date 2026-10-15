@@ -82,17 +82,16 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         """Base get_multi method from CRUDBase"""
         return super().get_multi(db, skip=skip, limit=limit)
 
-    def get_multi(
+    def _filtered_query(
         self,
         db: Session,
         *,
-        skip: int = 0,
-        limit: int = 100,
         is_active: Optional[bool] = None,
         is_admin: Optional[bool] = None,
         organization_id: Optional[int] = None,
         exclude_tombstones: bool = True,
-    ) -> List[User]:
+        order_by_name: bool = False,
+    ):
         query = db.query(self.model)
         if is_active is not None:
             query = query.filter(User.is_active == is_active)
@@ -108,7 +107,53 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
                 ~func.lower(User.email).like("%@deleted.local"),
                 ~func.lower(User.email).like("deleted+user-%"),
             )
+        if order_by_name:
+            query = query.order_by(
+                func.lower(func.coalesce(User.first_name, "")),
+                func.lower(func.coalesce(User.last_name, "")),
+                User.id.asc(),
+            )
+        return query
+
+    def get_multi(
+        self,
+        db: Session,
+        *,
+        skip: int = 0,
+        limit: int = 100,
+        is_active: Optional[bool] = None,
+        is_admin: Optional[bool] = None,
+        organization_id: Optional[int] = None,
+        exclude_tombstones: bool = True,
+        order_by_name: bool = False,
+    ) -> List[User]:
+        query = self._filtered_query(
+            db,
+            is_active=is_active,
+            is_admin=is_admin,
+            organization_id=organization_id,
+            exclude_tombstones=exclude_tombstones,
+            order_by_name=order_by_name,
+        )
         return query.offset(skip).limit(limit).all()
+
+    def count_multi(
+        self,
+        db: Session,
+        *,
+        is_active: Optional[bool] = None,
+        is_admin: Optional[bool] = None,
+        organization_id: Optional[int] = None,
+        exclude_tombstones: bool = True,
+    ) -> int:
+        query = self._filtered_query(
+            db,
+            is_active=is_active,
+            is_admin=is_admin,
+            organization_id=organization_id,
+            exclude_tombstones=exclude_tombstones,
+        )
+        return int(query.count() or 0)
 
     def get_organization_users(
         self,

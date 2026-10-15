@@ -23,8 +23,8 @@ import leadsAPI, { Lead } from '@/services/api/leads';
 import usersAPI, { User } from '@/services/api/users';
 import api from '@/services/axios';
 import {
+  displayAssigneeLabel,
   displayUserInitials,
-  displayUserName,
   extractUserList,
   filterAssigneeUsers,
   normalizeAssigneeUsers,
@@ -90,26 +90,13 @@ export const NewTaskPage = () => {
     setUserPopoverOpen(false);
   };
 
-  // Fetch organization users
   const { data: usersData, isLoading: isLoadingUsers, error: usersError, refetch: refetchUsers } = useQuery({
-    queryKey: ['organization-users', currentUser?.organization_id],
+    queryKey: ['assignable-users', currentUser?.organization_id],
     queryFn: async () => {
-      try {
-        if (!currentUser?.organization_id) {
-          throw new Error('Organization ID is required');
-        }
-
-        const response = await usersAPI.getAll({
-          organization_id: currentUser.organization_id
-        });
-
-        return normalizeAssigneeUsers(extractUserList(response), currentUser);
-      } catch (error: any) {
-        console.error('Error fetching organization users:', error);
-        throw new Error(error.message || 'Failed to fetch organization users');
-      }
+      const response = await usersAPI.getAssignable();
+      return normalizeAssigneeUsers(extractUserList(response), currentUser);
     },
-    enabled: !!currentUser?.organization_id
+    enabled: !!currentUser?.organization_id,
   });
 
   // Filter users based on search
@@ -153,7 +140,7 @@ export const NewTaskPage = () => {
                     {displayUserInitials(selectedUser)}
                   </div>
                   <div className="flex flex-col items-start min-w-0">
-                    <span className="font-medium truncate">{displayUserName(selectedUser)}</span>
+                    <span className="font-medium truncate">{displayAssigneeLabel(selectedUser, currentUser)}</span>
                     {selectedUser.job_title && (
                       <span className="text-xs text-gray-500">{selectedUser.job_title}</span>
                     )}
@@ -191,13 +178,9 @@ export const NewTaskPage = () => {
               <div className="p-4 text-center text-sm text-red-500">
                 <div className="flex flex-col items-center space-y-2">
                   <span className="font-medium">Error loading users</span>
-                  <span className="text-xs">{usersError.message}</span>
-                  <div className="text-xs mt-1 text-gray-500">
-                    Debug info: {JSON.stringify({
-                      errorName: usersError.name,
-                      errorStack: usersError.stack?.split('\n')[0] || 'No stack'
-                    })}
-                  </div>
+                  <span className="text-xs">
+                    {(usersError as any)?.response?.data?.detail || usersError.message || 'Failed to load assignable users'}
+                  </span>
                   <Button
                     variant="outline"
                     size="sm"
@@ -232,7 +215,7 @@ export const NewTaskPage = () => {
                       {displayUserInitials(user)}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-medium truncate">{displayUserName(user)}</span>
+                      <span className="font-medium truncate">{displayAssigneeLabel(user, currentUser)}</span>
                       {user.job_title && (
                         <span className="text-xs text-gray-500">{user.job_title}</span>
                       )}

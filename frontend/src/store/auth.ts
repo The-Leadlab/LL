@@ -2,6 +2,14 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import authService, { type UserInfo, type LoginCredentials, type RegisterData } from '../services/auth'
 import api from '../lib/axios'
+import { invalidateOrgScopedQueries } from '../lib/queryClient'
+
+function orgsDiffer(previous: unknown, next: unknown): boolean {
+  if (previous === undefined || previous === null || next === undefined || next === null) {
+    return false
+  }
+  return String(previous) !== String(next)
+}
 
 export interface User {
   id: string
@@ -96,6 +104,16 @@ export const useAuthStore = create<AuthState>()(
             error: null,
             rememberMe,
           })
+          try {
+            const previousOrg = (user as unknown as User).organization_id
+            const me = await authService.getCurrentUser()
+            if (orgsDiffer(previousOrg, (me as unknown as User).organization_id)) {
+              invalidateOrgScopedQueries()
+            }
+            set({ user: me as unknown as User, isAuthenticated: true })
+          } catch (refreshError) {
+            console.warn('Could not refresh user after login; using login payload', refreshError)
+          }
         } catch (error: any) {
           clearAuthStorage()
           delete api.defaults.headers.common['Authorization']
@@ -147,7 +165,11 @@ export const useAuthStore = create<AuthState>()(
           sessionStorage.getItem('token')
 
         try {
+          const previousOrg = get().user?.organization_id
           const user = await authService.getCurrentUser()
+          if (orgsDiffer(previousOrg, (user as unknown as User).organization_id)) {
+            invalidateOrgScopedQueries()
+          }
           set({ user: user as unknown as User, isAuthenticated: true, error: null })
         } catch (error: any) {
           const tokenNow =

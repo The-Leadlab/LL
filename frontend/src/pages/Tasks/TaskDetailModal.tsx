@@ -15,8 +15,8 @@ import usersAPI, { User } from '@/services/api/users';
 import { openAttachmentInNewTab, taskAttachmentUrl } from '@/lib/apiAttachmentUrls';
 import { useAuthStore } from '@/store/auth';
 import {
+  displayAssigneeLabel,
   displayUserInitials,
-  displayUserName,
   extractUserList,
   filterAssigneeUsers,
   normalizeAssigneeUsers,
@@ -89,18 +89,13 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
     }
   };
 
-  // Fetch users for assignment
-  const { data: usersData, isLoading: isLoadingUsers, error: usersError } = useQuery({
-    queryKey: ['organization-users', currentUser?.id],
+  const { data: usersData, isLoading: isLoadingUsers, error: usersError, refetch: refetchUsers } = useQuery({
+    queryKey: ['assignable-users', currentUser?.organization_id],
     queryFn: async () => {
-      try {
-        const response = await usersAPI.getAll();
-        return normalizeAssigneeUsers(extractUserList(response), currentUser);
-      } catch (error: any) {
-        console.error('Error fetching users:', error);
-        throw new Error(error.message || 'Failed to fetch users');
-      }
+      const response = await usersAPI.getAssignable();
+      return normalizeAssigneeUsers(extractUserList(response), currentUser);
     },
+    enabled: isOpen && !!currentUser?.organization_id,
   });
 
   // Filter users based on search
@@ -339,7 +334,7 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
                                   {displayUserInitials(selectedUser)}
                                 </div>
                                 <div className="flex flex-col items-start min-w-0">
-                                  <span className="font-medium truncate">{displayUserName(selectedUser)}</span>
+                                  <span className="font-medium truncate">{displayAssigneeLabel(selectedUser, currentUser)}</span>
                                   {selectedUser.job_title && (
                                     <span className="text-xs text-gray-500">{selectedUser.job_title}</span>
                                   )}
@@ -377,11 +372,13 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
                             <div className="p-4 text-center text-sm text-red-500">
                               <div className="flex flex-col items-center space-y-2">
                                 <span className="font-medium">Error loading users</span>
-                                <span className="text-xs">{usersError.message}</span>
+                                <span className="text-xs">
+                                  {(usersError as any)?.response?.data?.detail || usersError.message || 'Failed to load assignable users'}
+                                </span>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.location.reload()}
+                                  onClick={() => refetchUsers()}
                                 >
                                   Retry
                                 </Button>
@@ -405,7 +402,7 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
                                     {displayUserInitials(user)}
                                   </div>
                                   <div className="flex flex-col min-w-0">
-                                    <span className="font-medium truncate">{displayUserName(user)}</span>
+                                    <span className="font-medium truncate">{displayAssigneeLabel(user, currentUser)}</span>
                                     {user.job_title && (
                                       <span className="text-xs text-gray-500">{user.job_title}</span>
                                     )}

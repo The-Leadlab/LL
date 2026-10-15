@@ -4,6 +4,7 @@ from app.core.avatars import avatar_color_for_user, initials_avatar_svg, user_in
 from app.core.workspace import (
     PERSONAL_ORG_SENTINEL,
     is_protected_workspace_user,
+    parse_moved_user_log_lines,
     user_should_keep_shared_org,
 )
 
@@ -54,3 +55,18 @@ def test_solo_user_keeps_workspace():
 
 def test_personal_org_sentinel():
     assert PERSONAL_ORG_SENTINEL == 0
+
+
+def test_user_with_shared_org_work_is_kept(monkeypatch):
+    monkeypatch.setattr("app.core.workspace.is_protected_workspace_user", lambda _user: False)
+    monkeypatch.setattr("app.core.workspace._active_org_peer_ids", lambda _db, _user: [1])
+    monkeypatch.setattr("app.core.workspace.is_org_founder", lambda _db, _user: False)
+    monkeypatch.setattr("app.core.workspace.has_team_membership", lambda _db, _user: False)
+    monkeypatch.setattr("app.core.workspace.user_has_shared_org_work", lambda _db, _user: True)
+    user = SimpleNamespace(id=9, email="joshua@the-leadlab.com", organization_id=4)
+    assert user_should_keep_shared_org(None, user) is True
+
+
+def test_parse_moved_user_log_lines():
+    text = "Moved user 42 from org 7 to personal workspace 99\nnoise\nMoved user 8 from org 7 to personal workspace 100"
+    assert parse_moved_user_log_lines(text) == [(42, 7, 99), (8, 7, 100)]

@@ -9,6 +9,7 @@ export interface User {
   is_active: boolean;
   is_admin: boolean;
   job_title?: string;
+  is_self?: boolean;
 }
 
 export interface UserResponse {
@@ -128,6 +129,11 @@ const getAll = async (params: GetUsersParams = {}) => {
   return response.data;
 };
 
+const getAssignable = async () => {
+  const response = await api.get('/users/assignable');
+  return response.data;
+};
+
 const create = async (data: Partial<User>): Promise<User> => {
   try {
     const response = await api.post<User>('/users/', data);
@@ -160,6 +166,7 @@ const remove = async (id: number): Promise<void> => {
 const usersAPI = {
   getOrganizationUsers,
   getAll,
+  getAssignable,
   getById,
   getCurrentUser,
   create,

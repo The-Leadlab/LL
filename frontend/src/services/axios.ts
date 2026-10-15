@@ -39,7 +39,6 @@ let pendingRequests: Array<() => void> = [];
 const nonCriticalEndpoints = [
   '/notifications',
   '/leads',
-  '/users',
   '/organization-settings',
   '/user-settings',
   '/currencies',
@@ -132,9 +131,6 @@ api.interceptors.response.use(
         if (currentUrl.includes('/leads')) {
           return Promise.resolve({ data: { ...EMPTY_LEAD_LIST_PAGE } });
         }
-        if (currentUrl.includes('/users')) {
-          return Promise.resolve({ data: { items: [], total: 0 } });
-        }
         if (currentUrl.includes('/tags')) {
           return Promise.resolve({ data: { items: [], total: 0 } });
         }
@@ -183,9 +179,6 @@ api.interceptors.response.use(
         // Return empty results for leads or users
         if (currentUrl.includes('/leads')) {
           return Promise.resolve({ data: { ...EMPTY_LEAD_LIST_PAGE } });
-        }
-        if (currentUrl.includes('/users')) {
-          return Promise.resolve({ data: { items: [], total: 0 } });
         }
         if (currentUrl.includes('/tags')) {
           return Promise.resolve({ data: { items: [], total: 0 } });

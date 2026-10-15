@@ -5,6 +5,7 @@ export interface AssigneeUser {
   last_name?: string | null;
   job_title?: string | null;
   is_active?: boolean;
+  is_self?: boolean;
 }
 
 export interface CurrentUserLike {
@@ -23,6 +24,16 @@ function toNumericId(value: string | number | null | undefined): number | null {
 export function displayUserName(user: Pick<AssigneeUser, 'first_name' | 'last_name' | 'email'>): string {
   const full = `${user.first_name || ''} ${user.last_name || ''}`.trim();
   return full || user.email || 'Unknown user';
+}
+
+export function displayAssigneeLabel(
+  user: Pick<AssigneeUser, 'first_name' | 'last_name' | 'email' | 'is_self' | 'id'>,
+  currentUser?: CurrentUserLike | null,
+): string {
+  const name = displayUserName(user);
+  const currentId = toNumericId(currentUser?.id);
+  const isSelf = Boolean(user.is_self) || (currentId !== null && toNumericId(user.id) === currentId);
+  return isSelf ? `Me (${name})` : name;
 }
 
 export function displayUserInitials(user: Pick<AssigneeUser, 'first_name' | 'last_name' | 'email'>): string {
@@ -55,12 +66,19 @@ export function normalizeAssigneeUsers(
       first_name: currentUser?.first_name || '',
       last_name: currentUser?.last_name || '',
       is_active: true,
+      is_self: true,
     });
+  } else if (currentId && byId.has(currentId)) {
+    byId.set(currentId, { ...byId.get(currentId)!, is_self: true });
   }
 
-  return Array.from(byId.values()).sort((a, b) =>
-    displayUserName(a).localeCompare(displayUserName(b)),
-  );
+  return Array.from(byId.values()).sort((a, b) => {
+    const aSelf = Boolean(a.is_self) || a.id === currentId;
+    const bSelf = Boolean(b.is_self) || b.id === currentId;
+    if (aSelf && !bSelf) return -1;
+    if (!aSelf && bSelf) return 1;
+    return displayUserName(a).localeCompare(displayUserName(b));
+  });
 }
 
 export function filterAssigneeUsers(users: AssigneeUser[], searchTerm: string): AssigneeUser[] {
