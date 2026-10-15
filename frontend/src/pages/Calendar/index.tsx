@@ -210,6 +210,18 @@ export const CalendarPage = () => {
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'agenda'>(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'agenda' : 'month'
   );
+
+  // Keep mobile on agenda — month chips are unreadable at ~390px (B45)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 767px)');
+    const enforce = () => {
+      if (mq.matches && viewMode !== 'agenda') setViewMode('agenda');
+    };
+    enforce();
+    mq.addEventListener('change', enforce);
+    return () => mq.removeEventListener('change', enforce);
+  }, [viewMode]);
   const [agendaRangeDays, setAgendaRangeDays] = useState<7 | 14 | 30 | 90>(30);
   const [agendaVisibleCount, setAgendaVisibleCount] = useState(AGENDA_PAGE_SIZE);
   const [expandedMonthDay, setExpandedMonthDay] = useState<Date | null>(null);
@@ -478,42 +490,44 @@ export const CalendarPage = () => {
   };
 
   const renderCalendarHeader = () => (
-    <div className="bg-white border-b border-gray-200 px-8 py-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-4">
+    <div className="bg-white border-b border-gray-200 px-4 py-4 sm:px-8 sm:py-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-6">
+          <div className="flex items-center justify-between gap-2 sm:space-x-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={handlePrevious}
-              className="p-2 hover:bg-gray-100 rounded-lg"
+              className="min-h-[44px] min-w-[44px] p-2 hover:bg-gray-100 rounded-lg"
+              aria-label="Previous"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-2xl font-bold text-gray-900 min-w-[250px] text-center">
+            <h1 className="flex-1 text-lg sm:text-2xl font-bold text-gray-900 sm:min-w-[250px] text-center truncate px-1">
               {getViewTitle()}
             </h1>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleNext}
-              className="p-2 hover:bg-gray-100 rounded-lg"
+              className="min-h-[44px] min-w-[44px] p-2 hover:bg-gray-100 rounded-lg"
+              aria-label="Next"
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
-            <Button variant="outline" size="sm" onClick={goToToday} className="rounded-lg">
+            <Button variant="outline" size="sm" onClick={goToToday} className="hidden sm:inline-flex rounded-lg">
               Today
             </Button>
             <Input
               type="date"
               value={format(currentDate, 'yyyy-MM-dd')}
               onChange={(e) => jumpToDate(e.target.value)}
-              className="w-[150px] h-9 border-gray-200"
+              className="hidden sm:block w-[150px] h-9 border-gray-200"
               aria-label="Jump to date"
             />
           </div>
 
-          <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+          <div className="hidden sm:flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
             <Button
               variant={viewMode === 'month' ? 'default' : 'ghost'}
               size="sm"
@@ -554,6 +568,7 @@ export const CalendarPage = () => {
               <span>Agenda</span>
             </Button>
           </div>
+          <p className="text-sm text-gray-500 sm:hidden">Agenda view</p>
 
           {viewMode === 'agenda' && (
             <Select
