@@ -8,6 +8,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/services/axios';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   Search,
   Users,
@@ -51,6 +54,23 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [filteredCommands, setFilteredCommands] = useState<CommandItem[]>([]);
+  const debouncedQuery = useDebounce(query, 250);
+
+  const { data: leadHits = [] } = useQuery({
+    queryKey: ['command-palette-leads', debouncedQuery],
+    queryFn: async () => {
+      const res = await api.get('/leads', {
+        params: { search: debouncedQuery.trim(), limit: 8, skip: 0 },
+      });
+      const d = res.data;
+      if (Array.isArray(d?.results)) return d.results;
+      if (Array.isArray(d?.items)) return d.items;
+      if (Array.isArray(d)) return d;
+      return [];
+    },
+    enabled: open && debouncedQuery.trim().length >= 2,
+    staleTime: 15_000,
+  });
 
   // All available commands
   const commands: CommandItem[] = [
@@ -254,9 +274,18 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       cmd.shortcut?.toLowerCase().includes(query_lower)
     );
 
-    setFilteredCommands(filtered);
+    const leadCommands: CommandItem[] = (Array.isArray(leadHits) ? leadHits : []).map((lead: any) => ({
+      id: `lead-${lead.id}`,
+      title: [lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.email || `Lead #${lead.id}`,
+      subtitle: [lead.company, lead.email].filter(Boolean).join(' · ') || 'Lead',
+      icon: <Users className="w-4 h-4" />,
+      action: () => navigate(`/leads/${lead.id}`),
+      category: 'search' as const,
+    }));
+
+    setFilteredCommands([...leadCommands, ...filtered]);
     setSelectedIndex(0);
-  }, [query]);
+  }, [query, leadHits, navigate]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {

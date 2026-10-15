@@ -230,7 +230,8 @@ export function ModernDashboard() {
           <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
             {formatPipelineUsd(pipelineValue)}
           </h3>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">Sales Pipeline</p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">Open Pipeline</p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">Excludes Closed Won and Closed Lost</p>
         </button>
 
         {/* Tasks */}

@@ -8,8 +8,8 @@ class ActivityBase(BaseModel):
     description: Optional[str] = None
     scheduled_at: Optional[datetime] = None
     duration: int = 0
-    user_id: int
-    organization_id: int
+    user_id: Optional[int] = None
+    organization_id: Optional[int] = None
     lead_id: Optional[int] = None
     deal_id: Optional[int] = None
 

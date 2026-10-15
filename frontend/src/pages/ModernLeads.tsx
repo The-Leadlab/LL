@@ -169,18 +169,20 @@ type PaginationBarProps = {
   totalPages: number;
   canPrev: boolean;
   canNext: boolean;
+  isLoadingLeads?: boolean;
   onPrev: () => void;
   onNext: () => void;
   onPageSizeChange: (n: number) => void;
 };
 
-function LeadsPaginationBar({
+export function LeadsPaginationBar({
   page,
   pageSize,
   totalLeads,
   totalPages,
   canPrev,
   canNext,
+  isLoadingLeads = false,
   onPrev,
   onNext,
   onPageSizeChange,
@@ -931,6 +933,7 @@ export function ModernLeads() {
           totalPages={totalPages}
           canPrev={canPrev}
           canNext={canNext}
+          isLoadingLeads={isLoadingLeads}
           onPrev={() => setPage((p) => Math.max(0, p - 1))}
           onNext={() => setPage((p) => p + 1)}
           onPageSizeChange={(n) => {
@@ -1155,6 +1158,7 @@ export function ModernLeads() {
           totalPages={totalPages}
           canPrev={canPrev}
           canNext={canNext}
+          isLoadingLeads={isLoadingLeads}
           onPrev={() => setPage((p) => Math.max(0, p - 1))}
           onNext={() => setPage((p) => p + 1)}
           onPageSizeChange={(n) => {

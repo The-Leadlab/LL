@@ -15,6 +15,32 @@ API_LATENCY = Histogram('api_latency_seconds', 'API endpoint latency')
 ERROR_COUNT = Counter('error_count', 'Number of errors', ['error_type'])
 SYSTEM_RESOURCES = Gauge('system_resources', 'System resource usage', ['resource_type'])
 
+_LEAD_SEARCH_INDEXES = (
+    ("ix_leads_org_deleted", "organization_id, is_deleted"),
+    ("ix_leads_org_first_name", "organization_id, first_name"),
+    ("ix_leads_org_last_name", "organization_id, last_name"),
+    ("ix_leads_org_email", "organization_id, email"),
+    ("ix_leads_org_company", "organization_id, company"),
+)
+
+
+def _ensure_lead_search_indexes() -> None:
+    """Best-effort indexes for lead search. Existing DBs are not updated by create_all."""
+    from sqlalchemy import text
+    try:
+        dialect = engine.dialect.name
+        with engine.begin() as conn:
+            for name, cols in _LEAD_SEARCH_INDEXES:
+                try:
+                    if dialect == "mysql":
+                        conn.execute(text(f"CREATE INDEX {name} ON leads ({cols})"))
+                    else:
+                        conn.execute(text(f"CREATE INDEX IF NOT EXISTS {name} ON leads ({cols})"))
+                except Exception:
+                    pass
+    except Exception as exc:
+        logger.warning("Could not ensure lead search indexes: %s", exc)
+
 async def startup_handler(app: FastAPI) -> None:
     try:
         # Port kontrolleri
@@ -22,7 +48,9 @@ async def startup_handler(app: FastAPI) -> None:
         await configure_ports()
         
         # Mevcut kontroller
+        from app.models import TaskAttachment  # noqa: F401 — register table for create_all
         Base.metadata.create_all(bind=engine)
+        _ensure_lead_search_indexes()
         ACTIVE_USERS.set(0)
         REQUEST_COUNT.clear()
         

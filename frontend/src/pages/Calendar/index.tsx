@@ -1,6 +1,7 @@
 // Takvim sayfası
 import React, { useState, useEffect, useMemo } from 'react';
-import { format, formatInTimeZone, parseISO, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, addWeeks, subWeeks, isSameMonth, isToday, isSameDay, startOfDay, endOfDay } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, addWeeks, subWeeks, isSameMonth, isToday, isSameDay, startOfDay, endOfDay } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { tr } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
@@ -252,8 +253,8 @@ export const CalendarPage = () => {
         };
       case 'agenda':
         return {
-          start: startOfDay(currentDate),
-          end: endOfDay(addDays(currentDate, agendaRangeDays - 1)),
+          start: startOfDay(addDays(currentDate, -1)),
+          end: endOfDay(addDays(currentDate, agendaRangeDays)),
         };
       default: // month
         const monthStart = startOfMonth(currentDate);
@@ -896,7 +897,11 @@ export const CalendarPage = () => {
             <div className="divide-y divide-gray-100">
               {agendaEvents.map((event: CalendarEvent) => {
                 const typeDetails = getEventTypeDetails(event.event_type);
-                const eventDate = format(event.start, 'EEEE, MMMM d, yyyy');
+                const eventDate = formatInTimeZone(
+                  event.start,
+                  selectedTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  'EEEE, MMMM d, yyyy'
+                );
                 const isToday = isSameDay(event.start, new Date());
                 const isPast = event.start < new Date();
                 
