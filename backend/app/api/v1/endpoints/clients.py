@@ -7,7 +7,7 @@ from app.models.user import User
 from app.crud.crud_client import client as crud_client
 from app.schemas.client import Client, ClientCreate, ClientUpdate, ClientList
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 def _to_schema(c, lead_counts: Optional[dict] = None) -> Client:

@@ -235,7 +235,7 @@ export const leadsAPI = {
     source?: string;
     sector?: string;
   }): Promise<any> => {
-    return api.get('/leads/', { params });
+    return api.get('/leads', { params });
   },
 
   getLeads: async (params?: {
@@ -251,7 +251,7 @@ export const leadsAPI = {
     source?: string;
     sector?: string;
   }): Promise<any> => {
-    const response = await api.get('/leads/', { params });
+    const response = await api.get('/leads', { params });
     const data = response.data;
     if (data?.results != null) {
       return {
@@ -259,7 +259,7 @@ export const leadsAPI = {
         total: data.total ?? data.results.length,
         page: data.page ?? 0,
         size: data.size ?? data.results.length,
-        has_more: data.has_more ?? false,
+        has_more: Boolean(data.has_more),
       };
     }
     const list = Array.isArray(data) ? data : [];

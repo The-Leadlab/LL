@@ -234,7 +234,7 @@ def _record_membership_if_joining(
         )
 
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 @router.get("", response_model=UserList)
 @router.get("/", response_model=UserList)

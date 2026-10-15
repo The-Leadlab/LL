@@ -15,7 +15,7 @@ from app.services.google_calendar_sync_service import GoogleCalendarSyncService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 MEETING_LINK_PREFIX = "[meeting-link]"
 MEETING_LINK_SUFFIX = "[/meeting-link]"
 

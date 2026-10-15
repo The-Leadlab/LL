@@ -69,10 +69,12 @@ const InfoField = ({ label, value, icon, type = 'text', leadId, fieldName, email
     queryKey,
     queryFn: async () => {
       const response = await informationRequestsAPI.getLeadRequests(leadId);
-      return response.find((request) => request.field_name === fieldName);
+      const list = Array.isArray(response) ? response : [];
+      return list.find((request) => request.field_name === fieldName) ?? null;
     },
     refetchOnWindowFocus: true,
-    staleTime: 30000, // Consider data stale after 30 seconds
+    staleTime: 30000,
+    retry: 1,
   });
 
   const requestInfoMutation = useMutation({
@@ -468,12 +470,29 @@ export function LeadDetail() {
         params: {
           organization_id: response?.data?.organization_id,
           lead_id: leadId,
-          limit: 20,
+          limit: 50,
         },
       });
-      return res.data;
+      const data = res.data;
+      if (Array.isArray(data)) return { items: data, total: data.length };
+      if (data?.items) return data;
+      return { items: [], total: 0 };
     },
-    enabled: Boolean(response?.data?.organization_id && leadId),
+    enabled: Boolean(leadId),
+  });
+
+  const { data: activitiesResponse } = useQuery({
+    queryKey: ['lead-activities', leadId],
+    queryFn: async () => {
+      const res = await api.get('/activities', {
+        params: { lead_id: leadId, limit: 20, sort_by: 'created_at', sort_desc: true },
+      });
+      const data = res.data;
+      if (Array.isArray(data)) return { items: data, total: data.length };
+      if (data?.items) return data;
+      return { items: [], total: 0 };
+    },
+    enabled: Boolean(leadId),
   });
 
   const addNoteMutation = useMutation({
@@ -481,8 +500,6 @@ export function LeadDetail() {
       return api.post('/notes', {
         content,
         lead_id: leadId,
-        organization_id: response?.data?.organization_id,
-        created_by_id: user?.id ?? 0,
       });
     },
     onSuccess: () => {
@@ -493,6 +510,19 @@ export function LeadDetail() {
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.detail || 'Failed to add note');
+    },
+  });
+
+  const updateTagsMutation = useMutation({
+    mutationFn: async (tagIds: number[]) => {
+      return api.post(`/leads/${leadId}/tags`, { tags: tagIds });
+    },
+    onSuccess: () => {
+      toast.success('Tags updated');
+      queryClient.invalidateQueries({ queryKey: ['lead', id] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.detail || 'Failed to update tags');
     },
   });
 
@@ -662,35 +692,35 @@ export function LeadDetail() {
           headerVisible ? "transform-none" : "-translate-y-full"
         )}
       >
-        <div className="container mx-auto py-3 px-3 lg:px-4 max-w-7xl flex justify-between items-center">
-          <div className="flex items-center gap-4">
+        <div className="container mx-auto py-3 px-3 lg:px-4 max-w-7xl flex justify-between items-center gap-2 overflow-hidden">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={navigateBackToList}
-              className="text-gray-500 hover:text-gray-800 transition-colors"
+              className="shrink-0 text-gray-500 hover:text-gray-800 transition-colors"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              <ArrowLeft className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Back</span>
             </Button>
-            <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8 bg-primary/10 text-primary shadow-sm">
+            <div className="flex min-w-0 items-center gap-2">
+              <Avatar className="h-8 w-8 shrink-0 bg-primary/10 text-primary shadow-sm">
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
-              <h3 className="text-base font-medium truncate max-w-[180px] md:max-w-xs">
+              <h3 className="text-base font-medium truncate max-w-[120px] sm:max-w-[180px] md:max-w-xs">
                 {lead.first_name} {lead.last_name}
               </h3>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsEditModalOpen(true)}
               className="text-gray-600 hover:text-gray-900 transition-colors"
             >
-              <Edit className="w-3.5 h-3.5 mr-1" />
-              Edit
+              <Edit className="w-3.5 h-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Edit</span>
             </Button>
             <Button
               variant="ghost"
@@ -699,10 +729,11 @@ export function LeadDetail() {
                 navigator.clipboard.writeText(window.location.href);
                 toast.success('Link copied to clipboard');
               }}
-              className="text-gray-500 hover:text-gray-800"
+              className="shrink-0 text-gray-500 hover:text-gray-800"
+              title="Copy link"
             >
-              <Copy className="w-4 h-4 mr-1" />
-              Copy link
+              <Copy className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Copy link</span>
             </Button>
           </div>
         </div>
@@ -858,6 +889,49 @@ export function LeadDetail() {
           <div className="lg:col-span-1">
             <LeadAIInsights leadId={leadId} leadName={`${lead.first_name} ${lead.last_name}`} />
           </div>
+
+          {/* Tags & Activity */}
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="text-base">Tags</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TagSelector
+                selectedTags={(lead.tags || []).map((t: any) =>
+                  typeof t === 'object' ? t : { id: t, name: String(t) },
+                )}
+                onChange={(tags) => {
+                  updateTagsMutation.mutate(tags.map((t) => t.id));
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="text-base">Recent activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(activitiesResponse?.items || []).length === 0 ? (
+                <p className="text-sm text-gray-500">No activity recorded yet.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {(activitiesResponse?.items || []).slice(0, 8).map((act: any) => (
+                    <li key={act.id} className="rounded-md border bg-gray-50 px-3 py-2 text-sm">
+                      <div className="font-medium text-gray-800">
+                        {act.title || act.activity_type || 'Activity'}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {act.created_at
+                          ? format(new Date(act.created_at), 'MMM d, yyyy HH:mm')
+                          : ''}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Analysis Information */}
           <Card className="lg:col-span-2">

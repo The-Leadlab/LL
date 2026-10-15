@@ -4,7 +4,7 @@ from sqlalchemy import text
 from app.api import deps
 from app.core.config import settings
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 @router.get("", tags=["monitoring"])  # Empty string to match /api/v1/health
 async def health_check(db: Session = Depends(deps.get_db)):

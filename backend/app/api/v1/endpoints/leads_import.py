@@ -15,7 +15,7 @@ from app.core.config import settings
 # Configure logging
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 # Max lengths for Lead string columns (must match backend/app/models/lead.py)
 LEAD_STRING_MAX_LENGTHS = {

@@ -22,7 +22,7 @@ from app.crud.crud_email_sequence import (
     crud_email_sequence, crud_enrollment, crud_sequence_step
 )
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 # Email Sequence Endpoints
@@ -113,6 +113,7 @@ def get_sequence_stats(
     return EmailSequenceStats(**stats)
 
 
+@router.post("", response_model=EmailSequenceResponse)
 @router.post("/", response_model=EmailSequenceResponse)
 def create_sequence(
     sequence_in: EmailSequenceCreate,

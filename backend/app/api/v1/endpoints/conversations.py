@@ -20,10 +20,13 @@ from app.schemas.conversation import (
 )
 from app.crud.crud_conversation import crud_call_recording, crud_conversation_insight
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 # Call Recording Endpoints
+# "" is the collection the app requests at /api/v1/conversations (no extra segment).
+@router.get("", response_model=List[CallRecordingResponse])
+@router.get("/", response_model=List[CallRecordingResponse])
 @router.get("/recordings", response_model=List[CallRecordingResponse])
 def list_recordings(
     db: Session = Depends(deps.get_db),

@@ -7,7 +7,7 @@ from app.models.currency import Currency
 from app.schemas.currency import CurrencyCreate, CurrencyUpdate, Currency as CurrencySchema
 from app.crud.crud_currency import ensure_default_currencies
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 @router.get("", response_model=List[CurrencySchema])
 async def get_currencies(

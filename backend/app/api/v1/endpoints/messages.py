@@ -22,7 +22,7 @@ from app.schemas.message import (
     MessageAttachment,
 )
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 logger = logging.getLogger(__name__)
 ATTACHMENT_PREFIX = "[[ATTACHMENT_V2]]"
 

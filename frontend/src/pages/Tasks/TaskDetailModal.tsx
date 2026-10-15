@@ -26,9 +26,11 @@ interface TaskDetailModalProps {
   task: Task | null;
   isOpen: boolean;
   onClose: () => void;
+  /** When true, render as an inline page panel instead of a Dialog (for /tasks/:id). */
+  asPage?: boolean;
 }
 
-export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps) {
+export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskDetailModalProps) {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
@@ -78,11 +80,14 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
     }
   };
 
-  // Safe ISO format function for datetime-local input
+  // Local datetime for datetime-local input (avoid UTC skew from toISOString)
   const safeISOFormat = (dateString?: string) => {
     if (!dateString) return '';
     try {
-      return new Date(dateString).toISOString().slice(0, 16);
+      const d = new Date(dateString);
+      if (Number.isNaN(d.getTime())) return '';
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     } catch (error) {
       console.error('Error formatting ISO date:', dateString, error);
       return '';
@@ -152,11 +157,16 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
   const {
     data: attachments = [],
     isLoading: isLoadingAttachments,
+    isError: attachmentsError,
     refetch: refetchAttachments,
   } = useQuery({
     queryKey: ['task-attachments', currentTask?.id],
-    queryFn: () => tasksAPI.listTaskAttachments(currentTask!.id),
+    queryFn: async () => {
+      const data = await tasksAPI.listTaskAttachments(currentTask!.id);
+      return Array.isArray(data) ? data : [];
+    },
     enabled: !!currentTask?.id && isOpen,
+    retry: 1,
   });
 
   const formatFileSize = (bytes: number) => {
@@ -213,17 +223,13 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
 
   if (!currentTask) return null;
 
-  return (
-    <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[700px] bg-white shadow-lg">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
-              <span>{isEditing ? 'Edit Task' : 'Task Details'}</span>
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="py-4">
+  const detailBody = (
+          <div className={asPage ? 'py-2' : 'py-4'}>
+            {asPage && (
+              <h2 className="mb-4 text-xl font-semibold">
+                {isEditing ? 'Edit Task' : currentTask.title || 'Task Details'}
+              </h2>
+            )}
             {isEditing ? (
               <div className="grid gap-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -320,9 +326,9 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
                           variant="outline"
                           role="combobox"
                           className="w-full justify-between bg-white hover:bg-gray-50"
-                          disabled={isLoadingUsers}
+                          disabled={isLoadingUsers && !selectedUser}
                         >
-                          {isLoadingUsers ? (
+                          {isLoadingUsers && !selectedUser ? (
                             <div className="flex items-center">
                               <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
                               Loading users...
@@ -501,7 +507,8 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
                       {currentTask.assigned_to ? (
                         <div className="mt-1 flex items-center gap-2">
                           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                            {currentTask.assigned_to.first_name[0]}{currentTask.assigned_to.last_name[0]}
+                            {(currentTask.assigned_to.first_name?.[0] || '')}
+                            {(currentTask.assigned_to.last_name?.[0] || '')}
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900">
@@ -512,6 +519,14 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
                             )}
                           </div>
                         </div>
+                      ) : currentTask.assigned_to_id ? (
+                        <p className="mt-1 text-sm text-gray-900">
+                          {usersData?.find((u) => Number(u.id) === Number(currentTask.assigned_to_id))
+                            ? displayUserName(
+                                usersData.find((u) => Number(u.id) === Number(currentTask.assigned_to_id))!,
+                              )
+                            : `User #${currentTask.assigned_to_id}`}
+                        </p>
                       ) : (
                         <p className="mt-1 text-sm text-gray-500">Not assigned</p>
                       )}
@@ -554,6 +569,17 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
                   </div>
                   {isLoadingAttachments ? (
                     <p className="mt-2 text-sm text-gray-500">Loading attachments...</p>
+                  ) : attachmentsError ? (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
+                      <span>Could not load attachments.</span>
+                      <button
+                        type="button"
+                        className="underline"
+                        onClick={() => void refetchAttachments()}
+                      >
+                        Retry
+                      </button>
+                    </div>
                   ) : attachments.length === 0 ? (
                     <p className="mt-2 text-sm text-gray-500">No attachments yet.</p>
                   ) : (
@@ -620,8 +646,26 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
               </div>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
+  );
+
+  return (
+    <>
+      {asPage ? (
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+          {detailBody}
+        </div>
+      ) : (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white shadow-lg">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">
+                <span>{isEditing ? 'Edit Task' : 'Task Details'}</span>
+              </DialogTitle>
+            </DialogHeader>
+            {detailBody}
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

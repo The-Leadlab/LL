@@ -32,9 +32,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'];
 
 function formatPipelineUsd(value: number): string {
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
-  return `$${value.toFixed(0)}`;
+  return `$${Math.round(value).toLocaleString('en-US')}`;
 }
 
 function KpiWowBadge({
@@ -245,11 +243,11 @@ export function ModernDashboard() {
             <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
               <CheckSquare className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
-            <KpiWowBadge
-              value={dashboardStats.tasks?.overdue ? -dashboardStats.tasks.overdue : 0}
-              suffix=""
-              sublabel="Overdue tasks reduce this indicator"
-            />
+            <span className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
+              {dashboardStats.tasks?.overdue
+                ? `${dashboardStats.tasks.overdue} overdue`
+                : 'None overdue'}
+            </span>
           </div>
           <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
             {(dashboardStats.tasks?.open || 0).toLocaleString()}

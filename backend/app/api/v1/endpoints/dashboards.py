@@ -18,10 +18,11 @@ from app.schemas.dashboard import (
 )
 from app.crud.crud_dashboard import crud_dashboard, crud_dashboard_widget
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 # Dashboard Endpoints
+@router.get("", response_model=List[DashboardSummary])
 @router.get("/", response_model=List[DashboardSummary])
 def list_dashboards(
     db: Session = Depends(deps.get_db),
@@ -95,6 +96,7 @@ def get_dashboard(
     return dashboard
 
 
+@router.post("", response_model=DashboardResponse)
 @router.post("/", response_model=DashboardResponse)
 def create_dashboard(
     dashboard_in: DashboardCreate,

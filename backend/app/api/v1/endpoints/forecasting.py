@@ -25,7 +25,7 @@ from app.models.forecast import (
 )
 from app.db.session import get_db
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 class ForecastPeriodCreate(BaseModel):

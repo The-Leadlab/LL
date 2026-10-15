@@ -14,7 +14,7 @@ from app.schemas.organization_settings import (
     LogoUploadResponse
 )
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 @router.get("", response_model=OrganizationSettingsResponse)

@@ -16,7 +16,7 @@ from app.models.marketing_form_submission import MarketingFormSubmission
 from app.schemas.marketing_forms import MarketingFormSubmissionCreate
 from app.services.marketing_form_email import build_data_request_email, build_generic_email
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 logger = logging.getLogger(__name__)
 
 PRIMARY_INBOX = "info@the-leadlab.com"

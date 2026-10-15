@@ -11,7 +11,7 @@ from app.api import deps
 from app.models.user import User
 from app.core.config import settings
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 # Pydantic models
 class CreditPackage(BaseModel):

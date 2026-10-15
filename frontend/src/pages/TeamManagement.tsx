@@ -124,8 +124,9 @@ const TeamManagement: React.FC = () => {
       console.log('Fetching organization users...');
       try {
         const response = await api.users.getOrganizationUsers();
-        console.log('Organization users response:', response.data);
-        return response.data;
+        if (Array.isArray(response)) return response;
+        const wrapped = response as { data?: unknown };
+        return Array.isArray(wrapped?.data) ? wrapped.data : [];
       } catch (error) {
         console.error('Error fetching organization users:', error);
         throw error;

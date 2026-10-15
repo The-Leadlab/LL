@@ -167,6 +167,7 @@ const bottomNavigation: NavItem[] = [
 
 export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [quickSearch, setQuickSearch] = useState('');
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
@@ -238,6 +239,14 @@ export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
             <input
               type="text"
               placeholder="Quick search..."
+              value={quickSearch}
+              onChange={(e) => setQuickSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && quickSearch.trim()) {
+                  navigate(`/leads?q=${encodeURIComponent(quickSearch.trim())}`);
+                  onNavigate?.();
+                }
+              }}
               className="w-full pl-9 pr-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
@@ -351,28 +360,36 @@ export function ModernSidebar({ onNavigate }: { onNavigate?: () => void }) {
       {/* User Profile */}
       {!collapsed && (
         <div className="p-4 border-t border-neutral-200 dark:border-neutral-800">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer transition-colors"
-          >
-            <UserAvatar
-              user={user}
-              photoUrl={sidebarAvatarUrl}
-              className="w-10 h-10"
-              textClassName="text-sm"
-            />
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50 truncate">
-                {user?.first_name && user?.last_name
-                  ? `${user.first_name} ${user.last_name}`
-                  : user?.email || 'User'}
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                {user?.email || ''}
-              </p>
-            </div>
-            <LogOut className="w-4 h-4 text-neutral-400 hover:text-red-500" />
-          </button>
+          <div className="flex items-center space-x-3 p-3 rounded-lg">
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/profile');
+                onNavigate?.();
+              }}
+              className="flex min-w-0 flex-1 items-center space-x-3 text-left hover:opacity-80"
+            >
+              <UserAvatar
+                user={user}
+                photoUrl={sidebarAvatarUrl}
+                className="w-10 h-10"
+                textClassName="text-sm"
+              />
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50 truncate">
+                  {user?.first_name && user?.last_name
+                    ? `${user.first_name} ${user.last_name}`
+                    : user?.email || 'User'}
+                </p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                  {user?.email || ''}
+                </p>
+              </div>
+            </button>
+            <button type="button" aria-label="Log out" onClick={handleLogout} className="min-h-[44px] min-w-[44px] flex items-center justify-center">
+              <LogOut className="w-4 h-4 text-neutral-400 hover:text-red-500" />
+            </button>
+          </div>
         </div>
       )}
     </div>

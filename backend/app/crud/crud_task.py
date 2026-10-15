@@ -8,7 +8,12 @@ from app.schemas.task import TaskCreate, TaskUpdate
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     def get(self, db: Session, task_id: int) -> Optional[Task]:
-        return db.query(Task).filter(Task.id == task_id).first()
+        return (
+            db.query(Task)
+            .options(joinedload(Task.assigned_to), joinedload(Task.lead))
+            .filter(Task.id == task_id)
+            .first()
+        )
 
     def get_multi(
         self,
@@ -19,7 +24,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         organization_id: Optional[int] = None,
         user_id: Optional[int] = None
     ) -> List[Task]:
-        query = db.query(Task)
+        query = db.query(Task).options(joinedload(Task.assigned_to), joinedload(Task.lead))
         if organization_id:
             query = query.filter(Task.organization_id == organization_id)
         if user_id:

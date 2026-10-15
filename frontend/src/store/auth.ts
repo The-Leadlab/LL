@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import authService, { type UserInfo, type LoginCredentials, type RegisterData } from '../services/auth'
 import api from '../lib/axios'
 import { invalidateOrgScopedQueries } from '../lib/queryClient'
+import { getApiErrorMessage } from '@/lib/apiError'
 
 function orgsDiffer(previous: unknown, next: unknown): boolean {
   if (previous === undefined || previous === null || next === undefined || next === null) {
@@ -121,7 +122,7 @@ export const useAuthStore = create<AuthState>()(
             token: null, 
             user: null, 
             isAuthenticated: false,
-            error: error.response?.data?.message || error.response?.data?.detail || 'Login failed'
+            error: getApiErrorMessage(error, 'Login failed')
           })
           throw error
         } finally {
@@ -137,7 +138,7 @@ export const useAuthStore = create<AuthState>()(
           set({ user: user as unknown as User, error: null })
         } catch (error: any) {
           set({ 
-            error: error.response?.data?.message || error.response?.data?.detail || 'Registration failed'
+            error: getApiErrorMessage(error, 'Registration failed')
           })
           throw error
         } finally {
@@ -185,7 +186,7 @@ export const useAuthStore = create<AuthState>()(
             token: null, 
             user: null, 
             isAuthenticated: false,
-            error: error.response?.data?.message || error.response?.data?.detail || 'Failed to fetch user'
+            error: getApiErrorMessage(error, 'Failed to fetch user')
           })
           throw error
         } finally {

@@ -316,7 +316,8 @@ async function fetchAllLeads(clientId?: number): Promise<Lead[]> {
   const collected: Lead[] = [];
   let skip = 0;
   const limit = 200;
-  for (let i = 0; i < 50; i += 1) {
+  // Cap pages so a stuck has_more flag cannot hang the UI forever
+  for (let i = 0; i < 10; i += 1) {
     const data = await leadsAPI.getLeads({
       skip,
       limit,
@@ -326,7 +327,7 @@ async function fetchAllLeads(clientId?: number): Promise<Lead[]> {
     });
     const page = (data?.results || []) as Lead[];
     collected.push(...page);
-    if (!data?.has_more || page.length === 0) break;
+    if (!data?.has_more || page.length === 0 || page.length < limit) break;
     skip += limit;
   }
   return collected;
@@ -427,10 +428,14 @@ export function ColdOutreachPage() {
   const {
     data: leads = [],
     isLoading: leadsLoading,
+    isError: leadsError,
+    error: leadsFetchError,
     refetch: refetchLeads,
   } = useQuery({
     queryKey: ['outreach-leads', parsedClientId ?? 'all'],
     queryFn: () => fetchAllLeads(parsedClientId),
+    retry: 1,
+    staleTime: 30_000,
   });
 
   const { data: templates = [] } = useQuery({
@@ -1580,6 +1585,21 @@ export function ColdOutreachPage() {
                   <div className="flex items-center justify-center p-10 text-sm text-slate-500">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Loading people…
+                  </div>
+                ) : leadsError ? (
+                  <div className="px-6 py-10 text-center">
+                    <p className="text-sm text-red-600">
+                      Could not load people
+                      {leadsFetchError instanceof Error ? `: ${leadsFetchError.message}` : ''}
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => void refetchLeads()}
+                    >
+                      Retry
+                    </Button>
                   </div>
                 ) : visibleLeads.length === 0 ? (
                   <div className="px-6 py-10 text-center">

@@ -12,7 +12,7 @@ from app.models.user import User
 from typing import Optional, Dict, Any, cast
 from sqlalchemy.orm import Mapped
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 linkedin_client = LinkedInClient()
 
 @router.post("/profile")

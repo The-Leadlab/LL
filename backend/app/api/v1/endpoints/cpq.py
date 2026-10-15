@@ -22,7 +22,7 @@ from app.schemas.cpq import (
 )
 from app.crud.crud_cpq import crud_product, crud_quote, crud_pricing_rule
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 # Product Endpoints

@@ -105,13 +105,18 @@ export const NewTaskPage = () => {
     [usersData, userSearchTerm],
   );
 
+  // Seed assignee from current user immediately so the control is usable while the roster loads
   useEffect(() => {
-    if (selectedUser || !currentUser) return;
-    const self = (usersData || []).find((user) => Number(user.id) === Number(currentUser.id));
-    if (self) {
-      setSelectedUser(self as User);
-      setValue('assigned_to_id', self.id);
-    }
+    if (selectedUser || !currentUser?.id) return;
+    const selfFromList = (usersData || []).find((user) => Number(user.id) === Number(currentUser.id));
+    const seed = selfFromList || {
+      id: Number(currentUser.id),
+      email: currentUser.email,
+      first_name: currentUser.first_name || '',
+      last_name: currentUser.last_name || '',
+    };
+    setSelectedUser(seed as User);
+    setValue('assigned_to_id', Number(seed.id));
   }, [currentUser, selectedUser, setValue, usersData]);
 
   // User selection component
@@ -126,9 +131,9 @@ export const NewTaskPage = () => {
             variant="outline"
             role="combobox"
             className="w-full justify-between bg-white hover:bg-gray-50"
-            disabled={isLoadingUsers}
+            disabled={isLoadingUsers && !selectedUser}
           >
-            {isLoadingUsers ? (
+            {isLoadingUsers && !selectedUser ? (
               <div className="flex items-center">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
                 Loading users...
