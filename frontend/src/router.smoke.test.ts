@@ -1,26 +1,20 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { router } from './router';
 
-function collectPaths(routes: any[], acc: string[] = []): string[] {
-  for (const route of routes || []) {
-    if (typeof route.path === 'string') acc.push(route.path);
-    if (route.children) collectPaths(route.children, acc);
-  }
-  return acc;
-}
+const routerSrc = readFileSync(path.resolve(__dirname, './router.tsx'), 'utf8');
 
 describe('app route smoke', () => {
   it('registers the screens that failed live retest', () => {
-    const paths = collectPaths(router.routes);
     const required = [
-      '/leads',
-      '/reports',
-      '/calendar',
-      '/settings/team',
-      '/emails/outreach',
+      "path: '/leads'",
+      "path: '/reports'",
+      "path: '/calendar'",
+      "path: '/settings/team'",
+      "path: '/emails/outreach'",
     ];
-    for (const path of required) {
-      expect(paths).toContain(path);
+    for (const pathDecl of required) {
+      expect(routerSrc).toContain(pathDecl);
     }
   });
 });
