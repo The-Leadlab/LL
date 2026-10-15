@@ -38,6 +38,18 @@ def _ensure_lead_search_indexes() -> None:
                         conn.execute(text(f"CREATE INDEX IF NOT EXISTS {name} ON leads ({cols})"))
                 except Exception:
                     pass
+            if dialect == "postgresql":
+                try:
+                    conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+                    for col in ("first_name", "last_name", "email", "company"):
+                        conn.execute(
+                            text(
+                                f"CREATE INDEX IF NOT EXISTS ix_leads_{col}_trgm "
+                                f"ON leads USING gin ({col} gin_trgm_ops)"
+                            )
+                        )
+                except Exception:
+                    pass
     except Exception as exc:
         logger.warning("Could not ensure lead search indexes: %s", exc)
 
@@ -50,6 +62,12 @@ async def startup_handler(app: FastAPI) -> None:
         # Mevcut kontroller
         from app.models import TaskAttachment  # noqa: F401 — register table for create_all
         Base.metadata.create_all(bind=engine)
+        try:
+            from app.core.task_attachment_schema import ensure_task_attachments_schema
+
+            ensure_task_attachments_schema(engine)
+        except Exception as exc:
+            logger.warning("Could not ensure task_attachments on startup: %s", exc)
         _ensure_lead_search_indexes()
         ACTIVE_USERS.set(0)
         REQUEST_COUNT.clear()

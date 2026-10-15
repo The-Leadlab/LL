@@ -76,6 +76,15 @@ async def startup_sequence_guard() -> None:
     except Exception as exc:
         logger.warning("Could not ensure marketing_form_submissions: %s", exc)
 
+    try:
+        from app.db.session import engine as db_engine
+        from app.core.task_attachment_schema import ensure_task_attachments_schema
+
+        ensure_task_attachments_schema(db_engine)
+        logger.info("Ensured task_attachments table exists")
+    except Exception as exc:
+        logger.warning("Could not ensure task_attachments: %s", exc)
+
     # Outreach platform tables (Phases 1–4) — create if missing so deploy works before manual SQL.
     try:
         from app.db.session import engine, SessionLocal

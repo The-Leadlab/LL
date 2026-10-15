@@ -7,7 +7,7 @@ export interface DealCreate {
   amount: number;
   currency_id: number;
   status: string;
-  valid_until?: string;
+  valid_until?: string | null;
   assigned_to_id: number;
   lead_id: number;
 }

@@ -23,7 +23,7 @@ import {
   X
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { buildTextPdf } from '../../lib/simplePdf';
+import { buildInvoicePdf } from '../../lib/simplePdf';
 import { leadsAPI, organizationsAPI } from '../../services/api';
 import { invoiceService } from '../../services/invoices';
 
@@ -247,18 +247,32 @@ export function InvoiceMaker() {
 
   const generatePDF = () => {
     try {
-      const lines = [
-        `Invoice ${invoiceData.invoiceNumber}`,
-        `Date ${invoiceData.date}    Due ${invoiceData.dueDate}`,
-        `Bill to: ${invoiceData.clientName || ''} ${invoiceData.clientEmail || ''}`.trim(),
-        '',
-        ...invoiceData.items.map(
-          (item) => `${item.description}  x${item.quantity}  ${invoiceData.currencySymbol}${item.unitPrice.toFixed(2)}  = ${invoiceData.currencySymbol}${item.total.toFixed(2)}`
-        ),
-        '',
-        `Total ${invoiceData.currencySymbol}${Number(invoiceData.total || 0).toFixed(2)}`,
-      ];
-      const blob = buildTextPdf(lines);
+      const blob = buildInvoicePdf({
+        invoiceNumber: invoiceData.invoiceNumber,
+        date: invoiceData.date,
+        dueDate: invoiceData.dueDate,
+        status: invoiceData.status,
+        paymentTerms: invoiceData.paymentTerms,
+        companyName: invoiceData.companyName,
+        companyAddress: invoiceData.companyAddress,
+        companyPhone: invoiceData.companyPhone,
+        companyEmail: invoiceData.companyEmail,
+        companyWebsite: invoiceData.companyWebsite,
+        clientName: invoiceData.clientName,
+        clientCompany: invoiceData.clientCompany,
+        clientAddress: invoiceData.clientAddress,
+        clientPhone: invoiceData.clientPhone,
+        clientEmail: invoiceData.clientEmail,
+        items: invoiceData.items,
+        subtotal: Number(invoiceData.subtotal) || 0,
+        taxRate: Number(invoiceData.taxRate) || 0,
+        taxAmount: Number(invoiceData.taxAmount) || 0,
+        discountAmount: Number(invoiceData.discountAmount) || 0,
+        total: Number(invoiceData.total) || 0,
+        notes: invoiceData.notes,
+        terms: invoiceData.terms,
+        currencySymbol: invoiceData.currency === 'TRY' ? '₺' : invoiceData.currencySymbol,
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

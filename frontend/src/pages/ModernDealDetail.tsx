@@ -73,13 +73,44 @@ export function ModernDealDetail() {
     queryKey: ['deal-assignee-name', deal?.assigned_to_id],
     queryFn: async () => {
       if (!deal?.assigned_to_id) return null;
-      const res = await api.get(`/users/${deal.assigned_to_id}/`);
-      const first = res.data?.first_name ?? '';
-      const last = res.data?.last_name ?? '';
-      const full = `${first} ${last}`.trim();
-      return full || `User #${deal.assigned_to_id}`;
+      try {
+        const roster = await api.get('/users/assignable', { params: { limit: 200 } });
+        const items = Array.isArray(roster.data?.items) ? roster.data.items : [];
+        const match = items.find((u: { id?: number }) => Number(u.id) === Number(deal.assigned_to_id));
+        if (match) {
+          const full = `${match.first_name || ''} ${match.last_name || ''}`.trim();
+          if (full) return full;
+        }
+      } catch {
+        /* fall through to direct user fetch */
+      }
+      try {
+        const res = await api.get(`/users/${deal.assigned_to_id}`);
+        const first = res.data?.first_name ?? '';
+        const last = res.data?.last_name ?? '';
+        const full = `${first} ${last}`.trim();
+        if (full) return full;
+      } catch {
+        /* keep fallback */
+      }
+      return null;
     },
     enabled: Boolean(deal?.assigned_to_id),
+  });
+
+  const { data: currencyLabel } = useQuery({
+    queryKey: ['deal-currency', deal?.currency_id],
+    queryFn: async () => {
+      if (!deal?.currency_id) return null;
+      const res = await api.get('/currencies');
+      const rows = Array.isArray(res.data) ? res.data : res.data?.items || [];
+      const match = rows.find((c: { id?: number }) => Number(c.id) === Number(deal.currency_id));
+      if (!match) return null;
+      const code = match.code || '';
+      const symbol = match.symbol || '';
+      return [symbol, code].filter(Boolean).join(' ') || null;
+    },
+    enabled: Boolean(deal?.currency_id),
   });
 
   useEffect(() => {
@@ -102,7 +133,7 @@ export function ModernDealDetail() {
         name: name.trim(),
         amount,
         status,
-        valid_until: validUntil || undefined,
+        valid_until: validUntil.trim() ? validUntil : null,
       });
     },
     onSuccess: () => {
@@ -219,14 +250,15 @@ export function ModernDealDetail() {
             </select>
           </div>
           <div>
-            <Label htmlFor="deal-close">Close by (optional)</Label>
+            <Label htmlFor="deal-valid-until">Valid Until (optional)</Label>
             <Input
-              id="deal-close"
+              id="deal-valid-until"
               type="date"
               value={validUntil}
               onChange={(e) => setValidUntil(e.target.value)}
               className="mt-1"
             />
+            <p className="mt-1 text-xs text-neutral-500">Leave empty to save as no expiry date.</p>
           </div>
           <div className="flex flex-wrap gap-3 pt-2">
             <Button type="submit" disabled={updateMutation.isPending}>
@@ -248,7 +280,7 @@ export function ModernDealDetail() {
         <div className="mt-8 space-y-3 border-t border-neutral-200 pt-6 text-sm text-neutral-600 dark:text-neutral-300 dark:border-neutral-600">
           <div className="flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-neutral-400" />
-            <span>Currency ID: {deal.currency_id}</span>
+            <span>{currencyLabel || `Currency ${deal.currency_id}`}</span>
           </div>
           {deal.valid_until && (
             <div className="flex items-center gap-2">
@@ -259,7 +291,7 @@ export function ModernDealDetail() {
           <div className="flex items-center gap-2">
             <User className="w-4 h-4 text-neutral-400" />
             <span>
-              Assigned to {assigneeName || `user-${deal.assigned_to_id}`} · Created {new Date(deal.created_at).toLocaleString()}
+              Assigned to {assigneeName || 'teammate'} · Created {new Date(deal.created_at).toLocaleString()}
             </span>
           </div>
         </div>

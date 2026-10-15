@@ -1,13 +1,14 @@
 from typing import List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from fastapi.responses import Response
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 from app.api import deps
 from app.crud import crud_task, crud_user
 from app.models.user import User
 from app.models.task import TaskStatus, TaskPriority
 from app.models.task_attachment import TaskAttachment
 from app.schemas.task import Task, TaskCreate, TaskUpdate, TaskList
+from app.core.task_attachment_schema import ensure_task_attachments_schema
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -23,10 +24,7 @@ TASK_ATTACHMENT_ROOT = Path(os.environ.get("TASK_ATTACHMENT_DIR") or "/tmp/leadl
 
 
 def _ensure_attachment_table(db: Session) -> None:
-    try:
-        TaskAttachment.__table__.create(bind=db.get_bind(), checkfirst=True)
-    except Exception as exc:
-        logger.warning("Could not ensure task_attachments table: %s", exc)
+    ensure_task_attachments_schema(db.get_bind())
 
 
 def _row_to_item(row: TaskAttachment) -> dict:
@@ -332,6 +330,7 @@ def list_task_attachments(
         _ensure_attachment_table(db)
         rows = (
             db.query(TaskAttachment)
+            .options(defer(TaskAttachment.blob))
             .filter(
                 TaskAttachment.task_id == task_id,
                 TaskAttachment.organization_id == current_user.organization_id,

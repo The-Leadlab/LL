@@ -8,9 +8,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import api from '@/services/axios';
 import { useDebounce } from '@/hooks/useDebounce';
+import { shouldSearchLeads } from '@/lib/commandPaletteSearch';
 import {
   Search,
   Users,
@@ -56,11 +57,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [filteredCommands, setFilteredCommands] = useState<CommandItem[]>([]);
   const debouncedQuery = useDebounce(query, 250);
 
-  const { data: leadHits = [] } = useQuery({
-    queryKey: ['command-palette-leads', debouncedQuery],
-    queryFn: async () => {
+  const searchTerm = debouncedQuery.trim();
+  const canSearchLeads = open && shouldSearchLeads(query);
+  const { data: leadHits = [], isFetching: isSearchingLeads } = useQuery({
+    queryKey: ['command-palette-leads', searchTerm],
+    queryFn: async ({ signal }) => {
       const res = await api.get('/leads', {
-        params: { search: debouncedQuery.trim(), limit: 8, skip: 0 },
+        params: { search: searchTerm, limit: 8, skip: 0 },
+        signal,
       });
       const d = res.data;
       if (Array.isArray(d?.results)) return d.results;
@@ -68,8 +72,9 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       if (Array.isArray(d)) return d;
       return [];
     },
-    enabled: open && debouncedQuery.trim().length >= 2,
+    enabled: open && shouldSearchLeads(searchTerm),
     staleTime: 15_000,
+    placeholderData: keepPreviousData,
   });
 
   // All available commands
@@ -354,7 +359,11 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         </div>
 
         <div className="max-h-[400px] overflow-y-auto p-2">
-          {filteredCommands.length === 0 ? (
+          {canSearchLeads && isSearchingLeads && filteredCommands.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              Searching leads for "{query}"…
+            </div>
+          ) : filteredCommands.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
               No results found for "{query}"
             </div>

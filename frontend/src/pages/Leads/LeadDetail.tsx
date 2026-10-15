@@ -6,8 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Loader2, Mail, Phone, Globe, MapPin, Building2, Briefcase, Calendar, Clock, User, Users, FileText, BarChart, ArrowLeft, Edit, Trash2, ExternalLink, Share2, Heart, Star, BookOpen, MessageSquare, Copy, Download, PieChart, CheckCircle2, AlertCircle, Shield } from 'lucide-react';
-import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
+import { formatLocalDateTime } from '@/lib/localDateTime';
 import { informationRequestsAPI } from '@/services/api/information-requests';
 import { TagSelector } from '@/components/Tag';
 import { useState, useEffect } from 'react';
@@ -994,9 +994,7 @@ export function LeadDetail() {
                         <div className="text-sm text-gray-700 mt-0.5">{act.description}</div>
                       ) : null}
                       <div className="text-xs text-gray-500">
-                        {act.created_at
-                          ? format(new Date(act.created_at), 'MMM d, yyyy HH:mm')
-                          : ''}
+                        {act.created_at ? formatLocalDateTime(act.created_at) : ''}
                       </div>
                     </li>
                   ))}

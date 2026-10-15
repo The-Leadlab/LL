@@ -7,10 +7,11 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { Search, Paperclip, Upload, Trash2 as TrashIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatLocalDateTime } from '@/lib/localDateTime';
 import tasksAPI, { TaskPriority, TaskStatus } from '@/services/tasks';
 import type { Task } from '@/services/tasks';
 import { toast } from 'react-hot-toast';
+import { getApiErrorMessage } from '@/lib/apiError';
 import usersAPI, { User } from '@/services/api/users';
 import { openAttachmentInNewTab, taskAttachmentUrl } from '@/lib/apiAttachmentUrls';
 import { useAuthStore } from '@/store/auth';
@@ -73,7 +74,7 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
   const safeFormatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     try {
-      return format(new Date(dateString), 'MMM d, yyyy HH:mm');
+      return formatLocalDateTime(dateString) || 'N/A';
     } catch (error) {
       console.error('Error formatting date:', dateString, error);
       return 'Invalid date';
@@ -184,8 +185,8 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
       await tasksAPI.uploadTaskAttachment(currentTask.id, file);
       await refetchAttachments();
       toast.success('Attachment uploaded');
-    } catch {
-      toast.error('Could not upload attachment');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Could not upload attachment'));
     } finally {
       setUploadingAttachment(false);
     }

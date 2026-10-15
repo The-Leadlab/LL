@@ -258,9 +258,9 @@ export function ModernTasks() {
 
       {view === 'kanban' && (
         <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 xl:grid-cols-4">
           {tasksByStatus.map((status) => (
-            <div key={status.id} className="flex flex-col">
+            <div key={status.id} className="flex w-[min(100%,18rem)] flex-shrink-0 flex-col md:w-auto">
               <div className="mb-4 flex items-center justify-between border-b-2 border-neutral-200 pb-3 dark:border-neutral-700">
                 <div className="flex items-center space-x-2">
                   <div className={`h-3 w-3 rounded-full ${status.dot}`} />

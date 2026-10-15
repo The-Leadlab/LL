@@ -23,4 +23,4 @@ EXPOSE 8000
 
 # Single worker + request recycling keeps RSS under free-plan memory.
 # Render injects $PORT; fall back to 8000 for local docker runs.
-CMD ["sh", "-c", "gunicorn main:app -k uvicorn.workers.UvicornWorker -w ${WEB_CONCURRENCY:-1} --bind 0.0.0.0:${PORT:-8000} --timeout 120 --max-requests 200 --max-requests-jitter 40 --graceful-timeout 30"]
+CMD ["sh", "-c", "python -c \"from app.db.session import engine; from app.core.task_attachment_schema import ensure_task_attachments_schema; ensure_task_attachments_schema(engine)\" && gunicorn main:app -k uvicorn.workers.UvicornWorker -w ${WEB_CONCURRENCY:-1} --bind 0.0.0.0:${PORT:-8000} --timeout 120 --max-requests 200 --max-requests-jitter 40 --graceful-timeout 30"]

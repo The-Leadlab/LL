@@ -491,7 +491,7 @@ export const CalendarPage = () => {
   };
 
   const renderCalendarHeader = () => (
-    <div className="bg-white border-b border-gray-200 px-4 py-4 sm:px-8 sm:py-6">
+    <div className="bg-white border-b border-gray-200 px-3 py-4 sm:px-8 sm:py-6 overflow-x-hidden">
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-6">
           <div className="flex items-center justify-between gap-2 sm:space-x-4">
