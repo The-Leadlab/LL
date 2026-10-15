@@ -33,18 +33,27 @@ export const informationRequestsAPI = {
 
   getLeadRequests: async (leadId: number): Promise<InformationRequest[]> => {
     const response = await api.get(`/information-requests/lead/${leadId}`);
-    return response.data;
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.items)) return data.items;
+    if (data && Array.isArray(data.results)) return data.results;
+    return [];
   },
 
   getMyRequests: async (): Promise<InformationRequest[]> => {
     const response = await api.get('/information-requests/me');
-    return response.data;
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.items)) return data.items;
+    return [];
   },
 
   getAllRequests: async (): Promise<InformationRequest[]> => {
     const response = await api.get('/information-requests/all');
-    console.log('getAllRequests response:', response);
-    return response.data;
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.items)) return data.items;
+    return [];
   },
 
   updateStatus: async (requestId: number, data: InformationRequestUpdate): Promise<InformationRequest> => {

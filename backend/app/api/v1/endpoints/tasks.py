@@ -16,7 +16,7 @@ import os
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 TASK_ATTACHMENT_ROOT = Path(settings.UPLOAD_DIR) / "task_attachments"
 TASK_ATTACHMENT_ROOT.mkdir(parents=True, exist_ok=True)
@@ -119,6 +119,7 @@ def create_task(
     return task
 
 @router.get("/{task_id}", response_model=Task)
+@router.get("/{task_id}/", response_model=Task)
 def get_task(
     *,
     db: Session = Depends(deps.get_db),
@@ -310,6 +311,7 @@ def complete_task(
 
 
 @router.get("/{task_id}/attachments")
+@router.get("/{task_id}/attachments/")
 def list_task_attachments(
     *,
     db: Session = Depends(deps.get_db),
@@ -325,6 +327,7 @@ def list_task_attachments(
 
 
 @router.post("/{task_id}/attachments")
+@router.post("/{task_id}/attachments/")
 async def upload_task_attachment(
     *,
     db: Session = Depends(deps.get_db),

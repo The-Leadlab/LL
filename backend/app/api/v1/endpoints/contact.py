@@ -5,8 +5,9 @@ from app import schemas
 from app.api import deps
 from app.core.email import email_sender
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
+@router.post("", response_model=schemas.Msg)
 @router.post("/", response_model=schemas.Msg)
 async def send_contact_message(
     background_tasks: BackgroundTasks,

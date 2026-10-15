@@ -23,6 +23,7 @@ import {
   X
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { buildTextPdf } from '../../lib/simplePdf';
 import { leadsAPI, organizationsAPI } from '../../services/api';
 import { invoiceService } from '../../services/invoices';
 
@@ -244,28 +245,29 @@ export function InvoiceMaker() {
     }
   };
 
-  // Generate PDF (mock implementation)
   const generatePDF = () => {
     try {
-      // In a real implementation, this would use libraries like jsPDF or generate server-side
-      const invoiceElement = document.getElementById('invoice-preview');
-      if (invoiceElement) {
-        // Mock PDF generation
-        toast.success('PDF generated! Download starting...');
-        
-        // Create a mock download
-        setTimeout(() => {
-          const blob = new Blob([JSON.stringify(invoiceData, null, 2)], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${invoiceData.invoiceNumber}.json`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 1000);
-      }
+      const lines = [
+        `Invoice ${invoiceData.invoiceNumber}`,
+        `Date ${invoiceData.date}    Due ${invoiceData.dueDate}`,
+        `Bill to: ${invoiceData.clientName || ''} ${invoiceData.clientEmail || ''}`.trim(),
+        '',
+        ...invoiceData.items.map(
+          (item) => `${item.description}  x${item.quantity}  ${invoiceData.currencySymbol}${item.unitPrice.toFixed(2)}  = ${invoiceData.currencySymbol}${item.total.toFixed(2)}`
+        ),
+        '',
+        `Total ${invoiceData.currencySymbol}${Number(invoiceData.total || 0).toFixed(2)}`,
+      ];
+      const blob = buildTextPdf(lines);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${invoiceData.invoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('PDF download started');
     } catch (error) {
       toast.error('Failed to generate PDF');
     }
@@ -809,49 +811,55 @@ export function InvoiceMaker() {
             <CardContent>
               <div className="space-y-4">
                 {invoiceData.items.map((item, index) => (
-                  <div key={item.id} className="grid grid-cols-12 gap-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="col-span-5">
+                  <div key={item.id} className="grid grid-cols-1 gap-3 p-4 bg-gray-50 rounded-lg sm:grid-cols-12 sm:gap-4">
+                    <div className="min-w-0 sm:col-span-5">
                       <Label htmlFor={`description-${item.id}`}>Description</Label>
                       <Input
                         id={`description-${item.id}`}
                         value={item.description}
                         onChange={(e) => updateItem(item.id, 'description', e.target.value)}
                         placeholder="Item description"
+                        className="w-full min-w-0"
                       />
                     </div>
-                    <div className="col-span-2">
-                      <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
-                      <Input
-                        id={`quantity-${item.id}`}
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(item.id, 'quantity', Number(e.target.value))}
-                      />
+                    <div className="grid grid-cols-2 gap-3 sm:contents">
+                      <div className="min-w-0 sm:col-span-2">
+                        <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
+                        <Input
+                          id={`quantity-${item.id}`}
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => updateItem(item.id, 'quantity', Number(e.target.value))}
+                          className="w-full min-w-0"
+                        />
+                      </div>
+                      <div className="min-w-0 sm:col-span-2">
+                        <Label htmlFor={`unitPrice-${item.id}`}>Unit Price ({invoiceData.currencySymbol})</Label>
+                        <Input
+                          id={`unitPrice-${item.id}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unitPrice}
+                          onChange={(e) => updateItem(item.id, 'unitPrice', Number(e.target.value))}
+                          className="w-full min-w-0"
+                        />
+                      </div>
                     </div>
-                    <div className="col-span-2">
-                      <Label htmlFor={`unitPrice-${item.id}`}>Unit Price ({invoiceData.currencySymbol})</Label>
-                      <Input
-                        id={`unitPrice-${item.id}`}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.unitPrice}
-                        onChange={(e) => updateItem(item.id, 'unitPrice', Number(e.target.value))}
-                      />
-                    </div>
-                    <div className="col-span-2">
+                    <div className="min-w-0 sm:col-span-2">
                       <Label>Total</Label>
                       <div className="mt-2 p-2 bg-white rounded border text-right font-medium">
                         {invoiceData.currencySymbol}{item.total.toFixed(2)}
                       </div>
                     </div>
-                    <div className="col-span-1 flex items-end">
+                    <div className="flex items-end sm:col-span-1">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => removeItem(item.id)}
-                        className="w-full"
+                        className="w-full min-h-[40px]"
+                        aria-label="Remove item"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

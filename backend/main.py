@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.middleware.cors_on_error import CORSOnErrorMiddleware
 from app.middleware.url_normalizer import URLNormalizerMiddleware
 from app.middleware.security import SecurityMiddleware
 import logging
@@ -20,7 +21,10 @@ logger = logging.getLogger("main")
 app = FastAPI(
     title="LeadLab Backend",
     description="Lead management system backend",
-    version="1.0.0"
+    version="1.0.0",
+    # URLNormalizer strips trailing slashes in-process. Leaving redirect_slashes
+    # on makes FastAPI 307 back to the slashed path and the browser loops.
+    redirect_slashes=False,
 )
 
 
@@ -257,6 +261,9 @@ app.add_middleware(
     max_requests_per_minute=60,  # Adjust based on your needs
     max_request_size=10 * 1024 * 1024  # 10MB
 )
+
+# Outermost: CORS on 307/422/500 as well as success responses.
+app.add_middleware(CORSOnErrorMiddleware)
 
 # Mount the API router with EXPLICIT prefix
 logger.debug("Mounting API router with routes:")

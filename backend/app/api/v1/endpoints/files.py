@@ -17,7 +17,7 @@ from app.schemas.file import (
     FileEntityType
 )
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 @router.get("", response_model=FileListResponse)

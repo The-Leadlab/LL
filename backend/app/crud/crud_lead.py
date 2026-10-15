@@ -115,10 +115,14 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
                         # Case-insensitive equality
                         query = query.filter(func.lower(column) == value.lower())
 
-        # Add sorting
+        # Add sorting (case-insensitive for text fields; nulls last)
         if sort_by and hasattr(Lead, sort_by):
             sort_column = getattr(Lead, sort_by)
-            order_by = desc(sort_column) if sort_desc else asc(sort_column)
+            if sort_by in {"first_name", "last_name", "company", "job_title", "source", "sector", "email"}:
+                sort_expr = func.lower(func.coalesce(sort_column, ""))
+            else:
+                sort_expr = sort_column
+            order_by = desc(sort_expr) if sort_desc else asc(sort_expr)
             query = query.order_by(order_by)
 
         # Add pagination

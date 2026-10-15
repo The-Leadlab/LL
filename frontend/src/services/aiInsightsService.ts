@@ -54,7 +54,7 @@ class AIInsightsService {
    * Get AI insights for lead
    */
   async getLeadInsights(leadId: number, refresh: boolean = false): Promise<AIInsights> {
-    const response = await api.get(`/leads/${leadId}/insights`, {
+    const response = await api.get(`/ai-insights/${leadId}/insights`, {
       params: { refresh }
     });
     return response.data;

@@ -11,7 +11,7 @@ from app.core.email import InvoiceEmailSender
 # Initialize invoice email sender
 invoice_email_sender = InvoiceEmailSender()
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 class InvoiceEmailRequest(BaseModel):

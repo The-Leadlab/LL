@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -438,11 +438,7 @@ const PsychometricInsights: React.FC<PsychometricInsightsProps> = ({ leadId, lea
   const negotiation_strategy = (sales_intelligence as any).negotiation_strategy || {};
   const combined_insights = psychometricData?.combined_insights || {};
 
-  useEffect(() => {
-    if (leadId && !hasAnalyzed) {
-      loadPsychometricData();
-    }
-  }, [leadId]);
+  // Do not auto-run analysis on mount/save — only when the user clicks Analyze.
 
   if (loading) {
     return (

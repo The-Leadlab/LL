@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from app import crud, models, schemas
 from app.api import deps
 
-router = APIRouter(tags=["information-requests"])
+router = APIRouter(redirect_slashes=False, tags=["information-requests"])
 
 @router.post("", response_model=schemas.InformationRequestResponse)
 @router.post("/", response_model=schemas.InformationRequestResponse)

@@ -53,7 +53,7 @@ from app.services.google_workspace import (
 from app.services.outreach_runner import OutreachRunner
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 # ---------- schemas ----------

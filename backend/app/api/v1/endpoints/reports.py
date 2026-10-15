@@ -13,7 +13,7 @@ from app.schemas.report import (
     DashboardStats
 )
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 @router.get("/dashboard", response_model=DashboardStats)
 def get_dashboard_stats(

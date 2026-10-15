@@ -10,7 +10,7 @@ from app.schemas.info_request import (
 )
 from app.models.info_request import RequestStatus
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 @router.post("", response_model=InfoRequestResponse)
 def create_info_request(

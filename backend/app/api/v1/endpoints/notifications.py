@@ -8,7 +8,7 @@ from app.schemas.notification import NotificationCreate, NotificationResponse
 from datetime import datetime, timezone
 from pydantic import BaseModel
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 # Response models
 class NotificationResponse(BaseModel):
@@ -34,7 +34,7 @@ async def get_notifications(
     *,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
-    limit: int = Query(default=10, le=50),
+    limit: int = Query(default=10, le=200),
     skip: int = Query(default=0, ge=0),
     unread_only: bool = Query(default=False)
 ):

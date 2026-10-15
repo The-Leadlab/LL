@@ -23,11 +23,12 @@ from app.crud.crud_workflow import (
     crud_approval_process, crud_approval_request
 )
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 # Workflow Endpoints
 
+@router.get("", response_model=List[WorkflowListResponse])
 @router.get("/", response_model=List[WorkflowListResponse])
 def list_workflows(
     db: Session = Depends(deps.get_db),
@@ -74,6 +75,7 @@ def list_workflows(
     return result
 
 
+@router.post("", response_model=WorkflowResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=WorkflowResponse, status_code=status.HTTP_201_CREATED)
 def create_workflow(
     *,

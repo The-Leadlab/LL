@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.models.user import User
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 # Mock psychometrics data structure
 MOCK_PSYCHOMETRICS_DATA = [
@@ -40,6 +40,7 @@ MOCK_PSYCHOMETRICS_DATA = [
     }
 ]
 
+@router.get("")
 @router.get("/")
 def get_psychometrics(
     skip: int = Query(0, ge=0),
@@ -79,6 +80,7 @@ def get_psychometric(
         raise HTTPException(status_code=404, detail="Psychometric data not found")
     return data
 
+@router.post("")
 @router.post("/")
 def create_psychometric(
     psychometric_data: dict,

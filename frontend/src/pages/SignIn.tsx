@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast'
 import { PublicHeader } from '../components/layout/PublicHeader'
 import { motion } from 'framer-motion'
 import authService from '../services/auth'
+import { getApiErrorMessage } from '@/lib/apiError'
 
 interface SignInForm {
   email?: string
@@ -57,7 +58,7 @@ export function SignIn() {
       toast.success('Login successful!')
     } catch (err: any) {
       console.error('Login error:', err)
-      toast.error(err.response?.data?.message || err.response?.data?.detail || 'Failed to sign in')
+      toast.error(getApiErrorMessage(err, 'Failed to sign in'))
     } finally {
       setIsLoading(false)
     }

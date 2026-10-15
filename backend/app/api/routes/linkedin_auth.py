@@ -16,7 +16,7 @@ from app.models.linkedin_connection import LinkedInConnection
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 # LinkedIn OAuth Configuration
 LINKEDIN_CLIENT_ID = settings.LINKEDIN_CLIENT_ID

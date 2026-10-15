@@ -3,6 +3,8 @@ import { useAuthStore } from '@/store/auth';
 import { getApiOrigin } from '@/lib/apiOrigin';
 import { EMPTY_LEAD_LIST_PAGE } from '@/lib/emptyApiFallbacks';
 import { shouldFakeTaskError } from '@/utils/axiosErrorPolicy';
+import { getApiErrorMessage } from '@/lib/apiError';
+import { stripTrailingSlash } from '@/lib/requestUrl';
 
 // Get API URL from environment variables or use proxy in development
 const isDevelopment = import.meta.env.DEV;
@@ -82,6 +84,9 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    if (typeof config.url === 'string') {
+      config.url = stripTrailingSlash(config.url);
+    }
     
     return config;
   },
@@ -118,6 +123,13 @@ api.interceptors.response.use(
       }
     }
 
+    if (error.response?.data && typeof error.response.data === 'object' && error.response.data.detail != null && typeof error.response.data.detail !== 'string') {
+      const message = getApiErrorMessage(error, '');
+      if (message) {
+        error.response.data.detail = message;
+      }
+    }
+
     // If endpoint returns 404 and is non-critical, silently handle the error
     if (error.response?.status === 404) {
       const currentUrl = originalRequest?.url || '';
@@ -151,10 +163,10 @@ api.interceptors.response.use(
           return Promise.resolve({ data: [] });
         }
         if (currentUrl.includes('/information-requests')) {
-          return Promise.resolve({ data: { items: [] } });
+          return Promise.resolve({ data: [] });
         }
         if (currentUrl.includes('/activities')) {
-          return Promise.resolve({ data: { items: [] } });
+          return Promise.resolve({ data: { items: [], total: 0 } });
         }
         if (shouldFakeTaskError(currentUrl, originalRequest?.method)) {
           return Promise.resolve({ data: { items: [], total: 0 } });
@@ -206,10 +218,10 @@ api.interceptors.response.use(
           return Promise.resolve({ data: [] });
         }
         if (currentUrl.includes('/information-requests')) {
-          return Promise.resolve({ data: { items: [] } });
+          return Promise.resolve({ data: [] });
         }
         if (currentUrl.includes('/activities')) {
-          return Promise.resolve({ data: { items: [] } });
+          return Promise.resolve({ data: { items: [], total: 0 } });
         }
 
         // Reject error for other non-critical endpoints

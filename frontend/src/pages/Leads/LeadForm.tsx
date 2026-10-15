@@ -415,12 +415,14 @@ export function LeadForm() {
       };
 
       const response = await api.post('/leads', leadData);
-      
-      if (response.data.success) {
+      const created = response.data;
+      // API returns the lead object (with id), not always { success: true }
+      if (created?.id || created?.success) {
         toast.success('Lead created successfully');
         const clientId = leadData.client_id;
         try {
           if (clientId) sessionStorage.setItem('leadlab.leads.selectedClientId', String(clientId));
+          sessionStorage.setItem('leadlab.leads.sortBy', 'created_at');
         } catch {
           /* ignore */
         }
@@ -429,7 +431,7 @@ export function LeadForm() {
         navigate(clientId ? `/leads?client_id=${clientId}` : '/leads');
       } else {
         console.error('Lead creation failed:', response.data);
-        toast.error(response.data.message || 'Failed to create lead');
+        toast.error(created?.message || 'Failed to create lead');
       }
     } catch (error: any) {
       console.error('Error creating lead:', error);

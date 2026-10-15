@@ -13,7 +13,7 @@ from app.schemas.role import (
     Permission,
 )
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 @router.get("/permissions", response_model=List[Permission])

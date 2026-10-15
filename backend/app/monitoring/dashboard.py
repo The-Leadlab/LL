@@ -119,7 +119,7 @@ def get_monitoring_data(hours: int = 24) -> Dict[str, Any]:
         "avg_response_time": sum(log.get('execution_time', 0) for log in performance_logs) / len(performance_logs) if performance_logs else 0
     }
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 @router.get("/monitoring/data")
 async def get_monitoring_stats(

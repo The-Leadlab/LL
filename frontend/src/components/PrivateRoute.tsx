@@ -5,36 +5,58 @@ import { useEffect, useState } from 'react';
 export default function PrivateRoute() {
   const location = useLocation();
   const { isAuthenticated, user, fetchUser } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(true);
-  const [authChecked, setAuthChecked] = useState(false);
+  // Skip full-screen spinner when we already have a persisted session user (B19/B41)
+  const [authChecked, setAuthChecked] = useState(() => Boolean(user) || !isAuthenticated);
+  const [isLoading, setIsLoading] = useState(() => Boolean(isAuthenticated && !user));
 
   useEffect(() => {
+    let cancelled = false;
+
     const checkAuth = async () => {
-      try {
-        if (!user && isAuthenticated) {
-          await fetchUser();
+      if (!isAuthenticated) {
+        if (!cancelled) {
+          setIsLoading(false);
+          setAuthChecked(true);
         }
+        return;
+      }
+
+      if (user) {
+        if (!cancelled) {
+          setIsLoading(false);
+          setAuthChecked(true);
+        }
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        await fetchUser();
       } catch (error) {
         console.error('Auth check failed:', error);
       } finally {
-        setIsLoading(false);
-        setAuthChecked(true);
+        if (!cancelled) {
+          setIsLoading(false);
+          setAuthChecked(true);
+        }
       }
     };
 
-    checkAuth();
+    void checkAuth();
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated, user, fetchUser]);
 
-  // Don't render anything until initial auth check is complete
-  if (!authChecked || isLoading) {
+  // Only block the whole app when we have a token but no user yet
+  if (!authChecked || (isLoading && !user)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
 
-  // After auth check, if not authenticated, redirect to signin
   if (!isAuthenticated || !user) {
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }

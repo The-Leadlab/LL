@@ -17,7 +17,7 @@ from app.schemas.settings import (
 )
 from app.models.user import User
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 # Temporary mock data for settings until proper models are implemented
 @router.get("/organization")

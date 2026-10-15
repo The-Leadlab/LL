@@ -15,7 +15,7 @@ from app.models.associations import lead_tags  # lead_tags tablosunu import et
 from app.crud import lead as crud_lead
 from app.crud import tag as crud_tag
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 logger = logging.getLogger(__name__)
 
 @router.get("", response_model=List[TagSchema])

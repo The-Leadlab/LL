@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/Form';
 import { useAuthStore } from '@/store/auth';
 import usersAPI from '@/services/api/users';
+import { extractUserList, normalizeAssigneeUsers } from '@/utils/assigneeUsers';
 import { getCurrencies, type Currency as CurrencyRow } from '@/services/currencies';
 
 interface NewDealForm {
@@ -141,15 +142,16 @@ export const NewDealPage = () => {
     queryKey: ['organization-users'],
     queryFn: async () => {
       try {
-        const response = await usersAPI.getAll();
-        
-        // Extract users from the response structure
-        const allUsers = response.items || [];
-        
-        // Filter users by organization and active status
-        return allUsers.filter(user => 
-          user.organization_id === currentUser?.organization_id && user.is_active
+        const response = await usersAPI.getAll(
+          currentUser?.organization_id ? { organization_id: Number(currentUser.organization_id) } : undefined
         );
+        const allUsers = extractUserList(response);
+        return normalizeAssigneeUsers(allUsers, currentUser ? {
+          id: Number(currentUser.id),
+          email: currentUser.email,
+          first_name: currentUser.first_name,
+          last_name: currentUser.last_name,
+        } : null);
       } catch (error) {
         console.error('Error fetching organization users:', error);
         return [];
@@ -198,7 +200,8 @@ export const NewDealPage = () => {
                 data.status === 'Closed_Lost' ? 'Closed Lost' : 
                 data.status,
         // Amount değerini sayısal değere çevirelim
-        amount: parseFloat(data.amount) || 0
+        amount: parseFloat(data.amount) || 0,
+        assigned_to_id: data.assigned_to_id || (currentUser?.id ? Number(currentUser.id) : undefined),
       };
 
       

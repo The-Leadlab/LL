@@ -14,7 +14,7 @@ from app.crud import lead
 from app.models.marketing_form_submission import MarketingFormSubmission
 import io
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 def _decode_csv_bytes(content: bytes) -> str:
     """Decode CSV content using common encodings with fallback."""

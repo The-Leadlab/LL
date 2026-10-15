@@ -385,7 +385,7 @@ function OrganizationSettings() {
   const orgId = user?.organization_id != null ? Number(user.organization_id) : null;
   const canEditOrg = Boolean(user?.is_admin);
 
-  const { data: org, isLoading } = useQuery({
+  const { data: org, isLoading, isError } = useQuery({
     queryKey: ['settings-organization', orgId],
     enabled: !!orgId,
     queryFn: async () => {
@@ -446,6 +446,14 @@ function OrganizationSettings() {
       <div className="p-8 flex items-center gap-2 text-neutral-600">
         <Loader2 className="h-5 w-5 animate-spin" />
         Loading organization…
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-8 text-neutral-600 dark:text-neutral-300">
+        Could not load organization settings. Refresh the page and try again.
       </div>
     );
   }
@@ -721,60 +729,22 @@ function SecuritySettings() {
 }
 
 function BillingSettings() {
+  const navigate = useNavigate();
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
         Billing & Subscription
       </h2>
       <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-        Live billing is handled outside this screen (e.g. Stripe). Use the Credits or subscription flows from the product menu when available.
+        No payment method is stored in this screen. Credits and plan changes are managed from the Credits page.
       </p>
-
-      <div className="space-y-6">
-        <div className="p-6 bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-900/20 dark:to-purple-900/20 border border-primary-200 dark:border-primary-800 rounded-xl">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-xl font-bold text-neutral-900 dark:text-neutral-50">
-                Enterprise Plan
-              </h3>
-              <p className="text-neutral-600 dark:text-neutral-400">
-                $99/month • Billed annually
-              </p>
-            </div>
-            <span className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium">
-              Active
-            </span>
-          </div>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-            Next billing date: January 15, 2025
-          </p>
-          <button className="px-4 py-2 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-900 dark:text-neutral-50 rounded-lg font-medium transition-colors border border-neutral-200 dark:border-neutral-700">
-            Manage Subscription
-          </button>
-        </div>
-
-        <div>
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-4">
-            Payment Method
-          </h3>
-          <div className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <CreditCard className="w-8 h-8 text-neutral-600 dark:text-neutral-400" />
-              <div>
-                <p className="font-medium text-neutral-900 dark:text-neutral-50">
-                  •••• •••• •••• 4242
-                </p>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  Expires 12/2025
-                </p>
-              </div>
-            </div>
-            <button className="text-primary-600 hover:text-primary-700 font-medium">
-              Update
-            </button>
-          </div>
-        </div>
-      </div>
+      <button
+        type="button"
+        onClick={() => navigate('/credits')}
+        className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium"
+      >
+        Open Credits
+      </button>
     </div>
   );
 }

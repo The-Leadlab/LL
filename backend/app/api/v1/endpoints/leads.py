@@ -16,7 +16,7 @@ from sqlalchemy.orm import joinedload
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 class LeadTagUpdate(BaseModel):
     tags: List[int]

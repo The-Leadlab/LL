@@ -211,6 +211,10 @@ export const router = createBrowserRouter([
             element: <Navigate to="/settings/company" replace />
           },
           {
+            path: '/settings/customization',
+            element: <ModernCustomization />
+          },
+          {
             path: '/settings/:tab',
             element: <ModernSettings />
           },

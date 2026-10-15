@@ -43,7 +43,7 @@ from app.core.security import encrypt_password
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 def _sign_oauth_state(payload_b64: str) -> str:

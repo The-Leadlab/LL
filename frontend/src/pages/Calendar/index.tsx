@@ -143,16 +143,29 @@ const normalizeEventTypeForApi = (eventType: string): 'meeting' | 'video_call' |
   return 'meeting';
 };
 
+function timezoneLabel(zone: string, city: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: zone,
+      timeZoneName: 'shortOffset',
+    }).formatToParts(new Date());
+    const offset = parts.find((part) => part.type === 'timeZoneName')?.value;
+    return offset ? `${city} (${offset})` : city;
+  } catch {
+    return city;
+  }
+}
+
 const TIMEZONE_OPTIONS = [
-  { value: 'Europe/Istanbul', label: 'Istanbul (GMT+3)' },
-  { value: 'Europe/London', label: 'London (GMT+0)' },
-  { value: 'Europe/Paris', label: 'Paris (GMT+1)' },
-  { value: 'Europe/Berlin', label: 'Berlin (GMT+1)' },
-  { value: 'Europe/Madrid', label: 'Madrid (GMT+1)' },
-  { value: 'Europe/Rome', label: 'Rome (GMT+1)' },
-  { value: 'UTC', label: 'UTC (GMT+0)' },
-  { value: 'America/New_York', label: 'New York (GMT-5)' },
-  { value: 'Asia/Tokyo', label: 'Tokyo (GMT+9)' },
+  { value: 'Europe/Istanbul', label: timezoneLabel('Europe/Istanbul', 'Istanbul') },
+  { value: 'Europe/London', label: timezoneLabel('Europe/London', 'London') },
+  { value: 'Europe/Paris', label: timezoneLabel('Europe/Paris', 'Paris') },
+  { value: 'Europe/Berlin', label: timezoneLabel('Europe/Berlin', 'Berlin') },
+  { value: 'Europe/Madrid', label: timezoneLabel('Europe/Madrid', 'Madrid') },
+  { value: 'Europe/Rome', label: timezoneLabel('Europe/Rome', 'Rome') },
+  { value: 'UTC', label: timezoneLabel('UTC', 'UTC') },
+  { value: 'America/New_York', label: timezoneLabel('America/New_York', 'New York') },
+  { value: 'Asia/Tokyo', label: timezoneLabel('Asia/Tokyo', 'Tokyo') },
 ];
 
 const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -194,7 +207,21 @@ export const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'agenda'>('month');
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'agenda'>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'agenda' : 'month'
+  );
+
+  // Keep mobile on agenda — month chips are unreadable at ~390px (B45)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 767px)');
+    const enforce = () => {
+      if (mq.matches && viewMode !== 'agenda') setViewMode('agenda');
+    };
+    enforce();
+    mq.addEventListener('change', enforce);
+    return () => mq.removeEventListener('change', enforce);
+  }, [viewMode]);
   const [agendaRangeDays, setAgendaRangeDays] = useState<7 | 14 | 30 | 90>(30);
   const [agendaVisibleCount, setAgendaVisibleCount] = useState(AGENDA_PAGE_SIZE);
   const [expandedMonthDay, setExpandedMonthDay] = useState<Date | null>(null);
@@ -328,14 +355,18 @@ export const CalendarPage = () => {
       await eventsAPI.create(formattedEvent);
       queryClient.invalidateQueries({ queryKey: ['events'] });
       toast.success('Event created successfully!');
+      return true;
     } catch (error: any) {
       console.error('Error creating event:', error);
-      const errorMessage = error?.response?.data?.detail || 'Failed to create event';
+      const errorMessage = typeof error?.response?.data?.detail === 'string'
+        ? error.response.data.detail
+        : error?.message || 'Failed to create event';
       toast.error(errorMessage);
+      return false;
     }
   };
 
-  const handleCreateNewEvent = () => {
+  const handleCreateNewEvent = async () => {
     if (!newEvent.title) {
       toast.error('Please enter an event title');
       return;
@@ -354,7 +385,8 @@ export const CalendarPage = () => {
       status: 'scheduled',
     };
 
-    handleCreateEvent(eventData);
+    const created = await handleCreateEvent(eventData);
+    if (!created) return;
     setNewEventDialogOpen(false);
     setNewEvent({
       title: '',
@@ -458,42 +490,44 @@ export const CalendarPage = () => {
   };
 
   const renderCalendarHeader = () => (
-    <div className="bg-white border-b border-gray-200 px-8 py-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-4">
+    <div className="bg-white border-b border-gray-200 px-4 py-4 sm:px-8 sm:py-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-6">
+          <div className="flex items-center justify-between gap-2 sm:space-x-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={handlePrevious}
-              className="p-2 hover:bg-gray-100 rounded-lg"
+              className="min-h-[44px] min-w-[44px] p-2 hover:bg-gray-100 rounded-lg"
+              aria-label="Previous"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-2xl font-bold text-gray-900 min-w-[250px] text-center">
+            <h1 className="flex-1 text-lg sm:text-2xl font-bold text-gray-900 sm:min-w-[250px] text-center truncate px-1">
               {getViewTitle()}
             </h1>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleNext}
-              className="p-2 hover:bg-gray-100 rounded-lg"
+              className="min-h-[44px] min-w-[44px] p-2 hover:bg-gray-100 rounded-lg"
+              aria-label="Next"
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
-            <Button variant="outline" size="sm" onClick={goToToday} className="rounded-lg">
+            <Button variant="outline" size="sm" onClick={goToToday} className="hidden sm:inline-flex rounded-lg">
               Today
             </Button>
             <Input
               type="date"
               value={format(currentDate, 'yyyy-MM-dd')}
               onChange={(e) => jumpToDate(e.target.value)}
-              className="w-[150px] h-9 border-gray-200"
+              className="hidden sm:block w-[150px] h-9 border-gray-200"
               aria-label="Jump to date"
             />
           </div>
 
-          <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+          <div className="hidden sm:flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
             <Button
               variant={viewMode === 'month' ? 'default' : 'ghost'}
               size="sm"
@@ -534,6 +568,7 @@ export const CalendarPage = () => {
               <span>Agenda</span>
             </Button>
           </div>
+          <p className="text-sm text-gray-500 sm:hidden">Agenda view</p>
 
           {viewMode === 'agenda' && (
             <Select
