@@ -542,6 +542,11 @@ async def login(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Account is inactive. Please contact support."
             )
+
+        # Keep login org id in sync with authenticated requests (/auth/me).
+        if hasattr(user, "__table__"):
+            from app.core.workspace import ensure_personal_workspace_if_needed
+            user = ensure_personal_workspace_if_needed(db, user)
         
         # Generate access token
         logger.critical(f"[DEBUG] Generating token for user: {login_identifier}")

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  displayAssigneeLabel,
   displayUserName,
   extractUserList,
   filterAssigneeUsers,
@@ -13,8 +14,9 @@ describe('normalizeAssigneeUsers', () => {
       { id: '42', first_name: 'Josh', last_name: 'Tester', email: 'josh@example.com' },
     );
 
-    expect(users.map((user) => user.id).sort()).toEqual([1, 42]);
+    expect(users.map((user) => user.id)).toEqual([42, 1]);
     expect(displayUserName(users.find((user) => user.id === 42)!)).toBe('Josh Tester');
+    expect(displayAssigneeLabel(users[0], { id: '42' })).toBe('Me (Josh Tester)');
   });
 
   it('keeps users that only have an email address', () => {

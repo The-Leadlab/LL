@@ -3,7 +3,7 @@ from pathlib import Path
 import mimetypes
 from datetime import datetime
 import time
-from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile, status
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 from app.api import deps
@@ -116,6 +116,124 @@ def _remove_existing_avatars(user_id: int) -> None:
             except OSError:
                 pass
 
+def _is_platform_admin(user: UserModel) -> bool:
+    return bool(getattr(user, "is_admin", False) or getattr(user, "is_superuser", False))
+
+
+def _scoped_list_organization_id(
+    current_user: UserModel,
+    organization_id: Optional[int],
+) -> int:
+    """
+    Non-admins are always scoped to their own org.
+    Admins default to their own org and may only list another org when it is explicit.
+    """
+    own_org = getattr(current_user, "organization_id", None)
+    if not own_org:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Current user or organization ID not found",
+        )
+    own_org_id = int(own_org)
+    if organization_id in (None, PERSONAL_ORG_SENTINEL):
+        return own_org_id
+    requested = int(organization_id)
+    if requested == own_org_id:
+        return own_org_id
+    if not _is_platform_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot list users from another organization",
+        )
+    return requested
+
+
+def _to_user_response(user: UserModel, *, is_self: bool = False) -> UserResponse:
+    org_role = _organization_role_for_api(user)
+    return UserResponse(
+        id=int(user.id),
+        email=str(user.email),
+        first_name=user.first_name or "",
+        last_name=user.last_name or "",
+        is_active=bool(user.is_active),
+        is_admin=bool(user.is_admin),
+        organization_id=int(user.organization_id),
+        organization_role=org_role,
+        job_title=getattr(user, "job_title", None),
+        last_login=getattr(user, "last_login", None),
+        created_at=getattr(user, "created_at", None),
+        linkedin_profile_id=getattr(user, "linkedin_profile_id", None),
+        linkedin_profile_url=getattr(user, "linkedin_profile_url", None),
+        is_self=is_self,
+    )
+
+
+def _list_active_org_users(
+    db: Session,
+    *,
+    organization_id: int,
+    skip: int = 0,
+    limit: int = 100,
+) -> tuple[list[UserModel], int]:
+    total = crud_user.user.count_multi(
+        db,
+        organization_id=organization_id,
+        is_active=True,
+        exclude_tombstones=True,
+    )
+    users = crud_user.user.get_multi(
+        db,
+        skip=skip,
+        limit=limit,
+        organization_id=organization_id,
+        is_active=True,
+        exclude_tombstones=True,
+        order_by_name=True,
+    )
+    return users, total
+
+
+def _user_list_payload(
+    users: list[UserModel],
+    *,
+    total: int,
+    skip: int,
+    limit: int,
+    current_user_id: Optional[int] = None,
+) -> UserList:
+    page_size = max(int(limit), 1)
+    items = [
+        _to_user_response(
+            user,
+            is_self=current_user_id is not None and int(user.id) == int(current_user_id),
+        )
+        for user in users
+    ]
+    return UserList(
+        items=items,
+        total=total,
+        page=skip // page_size + 1,
+        size=len(items),
+        has_more=skip + len(items) < total,
+    )
+
+
+def _record_membership_if_joining(
+    db: Session,
+    *,
+    user: UserModel,
+    current_user: UserModel,
+    joining_existing_team: bool,
+) -> None:
+    if joining_existing_team and user.organization_id:
+        record_team_membership(
+            db,
+            user=user,
+            organization_id=int(user.organization_id),
+            invited_by_id=int(current_user.id),
+        )
+
+
 router = APIRouter(redirect_slashes=False)
 
 @router.get("", response_model=UserList)
@@ -123,50 +241,36 @@ router = APIRouter(redirect_slashes=False)
 def get_users(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
+    limit: int = Query(100, ge=1, le=500),
     organization_id: Optional[int] = None,
     current_user: UserModel = Depends(deps.get_current_user),
 ) -> Any:
     """
-    Retrieve users.
+    Retrieve active users in the caller's organization.
+
+    Non-admins cannot list another organization. Admins default to their own
+    org and may pass organization_id to list a different one.
     """
-    logger.debug(f"Getting users for user {current_user.id}, skip={skip}, organization_id={organization_id}")
-    
-    if current_user.is_admin and not organization_id:
-        users = crud_user.user.get_multi(db, skip=skip)
-    else:
-        # Get users from the specified organization or current user's organization
-        users = crud_user.user.get_multi(
-            db,
-            organization_id=organization_id or int(current_user.organization_id),
-            is_active=True
-        )
-    
-    total = len(users)
-    page = skip // 100 + 1
-    has_more = False
-    
-    # Convert User models to UserResponse
-    user_responses = [
-        UserResponse(
-            id=int(user.id),
-            email=str(user.email),
-            first_name=user.first_name,
-            last_name=user.last_name,
-            is_active=bool(user.is_active),
-            is_admin=bool(user.is_admin),
-            organization_id=int(user.organization_id),
-            created_at=getattr(user, "created_at", None),
-        ) for user in users
-    ]
-    
-    logger.debug(f"Returning {total} users")
-    
-    return UserList(
-        items=user_responses,
+    scoped_org_id = _scoped_list_organization_id(current_user, organization_id)
+    users, total = _list_active_org_users(
+        db,
+        organization_id=scoped_org_id,
+        skip=skip,
+        limit=limit,
+    )
+    logger.debug(
+        "Returning %s/%s users for org %s (user %s)",
+        len(users),
+        total,
+        scoped_org_id,
+        current_user.id,
+    )
+    return _user_list_payload(
+        users,
         total=total,
-        page=page,
-        size=total,
-        has_more=has_more
+        skip=skip,
+        limit=limit,
+        current_user_id=int(current_user.id),
     )
 
 @router.post("", response_model=UserInDB)
@@ -199,13 +303,12 @@ def create_user(
     user_in.organization_id = org_id
 
     user = crud_user.user.create(db, obj_in=user_in)
-    if joining_existing_team:
-        record_team_membership(
-            db,
-            user=user,
-            organization_id=int(user.organization_id),
-            invited_by_id=int(current_user.id),
-        )
+    _record_membership_if_joining(
+        db,
+        user=user,
+        current_user=current_user,
+        joining_existing_team=joining_existing_team,
+    )
     return user
 
 @router.get("/me", response_model=UserInDB)
@@ -290,71 +393,59 @@ def get_my_avatar(
     return FileResponse(path, media_type=media)
 
 
+@router.get("/assignable", response_model=UserList)
+@router.get("/assignable/", response_model=UserList)
+def get_assignable_users(
+    db: Session = Depends(deps.get_db),
+    current_user: UserModel = Depends(deps.get_current_user),
+    skip: int = 0,
+    limit: int = Query(500, ge=1, le=500),
+) -> Any:
+    """Active members of the caller's organization, with the caller first."""
+    scoped_org_id = _scoped_list_organization_id(current_user, None)
+    users, total = _list_active_org_users(
+        db,
+        organization_id=scoped_org_id,
+        skip=0,
+        limit=max(skip + limit, limit),
+    )
+    caller_id = int(current_user.id)
+    caller = next((user for user in users if int(user.id) == caller_id), None)
+    others = [user for user in users if int(user.id) != caller_id]
+    if caller is None:
+        caller = current_user
+        total = max(total, len(others) + 1)
+    ordered = [caller] + others
+    paged = ordered[skip: skip + limit]
+    return _user_list_payload(
+        paged,
+        total=total,
+        skip=skip,
+        limit=limit,
+        current_user_id=caller_id,
+    )
+
+
 @router.get("/organization-users", response_model=List[UserResponse])
 def get_organization_users(
     current_user: UserModel = Depends(deps.get_current_user),
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = Query(100, ge=1, le=500),
+    organization_id: Optional[int] = None,
 ):
-    """Get all users from the same organization as the current user"""
-    try:
-        print(f"DEBUG: Current user: {current_user.email if current_user else 'None'}")
-        print(f"DEBUG: Organization ID: {current_user.organization_id if current_user else 'None'}")
-        
-        if not current_user or not current_user.organization_id:
-            raise HTTPException(
-                status_code=422,
-                detail="Current user or organization ID not found"
-            )
-            
-        users = crud_user.user.get_organization_users(
-            db=db,
-            organization_id=int(current_user.organization_id)
-        )
-        
-        print(f"DEBUG: Found {len(users) if users else 0} users")
-        
-        if not users:
-            return []
-        
-        # Convert User models to UserResponse and validate data
-        user_responses = []
-        for user in users:
-            try:
-                org_role = _organization_role_for_api(user)
-
-                user_response = UserResponse(
-                    id=int(user.id),
-                    email=str(user.email),
-                    first_name=user.first_name or "",
-                    last_name=user.last_name or "",
-                    is_active=bool(user.is_active),
-                    is_admin=bool(user.is_admin),
-                    organization_id=int(user.organization_id),
-                    organization_role=org_role,
-                    job_title=user.job_title if hasattr(user, 'job_title') else None,
-                    last_login=user.last_login if hasattr(user, 'last_login') else None,
-                    linkedin_profile_id=user.linkedin_profile_id if hasattr(user, 'linkedin_profile_id') else None,
-                    linkedin_profile_url=user.linkedin_profile_url if hasattr(user, 'linkedin_profile_url') else None
-                )
-                user_responses.append(user_response)
-            except (ValueError, TypeError, AttributeError) as e:
-                print(f"Error converting user {user.id}: {str(e)}")
-                continue
-        
-        print(f"DEBUG: Returning {len(user_responses)} user responses")
-        return user_responses
-        
-    except ValueError as e:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Invalid data format: {str(e)}"
-        )
-    except Exception as e:
-        print(f"Error fetching organization users: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error fetching organization users: {str(e)}"
-        )
+    """Active users in the caller's org (same scoping as GET /users)."""
+    scoped_org_id = _scoped_list_organization_id(current_user, organization_id)
+    users, _total = _list_active_org_users(
+        db,
+        organization_id=scoped_org_id,
+        skip=skip,
+        limit=limit,
+    )
+    return [
+        _to_user_response(user, is_self=int(user.id) == int(current_user.id))
+        for user in users
+    ]
 
 @router.get("/{user_id}", response_model=UserInDB)
 def get_user(
@@ -402,7 +493,6 @@ def update_user(
     # Password will be hashed directly by CRUD service
     # No need to assign hashed_password
 
-    previous_org = int(user.organization_id) if user.organization_id else None
     incoming_org = user_in.organization_id
     joining_existing_team = False
     if incoming_org is not None:
@@ -415,13 +505,12 @@ def update_user(
         )
         user_in.organization_id = org_id
     user = crud_user.user.update(db, db_obj=user, obj_in=user_in)
-    if joining_existing_team and user.organization_id and int(user.organization_id) != previous_org:
-        record_team_membership(
-            db,
-            user=user,
-            organization_id=int(user.organization_id),
-            invited_by_id=int(current_user.id),
-        )
+    _record_membership_if_joining(
+        db,
+        user=user,
+        current_user=current_user,
+        joining_existing_team=joining_existing_team,
+    )
     return user
 
 @router.patch("/{user_id}", response_model=UserInDB)
@@ -447,7 +536,6 @@ def patch_user(
     # not assigning hashed_password because the model doesn't support this field
     # and the CRUD service already hashes the password
 
-    previous_org = int(user.organization_id) if user.organization_id else None
     update_data = user_in.dict(exclude_unset=True)
     joining_existing_team = False
     if "organization_id" in update_data:
@@ -460,13 +548,12 @@ def patch_user(
         )
         update_data["organization_id"] = org_id
     user = crud_user.user.update(db, db_obj=user, obj_in=update_data)
-    if joining_existing_team and user.organization_id and int(user.organization_id) != previous_org:
-        record_team_membership(
-            db,
-            user=user,
-            organization_id=int(user.organization_id),
-            invited_by_id=int(current_user.id),
-        )
+    _record_membership_if_joining(
+        db,
+        user=user,
+        current_user=current_user,
+        joining_existing_team=joining_existing_team,
+    )
     return user
 
 @router.delete("/{user_id}", response_model=UserInDB)

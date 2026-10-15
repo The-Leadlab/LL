@@ -69,7 +69,6 @@ let pendingRequests: Array<() => void> = [];
 const nonCriticalEndpoints = [
   '/notifications',
   '/leads',
-  '/users',
   '/organization-settings',
   '/user-settings',
   '/currencies',
@@ -104,17 +103,6 @@ const taskDefaultResponses = {
 let lastSuccessfulTokenRefresh = 0;
 // Token yenileme minimum aralığı (15 saniye)
 const TOKEN_REFRESH_MIN_INTERVAL = 15000;
-
-/** Do not fake 404/401 responses for these /users/* paths — real errors must surface (profile, avatar, org roster, user by id). */
-function isUsersSubResourceUrl(url: string): boolean {
-  return (
-    url.includes('/users/me') ||
-    url.includes('/users/organization-users') ||
-    url.includes('/users/actions/') ||
-    url.includes('/users/deactivate-all-except-ali') ||
-    /\/users\/\d+(\/|$|\?)/.test(url)
-  );
-}
 
 // Request interceptor - URL'lerin sonuna / ekleyerek yönlendirmeleri önleyelim
 api.interceptors.request.use(
@@ -189,9 +177,6 @@ api.interceptors.response.use(
         if (currentUrl.includes('/leads')) {
           return Promise.resolve({ data: { ...EMPTY_LEAD_LIST_PAGE } });
         }
-        if (currentUrl.includes('/users') && !isUsersSubResourceUrl(currentUrl)) {
-          return Promise.resolve({ data: { items: [], total: 0 } });
-        }
         if (currentUrl.includes('/tags')) {
           return Promise.resolve({ data: { items: [], total: 0 } });
         }
@@ -245,9 +230,6 @@ api.interceptors.response.use(
         // Leads veya users için boş sonuç döndürelim
         if (currentUrl.includes('/leads')) {
           return Promise.resolve({ data: { ...EMPTY_LEAD_LIST_PAGE } });
-        }
-        if (currentUrl.includes('/users') && !isUsersSubResourceUrl(currentUrl)) {
-          return Promise.resolve({ data: { items: [], total: 0 } });
         }
         if (currentUrl.includes('/tags')) {
           return Promise.resolve({ data: { items: [], total: 0 } });

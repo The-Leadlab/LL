@@ -77,6 +77,7 @@ class UserResponse(BaseModel):
     # LinkedIn Integration fields
     linkedin_profile_id: Optional[str] = None
     linkedin_profile_url: Optional[str] = None
+    is_self: bool = False
 
     class Config:
         from_attributes = True
