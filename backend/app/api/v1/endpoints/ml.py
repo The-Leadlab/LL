@@ -7,7 +7,7 @@ from app.api.deps import get_db, get_current_user
 from app.services.ml_service import MLService
 from app.core.logger import logger
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 # Model instance
 predictor = MLService()

@@ -24,6 +24,7 @@ const stepOrder: DataRequestStepId[] = DATA_REQUEST_STEPS.map((s) => s.id)
 
 export function DataRequestForm({ onSuccess }: DataRequestFormProps) {
   const [step, setStep] = useState<DataRequestStepId>('welcome')
+  const [stepError, setStepError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const [businessSectors, setBusinessSectors] = useState<string[]>([])
@@ -115,59 +116,45 @@ export function DataRequestForm({ onSuccess }: DataRequestFormProps) {
     if (idx > 0) setStep(stepOrder[idx - 1])
   }
 
+  const failStep = (message: string) => {
+    setStepError(message)
+    toast.error(message)
+    return false
+  }
+
   const validateStep = (): boolean => {
     switch (step) {
       case 'business':
-        if (businessSectors.length === 0) {
-          toast.error('Select at least one business sector.')
-          return false
-        }
-        if (!salesReps) {
-          toast.error('Select how many sales representatives you have.')
-          return false
-        }
-        if (leadSourcing.length === 0) {
-          toast.error('Select at least one lead sourcing method.')
-          return false
-        }
+        if (businessSectors.length === 0) return failStep('Select at least one business sector.')
+        if (!salesReps) return failStep('Select how many sales representatives you have.')
+        if (leadSourcing.length === 0) return failStep('Select at least one lead sourcing method.')
+        setStepError('')
         return true
       case 'audience':
-        if (countries.length === 0 && !countriesOther.trim()) {
-          toast.error('Select at least one country or region.')
-          return false
-        }
-        if (!targetIndustry.trim()) {
-          toast.error('Industry is required.')
-          return false
-        }
-        if (!jobTitles.trim()) {
-          toast.error('Job titles / roles are required.')
-          return false
-        }
-        if (companySizes.length === 0) {
-          toast.error('Select at least one company size.')
-          return false
-        }
+        if (countries.length === 0 && !countriesOther.trim()) return failStep('Select at least one country or region.')
+        if (!targetIndustry.trim()) return failStep('Industry is required.')
+        if (!jobTitles.trim()) return failStep('Job titles / roles are required.')
+        if (companySizes.length === 0) return failStep('Select at least one company size.')
+        setStepError('')
         return true
       case 'contact':
         if (!firstName.trim() || !lastName.trim() || !phone.trim() || !email.trim() || !company.trim()) {
-          toast.error('All contact fields are required.')
-          return false
+          return failStep('All contact fields are required.')
         }
+        setStepError('')
         return true
       case 'requirements':
         if (!weeklyLeadVolume.trim() || Number.isNaN(Number(weeklyLeadVolume)) || Number(weeklyLeadVolume) < 1) {
-          toast.error('Enter a valid weekly lead volume (number).')
-          return false
+          return failStep('Enter a valid weekly lead volume (number).')
         }
+        setStepError('')
         return true
       case 'review':
-        if (!termsAccepted) {
-          toast.error('Please accept the Terms & Conditions.')
-          return false
-        }
+        if (!termsAccepted) return failStep('Please accept the Terms & Conditions.')
+        setStepError('')
         return true
       default:
+        setStepError('')
         return true
     }
   }
@@ -230,6 +217,11 @@ export function DataRequestForm({ onSuccess }: DataRequestFormProps) {
       )}
 
       <form onSubmit={handleContinue} className="p-6 sm:p-8 space-y-6">
+        {stepError && (
+          <p role="alert" className="text-sm text-red-600">
+            {stepError}
+          </p>
+        )}
         {step === 'welcome' && (
           <>
             <div className="text-center py-4">

@@ -205,7 +205,7 @@ function LeadsPaginationBar({
           ))}
         </select>
         <span className="text-neutral-500 dark:text-neutral-500">
-          {totalLeads > 0 ? `${totalLeads} total` : 'No leads'}
+          {isLoadingLeads ? 'Loading leads…' : totalLeads > 0 ? `${totalLeads} total` : 'No leads'}
         </span>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
@@ -243,7 +243,7 @@ export function ModernLeads() {
   const { user } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
@@ -715,7 +715,7 @@ export function ModernLeads() {
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">
               Leads
@@ -740,7 +740,7 @@ export function ModernLeads() {
               const qs = selectedClientId != null ? `?client_id=${selectedClientId}` : '';
               navigate(`/leads/form${qs}`);
             }}
-            className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
+            className="inline-flex min-h-[44px] items-center space-x-2 whitespace-nowrap bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
           >
             <Plus className="w-5 h-5" />
             <span>Add Lead</span>
@@ -1119,7 +1119,7 @@ export function ModernLeads() {
             </div>
           );
         })}
-        {leads.length === 0 && (
+        {!isLoadingLeads && !isFetchingLeads && leads.length === 0 && (
           <div className="rounded-xl border border-neutral-200 bg-white py-12 text-center text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
             No leads in this client yet. Click "Add Lead" or Import to get started.
           </div>

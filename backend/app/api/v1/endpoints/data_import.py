@@ -26,7 +26,7 @@ from app.crud.crud_data_import import (
     crud_crm_connection, csv_helper
 )
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 UPLOAD_DIR = "/tmp/imports"  # Configure this properly
 

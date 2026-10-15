@@ -23,11 +23,12 @@ from app.crud.crud_territory import (
     crud_territory_assignment, crud_territory_quota
 )
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 # Territory Endpoints
 
+@router.get("", response_model=List[TerritoryResponse])
 @router.get("/", response_model=List[TerritoryResponse])
 def list_territories(
     db: Session = Depends(deps.get_db),
@@ -84,6 +85,7 @@ def get_territory_hierarchy(
     return [build_hierarchy(t) for t in territories]
 
 
+@router.post("", response_model=TerritoryResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=TerritoryResponse, status_code=status.HTTP_201_CREATED)
 def create_territory(
     *,

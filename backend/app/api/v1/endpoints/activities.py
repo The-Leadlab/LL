@@ -8,8 +8,9 @@ from app.models.activity import ActivityType
 from app.schemas.activity import Activity, ActivityCreate, ActivityUpdate, ActivityList
 from fastapi import status
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
+@router.get("", response_model=ActivityList)
 @router.get("/", response_model=ActivityList)
 def get_activities(
     db: Session = Depends(deps.get_db),
@@ -42,6 +43,7 @@ def get_activities(
     total = len(activities)  # In real app, you should use count query
     return ActivityList(items=activities, total=total)
 
+@router.post("", response_model=Activity)
 @router.post("/", response_model=Activity)
 def create_activity(
     *,

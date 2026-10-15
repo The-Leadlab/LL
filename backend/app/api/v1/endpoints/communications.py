@@ -6,8 +6,9 @@ from app.api import deps
 from datetime import datetime
 from app.services.linkedin_service import linkedin_service
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
+@router.get("", response_model=schemas.CommunicationList)
 @router.get("/", response_model=schemas.CommunicationList)
 def read_communications(
     db: Session = Depends(deps.get_db),
@@ -59,6 +60,7 @@ def read_communications(
         "limit": limit
     }
 
+@router.post("", response_model=schemas.Communication)
 @router.post("/", response_model=schemas.Communication)
 def create_communication(
     *,

@@ -18,7 +18,7 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 def _resolve_currency_id(db, requested_id: int) -> int:

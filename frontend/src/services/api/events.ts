@@ -1,6 +1,7 @@
 import { AxiosInstance } from 'axios';
 import api from '../axios';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '@/store/auth';
 
 export interface Event {
   id: number;
@@ -98,10 +99,11 @@ const eventsAPI = {
       } else if (eventData.user_id) {
         cleanData.created_by = eventData.user_id;
       } else {
-        // Get user ID from auth store
+        // Get user ID from the live auth store (persisted storage does not keep the user)
         try {
+          const liveUser = useAuthStore.getState().user;
           const authStore = JSON.parse(localStorage.getItem('auth-storage') || '{}');
-          const user = authStore?.state?.user;
+          const user = liveUser?.id ? liveUser : authStore?.state?.user;
           
           if (user && user.id) {
             cleanData.created_by = user.id;

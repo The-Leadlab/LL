@@ -116,7 +116,7 @@ def _remove_existing_avatars(user_id: int) -> None:
             except OSError:
                 pass
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 @router.get("", response_model=UserList)
 @router.get("/", response_model=UserList)

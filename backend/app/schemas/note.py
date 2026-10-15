@@ -9,9 +9,13 @@ class NoteBase(BaseModel):
     organization_id: int
     deal_id: Optional[int] = None
 
-# Properties to receive via API on creation
-class NoteCreate(NoteBase):
-    created_by_id: int
+# Client sends content + lead. Organization and author are set by the server.
+class NoteCreate(BaseModel):
+    content: str
+    lead_id: int
+    organization_id: Optional[int] = None
+    deal_id: Optional[int] = None
+    created_by_id: Optional[int] = None
 
 # Properties to receive via API on update
 class NoteUpdate(BaseModel):

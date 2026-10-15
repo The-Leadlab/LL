@@ -1026,7 +1026,7 @@ export function HomePage() {
               </div>
             </div>
             <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center">
-              <p className="text-gray-600">© 2024 The Lead Lab. All rights reserved.</p>
+              <p className="text-gray-600">© {new Date().getFullYear()} The Lead Lab. All rights reserved.</p>
               <div className="flex space-x-6 mt-4 md:mt-0">
                 <a href="https://www.linkedin.com/company/the-lead-lab-network/" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-blue-600">
                   <FontAwesomeIcon icon={faLinkedin} size="lg" />

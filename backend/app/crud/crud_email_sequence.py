@@ -119,13 +119,18 @@ class CRUDEmailSequence:
             completion_rate = (sequence.total_completed / sequence.total_enrolled) * 100
             reply_rate = (sequence.total_replied / sequence.total_enrolled) * 100
 
-        # Calculate average days to complete
-        avg_days = db.query(
-            func.avg(
-                func.julianday(SequenceEnrollment.completed_at) -
-                func.julianday(SequenceEnrollment.enrolled_at)
+        # julianday() exists only on SQLite. Postgres 500s on it (sequence stats).
+        dialect = db.get_bind().dialect.name if db.get_bind() is not None else ""
+        if dialect == "sqlite":
+            day_span = func.julianday(SequenceEnrollment.completed_at) - func.julianday(
+                SequenceEnrollment.enrolled_at
             )
-        ).filter(
+        else:
+            day_span = func.extract(
+                "epoch",
+                SequenceEnrollment.completed_at - SequenceEnrollment.enrolled_at,
+            ) / 86400.0
+        avg_days = db.query(func.avg(day_span)).filter(
             and_(
                 SequenceEnrollment.sequence_id == sequence_id,
                 SequenceEnrollment.status == "completed"

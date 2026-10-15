@@ -11,7 +11,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-api_router = APIRouter()
+api_router = APIRouter(redirect_slashes=False)
 
 # Auth routes
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -118,6 +118,7 @@ api_router.include_router(invoices.router, prefix="/invoices", tags=["invoices"]
 
 # Team Invitations routes (NEW - Team member invitation system)
 api_router.include_router(team_invitations.router, prefix="/team-invitations", tags=["team-invitations"])
+api_router.include_router(team_invitations.router, prefix="/team/invitations", tags=["team-invitations"])
 
 # Email routes (Email account management and calendar sync)
 api_router.include_router(email.router, prefix="/email", tags=["email"])

@@ -29,7 +29,7 @@ from app.core.security import encrypt_password
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 def _google_auth_redirect_uri() -> str:

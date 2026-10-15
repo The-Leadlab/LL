@@ -14,7 +14,7 @@ from app.core.stripe import verify_webhook_signature
 from pydantic import BaseModel
 from sqlalchemy.sql import text
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 logger = logging.getLogger(__name__)
 
 # TokenBalanceResponse modelini tanımlayalım

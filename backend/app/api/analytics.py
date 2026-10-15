@@ -36,7 +36,7 @@ class AnalyticsEventCreate(BaseModel):
     error_stack: Optional[str] = None
     error_context: Optional[dict] = None
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 @router.post("/events")
 async def store_analytics_events(

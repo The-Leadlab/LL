@@ -12,7 +12,7 @@ from app.models.activity import Activity
 from datetime import datetime, timedelta
 import logging
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 def _utc_midnight(d: datetime) -> datetime:
@@ -57,6 +57,7 @@ def _wow_pct_change(current: float, previous: float) -> Optional[float]:
     return round((current - previous) / previous * 100, 1)
 
 
+@router.get("", response_model=Dict[str, Any])
 @router.get("/", response_model=Dict[str, Any])
 async def get_dashboard_data(
     db: Session = Depends(deps.get_db),

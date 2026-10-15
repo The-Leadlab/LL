@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 from app import crud, schemas
 from app.api import deps
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
+@router.get("", response_model=List[schemas.LeadStage])
 @router.get("/", response_model=List[schemas.LeadStage])
 @router.get("", response_model=List[schemas.LeadStage])
 def read_lead_stages(
@@ -17,6 +18,7 @@ def read_lead_stages(
     lead_stages = crud.lead_stage.get_multi(db)
     return lead_stages
 
+@router.post("", response_model=schemas.LeadStage)
 @router.post("/", response_model=schemas.LeadStage)
 @router.post("", response_model=schemas.LeadStage)
 def create_lead_stage(

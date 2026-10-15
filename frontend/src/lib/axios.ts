@@ -3,6 +3,8 @@ import { useAuthStore } from '@/store/auth';
 import { getApiOrigin } from './apiOrigin';
 import { EMPTY_LEAD_LIST_PAGE } from '@/lib/emptyApiFallbacks';
 import { shouldFakeTaskError } from '@/utils/axiosErrorPolicy';
+import { getApiErrorMessage } from '@/lib/apiError';
+import { stripTrailingSlash } from '@/lib/requestUrl';
 
 // Get API URL from environment variables or use proxy in development
 const isDevelopment = import.meta.env.DEV;
@@ -127,6 +129,9 @@ api.interceptors.request.use(
       delete h['Content-Type'];
       delete h['content-type'];
     }
+    if (typeof config.url === 'string') {
+      config.url = stripTrailingSlash(config.url);
+    }
 
     return config;
   },
@@ -160,6 +165,13 @@ api.interceptors.response.use(
         console.log('Retrying with fresh token from storage');
         originalRequest.headers['Authorization'] = `Bearer ${token}`;
         return api(originalRequest);
+      }
+    }
+
+    if (error.response?.data && typeof error.response.data === 'object' && error.response.data.detail != null && typeof error.response.data.detail !== 'string') {
+      const message = getApiErrorMessage(error, '');
+      if (message) {
+        error.response.data.detail = message;
       }
     }
 

@@ -19,7 +19,7 @@ from app.services.enhanced_personality_service import enhanced_personality_servi
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 @router.get("/{lead_id}/insights", response_model=AIInsightsResponse)
 async def get_lead_ai_insights(

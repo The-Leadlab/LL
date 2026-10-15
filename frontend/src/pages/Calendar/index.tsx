@@ -143,16 +143,29 @@ const normalizeEventTypeForApi = (eventType: string): 'meeting' | 'video_call' |
   return 'meeting';
 };
 
+function timezoneLabel(zone: string, city: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: zone,
+      timeZoneName: 'shortOffset',
+    }).formatToParts(new Date());
+    const offset = parts.find((part) => part.type === 'timeZoneName')?.value;
+    return offset ? `${city} (${offset})` : city;
+  } catch {
+    return city;
+  }
+}
+
 const TIMEZONE_OPTIONS = [
-  { value: 'Europe/Istanbul', label: 'Istanbul (GMT+3)' },
-  { value: 'Europe/London', label: 'London (GMT+0)' },
-  { value: 'Europe/Paris', label: 'Paris (GMT+1)' },
-  { value: 'Europe/Berlin', label: 'Berlin (GMT+1)' },
-  { value: 'Europe/Madrid', label: 'Madrid (GMT+1)' },
-  { value: 'Europe/Rome', label: 'Rome (GMT+1)' },
-  { value: 'UTC', label: 'UTC (GMT+0)' },
-  { value: 'America/New_York', label: 'New York (GMT-5)' },
-  { value: 'Asia/Tokyo', label: 'Tokyo (GMT+9)' },
+  { value: 'Europe/Istanbul', label: timezoneLabel('Europe/Istanbul', 'Istanbul') },
+  { value: 'Europe/London', label: timezoneLabel('Europe/London', 'London') },
+  { value: 'Europe/Paris', label: timezoneLabel('Europe/Paris', 'Paris') },
+  { value: 'Europe/Berlin', label: timezoneLabel('Europe/Berlin', 'Berlin') },
+  { value: 'Europe/Madrid', label: timezoneLabel('Europe/Madrid', 'Madrid') },
+  { value: 'Europe/Rome', label: timezoneLabel('Europe/Rome', 'Rome') },
+  { value: 'UTC', label: timezoneLabel('UTC', 'UTC') },
+  { value: 'America/New_York', label: timezoneLabel('America/New_York', 'New York') },
+  { value: 'Asia/Tokyo', label: timezoneLabel('Asia/Tokyo', 'Tokyo') },
 ];
 
 const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -194,7 +207,9 @@ export const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'agenda'>('month');
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'agenda'>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'agenda' : 'month'
+  );
   const [agendaRangeDays, setAgendaRangeDays] = useState<7 | 14 | 30 | 90>(30);
   const [agendaVisibleCount, setAgendaVisibleCount] = useState(AGENDA_PAGE_SIZE);
   const [expandedMonthDay, setExpandedMonthDay] = useState<Date | null>(null);
@@ -328,14 +343,18 @@ export const CalendarPage = () => {
       await eventsAPI.create(formattedEvent);
       queryClient.invalidateQueries({ queryKey: ['events'] });
       toast.success('Event created successfully!');
+      return true;
     } catch (error: any) {
       console.error('Error creating event:', error);
-      const errorMessage = error?.response?.data?.detail || 'Failed to create event';
+      const errorMessage = typeof error?.response?.data?.detail === 'string'
+        ? error.response.data.detail
+        : error?.message || 'Failed to create event';
       toast.error(errorMessage);
+      return false;
     }
   };
 
-  const handleCreateNewEvent = () => {
+  const handleCreateNewEvent = async () => {
     if (!newEvent.title) {
       toast.error('Please enter an event title');
       return;
@@ -354,7 +373,8 @@ export const CalendarPage = () => {
       status: 'scheduled',
     };
 
-    handleCreateEvent(eventData);
+    const created = await handleCreateEvent(eventData);
+    if (!created) return;
     setNewEventDialogOpen(false);
     setNewEvent({
       title: '',

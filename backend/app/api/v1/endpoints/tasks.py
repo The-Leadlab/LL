@@ -16,7 +16,7 @@ import os
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 TASK_ATTACHMENT_ROOT = Path(settings.UPLOAD_DIR) / "task_attachments"
 TASK_ATTACHMENT_ROOT.mkdir(parents=True, exist_ok=True)

@@ -7,7 +7,7 @@ import { Bell, CheckCheck, Loader2, Trash2 } from 'lucide-react';
 
 export function ModernNotifications() {
   const queryClient = useQueryClient();
-  const { data: notifications = [], isLoading } = useQuery({
+  const { data: notifications = [], isLoading, isError } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationsAPI.getAll({ limit: 100 }),
   });
@@ -39,6 +39,10 @@ export function ModernNotifications() {
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
             <Loader2 className="h-7 w-7 animate-spin text-blue-600" />
+          </div>
+        ) : isError ? (
+          <div className="rounded-lg border p-10 text-center text-gray-600">
+            Could not load notifications.
           </div>
         ) : notifications.length === 0 ? (
           <div className="rounded-lg border p-10 text-center text-gray-600">

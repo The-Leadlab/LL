@@ -15,7 +15,7 @@ from app.schemas.custom_field import (
     CustomFieldType
 )
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 @router.get("/definitions", response_model=CustomFieldDefinitionListResponse)

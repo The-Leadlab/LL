@@ -11,7 +11,7 @@ import logging
 import os
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["organizations"])
+router = APIRouter(redirect_slashes=False, tags=["organizations"])
 
 # Configure static file serving for organization logos
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))), "uploads")

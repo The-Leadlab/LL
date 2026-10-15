@@ -473,9 +473,8 @@ export function ReportsPage() {
         startDate = subDays(now, 7);
         break;
       case 'month':
-        // Use March 2025 when we have actual leads data
-        startDate = new Date('2025-03-01');
-        endDate = new Date('2025-03-31');
+        startDate = startOfMonth(now);
+        endDate = endOfMonth(now);
         break;
       case 'quarter':
         const currentQuarter = Math.floor((now.getMonth() / 3));
@@ -491,9 +490,8 @@ export function ReportsPage() {
         endDate = customEndDate ? new Date(customEndDate) : now;
         break;
       default:
-        // Default to March 2025 where we have leads data
-        startDate = new Date('2025-03-01');
-        endDate = new Date('2025-03-31');
+        startDate = startOfMonth(now);
+        endDate = endOfMonth(now);
     }
 
     return {

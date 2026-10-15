@@ -6,11 +6,11 @@ from app.models.user import User
 from app.crud import crud_note
 from app.schemas.note import NoteCreate, NoteUpdate, Note as NoteSchema, NoteList
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 @router.get("", response_model=NoteList)
 async def get_notes(
-    organization_id: int = Query(..., description="Organization ID"),
+    organization_id: Optional[int] = Query(None, description="Organization ID"),
     lead_id: Optional[int] = Query(None, description="Lead ID"),
     deal_id: Optional[int] = Query(None, description="Deal ID"),
     skip: int = Query(0, description="Skip N records"),
@@ -20,7 +20,7 @@ async def get_notes(
 ):
     """Get notes with filters and pagination"""
     filters = {
-        "organization_id": organization_id,
+        "organization_id": organization_id or current_user.organization_id,
         "created_by_id": None if current_user.is_admin else current_user.id
     }
     
@@ -50,14 +50,10 @@ async def create_note(
 ):
     """Create a new note"""
     try:
-        note = crud_note.note.create(
-            db=db,
-            obj_in=NoteCreate(
-                **note_in.dict(exclude_unset=True),
-                created_by_id=current_user.id,
-                organization_id=current_user.organization_id
-            )
-        )
+        payload = note_in.model_dump(exclude_unset=True)
+        payload["created_by_id"] = current_user.id
+        payload["organization_id"] = current_user.organization_id
+        note = crud_note.note.create(db=db, obj_in=NoteCreate(**payload))
         return note
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

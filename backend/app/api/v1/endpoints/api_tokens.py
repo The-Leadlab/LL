@@ -13,7 +13,7 @@ from app.schemas.api_token import (
     APITokenStatsResponse
 )
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 @router.get("", response_model=APITokenListResponse)

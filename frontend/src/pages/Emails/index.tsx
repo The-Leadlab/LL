@@ -350,7 +350,7 @@ export const EmailsPage: React.FC = () => {
                   className="text-gray-500 hover:text-gray-700"
                 >
                   <RefreshCw className={`h-4 w-4 ${(emailsLoading || isRefreshing) ? 'animate-spin' : ''}`} />
-                  <span className="ml-2">Actualiser</span>
+                  <span className="ml-2">Refresh</span>
                 </Button>
               </div>
             </div>

@@ -20,7 +20,7 @@ from app.schemas.calendar_integration import (
     OAuthInitResponse,
 )
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 def _sign_oauth_state(payload_b64: str) -> str:
