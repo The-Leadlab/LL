@@ -9,6 +9,7 @@ from app.schemas.note import NoteCreate, NoteUpdate, Note as NoteSchema, NoteLis
 router = APIRouter(redirect_slashes=False)
 
 @router.get("", response_model=NoteList)
+@router.get("/", response_model=NoteList)
 async def get_notes(
     organization_id: Optional[int] = Query(None, description="Organization ID"),
     lead_id: Optional[int] = Query(None, description="Lead ID"),
@@ -21,8 +22,10 @@ async def get_notes(
     """Get notes with filters and pagination"""
     filters = {
         "organization_id": organization_id or current_user.organization_id,
-        "created_by_id": None if current_user.is_admin else current_user.id
     }
+    # Lead/deal note threads are shared with the org; only personal lists hide others' notes.
+    if not lead_id and not deal_id and not current_user.is_admin:
+        filters["created_by_id"] = current_user.id
     
     if lead_id:
         filters["lead_id"] = lead_id
@@ -43,6 +46,7 @@ async def get_notes(
     }
 
 @router.post("", response_model=NoteSchema)
+@router.post("/", response_model=NoteSchema)
 async def create_note(
     note_in: NoteCreate,
     db: Session = Depends(get_db),

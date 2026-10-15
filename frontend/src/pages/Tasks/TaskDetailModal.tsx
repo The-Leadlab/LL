@@ -78,11 +78,14 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
     }
   };
 
-  // Safe ISO format function for datetime-local input
+  // Local datetime for datetime-local input (avoid UTC skew from toISOString)
   const safeISOFormat = (dateString?: string) => {
     if (!dateString) return '';
     try {
-      return new Date(dateString).toISOString().slice(0, 16);
+      const d = new Date(dateString);
+      if (Number.isNaN(d.getTime())) return '';
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     } catch (error) {
       console.error('Error formatting ISO date:', dateString, error);
       return '';
@@ -325,9 +328,9 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
                           variant="outline"
                           role="combobox"
                           className="w-full justify-between bg-white hover:bg-gray-50"
-                          disabled={isLoadingUsers}
+                          disabled={isLoadingUsers && !selectedUser}
                         >
-                          {isLoadingUsers ? (
+                          {isLoadingUsers && !selectedUser ? (
                             <div className="flex items-center">
                               <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
                               Loading users...
@@ -504,7 +507,8 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
                       {currentTask.assigned_to ? (
                         <div className="mt-1 flex items-center gap-2">
                           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                            {currentTask.assigned_to.first_name[0]}{currentTask.assigned_to.last_name[0]}
+                            {(currentTask.assigned_to.first_name?.[0] || '')}
+                            {(currentTask.assigned_to.last_name?.[0] || '')}
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900">
@@ -515,6 +519,14 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
                             )}
                           </div>
                         </div>
+                      ) : currentTask.assigned_to_id ? (
+                        <p className="mt-1 text-sm text-gray-900">
+                          {usersData?.find((u) => Number(u.id) === Number(currentTask.assigned_to_id))
+                            ? displayUserName(
+                                usersData.find((u) => Number(u.id) === Number(currentTask.assigned_to_id))!,
+                              )
+                            : `User #${currentTask.assigned_to_id}`}
+                        </p>
                       ) : (
                         <p className="mt-1 text-sm text-gray-500">Not assigned</p>
                       )}

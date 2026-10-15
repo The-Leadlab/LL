@@ -163,10 +163,10 @@ api.interceptors.response.use(
           return Promise.resolve({ data: [] });
         }
         if (currentUrl.includes('/information-requests')) {
-          return Promise.resolve({ data: { items: [] } });
+          return Promise.resolve({ data: [] });
         }
         if (currentUrl.includes('/activities')) {
-          return Promise.resolve({ data: { items: [] } });
+          return Promise.resolve({ data: { items: [], total: 0 } });
         }
         if (shouldFakeTaskError(currentUrl, originalRequest?.method)) {
           return Promise.resolve({ data: { items: [], total: 0 } });
@@ -218,10 +218,10 @@ api.interceptors.response.use(
           return Promise.resolve({ data: [] });
         }
         if (currentUrl.includes('/information-requests')) {
-          return Promise.resolve({ data: { items: [] } });
+          return Promise.resolve({ data: [] });
         }
         if (currentUrl.includes('/activities')) {
-          return Promise.resolve({ data: { items: [] } });
+          return Promise.resolve({ data: { items: [], total: 0 } });
         }
 
         // Reject error for other non-critical endpoints

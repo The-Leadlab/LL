@@ -270,7 +270,15 @@ export function ModernLeads() {
     } catch { /* ignore */ }
     return 'created_at';
   });
-  const [sortDesc, setSortDesc] = useState(true);
+  const [sortDesc, setSortDesc] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem(LEADS_SORT_KEY) as LeadSortBy | null;
+      if (stored && ['first_name', 'company', 'job_title', 'source', 'sector'].includes(stored)) {
+        return false; // Asc for text fields
+      }
+    } catch { /* ignore */ }
+    return true; // Desc for Newest / recently updated
+  });
   const [groupBy, setGroupBy] = useState<LeadGroupBy>(() => {
     try {
       const stored = sessionStorage.getItem(LEADS_GROUP_KEY) as LeadGroupBy | null;
@@ -665,6 +673,7 @@ export function ModernLeads() {
   };
 
   const handleExport = async () => {
+    toast({ title: 'Exporting…', description: 'Preparing your CSV download.' });
     try {
       const blob = await leadsAPI.exportCSV({
         search: debouncedSearch || undefined,
@@ -721,7 +730,10 @@ export function ModernLeads() {
               Leads
             </h1>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Manage and track your sales pipeline • {totalLeads} total leads
+              Manage and track your sales pipeline •{' '}
+              {debouncedSearch || activeFilterCount > 0
+                ? `${totalLeads} matching`
+                : `${totalLeads} total leads`}
               {totalLeads > 0 && (
                 <>
                   {' '}
@@ -740,7 +752,7 @@ export function ModernLeads() {
               const qs = selectedClientId != null ? `?client_id=${selectedClientId}` : '';
               navigate(`/leads/form${qs}`);
             }}
-            className="inline-flex min-h-[44px] items-center space-x-2 whitespace-nowrap bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
+            className="inline-flex min-h-[44px] shrink-0 items-center space-x-2 whitespace-nowrap bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
           >
             <Plus className="w-5 h-5" />
             <span>Add Lead</span>
@@ -818,7 +830,12 @@ export function ModernLeads() {
               <span className="text-neutral-500 dark:text-neutral-400">Sort</span>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as LeadSortBy)}
+                onChange={(e) => {
+                  const next = e.target.value as LeadSortBy;
+                  setSortBy(next);
+                  // Text fields default Asc; date fields default Desc (Newest first)
+                  setSortDesc(next === 'created_at' || next === 'updated_at');
+                }}
                 className="bg-transparent text-neutral-800 outline-none dark:text-neutral-100"
               >
                 <option value="created_at">Newest</option>
@@ -832,7 +849,7 @@ export function ModernLeads() {
               <button
                 type="button"
                 onClick={() => setSortDesc((v) => !v)}
-                className="rounded px-1.5 py-0.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                className="min-h-[36px] min-w-[44px] rounded px-2 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
                 title={sortDesc ? 'Descending' : 'Ascending'}
               >
                 {sortDesc ? 'Desc' : 'Asc'}
@@ -875,11 +892,12 @@ export function ModernLeads() {
               <button
                 type="button"
                 onClick={() => openMoveDialog('all_in_client')}
-                className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                className="flex min-h-[44px] items-center space-x-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
                 title="Move every lead in this client to another client"
               >
-                <FolderInput className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                <span className="text-neutral-700 dark:text-neutral-300">Move all…</span>
+                <FolderInput className="w-4 h-4 shrink-0 text-neutral-600 dark:text-neutral-400" />
+                <span className="hidden sm:inline text-neutral-700 dark:text-neutral-300">Move all…</span>
+                <span className="sm:hidden text-neutral-700 dark:text-neutral-300">Move</span>
               </button>
             )}
             <button 
@@ -928,7 +946,7 @@ export function ModernLeads() {
           return (
             <div
               key={group.key}
-              className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-800"
+              className="-mx-4 overflow-x-auto rounded-none border-y border-neutral-200 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:border dark:border-neutral-700 dark:bg-neutral-800"
             >
               {groupBy !== 'none' && (
                 <button
@@ -953,14 +971,14 @@ export function ModernLeads() {
                 </button>
               )}
               {!collapsed && (
-                <table className="w-full min-w-[640px]">
+                <table className="w-full min-w-[720px] sm:min-w-[640px]">
                   {groupBy === 'none' && (
                     <thead className="bg-neutral-50 dark:bg-neutral-700/50 border-b border-neutral-200 dark:border-neutral-700">
                       <tr>
-                        <th className="px-6 py-3 text-left">
+                        <th className="px-3 sm:px-6 py-3 text-left">
                           <input
                             type="checkbox"
-                            className="rounded"
+                            className="h-5 w-5 rounded"
                             checked={leads.length > 0 && leads.every((l) => selectedLeads.includes(l.id))}
                             onChange={toggleSelectAll}
                             aria-label="Select all leads on this page"
@@ -1011,10 +1029,10 @@ export function ModernLeads() {
                         onClick={() => navigate(`/leads/${lead.id}`)}
                         className="hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors cursor-pointer"
                       >
-                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-3 sm:px-6 py-4" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
-                            className="rounded"
+                            className="h-5 w-5 rounded"
                             checked={selectedLeads.includes(lead.id)}
                             onChange={() => toggleSelectLead(lead.id)}
                             aria-label={`Select ${lead.full_name || lead.id}`}
