@@ -20,6 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useDebounce } from '@/hooks/useDebounce';
+import { keepPreviousData } from '@tanstack/react-query';
 import { extractEmailErrorMessage } from '@/lib/emailError';
 import { clientsAPI, type Client } from '@/services/api/clients';
 import { emailSequencesAPI, type EmailSequence } from '@/services/api/email-sequences';
@@ -312,20 +314,22 @@ ${trimmed}
 </html>`);
 }
 
-async function fetchAllLeads(clientId?: number): Promise<Lead[]> {
+async function fetchAllLeads(clientId?: number, search?: string): Promise<Lead[]> {
   const collected: Lead[] = [];
   let skip = 0;
-  const limit = 200;
-  // Cap pages so a stuck has_more flag cannot hang the UI forever
-  for (let i = 0; i < 10; i += 1) {
+  const limit = 100;
+  const needle = search?.trim() || undefined;
+  const maxPages = needle ? 2 : 3;
+  for (let i = 0; i < maxPages; i += 1) {
     const data = await leadsAPI.getLeads({
       skip,
       limit,
       client_id: clientId,
+      search: needle,
       sort_by: 'first_name',
       sort_desc: false,
     });
-    const page = (data?.results || []) as Lead[];
+    const page = (data?.results || data?.items || []) as Lead[];
     collected.push(...page);
     if (!data?.has_more || page.length === 0 || page.length < limit) break;
     skip += limit;
@@ -424,6 +428,7 @@ export function ColdOutreachPage() {
   }, [clients, clientId]);
 
   const parsedClientId = clientId === 'all' ? undefined : Number(clientId);
+  const debouncedSearch = useDebounce(search, 300);
 
   const {
     data: leads = [],
@@ -432,10 +437,11 @@ export function ColdOutreachPage() {
     error: leadsFetchError,
     refetch: refetchLeads,
   } = useQuery({
-    queryKey: ['outreach-leads', parsedClientId ?? 'all'],
-    queryFn: () => fetchAllLeads(parsedClientId),
+    queryKey: ['outreach-leads', parsedClientId ?? 'all', debouncedSearch],
+    queryFn: () => fetchAllLeads(parsedClientId, debouncedSearch),
     retry: 1,
     staleTime: 30_000,
+    placeholderData: keepPreviousData,
   });
 
   const { data: templates = [] } = useQuery({

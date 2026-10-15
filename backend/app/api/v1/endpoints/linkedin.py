@@ -176,10 +176,20 @@ async def get_token(
 
 @router.get("/status")
 async def get_status(current_user: User = Depends(get_current_user)):
-    return {
-        "connected": current_user.is_linkedin_connected,
-        "expires_at": current_user.linkedin_token_expires
-    }
+    try:
+        connected = bool(current_user.is_linkedin_connected)
+        expires_at = None
+        conn = getattr(current_user, "linkedin_connection", None)
+        if conn is not None:
+            expires_at = getattr(conn, "token_expires_at", None)
+        else:
+            expires_at = getattr(current_user, "linkedin_token_expires", None)
+        return {
+            "connected": connected,
+            "expires_at": expires_at,
+        }
+    except Exception:
+        return {"connected": False, "expires_at": None}
 
 @router.post("/disconnect")
 async def disconnect_linkedin(

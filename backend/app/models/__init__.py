@@ -18,6 +18,7 @@ from .activity import Activity
 from .lead_stage import LeadStage
 from .currency import Currency
 from .task import Task
+from .task_attachment import TaskAttachment
 from .deal import Deal
 from .event import Event
 from .event_attendee import EventAttendee
@@ -79,6 +80,7 @@ __all__ = [
     "Currency",
     "Lead",
     "Task",
+    "TaskAttachment",
     "Deal",
     "Event",
     "EventAttendee",

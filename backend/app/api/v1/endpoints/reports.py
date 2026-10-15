@@ -15,6 +15,8 @@ from app.schemas.report import (
 
 router = APIRouter(redirect_slashes=False)
 
+@router.get("", response_model=DashboardStats)
+@router.get("/", response_model=DashboardStats)
 @router.get("/dashboard", response_model=DashboardStats)
 def get_dashboard_stats(
     *,

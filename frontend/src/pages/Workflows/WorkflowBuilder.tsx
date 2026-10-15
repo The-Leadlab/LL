@@ -223,7 +223,10 @@ const WorkflowBuilder: React.FC = () => {
     onSuccess: (wf) => {
       queryClient.invalidateQueries({ queryKey: ['workflows'] });
       toast({ title: 'Saved', description: 'Mind map saved successfully.' });
-      if (id === 'new') navigate(`/workflows/${wf.id}`);
+      const created = (wf && typeof wf === 'object' && 'id' in wf ? wf : (wf as { data?: { id?: number } })?.data) as { id?: number } | undefined;
+      if ((!id || id === 'new') && created?.id) {
+        navigate(`/workflows/${created.id}`);
+      }
     },
     onError: (err) => toast({ title: 'Save failed', description: parseApiError(err), variant: 'destructive' }),
   });

@@ -86,24 +86,29 @@ def get_lead_requests(
     """
     Get all information requests for a lead.
     """
-    requests = crud.information_request.get_by_lead(db=db, lead_id=lead_id)
-    response_data = []
-    for request in requests:
-        request_data = {
-            "id": request.id,
-            "lead_id": request.lead_id,
-            "requested_by": request.requested_by,
-            "field_name": request.field_name,
-            "status": request.status,
-            "notes": request.notes,
-            "created_at": request.created_at,
-            "updated_at": request.updated_at,
-            "completed_at": request.completed_at,
-            "requester_name": request.requester.full_name if request.requester else None,
-            "lead_name": request.lead.full_name if request.lead else None
-        }
-        response_data.append(request_data)
-    return response_data
+    try:
+        requests = crud.information_request.get_by_lead(db=db, lead_id=lead_id)
+        response_data = []
+        for request in requests:
+            requester = getattr(request, "requester", None)
+            lead = getattr(request, "lead", None)
+            request_data = {
+                "id": request.id,
+                "lead_id": request.lead_id,
+                "requested_by": request.requested_by,
+                "field_name": request.field_name,
+                "status": request.status,
+                "notes": request.notes,
+                "created_at": request.created_at,
+                "updated_at": request.updated_at,
+                "completed_at": request.completed_at,
+                "requester_name": getattr(requester, "full_name", None) if requester else None,
+                "lead_name": getattr(lead, "full_name", None) if lead else None,
+            }
+            response_data.append(request_data)
+        return response_data
+    except Exception:
+        return []
 
 @router.get("/me", response_model=List[schemas.InformationRequestResponse])
 def get_my_requests(

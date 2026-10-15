@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -59,6 +60,7 @@ export const NewDealPage = () => {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedLeadSearch = useDebounce(searchTerm, 300);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -109,28 +111,24 @@ export const NewDealPage = () => {
 
   // Fetch leads based on search term
   const { data: leadsResponse, isLoading: isLoadingLeads } = useQuery({
-    queryKey: ['leads-search', searchTerm],
+    queryKey: ['leads-search', debouncedLeadSearch],
     queryFn: async () => {
       try {
-        const response = await leadsAPI.getLeads({ 
-          search: searchTerm || undefined,
+        const response = await leadsAPI.getLeads({
+          search: debouncedLeadSearch || undefined,
+          limit: 20,
+          skip: 0,
           sort_by: 'created_at',
           sort_desc: true
         });
-        
-        if (response.items) {
-        }
-        
-        if (response.results) {
-        }
-        
         return response;
       } catch (error) {
         console.error('Error fetching leads:', error);
         throw error;
       }
     },
-    enabled: isSearchOpen // Only fetch when search popover is open
+    enabled: isSearchOpen,
+    staleTime: 15_000,
   });
 
   // Debug console logs
@@ -202,6 +200,7 @@ export const NewDealPage = () => {
         // Amount değerini sayısal değere çevirelim
         amount: parseFloat(data.amount) || 0,
         assigned_to_id: data.assigned_to_id || (currentUser?.id ? Number(currentUser.id) : undefined),
+        valid_until: data.valid_until?.trim() ? data.valid_until : null,
       };
 
       

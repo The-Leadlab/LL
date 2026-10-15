@@ -32,6 +32,8 @@ interface InfoFieldProps {
   leadId: number;
   fieldName: string;
   email_guidelines?: string | null;
+  existingRequest?: { field_name: string; status: string } | null;
+  requestsLoading?: boolean;
 }
 
 // Add URL shortener helper function
@@ -60,22 +62,9 @@ const shortenLinkedInUrl = (url: string | null | undefined): { displayUrl: strin
   }
 };
 
-const InfoField = ({ label, value, icon, type = 'text', leadId, fieldName, email_guidelines }: InfoFieldProps) => {
+const InfoField = ({ label, value, icon, type = 'text', leadId, fieldName, email_guidelines, existingRequest = null, requestsLoading = false }: InfoFieldProps) => {
   const queryClient = useQueryClient();
-  const queryKey = ['information-requests', leadId, fieldName];
-
-  // Query to get existing request for this field
-  const { data: existingRequest, isLoading } = useQuery({
-    queryKey,
-    queryFn: async () => {
-      const response = await informationRequestsAPI.getLeadRequests(leadId);
-      const list = Array.isArray(response) ? response : [];
-      return list.find((request) => request.field_name === fieldName) ?? null;
-    },
-    refetchOnWindowFocus: true,
-    staleTime: 30000,
-    retry: 1,
-  });
+  const isLoading = Boolean(requestsLoading);
 
   const requestInfoMutation = useMutation({
     mutationFn: async () => {
@@ -85,7 +74,7 @@ const InfoField = ({ label, value, icon, type = 'text', leadId, fieldName, email
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ['information-requests', leadId] });
       toast.success('Information request sent');
     },
     onError: (error: any) => {
@@ -370,6 +359,8 @@ export function LeadDetail() {
   const [linkedinDialogOpen, setLinkedinDialogOpen] = useState(false);
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
   const [newNote, setNewNote] = useState('');
+  const [newActivityType, setNewActivityType] = useState('NOTE');
+  const [newActivityDescription, setNewActivityDescription] = useState('');
   const [linkedinConnectionData, setLinkedinConnectionData] = useState<{
     connectionUrl: string;
     message?: string;
@@ -463,6 +454,23 @@ export function LeadDetail() {
     }
   });
 
+  const { data: infoRequests = [], isPending: infoPending, isFetching: infoFetching, isError: infoError } = useQuery({
+    queryKey: ['information-requests', leadId],
+    queryFn: async () => {
+      try {
+        const list = await informationRequestsAPI.getLeadRequests(leadId);
+        return Array.isArray(list) ? list : [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: Boolean(leadId),
+    retry: 0,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
+  const requestsLoading = infoPending && infoFetching && !infoError;
+
   const { data: notesResponse } = useQuery({
     queryKey: ['lead-notes', leadId],
     queryFn: async () => {
@@ -479,6 +487,7 @@ export function LeadDetail() {
       return { items: [], total: 0 };
     },
     enabled: Boolean(leadId),
+    retry: 0,
   });
 
   const { data: activitiesResponse } = useQuery({
@@ -493,6 +502,7 @@ export function LeadDetail() {
       return { items: [], total: 0 };
     },
     enabled: Boolean(leadId),
+    retry: 0,
   });
 
   const addNoteMutation = useMutation({
@@ -507,9 +517,34 @@ export function LeadDetail() {
       setNewNote('');
       setIsAddNoteOpen(false);
       queryClient.invalidateQueries({ queryKey: ['lead-notes', leadId] });
+      queryClient.invalidateQueries({ queryKey: ['lead-activities', leadId] });
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.detail || 'Failed to add note');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['lead-notes', leadId] });
+      queryClient.invalidateQueries({ queryKey: ['lead-activities', leadId] });
+    },
+  });
+
+  const addActivityMutation = useMutation({
+    mutationFn: async () => {
+      return api.post('/activities', {
+        type: newActivityType,
+        description: newActivityDescription.trim(),
+        lead_id: leadId,
+        user_id: user?.id ? Number(user.id) : undefined,
+        organization_id: user?.organization_id ? Number(user.organization_id) : undefined,
+      });
+    },
+    onSuccess: () => {
+      toast.success('Activity added');
+      setNewActivityDescription('');
+      queryClient.invalidateQueries({ queryKey: ['lead-activities', leadId] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.detail || 'Failed to add activity');
     },
   });
 
@@ -840,6 +875,8 @@ export function LeadDetail() {
                   leadId={leadId}
                   fieldName={info.fieldName}
                   email_guidelines={info.email_guidelines}
+                  existingRequest={infoRequests.find((r: any) => r.field_name === info.fieldName) || null}
+                  requestsLoading={requestsLoading}
                 />
               ))}
             </CardContent>
@@ -860,6 +897,8 @@ export function LeadDetail() {
                   type={info.type || 'text'}
                   leadId={leadId}
                   fieldName={info.fieldName}
+                  existingRequest={infoRequests.find((r: any) => r.field_name === info.fieldName) || null}
+                  requestsLoading={requestsLoading}
                 />
               ))}
             </CardContent>
@@ -880,6 +919,8 @@ export function LeadDetail() {
                   type={info.type || 'text'}
                   leadId={leadId}
                   fieldName={info.fieldName}
+                  existingRequest={infoRequests.find((r: any) => r.field_name === info.fieldName) || null}
+                  requestsLoading={requestsLoading}
                 />
               ))}
             </CardContent>
@@ -896,6 +937,7 @@ export function LeadDetail() {
               <CardTitle className="text-base">Tags</CardTitle>
             </CardHeader>
             <CardContent>
+              <p className="text-xs text-gray-500 mb-2">Add or remove tags for this lead</p>
               <TagSelector
                 selectedTags={(lead.tags || []).map((t: any) =>
                   typeof t === 'object' ? t : { id: t, name: String(t) },
@@ -911,7 +953,34 @@ export function LeadDetail() {
             <CardHeader>
               <CardTitle className="text-base">Recent activity</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
+              <div className="space-y-2 rounded-md border bg-white p-3">
+                <label className="text-xs font-medium text-gray-600">Add activity</label>
+                <select
+                  className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                  value={newActivityType}
+                  onChange={(e) => setNewActivityType(e.target.value)}
+                >
+                  <option value="NOTE">Note</option>
+                  <option value="CALL">Call</option>
+                  <option value="EMAIL">Email</option>
+                  <option value="MEETING">Meeting</option>
+                </select>
+                <Textarea
+                  value={newActivityDescription}
+                  onChange={(e) => setNewActivityDescription(e.target.value)}
+                  placeholder="What happened?"
+                  className="min-h-[72px]"
+                />
+                <Button
+                  size="sm"
+                  className="w-full"
+                  disabled={!newActivityDescription.trim() || addActivityMutation.isPending}
+                  onClick={() => addActivityMutation.mutate()}
+                >
+                  {addActivityMutation.isPending ? 'Saving…' : 'Add activity'}
+                </Button>
+              </div>
               {(activitiesResponse?.items || []).length === 0 ? (
                 <p className="text-sm text-gray-500">No activity recorded yet.</p>
               ) : (
@@ -919,8 +988,11 @@ export function LeadDetail() {
                   {(activitiesResponse?.items || []).slice(0, 8).map((act: any) => (
                     <li key={act.id} className="rounded-md border bg-gray-50 px-3 py-2 text-sm">
                       <div className="font-medium text-gray-800">
-                        {act.title || act.activity_type || 'Activity'}
+                        {act.type || act.activity_type || act.title || 'Activity'}
                       </div>
+                      {act.description ? (
+                        <div className="text-sm text-gray-700 mt-0.5">{act.description}</div>
+                      ) : null}
                       <div className="text-xs text-gray-500">
                         {act.created_at
                           ? format(new Date(act.created_at), 'MMM d, yyyy HH:mm')
@@ -953,6 +1025,8 @@ export function LeadDetail() {
                   type={info.type || 'text'}
                   leadId={leadId}
                   fieldName={info.fieldName}
+                  existingRequest={infoRequests.find((r: any) => r.field_name === info.fieldName) || null}
+                  requestsLoading={requestsLoading}
                 />
               ))}
               <div className="mt-4 border-t pt-4">

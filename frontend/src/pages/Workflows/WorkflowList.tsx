@@ -62,14 +62,20 @@ export const WorkflowList: React.FC = () => {
     return labels[trigger] || trigger;
   };
 
+  const workflowList: Workflow[] = Array.isArray(workflows)
+    ? workflows
+    : Array.isArray((workflows as { items?: Workflow[] } | undefined)?.items)
+      ? ((workflows as { items: Workflow[] }).items)
+      : [];
+
   const stats = React.useMemo(() => {
-    if (!workflows) return { total: 0, active: 0, inactive: 0 };
+    if (!workflowList.length) return { total: 0, active: 0, inactive: 0 };
     return {
-      total: workflows.length,
-      active: workflows.filter(w => w.is_active).length,
-      inactive: workflows.filter(w => !w.is_active).length
+      total: workflowList.length,
+      active: workflowList.filter(w => w.is_active).length,
+      inactive: workflowList.filter(w => !w.is_active).length
     };
-  }, [workflows]);
+  }, [workflowList]);
 
   if (isLoading) {
     return (
@@ -143,8 +149,8 @@ export const WorkflowList: React.FC = () => {
 
         {/* Workflows List */}
         <div className="space-y-4">
-          {workflows && workflows.length > 0 ? (
-            workflows.map((workflow) => (
+          {workflowList.length > 0 ? (
+            workflowList.map((workflow) => (
               <Card key={workflow.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
@@ -178,7 +184,7 @@ export const WorkflowList: React.FC = () => {
                           <span>{workflow.trigger_object}</span>
                         </div>
                         <span>•</span>
-                        <span>{workflow.flow_definition.nodes.length} steps</span>
+                        <span>{workflow.flow_definition?.nodes?.length ?? 0} steps</span>
                         <span>•</span>
                         <span>Created {formatDate(workflow.created_at)}</span>
                       </div>

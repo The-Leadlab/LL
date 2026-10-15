@@ -58,6 +58,22 @@ async def create_note(
         payload["created_by_id"] = current_user.id
         payload["organization_id"] = current_user.organization_id
         note = crud_note.note.create(db=db, obj_in=NoteCreate(**payload))
+        try:
+            from app.crud.crud_activity import activity as crud_activity
+            from app.models.activity import ActivityType
+            from app.schemas.activity import ActivityCreate
+            crud_activity.create(
+                db,
+                obj_in=ActivityCreate(
+                    type=ActivityType.NOTE,
+                    description=(payload.get("content") or "")[:500],
+                    user_id=current_user.id,
+                    organization_id=current_user.organization_id,
+                    lead_id=payload.get("lead_id"),
+                ),
+            )
+        except Exception:
+            pass
         return note
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

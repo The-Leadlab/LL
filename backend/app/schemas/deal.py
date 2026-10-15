@@ -1,8 +1,14 @@
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import datetime, date
 from app.models.deal import DealStatus
 from decimal import Decimal
+
+
+def _empty_date_to_none(value):
+    if value is None or value == "":
+        return None
+    return value
 
 # Deal Base Schema
 class DealBase(BaseModel):
@@ -14,6 +20,11 @@ class DealBase(BaseModel):
     valid_until: Optional[date] = None
     assigned_to_id: int
     lead_id: int
+
+    @field_validator("valid_until", mode="before")
+    @classmethod
+    def coerce_empty_valid_until(cls, value):
+        return _empty_date_to_none(value)
 
 # Properties to receive via API on creation
 class DealCreate(BaseModel):
@@ -27,6 +38,11 @@ class DealCreate(BaseModel):
     lead_id: int
     organization_id: Optional[int] = None
 
+    @field_validator("valid_until", mode="before")
+    @classmethod
+    def coerce_empty_valid_until(cls, value):
+        return _empty_date_to_none(value)
+
 # Properties to receive via API on update
 class DealUpdate(BaseModel):
     name: Optional[str] = None
@@ -37,6 +53,11 @@ class DealUpdate(BaseModel):
     valid_until: Optional[date] = None
     assigned_to_id: Optional[int] = None
     lead_id: Optional[int] = None
+
+    @field_validator("valid_until", mode="before")
+    @classmethod
+    def coerce_empty_valid_until(cls, value):
+        return _empty_date_to_none(value)
 
 # Properties stored in DB
 class DealInDB(DealBase):
