@@ -28,6 +28,7 @@ import {
   Sparkles,
   Coins,
   Map,
+  Ticket,
   ShoppingCart,
   TrendingUp,
   Phone,
@@ -153,6 +154,11 @@ const navigation: NavItem[] = [
 ];
 
 const bottomNavigation: NavItem[] = [
+  {
+    name: 'Report an issue',
+    icon: Ticket,
+    path: '/support',
+  },
   {
     name: 'Settings',
     icon: Settings,

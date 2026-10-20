@@ -5,7 +5,7 @@ from app.api.v1.endpoints import (
     information_requests, organizations, tags, linkedin,
     tokens, notifications, contact, lead_stages, health, settings, psychometrics, files, ai_insights, messages, credits, invoices, team_invitations, email, ml, calendar_integrations,
     territories, cpq, email_sequences, workflows, conversations, data_import, forecasting, dashboards,
-    marketing_forms, currencies, clients, outreach,
+    marketing_forms, currencies, clients, outreach, support_tickets,
 )
 import logging
 
@@ -91,6 +91,11 @@ api_router.include_router(notifications.router, prefix="/notifications", tags=["
 
 # Contact routes (available in api.py)
 api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
+
+# Support / error tickets (emails ali@the-leadlab.com)
+api_router.include_router(
+    support_tickets.router, prefix="/support-tickets", tags=["support-tickets"]
+)
 
 # Public marketing forms (landing page — no auth)
 api_router.include_router(marketing_forms.router, prefix="/lead-forms", tags=["lead-forms"])

@@ -61,6 +61,7 @@ from .conversation import CallRecording, ConversationInsight
 from .forecast import ForecastPeriod, Forecast, ForecastItem, ForecastHistory, ForecastRollup, ForecastComment, ForecastCategory, ForecastPeriodType, ForecastStatus
 from .data_import import ImportJob, FieldMapping, ImportRecord, ExportJob, CRMConnection, ImportStatus, ImportSource
 from .marketing_form_submission import MarketingFormSubmission
+from .support_ticket import SupportTicket
 
 # Export all models
 __all__ = [
@@ -164,6 +165,7 @@ __all__ = [
     "ImportStatus",
     "ImportSource",
     "MarketingFormSubmission",
+    "SupportTicket",
 
     # Association tables
     "user_roles",

@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'react-hot-toast';
+import { Eye, EyeOff } from 'lucide-react';
 
 const userSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -30,6 +31,7 @@ export function UserManagement() {
   const [editingUser, setEditingUser] = React.useState<any>(null);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
+  const [showPassword, setShowPassword] = React.useState(false);
   const showDangerousDebug = import.meta.env.DEV;
   const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
@@ -164,6 +166,7 @@ export function UserManagement() {
 
   const handleAddUser = () => {
     setEditingUser(null);
+    setShowPassword(false);
     form.reset({
       email: '',
       first_name: '',
@@ -178,6 +181,7 @@ export function UserManagement() {
 
   const handleEditUser = (user: any) => {
     setEditingUser(user);
+    setShowPassword(false);
     form.reset({
       email: user.email,
       first_name: user.first_name,
@@ -284,6 +288,7 @@ export function UserManagement() {
             if (!open) {
               setIsDialogOpen(false);
               setEditingUser(null);
+              setShowPassword(false);
               form.reset();
             }
           }}>
@@ -339,11 +344,27 @@ export function UserManagement() {
                     <FormItem>
                       <FormLabel>{editingUser ? 'New Password (optional)' : 'Password'}</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          {...field}
-                          required={!editingUser}
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? 'text' : 'password'}
+                            {...field}
+                            required={!editingUser}
+                            className="pr-10"
+                            autoComplete={editingUser ? 'new-password' : 'new-password'}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 bg-transparent"
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" aria-hidden="true" />
+                            ) : (
+                              <Eye className="h-4 w-4" aria-hidden="true" />
+                            )}
+                          </button>
+                        </div>
                       </FormControl>
                     </FormItem>
                   )}

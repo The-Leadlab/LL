@@ -16,7 +16,6 @@ from app.core.config import settings
 from app.core.avatars import initials_avatar_svg
 from app.core.workspace import (
     PERSONAL_ORG_SENTINEL,
-    provision_personal_organization,
     record_team_membership,
 )
 from sqlalchemy import select, and_, func
@@ -74,7 +73,15 @@ def _resolve_workspace_org_id(
 ) -> tuple[int, bool]:
     """Return (organization_id, joining_existing_team)."""
     if requested_org_id in (None, PERSONAL_ORG_SENTINEL):
-        org = provision_personal_organization(
+        from app.core.workspace import (
+            find_organization_id_for_business_domain,
+            provision_personal_organization as _provision,
+        )
+
+        domain_org = find_organization_id_for_business_domain(db, email)
+        if domain_org:
+            return int(domain_org), True
+        org = _provision(
             db,
             first_name=first_name,
             last_name=last_name,

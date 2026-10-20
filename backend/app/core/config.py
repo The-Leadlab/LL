@@ -105,6 +105,10 @@ class Settings(BaseSettings):
         default="noreply@the-leadlab.com",
         description="Verified sender email for Resend API (prefer main domain)",
     )
+    DEV_ADMIN_EMAILS: str = Field(
+        default="ali@the-leadlab.com",
+        description="Comma-separated emails notified on new support tickets",
+    )
     EMAIL_PROVIDER: str = Field(default="smtp", description="Email transport mode: smtp, api, or auto")
     EMAIL_PROVIDER_TIMEOUT_SECONDS: int = Field(default=12, description="Timeout (seconds) for provider API requests")
     # Infomaniak HTTPS webmail API (bypasses blocked SMTP ports on Render free)

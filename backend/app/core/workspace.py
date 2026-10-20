@@ -17,6 +17,40 @@ from app.models.user import User
 logger = logging.getLogger(__name__)
 
 PROTECTED_WORKSPACE_EMAILS = frozenset({"ali@the-leadlab.com"})
+# Prefer this mailbox as the canonical home for @the-leadlab.com teammates.
+PREFERRED_DOMAIN_OWNERS = {
+    "the-leadlab.com": "ali@the-leadlab.com",
+}
+# Consumer / free-mail domains never auto-share a workspace.
+CONSUMER_EMAIL_DOMAINS = frozenset(
+    {
+        "gmail.com",
+        "googlemail.com",
+        "yahoo.com",
+        "yahoo.co.uk",
+        "hotmail.com",
+        "outlook.com",
+        "live.com",
+        "msn.com",
+        "icloud.com",
+        "me.com",
+        "mac.com",
+        "aol.com",
+        "proton.me",
+        "protonmail.com",
+        "gmx.com",
+        "gmx.net",
+        "mail.com",
+        "yandex.com",
+        "yandex.ru",
+        "zoho.com",
+        "fastmail.com",
+        "hey.com",
+        "pm.me",
+        "mailinator.com",
+        "deleted.local",
+    }
+)
 PERSONAL_ORG_SENTINEL = 0
 MOVED_USER_LOG_RE = re.compile(
     r"Moved user (\d+) from org (\d+) to personal workspace (\d+)",
@@ -41,8 +75,161 @@ def _normalized_email(email: Optional[str]) -> str:
     return (email or "").strip().lower()
 
 
+def email_domain(email: Optional[str]) -> Optional[str]:
+    value = _normalized_email(email)
+    if "@" not in value:
+        return None
+    domain = value.rsplit("@", 1)[-1].strip().lower()
+    return domain or None
+
+
+def is_shared_business_domain(domain: Optional[str]) -> bool:
+    """True for company domains that should share one LeadLab organization."""
+    if not domain:
+        return False
+    if domain in CONSUMER_EMAIL_DOMAINS:
+        return False
+    # Reject obvious disposable / single-label hosts
+    if "." not in domain:
+        return False
+    return True
+
+
 def is_protected_workspace_user(user: User) -> bool:
     return _normalized_email(getattr(user, "email", None)) in PROTECTED_WORKSPACE_EMAILS
+
+
+def find_organization_id_for_business_domain(
+    db: Session,
+    email: Optional[str],
+    *,
+    exclude_user_id: Optional[int] = None,
+) -> Optional[int]:
+    """
+    If this email uses a shared business domain (e.g. @the-leadlab.com,
+    @deluxepad.com), return the existing org that domain peers already use.
+    Prefers a configured domain owner (Ali for LeadLab) when present.
+    """
+    domain = email_domain(email)
+    if not is_shared_business_domain(domain):
+        return None
+    assert domain is not None
+
+    preferred_owner = PREFERRED_DOMAIN_OWNERS.get(domain)
+    if preferred_owner:
+        owner = (
+            db.query(User)
+            .filter(
+                func.lower(User.email) == preferred_owner,
+                User.is_active == True,  # noqa: E712
+            )
+            .first()
+        )
+        if owner and owner.organization_id:
+            return int(owner.organization_id)
+
+    query = (
+        db.query(User)
+        .filter(
+            func.lower(User.email).like(f"%@{domain}"),
+            User.is_active == True,  # noqa: E712
+            User.organization_id.isnot(None),
+            ~func.lower(User.email).like("%@deleted.local"),
+            ~func.lower(User.email).like("deleted+user-%"),
+        )
+        .order_by(User.created_at.asc(), User.id.asc())
+    )
+    if exclude_user_id is not None:
+        query = query.filter(User.id != int(exclude_user_id))
+    peer = query.first()
+    if peer and peer.organization_id:
+        return int(peer.organization_id)
+    return None
+
+
+def resolve_registration_organization_id(
+    db: Session,
+    *,
+    email: Optional[str],
+    first_name: Optional[str] = None,
+    last_name: Optional[str] = None,
+    company: Optional[str] = None,
+) -> tuple[int, bool]:
+    """
+    Pick org for a new signup.
+    Returns (organization_id, joined_existing_team).
+    Same business-email domain → join that company's existing org.
+    """
+    existing = find_organization_id_for_business_domain(db, email)
+    if existing:
+        return existing, True
+    org = provision_personal_organization(
+        db,
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        company=company,
+    )
+    return int(org.id), False
+
+
+def ensure_business_domain_workspace(db: Session, user: User) -> User:
+    """
+    On login: if the user has a company email and peers already share an org,
+    move them into that org and record membership so isolation won't split them.
+    """
+    try:
+        if _is_tombstone_email(getattr(user, "email", None)):
+            return user
+        if is_protected_workspace_user(user):
+            return user
+        target_org = find_organization_id_for_business_domain(
+            db, user.email, exclude_user_id=int(user.id) if user.id else None
+        )
+        if not target_org:
+            return user
+        current = int(user.organization_id) if user.organization_id else None
+        if current == target_org:
+            if not has_team_membership(db, user):
+                record_team_membership(
+                    db,
+                    user=user,
+                    organization_id=target_org,
+                    invited_by_id=int(user.id),
+                )
+            return user
+
+        previous = current
+        user.organization_id = target_org
+        user.updated_at = datetime.utcnow()
+        db.add(user)
+        db.query(EmailAccount).filter(EmailAccount.user_id == user.id).update(
+            {"organization_id": target_org},
+            synchronize_session=False,
+        )
+        db.commit()
+        db.refresh(user)
+        record_team_membership(
+            db,
+            user=user,
+            organization_id=target_org,
+            invited_by_id=int(user.id),
+        )
+        logger.info(
+            "Joined user %s (%s) from org %s into business-domain org %s",
+            user.id,
+            _normalized_email(user.email),
+            previous,
+            target_org,
+        )
+        return user
+    except Exception:
+        logger.exception(
+            "Business-domain workspace join failed for user %s",
+            getattr(user, "id", None),
+        )
+        db.rollback()
+        return user
 
 
 def provision_personal_organization(
@@ -186,6 +373,26 @@ def user_has_shared_org_work(db: Session, user: User) -> bool:
     return False
 
 
+def _org_has_same_business_domain_peer(db: Session, user: User) -> bool:
+    """Keep shared org when another active teammate shares the company email domain."""
+    domain = email_domain(getattr(user, "email", None))
+    if not is_shared_business_domain(domain) or not user.organization_id:
+        return False
+    assert domain is not None
+    peer = (
+        db.query(User.id)
+        .filter(
+            User.organization_id == user.organization_id,
+            User.id != user.id,
+            User.is_active == True,  # noqa: E712
+            func.lower(User.email).like(f"%@{domain}"),
+            ~func.lower(User.email).like("%@deleted.local"),
+        )
+        .first()
+    )
+    return peer is not None
+
+
 def user_should_keep_shared_org(db: Session, user: User) -> bool:
     if is_protected_workspace_user(user):
         return True
@@ -196,6 +403,8 @@ def user_should_keep_shared_org(db: Session, user: User) -> bool:
     if is_org_founder(db, user):
         return True
     if has_team_membership(db, user):
+        return True
+    if _org_has_same_business_domain_peer(db, user):
         return True
     if user_has_shared_org_work(db, user):
         return True

@@ -61,6 +61,7 @@ async def startup_handler(app: FastAPI) -> None:
         
         # Mevcut kontroller
         from app.models import TaskAttachment  # noqa: F401 — register table for create_all
+        from app.models import SupportTicket  # noqa: F401 — register support_tickets
         Base.metadata.create_all(bind=engine)
         try:
             from app.core.task_attachment_schema import ensure_task_attachments_schema

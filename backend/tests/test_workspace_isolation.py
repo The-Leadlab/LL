@@ -3,7 +3,9 @@ from types import SimpleNamespace
 from app.core.avatars import avatar_color_for_user, initials_avatar_svg, user_initials
 from app.core.workspace import (
     PERSONAL_ORG_SENTINEL,
+    email_domain,
     is_protected_workspace_user,
+    is_shared_business_domain,
     parse_moved_user_log_lines,
     user_should_keep_shared_org,
 )
@@ -35,6 +37,15 @@ def test_initials_avatar_svg_is_not_a_tiny_placeholder():
 def test_protected_workspace_user():
     assert is_protected_workspace_user(SimpleNamespace(email="ali@the-leadlab.com")) is True
     assert is_protected_workspace_user(SimpleNamespace(email="contact@serendien.ch")) is False
+
+
+def test_business_email_domains_share_org():
+    assert email_domain("joshua@the-leadlab.com") == "the-leadlab.com"
+    assert is_shared_business_domain("the-leadlab.com") is True
+    assert is_shared_business_domain("deluxepad.com") is True
+    assert is_shared_business_domain("autothineta.com") is True
+    assert is_shared_business_domain("gmail.com") is False
+    assert is_shared_business_domain("yahoo.com") is False
 
 
 def test_solo_user_keeps_workspace():

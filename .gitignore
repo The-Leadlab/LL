@@ -225,3 +225,8 @@ tramp
 *.out
 *.app 
 .vercel
+backend/.leadlab_admin_password.tmp
+backend/.leadlab_admin_password.status
+backend/.password_capture.html
+.leadlab_admin_password.tmp
+.password_capture.html

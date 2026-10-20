@@ -1,0 +1,134 @@
+import React from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Ticket } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+import api from '@/lib/axios'
+import { useAuthStore } from '@/store/auth'
+
+type TicketItem = {
+  id: number
+  reporter_name: string
+  reporter_email: string
+  project_name: string
+  subject: string
+  description: string
+  status: string
+  priority: string
+  created_at: string | null
+}
+
+const statusOptions = ['open', 'in_progress', 'resolved', 'closed'] as const
+
+export function SupportTicketsAdmin() {
+  const { user } = useAuthStore()
+  const queryClient = useQueryClient()
+  const [statusFilter, setStatusFilter] = React.useState('')
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['support-tickets', statusFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams({ limit: '200' })
+      if (statusFilter) params.set('status', statusFilter)
+      const res = await api.get<{ items: TicketItem[]; total: number }>(
+        `/support-tickets/?${params.toString()}`
+      )
+      return res.data
+    },
+    enabled: !!user?.is_admin,
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      const res = await api.patch(`/support-tickets/${id}`, { status })
+      return res.data
+    },
+    onSuccess: () => {
+      toast.success('Ticket updated')
+      queryClient.invalidateQueries({ queryKey: ['support-tickets'] })
+    },
+    onError: () => toast.error('Could not update ticket'),
+  })
+
+  if (!user?.is_admin) {
+    return <p className="text-gray-500 p-4">Admin access required.</p>
+  }
+
+  const items = data?.items ?? []
+
+  return (
+    <div className="space-y-6 p-4">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2 text-gray-700">
+          <Ticket className="w-6 h-6 text-blue-600" />
+          <h2 className="text-xl font-semibold">Support tickets</h2>
+        </div>
+        <select
+          className="border rounded-lg px-3 py-2 text-sm"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="">All statuses</option>
+          {statusOptions.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+        {data != null && (
+          <span className="text-sm text-gray-500">
+            Showing {items.length} of {data.total}
+          </span>
+        )}
+      </div>
+
+      {isLoading && <p className="text-gray-500">Loading…</p>}
+      {error && (
+        <p className="text-red-600 text-sm">Failed to load tickets.</p>
+      )}
+      {!isLoading && items.length === 0 && (
+        <p className="text-gray-500 text-sm">No tickets yet.</p>
+      )}
+
+      <div className="space-y-3">
+        {items.map((ticket) => (
+          <div
+            key={ticket.id}
+            className="border border-gray-200 rounded-lg p-4 bg-white"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-gray-900">
+                  #{ticket.id} · {ticket.project_name}
+                </p>
+                <p className="text-sm text-gray-800 mt-0.5">{ticket.subject}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {ticket.reporter_name} &lt;{ticket.reporter_email}&gt; ·{' '}
+                  {ticket.priority} ·{' '}
+                  {ticket.created_at
+                    ? new Date(ticket.created_at).toLocaleString()
+                    : '—'}
+                </p>
+              </div>
+              <select
+                className="border rounded-md px-2 py-1 text-sm"
+                value={ticket.status}
+                onChange={(e) =>
+                  updateMutation.mutate({ id: ticket.id, status: e.target.value })
+                }
+              >
+                {statusOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="text-sm text-gray-700 mt-3 whitespace-pre-wrap">
+              {ticket.description}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}

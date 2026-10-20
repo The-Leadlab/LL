@@ -369,9 +369,20 @@ async def register(
                 detail="The user with this email already exists in the system",
             )
 
-        # Create new organization
-        org_name = register_in.company or f"{register_in.first_name}'s Organization"
-        organization = crud.organization.create_with_owner(db, name=org_name)
+        # Same business email domain (e.g. @the-leadlab.com, @deluxepad.com)
+        # joins the existing company workspace instead of creating a solo org.
+        from app.core.workspace import (
+            resolve_registration_organization_id,
+            record_team_membership,
+        )
+
+        org_id, joined_existing_team = resolve_registration_organization_id(
+            db,
+            email=register_in.email,
+            first_name=register_in.first_name,
+            last_name=register_in.last_name,
+            company=register_in.company,
+        )
 
         # Org owner is a member/manager of their own workspace, not a platform admin.
         user_in = schemas.UserCreate(
@@ -379,13 +390,20 @@ async def register(
             password=register_in.password,
             first_name=register_in.first_name,
             last_name=register_in.last_name,
-            organization_id=organization.id,
+            organization_id=org_id,
             is_active=True,
             is_admin=False,
             is_superuser=False,
         )
         user = crud.user.create(db, obj_in=user_in)
-        
+        if joined_existing_team:
+            record_team_membership(
+                db,
+                user=user,
+                organization_id=int(org_id),
+                invited_by_id=int(user.id),
+            )
+
         login_link = f"{settings.FRONTEND_URL}/signin"
         background_tasks.add_task(
             email_sender.send_welcome_email,
@@ -544,8 +562,14 @@ async def login(
             )
 
         # Keep login org id in sync with authenticated requests (/auth/me).
+        # Business-domain peers (e.g. *@the-leadlab.com) reunite first, then
+        # isolation may still split accounts that have no team membership.
         if hasattr(user, "__table__"):
-            from app.core.workspace import ensure_personal_workspace_if_needed
+            from app.core.workspace import (
+                ensure_business_domain_workspace,
+                ensure_personal_workspace_if_needed,
+            )
+            user = ensure_business_domain_workspace(db, user)
             user = ensure_personal_workspace_if_needed(db, user)
         
         # Generate access token

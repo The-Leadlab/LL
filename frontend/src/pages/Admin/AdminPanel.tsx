@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Building2, Info, FileSpreadsheet, Tag, Receipt, ClipboardList } from 'lucide-react';
+import { Users, Building2, Info, FileSpreadsheet, Tag, Receipt, ClipboardList, Ticket } from 'lucide-react';
 import { LeadManagement } from './LeadManagement';
 import { UserManagement } from './UserManagement';
 import { OrganizationManagement } from './OrganizationManagement';
@@ -7,6 +7,7 @@ import { InformationRequests } from './InformationRequests';
 import TagManagement from './TagManagement';
 import { InvoiceMaker } from './InvoiceMaker';
 import { MarketingFormSubmissions } from './MarketingFormSubmissions';
+import { SupportTicketsAdmin } from './SupportTicketsAdmin';
 
 type Tab = {
   id: string;
@@ -65,6 +66,13 @@ const tabs: Tab[] = [
     description: 'Business diagnostic, data request, and pitch-your-idea submissions.',
     icon: ClipboardList,
     component: MarketingFormSubmissions,
+  },
+  {
+    id: 'support-tickets',
+    title: 'Support tickets',
+    description: 'Project error reports — emailed to ali@the-leadlab.com.',
+    icon: Ticket,
+    component: SupportTicketsAdmin,
   },
 ];
 
