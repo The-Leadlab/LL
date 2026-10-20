@@ -55,6 +55,8 @@ ALLOWED_PRIORITIES = frozenset({"low", "normal", "high", "urgent"})
 # Screenshots, images, videos, and common docs.
 MAX_REPORT_ATTACHMENT_BYTES = 50 * 1024 * 1024  # 50 MB per file
 MAX_REPORT_ATTACHMENTS = 5
+# Keep email payloads under typical provider limits (Resend/Gmail).
+MAX_EMAIL_ATTACHMENT_BYTES = 12 * 1024 * 1024
 ALLOWED_ATTACHMENT_PREFIXES = (
     "image/",
     "video/",
@@ -178,14 +180,27 @@ def _list_attachments(db: Session, ticket_id: int) -> List[SupportTicketAttachme
 
 
 def _ticket_email_html(snapshot: dict) -> str:
-    files = snapshot.get("attachments") or []
-    if files:
-        file_bits = "".join(
-            f"<li>{html.escape(name)} ({size} bytes)</li>" for name, size in files
+    attached = snapshot.get("email_attachment_names") or []
+    skipped = snapshot.get("skipped_attachment_names") or []
+    parts: List[str] = []
+    if attached:
+        file_bits = "".join(f"<li>{html.escape(name)}</li>" for name in attached)
+        parts.append(
+            "<p><strong>Attachments included in this email:</strong></p>"
+            f"<ul>{file_bits}</ul>"
+            "<p>Open the attached files in your mail client to view screenshots/videos.</p>"
         )
-        files_html = f"<p><strong>Attachments:</strong></p><ul>{file_bits}</ul>"
-    else:
-        files_html = "<p><em>No attachments</em></p>"
+    if skipped:
+        skip_bits = "".join(f"<li>{html.escape(name)}</li>" for name in skipped)
+        parts.append(
+            "<p><strong>Too large to attach by email</strong> "
+            f"(over {MAX_EMAIL_ATTACHMENT_BYTES // (1024 * 1024)} MB) — "
+            "download them in Admin → Issue reports:</p>"
+            f"<ul>{skip_bits}</ul>"
+        )
+    if not parts:
+        parts.append("<p><em>No attachments</em></p>")
+    files_html = "".join(parts)
     return f"""
     <h2>New issue report #{snapshot['id']}</h2>
     <p><strong>Project:</strong> {html.escape(snapshot['project_name'])}</p>
@@ -197,7 +212,7 @@ def _ticket_email_html(snapshot: dict) -> str:
     <p>{html.escape(snapshot['description']).replace(chr(10), '<br/>')}</p>
     {files_html}
     <p style="color:#64748b;font-size:12px;">
-      Open Admin → Issue reports in LeadLab to update status or download files.
+      You can also open Admin → Issue reports in LeadLab to update status or re-download files.
     </p>
     """
 
@@ -208,12 +223,14 @@ async def _notify_dev_admins(snapshot: dict) -> None:
         f"{snapshot['project_name']}: {snapshot['subject']}"
     )
     body = _ticket_email_html(snapshot)
+    email_files = snapshot.get("email_attachments") or []
     for to_email in _dev_admin_recipients():
         try:
             await email_sender.send_email(
                 to_email=to_email,
                 subject=subject,
                 html_content=body,
+                attachments=email_files or None,
             )
         except Exception:
             logger.exception(
@@ -309,6 +326,26 @@ def _schedule_notify(
     ticket: SupportTicket,
     attachments: List[SupportTicketAttachment],
 ) -> None:
+    email_attachments: List[dict] = []
+    email_attachment_names: List[str] = []
+    skipped_attachment_names: List[str] = []
+    for row in attachments:
+        raw = bytes(row.blob or b"")
+        name = row.filename or "attachment"
+        if not raw:
+            continue
+        if len(raw) > MAX_EMAIL_ATTACHMENT_BYTES:
+            skipped_attachment_names.append(f"{name} ({int(row.size_bytes or 0)} bytes)")
+            continue
+        email_attachments.append(
+            {
+                "filename": name,
+                "content": raw,
+                "content_type": row.content_type or "application/octet-stream",
+            }
+        )
+        email_attachment_names.append(name)
+
     snapshot = {
         "id": ticket.id,
         "project_name": ticket.project_name,
@@ -317,7 +354,9 @@ def _schedule_notify(
         "reporter_name": ticket.reporter_name,
         "reporter_email": ticket.reporter_email,
         "description": ticket.description,
-        "attachments": [(a.filename, int(a.size_bytes or 0)) for a in attachments],
+        "email_attachments": email_attachments,
+        "email_attachment_names": email_attachment_names,
+        "skipped_attachment_names": skipped_attachment_names,
     }
     background_tasks.add_task(_notify_dev_admins, snapshot)
 

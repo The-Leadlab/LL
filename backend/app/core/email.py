@@ -55,6 +55,7 @@ class EmailSender:
                 subject=subject,
                 html_content=html_content,
                 text_content=text_content,
+                attachments=attachments,
             )
 
         # smtp (default) and auto: try SMTP first, then Resend if configured.
@@ -74,8 +75,32 @@ class EmailSender:
                 subject=subject,
                 html_content=html_content,
                 text_content=text_content,
+                attachments=attachments,
             )
         return False
+
+    @staticmethod
+    def _attach_file_parts(message: MIMEMultipart, attachments: Optional[List[dict]]) -> None:
+        if not attachments:
+            return
+        for attachment in attachments:
+            raw = attachment.get("content") or b""
+            if isinstance(raw, str):
+                raw = raw.encode("utf-8")
+            filename = attachment.get("filename") or "attachment"
+            content_type = (attachment.get("content_type") or "application/octet-stream").split(";")[0].strip()
+            maintype, _, subtype = content_type.partition("/")
+            if not maintype or not subtype:
+                maintype, subtype = "application", "octet-stream"
+            part = MIMEBase(maintype, subtype)
+            part.set_payload(raw)
+            encoders.encode_base64(part)
+            part.add_header(
+                "Content-Disposition",
+                "attachment",
+                filename=filename,
+            )
+            message.attach(part)
 
     async def _send_via_smtp(
         self,
@@ -99,30 +124,20 @@ class EmailSender:
             return False
 
         try:
-            message = MIMEMultipart("alternative")
+            # mixed root so file attachments are real downloadable parts
+            message = MIMEMultipart("mixed")
             message["Subject"] = subject
             # For SMTP/Gmail, prefer authenticated SMTP user as sender.
             from_email = self.smtp_user or self.from_email
             message["From"] = f"{self.from_name} <{from_email}>"
             message["To"] = to_email
 
+            body = MIMEMultipart("alternative")
             if text_content:
-                text_part = MIMEText(text_content, "plain")
-                message.attach(text_part)
-
-            html_part = MIMEText(html_content, "html")
-            message.attach(html_part)
-
-            if attachments:
-                for attachment in attachments:
-                    part = MIMEBase("application", "octet-stream")
-                    part.set_payload(attachment["content"])
-                    encoders.encode_base64(part)
-                    part.add_header(
-                        "Content-Disposition",
-                        f'attachment; filename= {attachment["filename"]}'
-                    )
-                    message.attach(part)
+                body.attach(MIMEText(text_content, "plain"))
+            body.attach(MIMEText(html_content, "html"))
+            message.attach(body)
+            self._attach_file_parts(message, attachments)
 
             context = ssl.create_default_context()
             use_tls = self.smtp_tls and self.smtp_port == 465
@@ -156,7 +171,8 @@ class EmailSender:
         to_email: str,
         subject: str,
         html_content: str,
-        text_content: Optional[str] = None
+        text_content: Optional[str] = None,
+        attachments: Optional[List[dict]] = None,
     ) -> bool:
         if not self.resend_api_key:
             self.last_error = "RESEND_API_KEY is not configured"
@@ -179,6 +195,24 @@ class EmailSender:
         }
         if text_content:
             payload["text"] = text_content
+        if attachments:
+            import base64
+
+            resend_files = []
+            for attachment in attachments:
+                raw = attachment.get("content") or b""
+                if isinstance(raw, str):
+                    raw = raw.encode("utf-8")
+                if not raw:
+                    continue
+                resend_files.append(
+                    {
+                        "filename": attachment.get("filename") or "attachment",
+                        "content": base64.b64encode(raw).decode("ascii"),
+                    }
+                )
+            if resend_files:
+                payload["attachments"] = resend_files
 
         headers = {
             "Authorization": f"Bearer {self.resend_api_key}",
