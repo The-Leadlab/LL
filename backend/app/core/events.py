@@ -71,15 +71,11 @@ async def startup_handler(app: FastAPI) -> None:
         except Exception as exc:
             logger.warning("Could not ensure task_attachments on startup: %s", exc)
         try:
-            from app.core.support_ticket_attachment_schema import (
-                ensure_support_ticket_attachments_schema,
-            )
+            from app.core.support_ticket_schema import ensure_support_tickets_schema
 
-            ensure_support_ticket_attachments_schema(engine)
+            ensure_support_tickets_schema(engine)
         except Exception as exc:
-            logger.warning(
-                "Could not ensure support_ticket_attachments on startup: %s", exc
-            )
+            logger.warning("Could not ensure support_tickets on startup: %s", exc)
         _ensure_lead_search_indexes()
         ACTIVE_USERS.set(0)
         REQUEST_COUNT.clear()

@@ -85,6 +85,15 @@ async def startup_sequence_guard() -> None:
     except Exception as exc:
         logger.warning("Could not ensure task_attachments: %s", exc)
 
+    try:
+        from app.db.session import engine as db_engine
+        from app.core.support_ticket_schema import ensure_support_tickets_schema
+
+        ensure_support_tickets_schema(db_engine)
+        logger.info("Ensured support_tickets tables exist")
+    except Exception as exc:
+        logger.warning("Could not ensure support_tickets: %s", exc)
+
     # Outreach platform tables (Phases 1–4) — create if missing so deploy works before manual SQL.
     try:
         from app.db.session import engine, SessionLocal

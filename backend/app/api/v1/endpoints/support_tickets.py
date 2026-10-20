@@ -27,7 +27,7 @@ from app import crud, schemas
 from app.api import deps
 from app.core.config import settings
 from app.core.email import email_sender
-from app.core.support_ticket_attachment_schema import ensure_support_ticket_attachments_schema
+from app.core.support_ticket_schema import ensure_support_tickets_schema
 from app.models.support_ticket import SupportTicket
 from app.models.support_ticket_attachment import SupportTicketAttachment
 from app.models.user import User as UserModel
@@ -103,8 +103,8 @@ def _dev_admin_recipients() -> List[str]:
     return sorted(emails)
 
 
-def _ensure_attachment_table(db: Session) -> None:
-    ensure_support_ticket_attachments_schema(db.get_bind())
+def _ensure_tables(db: Session) -> None:
+    ensure_support_tickets_schema(db.get_bind())
 
 
 def _attachment_allowed(content_type: Optional[str], filename: str) -> bool:
@@ -167,7 +167,7 @@ def _ticket_to_out(ticket: SupportTicket, attachments: Optional[List[SupportTick
 
 
 def _list_attachments(db: Session, ticket_id: int) -> List[SupportTicketAttachment]:
-    _ensure_attachment_table(db)
+    _ensure_tables(db)
     return (
         db.query(SupportTicketAttachment)
         .options(defer(SupportTicketAttachment.blob))
@@ -262,7 +262,7 @@ async def _save_uploads(
             status_code=400,
             detail=f"At most {MAX_REPORT_ATTACHMENTS} attachments are allowed",
         )
-    _ensure_attachment_table(db)
+    _ensure_tables(db)
     saved: List[SupportTicketAttachment] = []
     for upload in usable:
         content = await upload.read()
@@ -389,6 +389,7 @@ async def create_support_ticket(
                 priority=ticket_in.priority,
             )
 
+    _ensure_tables(db)
     ticket = _create_ticket(db, ticket_in, current_user=current_user)
     try:
         attachments = await _save_uploads(db, ticket.id, uploads)
@@ -442,7 +443,7 @@ def download_ticket_attachment(
     ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
-    _ensure_attachment_table(db)
+    _ensure_tables(db)
     row = (
         db.query(SupportTicketAttachment)
         .filter(
