@@ -77,7 +77,7 @@ export function ModernTaskDetail() {
       <TaskDetailModal
         task={task}
         isOpen={true}
-        onClose={() => navigate('/tasks')}
+        onClose={() => navigate('/tasks', { replace: true })}
         asPage
       />
     </div>

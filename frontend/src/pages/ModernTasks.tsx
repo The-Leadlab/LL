@@ -86,7 +86,10 @@ function TaskActionsMenu({ taskId }: { taskId: number }) {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => tasksAPI.deleteTask(id),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
+      queryClient.removeQueries({ queryKey: ['task', id] });
+      queryClient.removeQueries({ queryKey: ['task-details', id] });
+      queryClient.removeQueries({ queryKey: ['task-attachments', id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast({ title: 'Task deleted' });
     },

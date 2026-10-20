@@ -27,6 +27,8 @@ import {
   MoreVertical,
   Loader2,
   GripVertical,
+  Trash2,
+  Pencil,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -42,6 +44,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -168,11 +171,13 @@ function DraggableDealCard({
   disabled,
   onOpen,
   onEdit,
+  onDelete,
 }: {
   deal: ApiDeal;
   disabled?: boolean;
   onOpen: (id: number) => void;
   onEdit: (id: number) => void;
+  onDelete: (id: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `deal-${deal.id}`,
@@ -221,14 +226,26 @@ function DraggableDealCard({
               <MoreVertical className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuContent align="end" className="w-44">
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit(deal.id);
               }}
             >
-              Edit Deal
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit deal
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-red-600 focus:text-red-600"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(deal.id);
+              }}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete deal
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -271,6 +288,25 @@ export function ModernDeals() {
   });
 
   const rawDeals: ApiDeal[] = axiosResponse?.data?.items ?? [];
+
+  const deleteDeal = useMutation({
+    mutationFn: async (id: number) => {
+      await api.delete(`/deals/${id}/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+      toast({ title: 'Deal deleted' });
+    },
+    onError: () => {
+      toast({ title: 'Could not delete deal', variant: 'destructive' });
+    },
+  });
+
+  const handleDeleteDeal = (id: number) => {
+    if (window.confirm('Delete this deal? This cannot be undone.')) {
+      deleteDeal.mutate(id);
+    }
+  };
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: DealStatusStr }) => {
@@ -443,9 +479,10 @@ export function ModernDeals() {
                   <DraggableDealCard
                     key={deal.id}
                     deal={deal}
-                    disabled={updateStatus.isPending}
+                    disabled={updateStatus.isPending || deleteDeal.isPending}
                     onOpen={(id) => navigate(`/deals/${id}`)}
                     onEdit={(id) => navigate(`/deals/${id}`)}
+                    onDelete={handleDeleteDeal}
                   />
                 ))}
                 {stage.deals.length === 0 && (

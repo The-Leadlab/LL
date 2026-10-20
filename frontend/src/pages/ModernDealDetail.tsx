@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '@/services/axios';
 import dealsAPI from '@/services/api/deals';
-import { ArrowLeft, Calendar, DollarSign, Loader2, User } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, Loader2, Trash2, User } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -150,6 +150,21 @@ export function ModernDealDetail() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      await dealsAPI.deleteDeal(dealId);
+    },
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ['deal', dealId] });
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+      toast({ title: 'Deal deleted' });
+      navigate('/deals', { replace: true });
+    },
+    onError: () => {
+      toast({ title: 'Could not delete deal', variant: 'destructive' });
+    },
+  });
+
   if (!Number.isFinite(dealId) || dealId <= 0) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
@@ -261,7 +276,7 @@ export function ModernDealDetail() {
             <p className="mt-1 text-xs text-neutral-500">Leave empty to save as no expiry date.</p>
           </div>
           <div className="flex flex-wrap gap-3 pt-2">
-            <Button type="submit" disabled={updateMutation.isPending}>
+            <Button type="submit" disabled={updateMutation.isPending || deleteMutation.isPending}>
               {updateMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -273,6 +288,29 @@ export function ModernDealDetail() {
             </Button>
             <Button type="button" variant="outline" onClick={() => navigate(`/leads/${deal.lead_id}`)}>
               Open lead: {leadName || `#${deal.lead_id}`}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+              disabled={deleteMutation.isPending || updateMutation.isPending}
+              onClick={() => {
+                if (window.confirm('Delete this deal? This cannot be undone.')) {
+                  deleteMutation.mutate();
+                }
+              }}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete deal
+                </>
+              )}
             </Button>
           </div>
         </form>

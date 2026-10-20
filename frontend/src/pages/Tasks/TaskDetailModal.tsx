@@ -44,11 +44,24 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [openingTaskAttachmentKey, setOpeningTaskAttachmentKey] = useState<string | null>(null);
 
-  // Helper function to capitalize first letter
-  const capitalizeFirstLetter = (str: string) => {
-    return str.toLowerCase().split('_').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
+  const capitalizeFirstLetter = (str?: string | null) => {
+    if (!str || typeof str !== 'string') return '—';
+    return str
+      .toLowerCase()
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const unwrapTaskPayload = (payload: unknown): Task | null => {
+    if (!payload || typeof payload !== 'object') return null;
+    const raw = payload as Record<string, unknown>;
+    if (typeof raw.id === 'number' && raw.id > 0) return raw as unknown as Task;
+    if (raw.data && typeof raw.data === 'object') {
+      const nested = raw.data as Record<string, unknown>;
+      if (typeof nested.id === 'number' && nested.id > 0) return nested as unknown as Task;
+    }
+    return null;
   };
 
   // Fetch current task data - this will allow us to refresh it after updates
@@ -57,7 +70,8 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
     queryFn: async () => {
       if (!task?.id) return null;
       try {
-        return await tasksAPI.getTask(task.id);
+        const raw = await tasksAPI.getTask(task.id);
+        return unwrapTaskPayload(raw) ?? task;
       } catch (error) {
         console.error('Error fetching task details:', error);
         // Return the original task object if there's an error fetching updated details
@@ -68,8 +82,11 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
     staleTime: 0, // Always refetch when needed
   });
 
-  // Use the most up-to-date task data
-  const currentTask = currentTaskData || task;
+  // Prefer freshly fetched data only when it looks like a real task (has id)
+  const currentTask =
+    currentTaskData && typeof (currentTaskData as Task).id === 'number'
+      ? (currentTaskData as Task)
+      : task;
 
   // Safe date formatting function
   const safeFormatDate = (dateString?: string) => {
@@ -146,9 +163,17 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
   const deleteTaskMutation = useMutation({
     mutationFn: () => tasksAPI.deleteTask(currentTask!.id),
     onSuccess: () => {
+      const deletedId = currentTask?.id ?? task?.id;
+      setIsDeleteDialogOpen(false);
+      // Drop cached detail so we never re-render a deleted task (avoids toLowerCase crash).
+      if (deletedId != null) {
+        queryClient.removeQueries({ queryKey: ['task-details', deletedId] });
+        queryClient.removeQueries({ queryKey: ['task', deletedId] });
+        queryClient.removeQueries({ queryKey: ['task-attachments', deletedId] });
+      }
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       onClose();
-      toast.success('Task deleted successfully');
+      toast.success('Task deleted');
     },
     onError: (error) => {
       toast.error('Failed to delete task. Please try again later');
