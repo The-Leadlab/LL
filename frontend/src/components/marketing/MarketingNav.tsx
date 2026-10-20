@@ -52,6 +52,9 @@ export function MarketingNav() {
       <Link to="/contact" className={`${navLink} ${isActive('/contact')}`} onClick={() => setOpen(false)}>
         Contact
       </Link>
+      <Link to="/report" className={`${navLink} ${isActive('/report')}`} onClick={() => setOpen(false)}>
+        Report an issue
+      </Link>
     </>
   )
 

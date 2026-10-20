@@ -62,6 +62,7 @@ from .forecast import ForecastPeriod, Forecast, ForecastItem, ForecastHistory, F
 from .data_import import ImportJob, FieldMapping, ImportRecord, ExportJob, CRMConnection, ImportStatus, ImportSource
 from .marketing_form_submission import MarketingFormSubmission
 from .support_ticket import SupportTicket
+from .support_ticket_attachment import SupportTicketAttachment
 
 # Export all models
 __all__ = [

@@ -69,8 +69,8 @@ const tabs: Tab[] = [
   },
   {
     id: 'support-tickets',
-    title: 'Support tickets',
-    description: 'Project error reports — emailed to ali@the-leadlab.com.',
+    title: 'Issue reports',
+    description: 'Public /report submissions — emailed to ali@the-leadlab.com.',
     icon: Ticket,
     component: SupportTicketsAdmin,
   },

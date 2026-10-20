@@ -157,7 +157,7 @@ const bottomNavigation: NavItem[] = [
   {
     name: 'Report an issue',
     icon: Ticket,
-    path: '/support',
+    path: '/report',
   },
   {
     name: 'Settings',

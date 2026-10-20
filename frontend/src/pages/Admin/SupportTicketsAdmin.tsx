@@ -1,9 +1,17 @@
 import React from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Ticket } from 'lucide-react'
+import { Download, Ticket } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import api from '@/lib/axios'
 import { useAuthStore } from '@/store/auth'
+
+type AttachmentItem = {
+  id: number
+  filename: string
+  stored_name: string
+  content_type?: string | null
+  size_bytes: number
+}
 
 type TicketItem = {
   id: number
@@ -15,9 +23,16 @@ type TicketItem = {
   status: string
   priority: string
   created_at: string | null
+  attachments?: AttachmentItem[]
 }
 
 const statusOptions = ['open', 'in_progress', 'resolved', 'closed'] as const
+
+function formatBytes(n: number) {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`
+}
 
 export function SupportTicketsAdmin() {
   const { user } = useAuthStore()
@@ -30,7 +45,7 @@ export function SupportTicketsAdmin() {
       const params = new URLSearchParams({ limit: '200' })
       if (statusFilter) params.set('status', statusFilter)
       const res = await api.get<{ items: TicketItem[]; total: number }>(
-        `/support-tickets/?${params.toString()}`
+        `/report-tickets/?${params.toString()}`
       )
       return res.data
     },
@@ -39,15 +54,34 @@ export function SupportTicketsAdmin() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      const res = await api.patch(`/support-tickets/${id}`, { status })
+      const res = await api.patch(`/report-tickets/${id}`, { status })
       return res.data
     },
     onSuccess: () => {
-      toast.success('Ticket updated')
+      toast.success('Report updated')
       queryClient.invalidateQueries({ queryKey: ['support-tickets'] })
     },
-    onError: () => toast.error('Could not update ticket'),
+    onError: () => toast.error('Could not update report'),
   })
+
+  const downloadAttachment = async (ticketId: number, att: AttachmentItem) => {
+    try {
+      const res = await api.get(
+        `/report-tickets/${ticketId}/attachments/${encodeURIComponent(att.stored_name)}`,
+        { responseType: 'blob' }
+      )
+      const url = window.URL.createObjectURL(res.data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = att.filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Could not download attachment')
+    }
+  }
 
   if (!user?.is_admin) {
     return <p className="text-gray-500 p-4">Admin access required.</p>
@@ -60,7 +94,7 @@ export function SupportTicketsAdmin() {
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2 text-gray-700">
           <Ticket className="w-6 h-6 text-blue-600" />
-          <h2 className="text-xl font-semibold">Support tickets</h2>
+          <h2 className="text-xl font-semibold">Issue reports</h2>
         </div>
         <select
           className="border rounded-lg px-3 py-2 text-sm"
@@ -83,10 +117,10 @@ export function SupportTicketsAdmin() {
 
       {isLoading && <p className="text-gray-500">Loading…</p>}
       {error && (
-        <p className="text-red-600 text-sm">Failed to load tickets.</p>
+        <p className="text-red-600 text-sm">Failed to load reports.</p>
       )}
       {!isLoading && items.length === 0 && (
-        <p className="text-gray-500 text-sm">No tickets yet.</p>
+        <p className="text-gray-500 text-sm">No reports yet.</p>
       )}
 
       <div className="space-y-3">
@@ -126,6 +160,23 @@ export function SupportTicketsAdmin() {
             <p className="text-sm text-gray-700 mt-3 whitespace-pre-wrap">
               {ticket.description}
             </p>
+            {(ticket.attachments?.length ?? 0) > 0 && (
+              <ul className="mt-3 space-y-1 border-t border-gray-100 pt-3">
+                {ticket.attachments!.map((att) => (
+                  <li key={att.id}>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:underline"
+                      onClick={() => downloadAttachment(ticket.id, att)}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {att.filename}{' '}
+                      <span className="text-gray-500">({formatBytes(att.size_bytes)})</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         ))}
       </div>

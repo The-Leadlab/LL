@@ -62,6 +62,7 @@ async def startup_handler(app: FastAPI) -> None:
         # Mevcut kontroller
         from app.models import TaskAttachment  # noqa: F401 — register table for create_all
         from app.models import SupportTicket  # noqa: F401 — register support_tickets
+        from app.models import SupportTicketAttachment  # noqa: F401
         Base.metadata.create_all(bind=engine)
         try:
             from app.core.task_attachment_schema import ensure_task_attachments_schema
@@ -69,6 +70,16 @@ async def startup_handler(app: FastAPI) -> None:
             ensure_task_attachments_schema(engine)
         except Exception as exc:
             logger.warning("Could not ensure task_attachments on startup: %s", exc)
+        try:
+            from app.core.support_ticket_attachment_schema import (
+                ensure_support_ticket_attachments_schema,
+            )
+
+            ensure_support_ticket_attachments_schema(engine)
+        except Exception as exc:
+            logger.warning(
+                "Could not ensure support_ticket_attachments on startup: %s", exc
+            )
         _ensure_lead_search_indexes()
         ACTIVE_USERS.set(0)
         REQUEST_COUNT.clear()

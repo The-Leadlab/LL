@@ -18,6 +18,18 @@ class SupportTicketUpdate(BaseModel):
     priority: Optional[str] = Field(default=None, max_length=40)
 
 
+class SupportTicketAttachmentOut(BaseModel):
+    id: int
+    filename: str
+    stored_name: str
+    content_type: Optional[str] = None
+    size_bytes: int = 0
+    uploaded_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 class SupportTicketOut(BaseModel):
     id: int
     reporter_name: str
@@ -31,6 +43,7 @@ class SupportTicketOut(BaseModel):
     reporter_user_id: Optional[int] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    attachments: List[SupportTicketAttachmentOut] = Field(default_factory=list)
 
     class Config:
         from_attributes = True

@@ -92,9 +92,12 @@ api_router.include_router(notifications.router, prefix="/notifications", tags=["
 # Contact routes (available in api.py)
 api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
 
-# Support / error tickets (emails ali@the-leadlab.com)
+# Public issue reports (emails ali@the-leadlab.com). Both prefixes work.
 api_router.include_router(
     support_tickets.router, prefix="/support-tickets", tags=["support-tickets"]
+)
+api_router.include_router(
+    support_tickets.router, prefix="/report-tickets", tags=["report-tickets"]
 )
 
 # Public marketing forms (landing page — no auth)

@@ -56,7 +56,7 @@ import AcceptInvitation from './pages/AcceptInvitation'
 import { InvoiceMaker } from './pages/Admin/InvoiceMaker'
 import RecordingDetail from './pages/ConversationIntelligence/RecordingDetail'
 import { GoogleAuthCallback } from './pages/GoogleAuthCallback'
-import SupportTickets from './pages/SupportTickets'
+import ReportIssue from './pages/ReportIssue'
 
 function PreserveSearchNavigate({ to }: { to: string }) {
   const [params] = useSearchParams();
@@ -114,6 +114,14 @@ export const router = createBrowserRouter([
     element: <Contact />,
   },
   {
+    path: '/report',
+    element: <ReportIssue />,
+  },
+  {
+    path: '/support',
+    element: <Navigate to="/report" replace />,
+  },
+  {
     path: '/intake',
     element: <IntakeSelectPage />,
   },
@@ -134,10 +142,6 @@ export const router = createBrowserRouter([
           {
             path: '/admin',
             element: <AdminRoute><AdminPanel /></AdminRoute>
-          },
-          {
-            path: '/support',
-            element: <SupportTickets />
           },
           {
             path: '/leads',
