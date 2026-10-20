@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { formatCurrency } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface TerritoryTreeNodeProps {
   territory: Territory;
@@ -39,6 +40,7 @@ const TerritoryTreeNode: React.FC<TerritoryTreeNodeProps> = ({
   onAddChild,
   onViewDetails
 }) => {
+  const { t } = useTranslation('modules');
   const [isExpanded, setIsExpanded] = useState(level === 0);
   const hasChildren = territory.children && territory.children.length > 0;
 
@@ -73,7 +75,7 @@ const TerritoryTreeNode: React.FC<TerritoryTreeNodeProps> = ({
         >
           <span className="font-medium">{territory.name}</span>
           {!territory.is_active && (
-            <Badge variant="secondary">Inactive</Badge>
+            <Badge variant="secondary">{t('territories.inactive')}</Badge>
           )}
         </div>
 
@@ -97,18 +99,18 @@ const TerritoryTreeNode: React.FC<TerritoryTreeNodeProps> = ({
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onEdit(territory)}>
               <Edit className="h-4 w-4 mr-2" />
-              Edit
+              {t('territories.edit')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onAddChild(territory.id)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Sub-Territory
+              {t('territories.addSub')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onDelete(territory.id)}
               className="text-red-600"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {t('territories.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -134,6 +136,7 @@ const TerritoryTreeNode: React.FC<TerritoryTreeNodeProps> = ({
 };
 
 export const TerritoryList: React.FC = () => {
+  const { t } = useTranslation('modules');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -165,14 +168,14 @@ export const TerritoryList: React.FC = () => {
       setFormData({ name: '', description: '' });
       setParentId(undefined);
       toast({
-        title: 'Success',
-        description: 'Territory created successfully'
+        title: t('territories.toast.success'),
+        description: t('territories.toast.created')
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to create territory',
+        title: t('territories.toast.error'),
+        description: t('territories.toast.createFailed'),
         variant: 'destructive'
       });
     }
@@ -184,14 +187,14 @@ export const TerritoryList: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['territories'] });
       toast({
-        title: 'Success',
-        description: 'Territory deleted successfully'
+        title: t('territories.toast.success'),
+        description: t('territories.toast.deleted')
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to delete territory',
+        title: t('territories.toast.error'),
+        description: t('territories.toast.deleteFailed'),
         variant: 'destructive'
       });
     }
@@ -200,8 +203,8 @@ export const TerritoryList: React.FC = () => {
   const handleCreate = () => {
     if (!formData.name.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Territory name is required',
+        title: t('territories.toast.validationTitle'),
+        description: t('territories.toast.nameRequired'),
         variant: 'destructive'
       });
       return;
@@ -238,52 +241,52 @@ export const TerritoryList: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Territory Management</h1>
+            <h1 className="text-3xl font-bold">{t('territories.title')}</h1>
             <p className="text-gray-600 mt-1">
-              Organize your sales territories and assign team members
+              {t('territories.subtitle')}
             </p>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => setParentId(undefined)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Create Territory
+                {t('territories.create')}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create New Territory</DialogTitle>
+                <DialogTitle>{t('territories.createTitle')}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Territory Name *</Label>
+                  <Label htmlFor="name">{t('territories.name')}</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., North America"
+                    placeholder={t('territories.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">{t('territories.description')}</Label>
                   <Input
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Optional description"
+                    placeholder={t('territories.descriptionPlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="parent">Parent Territory</Label>
+                  <Label htmlFor="parent">{t('territories.parent')}</Label>
                   <Select
                     value={parentId?.toString() || ''}
                     onValueChange={(value) => setParentId(value ? parseInt(value) : undefined)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="None (Root Territory)" />
+                      <SelectValue placeholder={t('territories.noneRoot')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None (Root Territory)</SelectItem>
+                      <SelectItem value="">{t('territories.noneRoot')}</SelectItem>
                       {allTerritories?.map((territory) => (
                         <SelectItem key={territory.id} value={territory.id.toString()}>
                           {territory.full_path}
@@ -300,7 +303,7 @@ export const TerritoryList: React.FC = () => {
                   {createMutation.isPending && (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   )}
-                  Create Territory
+                  {t('territories.create')}
                 </Button>
               </div>
             </DialogContent>
@@ -312,7 +315,7 @@ export const TerritoryList: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Territory Hierarchy
+              {t('territories.hierarchy')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -325,7 +328,7 @@ export const TerritoryList: React.FC = () => {
                     level={0}
                     onEdit={setSelectedTerritory}
                     onDelete={(id) => {
-                      if (confirm('Are you sure you want to delete this territory?')) {
+                      if (confirm(t('territories.confirmDelete'))) {
                         deleteMutation.mutate(id);
                       }
                     }}
@@ -337,7 +340,7 @@ export const TerritoryList: React.FC = () => {
             ) : (
               <div className="text-center py-12 text-gray-500">
                 <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No territories yet. Create your first territory to get started.</p>
+                <p>{t('territories.empty')}</p>
               </div>
             )}
           </CardContent>
@@ -352,7 +355,7 @@ export const TerritoryList: React.FC = () => {
                   <MapPin className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total Territories</p>
+                  <p className="text-sm text-gray-600">{t('territories.total')}</p>
                   <p className="text-2xl font-bold">{allTerritories?.length || 0}</p>
                 </div>
               </div>
@@ -365,7 +368,7 @@ export const TerritoryList: React.FC = () => {
                   <Users className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total Members</p>
+                  <p className="text-sm text-gray-600">{t('territories.members')}</p>
                   <p className="text-2xl font-bold">
                     {allTerritories?.reduce((sum, t) => sum + t.members_count, 0) || 0}
                   </p>
@@ -380,7 +383,7 @@ export const TerritoryList: React.FC = () => {
                   <TrendingUp className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Active Territories</p>
+                  <p className="text-sm text-gray-600">{t('territories.activeCount')}</p>
                   <p className="text-2xl font-bold">
                     {allTerritories?.filter(t => t.is_active).length || 0}
                   </p>

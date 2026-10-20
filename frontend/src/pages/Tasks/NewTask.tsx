@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -55,6 +56,7 @@ const TASK_STATUSES = [
 ];
 
 export const NewTaskPage = () => {
+  const { t } = useTranslation('modules');
   const navigate = useNavigate();
   const { user: currentUser, isAuthenticated, token } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState('');
@@ -332,11 +334,11 @@ export const NewTaskPage = () => {
         lead_id: data.lead_id,
       });
       
-      toast.success("Task created successfully");
+      toast.success(t('newTask.toast.created'));
       navigate(`/tasks/${task.id}`);
     } catch (error) {
       console.error('Error creating task:', error);
-      toast.error(error instanceof Error ? error.message : "Failed to create task");
+      toast.error(error instanceof Error ? error.message : t('newTask.toast.createFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -347,9 +349,9 @@ export const NewTaskPage = () => {
       <div className="flex items-center mb-6">
         <Button variant="ghost" onClick={() => navigate('/tasks')} className="mr-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Tasks
+          {t('newTask.back')}
         </Button>
-        <h1 className="text-2xl font-bold">New Task</h1>
+        <h1 className="text-2xl font-bold">{t('newTask.title')}</h1>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -585,13 +587,13 @@ export const NewTaskPage = () => {
             </PopoverContent>
           </Popover>
           {errors.lead_id && (
-            <p className="text-sm text-red-500">Please select a lead</p>
+            <p className="text-sm text-red-500">{t('newTask.selectLead')}</p>
           )}
         </div>
 
         {/* Submit Button */}
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating..." : "Create Task"}
+          {isSubmitting ? t('newTask.creating') : t('newTask.create')}
         </Button>
       </form>
     </div>

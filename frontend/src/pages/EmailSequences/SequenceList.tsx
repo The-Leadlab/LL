@@ -8,9 +8,11 @@ import { Mail, Plus, Edit, Trash2, Play, Pause, TrendingUp, Users, CheckCircle, 
 import { PageContainer } from '@/components/ui/PageContainer';
 import { Badge } from '@/components/ui/Badge';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { formatDate } from '@/lib/utils';
 
 export const SequenceList: React.FC = () => {
+  const { t } = useTranslation('emails');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -33,8 +35,8 @@ export const SequenceList: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['email-sequences'] });
       toast({
-        title: 'Success',
-        description: 'Sequence deleted successfully'
+        title: t('sequencesPage.successTitle'),
+        description: t('sequencesPage.deleted')
       });
     }
   });
@@ -46,8 +48,8 @@ export const SequenceList: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['email-sequences'] });
       toast({
-        title: 'Success',
-        description: 'Sequence status updated'
+        title: t('sequencesPage.successTitle'),
+        description: t('sequencesPage.statusUpdated')
       });
     }
   });
@@ -72,14 +74,14 @@ export const SequenceList: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Campaigns</h1>
+            <h1 className="text-3xl font-bold">{t('campaigns')}</h1>
             <p className="text-gray-600 mt-1">
-              Campaigns are created when you launch Cold Outreach. Open a campaign here to review activity.
+              {t('sequencesPage.subtitle')}
             </p>
           </div>
           <Button onClick={() => navigate('/emails/outreach')}>
             <Plus className="h-4 w-4 mr-2" />
-            Launch in Cold Outreach
+            {t('sequencesPage.launchColdOutreach')}
           </Button>
         </div>
 
@@ -92,7 +94,7 @@ export const SequenceList: React.FC = () => {
                   <Mail className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total Campaigns</p>
+                  <p className="text-sm text-gray-600">{t('sequencesPage.totalCampaigns')}</p>
                   <p className="text-2xl font-bold">{sequences?.length || 0}</p>
                 </div>
               </div>
@@ -105,7 +107,7 @@ export const SequenceList: React.FC = () => {
                   <Users className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total Enrolled</p>
+                  <p className="text-sm text-gray-600">{t('sequencesPage.totalEnrolled')}</p>
                   <p className="text-2xl font-bold">
                     {sequences?.reduce((sum, s) => sum + s.total_enrolled, 0) || 0}
                   </p>
@@ -120,7 +122,7 @@ export const SequenceList: React.FC = () => {
                   <CheckCircle className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Completed</p>
+                  <p className="text-sm text-gray-600">{t('sequencesPage.completed')}</p>
                   <p className="text-2xl font-bold">
                     {sequences?.reduce((sum, s) => sum + s.total_completed, 0) || 0}
                   </p>
@@ -135,7 +137,7 @@ export const SequenceList: React.FC = () => {
                   <Reply className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total Replies</p>
+                  <p className="text-sm text-gray-600">{t('sequencesPage.totalReplies')}</p>
                   <p className="text-2xl font-bold">
                     {sequences?.reduce((sum, s) => sum + s.total_replied, 0) || 0}
                   </p>
@@ -160,12 +162,12 @@ export const SequenceList: React.FC = () => {
                           {sequence.is_active ? (
                             <Badge className="bg-green-100 text-green-800">
                               <Play className="h-3 w-3 mr-1" />
-                              Active
+                              {t('sequencesPage.active')}
                             </Badge>
                           ) : (
                             <Badge variant="secondary">
                               <Pause className="h-3 w-3 mr-1" />
-                              Paused
+                              {t('sequencesPage.paused')}
                             </Badge>
                           )}
                         </div>
@@ -175,30 +177,30 @@ export const SequenceList: React.FC = () => {
 
                         {/* Steps Info */}
                         <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-                          <span>{sequence.steps.length} steps</span>
+                          <span>{t('sequencesPage.stepsCount', { count: sequence.steps.length })}</span>
                           <span>•</span>
-                          <span>{sequence.total_enrolled} enrolled</span>
+                          <span>{t('sequencesPage.enrolledCount', { count: sequence.total_enrolled })}</span>
                           <span>•</span>
-                          <span>Created {formatDate(sequence.created_at)}</span>
+                          <span>{t('sequencesPage.created', { date: formatDate(sequence.created_at) })}</span>
                         </div>
 
                         {/* Performance Metrics */}
                         {sequenceStats && (
                           <div className="flex items-center gap-6 text-sm">
                             <div>
-                              <span className="text-gray-600">Reply Rate:</span>
+                              <span className="text-gray-600">{t('sequencesPage.replyRate')}</span>
                               <span className="ml-2 font-semibold text-green-600">
                                 {sequenceStats.reply_rate.toFixed(1)}%
                               </span>
                             </div>
                             <div>
-                              <span className="text-gray-600">Completion Rate:</span>
+                              <span className="text-gray-600">{t('sequencesPage.completionRate')}</span>
                               <span className="ml-2 font-semibold text-blue-600">
                                 {sequenceStats.completion_rate.toFixed(1)}%
                               </span>
                             </div>
                             <div>
-                              <span className="text-gray-600">Active:</span>
+                              <span className="text-gray-600">{t('sequencesPage.activeLabel')}</span>
                               <span className="ml-2 font-semibold">
                                 {sequenceStats.active_enrollments}
                               </span>
@@ -215,7 +217,7 @@ export const SequenceList: React.FC = () => {
                           onClick={() => navigate(`/email-sequences/${sequence.id}`)}
                         >
                           <Edit className="h-4 w-4 mr-1" />
-                          Edit
+                          {t('sequencesPage.edit')}
                         </Button>
                         <Button
                           variant="outline"
@@ -230,12 +232,12 @@ export const SequenceList: React.FC = () => {
                           {sequence.is_active ? (
                             <>
                               <Pause className="h-4 w-4 mr-1" />
-                              Pause
+                              {t('sequencesPage.pause')}
                             </>
                           ) : (
                             <>
                               <Play className="h-4 w-4 mr-1" />
-                              Activate
+                              {t('sequencesPage.activate')}
                             </>
                           )}
                         </Button>
@@ -243,7 +245,7 @@ export const SequenceList: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            if (confirm('Are you sure you want to delete this sequence?')) {
+                            if (confirm(t('sequencesPage.confirmDelete'))) {
                               deleteMutation.mutate(sequence.id);
                             }
                           }}
@@ -260,13 +262,13 @@ export const SequenceList: React.FC = () => {
             <Card>
               <CardContent className="py-12 text-center">
                 <Mail className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-semibold mb-2">No email sequences yet</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('sequencesPage.emptyTitle')}</h3>
                 <p className="text-gray-600 mb-4">
-                  Create your first email sequence to automate your outreach
+                  {t('sequencesPage.emptyBody')}
                 </p>
                 <Button onClick={() => navigate('/email-sequences/create')}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Sequence
+                  {t('sequencesPage.createFirst')}
                 </Button>
               </CardContent>
             </Card>

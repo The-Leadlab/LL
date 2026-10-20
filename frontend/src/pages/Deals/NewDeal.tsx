@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
@@ -56,6 +57,7 @@ const DEAL_STAGES = [
 ];
 
 export const NewDealPage = () => {
+  const { t } = useTranslation('modules');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuthStore();
@@ -269,14 +271,14 @@ export const NewDealPage = () => {
               className="flex items-center gap-2 rounded-full h-10"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              {t('newDeal.back')}
             </Button>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">New Deal</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">{t('newDeal.title')}</h1>
           </div>
           <div className="bg-blue-50 px-3 lg:px-4 py-2 rounded-lg border border-blue-100">
             <p className="text-xs lg:text-sm text-blue-700 flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-              Create a new deal by filling out the form below
+              {t('newDeal.hint')}
             </p>
           </div>
         </div>
@@ -285,7 +287,7 @@ export const NewDealPage = () => {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 lg:space-y-6">
             <div className="grid grid-cols-1 gap-4 lg:gap-6 bg-white rounded-xl shadow-sm border p-4 lg:p-6">
               <div className="col-span-1 border-b pb-3 lg:pb-4 mb-2">
-                <h2 className="text-lg lg:text-xl font-semibold text-gray-800">Deal Information</h2>
+                <h2 className="text-lg lg:text-xl font-semibold text-gray-800">{t('newDeal.dealInfo')}</h2>
                 <p className="text-xs lg:text-sm text-gray-500 mt-1">Enter the basic information about this deal</p>
               </div>
 
@@ -514,7 +516,7 @@ export const NewDealPage = () => {
 
             <div className="grid grid-cols-1 gap-4 lg:gap-6 bg-white rounded-xl shadow-sm border p-4 lg:p-6">
               <div className="col-span-1 border-b pb-3 lg:pb-4 mb-2">
-                <h2 className="text-lg lg:text-xl font-semibold text-gray-800">Additional Details</h2>
+                <h2 className="text-lg lg:text-xl font-semibold text-gray-800">{t('newDeal.additional')}</h2>
                 <p className="text-xs lg:text-sm text-gray-500 mt-1">Set additional properties for this deal</p>
               </div>
 
@@ -685,7 +687,7 @@ export const NewDealPage = () => {
                 onClick={() => navigate('/deals')}
                 className="px-6 order-2 sm:order-1"
               >
-                Cancel
+                {t('common:cancel')}
               </Button>
               <Button 
                 type="submit" 
@@ -695,10 +697,10 @@ export const NewDealPage = () => {
                 {isSubmitting ? (
                   <>
                     <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-white"></span>
-                    Creating...
+                    {t('newDeal.creating')}
                   </>
                 ) : (
-                  'Create Deal'
+                  t('newDeal.create')
                 )}
               </Button>
             </div>

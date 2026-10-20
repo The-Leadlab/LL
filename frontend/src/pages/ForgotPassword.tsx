@@ -4,8 +4,10 @@ import { toast } from 'react-hot-toast'
 import { PublicHeader } from '../components/layout/PublicHeader'
 import authService from '../services/auth'
 import { getApiErrorMessage } from '../lib/apiError'
+import { useTranslation } from 'react-i18next'
 
 export function ForgotPassword() {
+  const { t } = useTranslation('auth')
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isResending, setIsResending] = useState(false)
@@ -17,10 +19,10 @@ export function ForgotPassword() {
 
     try {
       await authService.forgotPassword({ email })
-      toast.success('Password reset instructions sent to your email')
+      toast.success(t('forgotPage.sentToast'))
       setEmailSent(true)
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to send reset instructions'))
+      toast.error(getApiErrorMessage(err, t('forgotPage.sendFailed')))
     } finally {
       setIsLoading(false)
     }
@@ -28,16 +30,16 @@ export function ForgotPassword() {
 
   const handleResend = async () => {
     if (!email) {
-      toast.error('Please enter your email address first')
+      toast.error(t('forgotPage.enterEmailFirst'))
       return
     }
 
     setIsResending(true)
     try {
       await authService.resendPasswordReset({ email })
-      toast.success('Password reset instructions resent to your email')
+      toast.success(t('forgotPage.resentToast'))
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to resend reset instructions'))
+      toast.error(getApiErrorMessage(err, t('forgotPage.resendFailed')))
     } finally {
       setIsResending(false)
     }
@@ -50,9 +52,9 @@ export function ForgotPassword() {
         <div className="w-full max-w-md mx-4">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-blue-100">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">Reset Password</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t('resetPassword')}</h1>
               <p className="text-gray-600 mt-2">
-                Enter your email to receive reset instructions
+                {t('forgotPage.subtitle')}
               </p>
             </div>
 
@@ -62,7 +64,7 @@ export function ForgotPassword() {
                   htmlFor="email"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Email
+                  {t('email')}
                 </label>
                 <input
                   type="email"
@@ -74,7 +76,7 @@ export function ForgotPassword() {
                   }}
                   required
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your email"
+                  placeholder={t('forgotPage.emailPlaceholder')}
                 />
               </div>
 
@@ -88,7 +90,7 @@ export function ForgotPassword() {
                     </div>
                     <div className="ml-3 flex-1">
                       <p className="text-sm text-blue-700">
-                        Instructions sent! Didn&apos;t receive the email? Check your spam folder or click below to resend.
+                        {t('forgotPage.sentHelp')}
                       </p>
                       <button
                         type="button"
@@ -99,10 +101,10 @@ export function ForgotPassword() {
                         {isResending ? (
                           <span className="flex items-center">
                             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2" />
-                            Resending...
+                            {t('forgotPage.resending')}
                           </span>
                         ) : (
-                          'Resend Email'
+                          t('forgotPage.resendEmail')
                         )}
                       </button>
                     </div>
@@ -118,10 +120,10 @@ export function ForgotPassword() {
                 {isLoading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                    Sending instructions...
+                    {t('forgotPage.sending')}
                   </div>
                 ) : (
-                  'Send Reset Instructions'
+                  t('forgotPage.sendInstructions')
                 )}
               </button>
             </form>
@@ -133,7 +135,7 @@ export function ForgotPassword() {
                 </div>
                 <div className="relative flex justify-center text-sm">
                   <span className="px-2 bg-white text-gray-500">
-                    Remember your password?
+                    {t('forgotPage.rememberPassword')}
                   </span>
                 </div>
               </div>
@@ -143,7 +145,7 @@ export function ForgotPassword() {
                   to="/signin"
                   className="font-medium text-blue-600 hover:text-indigo-700"
                 >
-                  Back to Sign In
+                  {t('backToSignIn')}
                 </Link>
               </div>
             </div>

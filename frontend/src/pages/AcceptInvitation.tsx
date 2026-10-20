@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import type { TFunction } from 'i18next';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { 
   Users, 
   Mail, 
@@ -41,34 +43,38 @@ interface TeamInvitation {
 }
 
 // Form schema (new accounts only)
-const acceptInvitationSchema = z.object({
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string(),
-  first_name: z.string().optional(),
-  last_name: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const createAcceptInvitationSchema = (t: TFunction<'auth'>) =>
+  z.object({
+    password: z.string().min(8, t('acceptInvitationPage.passwordMinLength')),
+    confirmPassword: z.string(),
+    first_name: z.string().optional(),
+    last_name: z.string().optional(),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: t('acceptInvitationPage.passwordsMismatch'),
+    path: ["confirmPassword"],
+  });
 
-type AcceptInvitationFormData = z.infer<typeof acceptInvitationSchema>;
+type AcceptInvitationFormData = z.infer<ReturnType<typeof createAcceptInvitationSchema>>;
 
-function invitationErrorDetail(error: any): string {
+function invitationErrorDetail(error: any, fallback: string): string {
   const detail = error?.response?.data?.detail;
   if (typeof detail === 'string') return detail;
   if (detail && typeof detail === 'object' && typeof detail.message === 'string') {
     return detail.message;
   }
-  return 'Failed to accept invitation';
+  return fallback;
 }
 
 const AcceptInvitation: React.FC = () => {
+  const { t, i18n } = useTranslation('auth');
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
   const [invitationData, setInvitationData] = useState<TeamInvitation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
+
+  const acceptInvitationSchema = useMemo(() => createAcceptInvitationSchema(t), [t]);
 
   const form = useForm<AcceptInvitationFormData>({
     resolver: zodResolver(acceptInvitationSchema),
@@ -83,7 +89,7 @@ const AcceptInvitation: React.FC = () => {
   useEffect(() => {
     const loadInvitation = async () => {
       if (!token) {
-        toast.error('Invalid invitation link');
+        toast.error(t('acceptInvitationPage.invalidLink'));
         navigate('/signin');
         return;
       }
@@ -100,7 +106,7 @@ const AcceptInvitation: React.FC = () => {
           form.setValue('last_name', invitation.last_name);
         }
       } catch (error: any) {
-        toast.error(error.response?.data?.detail || 'Failed to load invitation');
+        toast.error(error.response?.data?.detail || t('acceptInvitationPage.loadFailed'));
         navigate('/signin');
       } finally {
         setIsLoading(false);
@@ -108,7 +114,7 @@ const AcceptInvitation: React.FC = () => {
     };
 
     loadInvitation();
-  }, [token, navigate, form]);
+  }, [token, navigate, form, t]);
 
   const signedInAsInvitee =
     isAuthenticated &&
@@ -121,16 +127,16 @@ const AcceptInvitation: React.FC = () => {
     setIsAccepting(true);
     try {
       await api.teamInvitations.acceptInvitation(token, {});
-      toast.success('You joined the team. Welcome!');
+      toast.success(t('acceptInvitationPage.joinedToast'));
       navigate('/dashboard');
     } catch (error: any) {
       const detail = error?.response?.data?.detail;
       if (error?.response?.status === 409 || detail?.code === 'existing_user') {
-        toast.error(detail?.message || 'Sign in with your existing account to join');
+        toast.error(detail?.message || t('acceptInvitationPage.signInExisting'));
         navigate('/signin', { state: { from: { pathname: `/invite/${token}` } } });
         return;
       }
-      toast.error(invitationErrorDetail(error));
+      toast.error(invitationErrorDetail(error, t('acceptInvitationPage.acceptFailed')));
     } finally {
       setIsAccepting(false);
     }
@@ -147,16 +153,16 @@ const AcceptInvitation: React.FC = () => {
         last_name: data.last_name,
       });
 
-      toast.success('Invitation accepted. You can now sign in.');
+      toast.success(t('acceptInvitationPage.acceptedToast'));
       navigate('/signin');
     } catch (error: any) {
       const detail = error?.response?.data?.detail;
       if (error?.response?.status === 409 || detail?.code === 'existing_user') {
-        toast.error(detail?.message || 'Sign in with your existing account to join');
+        toast.error(detail?.message || t('acceptInvitationPage.signInExisting'));
         navigate('/signin', { state: { from: { pathname: `/invite/${token}` } } });
         return;
       }
-      toast.error(invitationErrorDetail(error));
+      toast.error(invitationErrorDetail(error, t('acceptInvitationPage.acceptFailed')));
     } finally {
       setIsAccepting(false);
     }
@@ -191,18 +197,23 @@ const AcceptInvitation: React.FC = () => {
   const getRoleDescription = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'Full access to all features and settings';
+        return t('acceptInvitationPage.roleDescriptions.admin');
       case 'member':
-        return 'Access to leads, deals, and team collaboration';
+        return t('acceptInvitationPage.roleDescriptions.member');
       case 'viewer':
-        return 'Read-only access to view data and reports';
+        return t('acceptInvitationPage.roleDescriptions.viewer');
       default:
-        return 'Team member access';
+        return t('acceptInvitationPage.roleDescriptions.default');
     }
   };
 
+  const getRoleLabel = (role: string) =>
+    t(`acceptInvitationPage.roles.${role}`, {
+      defaultValue: role.charAt(0).toUpperCase() + role.slice(1),
+    });
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -216,7 +227,7 @@ const AcceptInvitation: React.FC = () => {
       <PublicAuthShell withCard={false}>
         <div className="flex items-center justify-center space-x-2 py-16">
           <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
-          <span className="text-gray-600">Loading invitation...</span>
+          <span className="text-gray-600">{t('acceptInvitationPage.loading')}</span>
         </div>
       </PublicAuthShell>
     );
@@ -227,12 +238,12 @@ const AcceptInvitation: React.FC = () => {
       <PublicAuthShell>
         <div className="text-center">
           <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Invalid invitation</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('acceptInvitationPage.invalidTitle')}</h2>
           <p className="text-gray-600 mb-6">
-            This invitation link is invalid or has already been used.
+            {t('acceptInvitationPage.invalidBody')}
           </p>
           <button type="button" onClick={() => navigate('/signin')} className={publicAuthCtaClassName}>
-            Go to sign in
+            {t('verifyEmailPage.goToSignIn')}
           </button>
         </div>
       </PublicAuthShell>
@@ -244,12 +255,12 @@ const AcceptInvitation: React.FC = () => {
       <PublicAuthShell>
         <div className="text-center">
           <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Invitation expired</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('acceptInvitationPage.expiredTitle')}</h2>
           <p className="text-gray-600 mb-6">
-            This invitation has expired. Please contact your team administrator for a new invitation.
+            {t('acceptInvitationPage.expiredBody')}
           </p>
           <button type="button" onClick={() => navigate('/signin')} className={publicAuthCtaClassName}>
-            Go to sign in
+            {t('verifyEmailPage.goToSignIn')}
           </button>
         </div>
       </PublicAuthShell>
@@ -272,23 +283,23 @@ const AcceptInvitation: React.FC = () => {
             <Users className="h-6 w-6 text-blue-600" />
           </div>
           <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
-            Join the team
+            {t('acceptInvitationPage.joinTeamTitle')}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            You've been invited to join {invitation.organization_name}
+            {t('acceptInvitationPage.invitedTo', { organization: invitation.organization_name })}
           </p>
         </div>
 
         <Card className="border-blue-100 shadow-xl rounded-2xl overflow-hidden">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Invitation details</CardTitle>
+            <CardTitle className="text-lg">{t('acceptInvitationPage.detailsTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center space-x-3">
               <Building className="h-5 w-5 text-gray-400" />
               <div>
                 <p className="text-sm font-medium text-gray-900">{invitation.organization_name}</p>
-                <p className="text-xs text-gray-500">Organization</p>
+                <p className="text-xs text-gray-500">{t('acceptInvitationPage.organization')}</p>
               </div>
             </div>
 
@@ -296,7 +307,7 @@ const AcceptInvitation: React.FC = () => {
               <Mail className="h-5 w-5 text-gray-400" />
               <div>
                 <p className="text-sm font-medium text-gray-900">{invitation.email}</p>
-                <p className="text-xs text-gray-500">Your email address</p>
+                <p className="text-xs text-gray-500">{t('acceptInvitationPage.yourEmailAddress')}</p>
               </div>
             </div>
 
@@ -305,13 +316,13 @@ const AcceptInvitation: React.FC = () => {
                 {getRoleIcon(invitation.role)}
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}
+                    {getRoleLabel(invitation.role)}
                   </p>
-                  <p className="text-xs text-gray-500">Your role</p>
+                  <p className="text-xs text-gray-500">{t('acceptInvitationPage.yourRole')}</p>
                 </div>
               </div>
               <Badge className={getRoleBadgeColor(invitation.role)}>
-                {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}
+                {getRoleLabel(invitation.role)}
               </Badge>
             </div>
 
@@ -324,7 +335,7 @@ const AcceptInvitation: React.FC = () => {
             {invitation.message && (
               <div className="bg-blue-50 p-3 rounded-md">
                 <p className="text-sm text-blue-800">
-                  <strong>Message from {invitation.invited_by_name}:</strong>
+                  <strong>{t('acceptInvitationPage.messageFrom', { name: invitation.invited_by_name })}</strong>
                 </p>
                 <p className="text-sm text-blue-700 mt-1">{invitation.message}</p>
               </div>
@@ -332,7 +343,7 @@ const AcceptInvitation: React.FC = () => {
 
             {invitation.created_at && (
               <div className="text-xs text-gray-500">
-                Invited by {invitation.invited_by_name} on {formatDate(invitation.created_at)}
+                {t('acceptInvitationPage.invitedByOn', { name: invitation.invited_by_name, date: formatDate(invitation.created_at) })}
               </div>
             )}
           </CardContent>
@@ -341,9 +352,9 @@ const AcceptInvitation: React.FC = () => {
         {isExistingUser ? (
           <Card className="border-blue-100 shadow-xl rounded-2xl overflow-hidden">
             <CardHeader>
-              <CardTitle>Join with existing account</CardTitle>
+              <CardTitle>{t('acceptInvitationPage.existingTitle')}</CardTitle>
               <CardDescription>
-                An account already exists for {invitation.email}. Sign in with that account to join {invitation.organization_name}.
+                {t('acceptInvitationPage.existingBody', { email: invitation.email, organization: invitation.organization_name })}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -352,7 +363,7 @@ const AcceptInvitation: React.FC = () => {
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
-                      You are signed in as {user?.email}. Click below to join the team.
+                      {t('acceptInvitationPage.signedInClickJoin', { email: user?.email })}
                     </AlertDescription>
                   </Alert>
                   <button
@@ -364,12 +375,12 @@ const AcceptInvitation: React.FC = () => {
                     {isAccepting ? (
                       <>
                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Joining...
+                        {t('acceptInvitationPage.joining')}
                       </>
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Join {invitation.organization_name}
+                        {t('acceptInvitationPage.joinOrg', { organization: invitation.organization_name })}
                       </>
                     )}
                   </button>
@@ -379,8 +390,7 @@ const AcceptInvitation: React.FC = () => {
                   {isAuthenticated && user?.email && (
                     <Alert>
                       <AlertDescription>
-                        You are signed in as {user.email}, but this invite is for {invitation.email}.
-                        Sign in with the invited email to continue.
+                        {t('acceptInvitationPage.wrongAccount', { current: user.email, invited: invitation.email })}
                       </AlertDescription>
                     </Alert>
                   )}
@@ -393,7 +403,7 @@ const AcceptInvitation: React.FC = () => {
                       })
                     }
                   >
-                    Sign in to join
+                    {t('acceptInvitationPage.signInToJoin')}
                   </button>
                 </>
               )}
@@ -402,9 +412,9 @@ const AcceptInvitation: React.FC = () => {
         ) : (
           <Card className="border-blue-100 shadow-xl rounded-2xl overflow-hidden">
             <CardHeader>
-              <CardTitle>Create your account</CardTitle>
+              <CardTitle>{t('signUpTitle')}</CardTitle>
               <CardDescription>
-                Set up your password to complete the registration
+                {t('acceptInvitationPage.setupPassword')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -416,9 +426,9 @@ const AcceptInvitation: React.FC = () => {
                       name="first_name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>First Name</FormLabel>
+                          <FormLabel>{t('firstName')}</FormLabel>
                           <FormControl>
-                            <Input placeholder="John" {...field} />
+                            <Input placeholder={t('acceptInvitationPage.firstNamePlaceholder')} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -430,9 +440,9 @@ const AcceptInvitation: React.FC = () => {
                       name="last_name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Last Name</FormLabel>
+                          <FormLabel>{t('lastName')}</FormLabel>
                           <FormControl>
-                            <Input placeholder="Doe" {...field} />
+                            <Input placeholder={t('acceptInvitationPage.lastNamePlaceholder')} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -445,10 +455,10 @@ const AcceptInvitation: React.FC = () => {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Password *</FormLabel>
+                        <FormLabel>{t('password')} *</FormLabel>
                         <FormControl>
                           <PasswordInput 
-                            placeholder="Enter your password"
+                            placeholder={t('acceptInvitationPage.passwordPlaceholder')}
                             {...field} 
                           />
                         </FormControl>
@@ -462,10 +472,10 @@ const AcceptInvitation: React.FC = () => {
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Confirm Password *</FormLabel>
+                        <FormLabel>{t('confirmPassword')} *</FormLabel>
                         <FormControl>
                           <PasswordInput 
-                            placeholder="Confirm your password"
+                            placeholder={t('acceptInvitationPage.confirmPasswordPlaceholder')}
                             {...field} 
                           />
                         </FormControl>
@@ -477,8 +487,7 @@ const AcceptInvitation: React.FC = () => {
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
-                      By accepting this invitation, you agree to join {invitation.organization_name} 
-                      and will have {invitation.role} access to the platform.
+                      {t('acceptInvitationPage.agreeJoin', { organization: invitation.organization_name, role: getRoleLabel(invitation.role).toLowerCase() })}
                     </AlertDescription>
                   </Alert>
 
@@ -490,12 +499,12 @@ const AcceptInvitation: React.FC = () => {
                     {isAccepting ? (
                       <>
                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Creating account...
+                        {t('acceptInvitationPage.creatingAccount')}
                       </>
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Accept invitation & create account
+                        {t('acceptInvitationPage.acceptAndCreate')}
                       </>
                     )}
                   </button>
@@ -507,7 +516,7 @@ const AcceptInvitation: React.FC = () => {
 
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            Already have an account?{' '}
+            {t('hasAccount')}{' '}
             <button
               type="button"
               onClick={() =>
@@ -517,7 +526,7 @@ const AcceptInvitation: React.FC = () => {
               }
               className="text-blue-600 hover:text-blue-500 font-medium"
             >
-              Sign in here
+              {t('acceptInvitationPage.signInHere')}
             </button>
           </p>
         </div>

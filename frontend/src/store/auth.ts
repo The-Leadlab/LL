@@ -46,6 +46,23 @@ interface AuthState {
   clearError: () => void
 }
 
+/** Apply the user's saved language (en/fr) after authentication. Never throws. */
+async function syncLanguageFromUserSettings(): Promise<void> {
+  try {
+    const [{ getUserSettings }, { applyLanguageFromSettings }] = await Promise.all([
+      import('@/services/settings'),
+      import('@/i18n/setAppLanguage'),
+    ])
+    const settings = await getUserSettings()
+    const language = settings?.language
+    if (language === 'en' || language === 'fr') {
+      await applyLanguageFromSettings(language)
+    }
+  } catch (error) {
+    console.warn('Could not apply user language from settings', error)
+  }
+}
+
 function clearAuthStorage() {
   localStorage.removeItem('token')
   localStorage.removeItem('refreshToken')
@@ -115,6 +132,7 @@ export const useAuthStore = create<AuthState>()(
           } catch (refreshError) {
             console.warn('Could not refresh user after login; using login payload', refreshError)
           }
+          void syncLanguageFromUserSettings()
         } catch (error: any) {
           clearAuthStorage()
           delete api.defaults.headers.common['Authorization']
@@ -172,6 +190,7 @@ export const useAuthStore = create<AuthState>()(
             invalidateOrgScopedQueries()
           }
           set({ user: user as unknown as User, isAuthenticated: true, error: null })
+          void syncLanguageFromUserSettings()
         } catch (error: any) {
           const tokenNow =
             get().token ||

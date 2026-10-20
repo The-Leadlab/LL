@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PublicHeader } from '../components/layout/PublicHeader';
 
 export function Legal() {
+  const { t } = useTranslation('marketing');
   const [activePolicy, setActivePolicy] = useState('terms');
   const [isMobile, setIsMobile] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,7 +21,7 @@ export function Legal() {
   const policies = {
     terms: {
       id: 'terms',
-      title: "Terms & Conditions",
+      title: t('legal.titles.terms'),
       effectiveDate: "01.01.2024",
       content: `Welcome to Lead Lab. By accessing or using our website and services, you agree to comply with and be bound by these Terms and Conditions. If you do not agree with any part of these terms, please refrain from using our services.
 
@@ -84,7 +86,7 @@ For questions about these Terms and Conditions, please contact us.`
     },
     privacy: {
       id: 'privacy',
-      title: "Privacy Policy",
+      title: t('legal.titles.privacy'),
       effectiveDate: "01.01.2024",
       content: `At Lead Lab, we are committed to protecting your privacy and ensuring the security of your personal data. This Privacy Policy explains how we collect, use, disclose, and protect the information you provide when using our website, services, and interacting with our business.
 
@@ -140,7 +142,7 @@ If you have questions or concerns about this Privacy Policy or our data practice
     },
     kvkk: {
       id: 'kvkk',
-      title: "Data Protection Policy Turkiye",
+      title: t('legal.titles.kvkk'),
       effectiveDate: "01.01.2024",
       content: `At Lead Lab, we prioritize the protection of personal data entrusted to us by our clients and partners. This policy outlines how we handle personal data in compliance with Turkey’s Law on the Protection of Personal Data (KVKK - Law No. 6698) and other applicable data protection regulations.
 
@@ -197,7 +199,7 @@ For any questions or concerns about this policy or how we handle personal data, 
     },
     internationalDataProtection: {
       id: 'internationalDataProtection',
-      title: "Data Protection Policy International",
+      title: t('legal.titles.internationalDataProtection'),
       effectiveDate: "01.01.2024",
       content: `At Lead Lab, we prioritize the privacy and security of personal data entrusted to us by our international clients and partners. This policy outlines how we process, store, and protect personal data in accordance with the applicable data protection laws of the jurisdictions where our clients are located.
 
@@ -255,7 +257,7 @@ For any questions or concerns about this policy or how we handle personal data, 
     },
     cookie: {
       id: 'cookie',
-      title: "Cookie Policy",
+      title: t('legal.titles.cookie'),
       effectiveDate: "01.01.2024",
       content: `At Lead Lab, we use cookies to enhance your experience on our website and to better understand how our services are being used. This Cookie Policy explains what cookies are, how we use them, and your rights regarding their use.
 
@@ -289,7 +291,7 @@ If you have questions about this Cookie Policy, please contact us.
     },
     dmca: {
       id: 'dmca',
-      title: "Copyright / DMCA",
+      title: t('legal.titles.dmca'),
       effectiveDate: "02.10.2026",
       content: `Lead Lab respects copyright. If you believe material on www.the-leadlab.com infringes a copyright you own, email info@the-leadlab.com with:
 
@@ -386,7 +388,7 @@ These pages are operational drafts for the product. They are not legal advice. H
                 {policies[activePolicy].title}
               </h1>
               <p className="text-lg text-gray-500 mb-8">
-                Last updated: {policies[activePolicy].effectiveDate}
+                {t('legal.lastUpdated', { date: policies[activePolicy].effectiveDate })}
               </p>
               <div className="prose prose-lg prose-blue max-w-none leading-relaxed space-y-6">
                 {policies[activePolicy].content.split('\n').map((paragraph, idx) => (
@@ -399,14 +401,14 @@ These pages are operational drafts for the product. They are not legal advice. H
 
         {/* Footer Bilgisi */}
         <footer className="mt-12 text-center text-gray-500 border-t border-gray-200 pt-8">
-          <p className="text-sm mb-2">For any questions about our policies, contact us:</p>
+          <p className="text-sm mb-2">{t('legal.footerQuestion')}</p>
           <a 
             href="mailto:info@the-leadlab.com" 
             className="text-blue-600 hover:text-blue-700 font-medium"
           >
             info@the-leadlab.com
           </a>
-          <p className="text-sm mt-1">Elite Park Plaza Floor: 5 Umraniye / Istanbul</p>
+          <p className="text-sm mt-1">{t('legal.address')}</p>
         </footer>
       </div>
     </div>

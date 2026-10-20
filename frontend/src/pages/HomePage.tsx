@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { 
   Database, 
   LineChart, 
@@ -39,6 +40,7 @@ import CountUp from 'react-countup'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLinkedin, faTwitter, faFacebook } from '@fortawesome/free-brands-svg-icons'
 export function HomePage() {
+  const { t } = useTranslation('marketing')
   const { user, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
   
@@ -90,10 +92,10 @@ export function HomePage() {
   }
 
   const stats = [
-    { number: 300, suffix: '%', text: 'Lead Generation Increase' },
-    { number: 60, suffix: '%', text: 'Cost Reduction' },
-    { number: 95, suffix: '%', text: 'Data Accuracy' },
-    { number: 3, suffix: 'x', text: 'ROI Improvement' }
+    { number: 300, suffix: '%', text: t('home.stats.leadGeneration') },
+    { number: 60, suffix: '%', text: t('home.stats.costReduction') },
+    { number: 95, suffix: '%', text: t('home.stats.dataAccuracy') },
+    { number: 3, suffix: 'x', text: t('home.stats.roiImprovement') }
   ]
 
   return (
@@ -112,7 +114,7 @@ export function HomePage() {
                 >
                   <img 
                     src="/images/leadlab-logo.png" 
-                    alt="The Lead Lab Logo" 
+                    alt={t('home.logoAlt')} 
                     className="h-75 w-auto mb-16"
                   />
                 </motion.div>
@@ -123,11 +125,10 @@ export function HomePage() {
                   className="space-y-6 max-w-4xl"
                 >
                   <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl leading-[1.15] pb-1 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 animate-gradient">
-                    Connecting Businesses with Qualified Leads
+                    {t('home.hero.title')}
                   </h1>
                   <p className="mx-auto max-w-[800px] text-gray-600 md:text-xl lg:text-2xl leading-relaxed">
-                    The Lead Lab combines verified data, psychographic insight, and a practical CRM so your team spends time
-                    with prospects who can actually buy — not chasing dead ends.
+                    {t('home.hero.subtitle')}
                   </p>
                 </motion.div>
 
@@ -163,19 +164,19 @@ export function HomePage() {
                       className="inline-flex items-center justify-center min-w-[240px] px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl"
                     >
                       <Calendar className="w-6 h-6 mr-2" />
-                      Book a meeting
+                      {t('home.hero.bookMeeting')}
                     </a>
                     <Link
                       to="/intake"
                       className="inline-flex items-center justify-center min-w-[240px] px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl"
                     >
-                      Tell us what you need
+                      {t('home.hero.tellUs')}
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </div>
 
                   <p className="text-sm text-gray-500">
-                    We will guide you to the right form: business diagnostic, data request, or pitch your idea.
+                    {t('home.hero.guide')}
                   </p>
 
                   {isAuthenticated && (
@@ -184,13 +185,13 @@ export function HomePage() {
                         to="/dashboard"
                         className="text-center text-sm font-medium text-primary-600 hover:text-primary-700 underline-offset-4 hover:underline"
                       >
-                        Open app dashboard
+                        {t('home.hero.openDashboard')}
                       </Link>
                       <Link
                         to="/settings/company"
                         className="text-center text-sm font-medium text-primary-600 hover:text-primary-700 underline-offset-4 hover:underline"
                       >
-                        Organization &amp; settings
+                        {t('home.hero.orgSettings')}
                       </Link>
                     </div>
                   )}
@@ -203,10 +204,10 @@ export function HomePage() {
             <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
               <div className="text-center mb-16">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl leading-[1.2] pb-1 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                  About The-LeadLab.com
+                  {t('home.about.title')}
                 </h2>
                 <p className="text-xl text-gray-600 max-w-4xl mx-auto">
-                  Welcome to The-LeadLab.com, your premier destination for transforming business growth through intelligent lead generation. We empower companies to connect with high-quality, pre-qualified leads that match your exact target audience. Whether you're a startup looking to establish market presence or an enterprise seeking to expand your customer base, our sophisticated team & platform combines advanced targeting technology with industry expertise to deliver leads that convert.
+                  {t('home.about.intro')}
                 </p>
               </div>
 
@@ -220,9 +221,9 @@ export function HomePage() {
                   <div className="bg-blue-50 w-16 h-16 rounded-xl flex items-center justify-center mb-6">
                     <Target className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-4">Mission</h3>
+                  <h3 className="text-2xl font-bold mb-4">{t('home.about.mission.title')}</h3>
                   <p className="text-gray-600">
-                    Our mission is to empower businesses with AI-driven lead generation tools that reduce customer acquisition costs by up to 60%. We help companies automate lead qualification, enhance contact rates through multi-channel engagement, and optimize sales processes to achieve 3x higher conversion rates while reducing sales department overhead.
+                    {t('home.about.mission.body')}
                   </p>
                 </motion.div>
 
@@ -235,9 +236,9 @@ export function HomePage() {
                   <div className="bg-blue-50 w-16 h-16 rounded-xl flex items-center justify-center mb-6">
                     <Eye className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-4">Vision</h3>
+                  <h3 className="text-2xl font-bold mb-4">{t('home.about.vision.title')}</h3>
                   <p className="text-gray-600">
-                    We envision transforming lead generation through our proprietary AI technology and proven methodologies. By 2025, we aim to help 1000 businesses seamlessly connect with their ideal customers through intelligent matching algorithms, behavioral analytics, and automated nurturing sequences that ensure leads are contacted at the perfect moment.
+                    {t('home.about.vision.body')}
                   </p>
                 </motion.div>
 
@@ -250,16 +251,16 @@ export function HomePage() {
                   <div className="bg-blue-50 w-16 h-16 rounded-xl flex items-center justify-center mb-6">
                     <Shield className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-4">Values</h3>
+                  <h3 className="text-2xl font-bold mb-4">{t('home.about.values.title')}</h3>
                   <p className="text-gray-600">
-                    At The-LeadLab.com, we're committed to delivering measurable results with complete transparency. Our values include providing 24/7 customer support, maintaining 85% data accuracy, and offering performance-based pricing models. We leverage partnerships with leading big data providers and industry experts to ensure our clients always stay ahead of the competition.
+                    {t('home.about.values.body')}
                   </p>
                 </motion.div>
               </div>
 
               <div className="text-center mb-16">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl leading-[1.2] pb-1 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                  The Problems We Solve
+                  {t('home.about.problemsTitle')}
                 </h2>
               </div>
 
@@ -273,9 +274,9 @@ export function HomePage() {
                   <div className="bg-blue-50 w-16 h-16 rounded-xl flex items-center justify-center mb-6">
                     <Clock className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-4">Time-Consuming Lead Generation</h3>
+                  <h3 className="text-2xl font-bold mb-4">{t('home.about.problems.timeConsuming.title')}</h3>
                   <p className="text-gray-600">
-                    Sales teams waste countless hours manually searching for prospects, cold calling unqualified leads, and updating complex spreadsheets. This drains valuable resources that could be better spent closing deals and growing your business.
+                    {t('home.about.problems.timeConsuming.body')}
                   </p>
                 </motion.div>
 
@@ -288,9 +289,9 @@ export function HomePage() {
                   <div className="bg-blue-50 w-16 h-16 rounded-xl flex items-center justify-center mb-6">
                     <Filter className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-4">Inefficient Lead Qualification</h3>
+                  <h3 className="text-2xl font-bold mb-4">{t('home.about.problems.qualification.title')}</h3>
                   <p className="text-gray-600">
-                    Without proper qualification processes, your team pursues leads that aren't ready to buy or don't match your ideal customer profile. This results in lower conversion rates and frustrated sales representatives.
+                    {t('home.about.problems.qualification.body')}
                   </p>
                 </motion.div>
 
@@ -303,9 +304,9 @@ export function HomePage() {
                   <div className="bg-blue-50 w-16 h-16 rounded-xl flex items-center justify-center mb-6">
                     <Crosshair className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-4">Limited Targeting Options</h3>
+                  <h3 className="text-2xl font-bold mb-4">{t('home.about.problems.targeting.title')}</h3>
                   <p className="text-gray-600">
-                    Traditional lead generation relies on broad, unfocused marketing that fails to reach decision-makers in your target market. This scattershot approach wastes your advertising budget and delivers poor-quality leads that rarely convert.
+                    {t('home.about.problems.targeting.body')}
                   </p>
                 </motion.div>
               </div>
@@ -316,10 +317,10 @@ export function HomePage() {
             <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
               <div className="text-center mb-16">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl leading-[1.2] pb-1 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                  Why Industry Leaders Choose LeadLab
+                  {t('home.why.title')}
                 </h2>
                 <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                  Our platform combines cutting-edge AI technology with proven methodologies to deliver exceptional results
+                  {t('home.why.subtitle')}
                 </p>
               </div>
 
@@ -327,18 +328,18 @@ export function HomePage() {
                 {[
                   {
                     icon: <Trophy className="w-12 h-12 text-blue-600" />,
-                    title: "Industry-Leading Accuracy",
-                    description: "95% data accuracy rate, verified through our multi-step validation process"
+                    title: t('home.why.accuracy.title'),
+                    description: t('home.why.accuracy.description')
                   },
                   {
                     icon: <Rocket className="w-12 h-12 text-blue-600" />,
-                    title: "Rapid Implementation",
-                    description: "Get started in minutes with our intuitive platform and seamless integration"
+                    title: t('home.why.implementation.title'),
+                    description: t('home.why.implementation.description')
                   },
                   {
                     icon: <TrendingUp className="w-12 h-12 text-blue-600" />,
-                    title: "Proven ROI",
-                    description: "Our clients see an average 300% increase in qualified leads within 3 months"
+                    title: t('home.why.roi.title'),
+                    description: t('home.why.roi.description')
                   }
                 ].map((feature, index) => (
                   <motion.div
@@ -363,10 +364,10 @@ export function HomePage() {
             <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
               <div className="text-center mb-16">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl leading-[1.2] pb-1 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                  How LeadLab Works
+                  {t('home.how.title')}
                 </h2>
                 <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                  A simple yet powerful process to transform your lead generation
+                  {t('home.how.subtitle')}
                 </p>
               </div>
 
@@ -376,23 +377,23 @@ export function HomePage() {
                   {[
                     {
                       icon: <Target className="w-8 h-8 text-blue-600" />,
-                      title: "Define Your Ideal Customer",
-                      description: "Use our AI-powered profiling tool to create your perfect lead persona"
+                      title: t('home.how.define.title'),
+                      description: t('home.how.define.description')
                     },
                     {
                       icon: <Search className="w-8 h-8 text-blue-600" />,
-                      title: "AI-Powered Search",
-                      description: "Our algorithms identify and qualify potential leads matching your criteria"
+                      title: t('home.how.search.title'),
+                      description: t('home.how.search.description')
                     },
                     {
                       icon: <Brain className="w-8 h-8 text-blue-600" />,
-                      title: "Enrich & Analyze",
-                      description: "Add psychometric insights and verify contact information"
+                      title: t('home.how.enrich.title'),
+                      description: t('home.how.enrich.description')
                     },
                     {
                       icon: <BarChart className="w-8 h-8 text-blue-600" />,
-                      title: "Convert & Scale",
-                      description: "Track performance and optimize your approach for better results"
+                      title: t('home.how.convert.title'),
+                      description: t('home.how.convert.description')
                     }
                   ].map((step, index) => (
                     <motion.div
@@ -421,10 +422,10 @@ export function HomePage() {
             <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
               <div className="text-center mb-16">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl leading-[1.2] pb-1 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                  Real Results, Real Time
+                  {t('home.results.title')}
                 </h2>
                 <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                  Track your success with our comprehensive analytics dashboard
+                  {t('home.results.subtitle')}
                 </p>
               </div>
 
@@ -435,13 +436,13 @@ export function HomePage() {
                   transition={{ duration: 0.8 }}
                   className="bg-white p-8 rounded-2xl shadow-lg border border-blue-100"
                 >
-                  <h3 className="text-2xl font-bold mb-6">ROI Calculator</h3>
+                  <h3 className="text-2xl font-bold mb-6">{t('home.calculator.title')}</h3>
                   <div className="space-y-6">
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <label className="text-gray-600 flex justify-between">
-                          <span>Monthly Lead Volume</span>
-                          <span className="text-blue-600 font-semibold">{leadVolume} leads</span>
+                          <span>{t('home.calculator.monthlyLeadVolume')}</span>
+                          <span className="text-blue-600 font-semibold">{t('home.calculator.leadsValue', { value: leadVolume })}</span>
                         </label>
                         <input
                           type="range"
@@ -460,7 +461,7 @@ export function HomePage() {
 
                       <div className="space-y-2">
                         <label className="text-gray-600 flex justify-between">
-                          <span>Cost per Lead</span>
+                          <span>{t('home.calculator.costPerLead')}</span>
                           <span className="text-blue-600 font-semibold">${costPerLead}</span>
                         </label>
                         <input
@@ -480,7 +481,7 @@ export function HomePage() {
 
                       <div className="space-y-2">
                         <label className="text-gray-600 flex justify-between">
-                          <span>Contact Rate</span>
+                          <span>{t('home.calculator.contactRate')}</span>
                           <span className="text-blue-600 font-semibold">{contactRate}%</span>
                         </label>
                         <input
@@ -500,7 +501,7 @@ export function HomePage() {
 
                       <div className="space-y-2">
                         <label className="text-gray-600 flex justify-between">
-                          <span>Meeting Booked Rate</span>
+                          <span>{t('home.calculator.meetingBookedRate')}</span>
                           <span className="text-blue-600 font-semibold">{meetingBookedRate}%</span>
                         </label>
                         <input
@@ -520,7 +521,7 @@ export function HomePage() {
 
                       <div className="space-y-2">
                         <label className="text-gray-600 flex justify-between">
-                          <span>Meeting Sat Rate</span>
+                          <span>{t('home.calculator.meetingSatRate')}</span>
                           <span className="text-blue-600 font-semibold">{meetingSatRate}%</span>
                         </label>
                         <input
@@ -540,7 +541,7 @@ export function HomePage() {
 
                       <div className="space-y-2">
                         <label className="text-gray-600 flex justify-between">
-                          <span>Conversion Rate</span>
+                          <span>{t('home.calculator.conversionRate')}</span>
                           <span className="text-blue-600 font-semibold">{conversionRate}%</span>
                         </label>
                         <input
@@ -560,7 +561,7 @@ export function HomePage() {
 
                       <div className="space-y-2">
                         <label className="text-gray-600 flex justify-between">
-                          <span>Average Deal Value</span>
+                          <span>{t('home.calculator.averageDealValue')}</span>
                           <span className="text-blue-600 font-semibold">${averageDealValue}</span>
                         </label>
                         <input
@@ -581,7 +582,7 @@ export function HomePage() {
 
                     <div className="bg-blue-50 p-6 rounded-xl space-y-4">
                       <div className="text-center">
-                        <p className="text-gray-600 mb-2">Estimated Monthly ROI</p>
+                        <p className="text-gray-600 mb-2">{t('home.calculator.estimatedMonthlyRoi')}</p>
                         <p className="text-4xl font-bold text-blue-600">
                           ${calculateMonthlyROI().roi.toLocaleString()}
                         </p>
@@ -589,49 +590,49 @@ export function HomePage() {
                       
                       <div className="grid grid-cols-2 gap-4 pt-4 border-t border-blue-100">
                         <div>
-                          <p className="text-sm text-gray-600">Total Leads</p>
+                          <p className="text-sm text-gray-600">{t('home.calculator.totalLeads')}</p>
                           <p className="text-lg font-semibold text-blue-600">
-                            {leadVolume} leads
+                            {t('home.calculator.leadsValue', { value: leadVolume })}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Contacted Leads</p>
+                          <p className="text-sm text-gray-600">{t('home.calculator.contactedLeads')}</p>
                           <p className="text-lg font-semibold text-blue-600">
-                            {calculateMonthlyROI().contactedLeads} leads
+                            {t('home.calculator.leadsValue', { value: calculateMonthlyROI().contactedLeads })}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Meetings Booked</p>
+                          <p className="text-sm text-gray-600">{t('home.calculator.meetingsBooked')}</p>
                           <p className="text-lg font-semibold text-blue-600">
                             {calculateMonthlyROI().meetingsBooked}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Meetings Sat</p>
+                          <p className="text-sm text-gray-600">{t('home.calculator.meetingsSat')}</p>
                           <p className="text-lg font-semibold text-blue-600">
                             {calculateMonthlyROI().meetingsSat}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Converted Leads</p>
+                          <p className="text-sm text-gray-600">{t('home.calculator.convertedLeads')}</p>
                           <p className="text-lg font-semibold text-blue-600">
                             {calculateMonthlyROI().convertedLeads}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Total Revenue</p>
+                          <p className="text-sm text-gray-600">{t('home.calculator.totalRevenue')}</p>
                           <p className="text-lg font-semibold text-blue-600">
                             ${calculateMonthlyROI().totalRevenue.toLocaleString()}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Total Lead Cost</p>
+                          <p className="text-sm text-gray-600">{t('home.calculator.totalLeadCost')}</p>
                           <p className="text-lg font-semibold text-blue-600">
                             ${calculateMonthlyROI().totalLeadCost.toLocaleString()}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Cost per Lead</p>
+                          <p className="text-sm text-gray-600">{t('home.calculator.costPerLead')}</p>
                           <p className="text-lg font-semibold text-blue-600">
                             ${costPerLead}
                           </p>
@@ -647,43 +648,43 @@ export function HomePage() {
           <section id="features" className="w-full py-16 md:py-24 bg-gradient-to-br from-white via-blue-50/50 to-white">
             <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
               <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl leading-[1.2] pb-1 text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                Our Unique Approach
+                {t('home.approach.title')}
               </h2>
               <p className="text-xl text-gray-600 text-center mb-16 max-w-3xl mx-auto">
-                Transform your lead generation with our comprehensive suite of tools and services
+                {t('home.approach.subtitle')}
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {[
                   {
                     icon: <Target className="w-8 h-8 text-blue-600" />,
-                    title: "Advanced Targeting",
-                    description: "AI-powered platform identifies highly qualified leads using precise demographic and behavioral criteria"
+                    title: t('home.approach.targeting.title'),
+                    description: t('home.approach.targeting.description')
                   },
                   {
                     icon: <Brain className="w-8 h-8 text-blue-600" />,
-                    title: "Psychometric Profiling",
-                    description: "Understand prospect personalities to tailor communication and improve conversion rates"
+                    title: t('home.approach.psychometric.title'),
+                    description: t('home.approach.psychometric.description')
                   },
                   {
                     icon: <Database className="w-8 h-8 text-blue-600" />,
-                    title: "Verified Contact Details",
-                    description: "GDPR-compliant network of providers ensuring accurate contact information"
+                    title: t('home.approach.verified.title'),
+                    description: t('home.approach.verified.description')
                   },
                   {
                     icon: <Linkedin className="w-8 h-8 text-blue-600" />,
-                    title: "LinkedIn Automation",
-                    description: "AI-powered conversation flows and personality matching for authentic outreach"
+                    title: t('home.approach.linkedin.title'),
+                    description: t('home.approach.linkedin.description')
                   },
                   {
                     icon: <Globe className="w-8 h-8 text-blue-600" />,
-                    title: "Web Optimization",
-                    description: "Comprehensive website development focused on lead capture and conversion"
+                    title: t('home.approach.web.title'),
+                    description: t('home.approach.web.description')
                   },
                   {
                     icon: <Share2 className="w-8 h-8 text-blue-600" />,
-                    title: "Social Media Excellence",
-                    description: "Strategic content creation and community management across all platforms"
+                    title: t('home.approach.social.title'),
+                    description: t('home.approach.social.description')
                   }
                 ].map((feature, index) => (
                   <div key={index} className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100">
@@ -701,37 +702,37 @@ export function HomePage() {
           <section id="testimonials" className="w-full py-16 md:py-24 bg-gradient-to-br from-white via-blue-50/50 to-white">
             <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
               <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl leading-[1.2] pb-1 text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                What Our Clients Say
+                {t('home.testimonials.title')}
               </h2>
               <p className="text-xl text-gray-600 text-center mb-16 max-w-3xl mx-auto">
-                Success stories from industry leaders
+                {t('home.testimonials.subtitle')}
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100">
-                  <p className="text-gray-600 italic text-lg mb-6">"The-LeadLab.com revolutionized our approach to lead generation. We experienced a remarkable 300% surge in qualified leads in just three months."</p>
+                  <p className="text-gray-600 italic text-lg mb-6">"{t('home.testimonials.schieder.quote')}"</p>
                   <div className="w-12 h-1 bg-blue-600 rounded-full mb-4"></div>
                   <div>
                     <h4 className="font-semibold">David Schieder</h4>
-                    <p className="text-sm text-gray-600">Senior Wealth Manager, LGT Wealth Management</p>
+                    <p className="text-sm text-gray-600">{t('home.testimonials.schieder.role')}</p>
                   </div>
                 </div>
 
                 <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100">
-                  <p className="text-gray-600 italic text-lg mb-6">"We've achieved 200% growth in sales operations without expanding our team, thanks to their consistently reliable data (95% accuracy)."</p>
+                  <p className="text-gray-600 italic text-lg mb-6">"{t('home.testimonials.lipscombe.quote')}"</p>
                   <div className="w-12 h-1 bg-blue-600 rounded-full mb-4"></div>
                   <div>
                     <h4 className="font-semibold">Jacob Lipscombe</h4>
-                    <p className="text-sm text-gray-600">Head of Business Development, Anchor Logistics Management</p>
+                    <p className="text-sm text-gray-600">{t('home.testimonials.lipscombe.role')}</p>
                   </div>
                 </div>
 
                 <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100">
-                  <p className="text-gray-600 italic text-lg mb-6">"We finally stopped wasting time on low-fit leads. Their qualification rules and outreach timing improved our meetings-to-opportunities ratio dramatically."</p>
+                  <p className="text-gray-600 italic text-lg mb-6">"{t('home.testimonials.holt.quote')}"</p>
                   <div className="w-12 h-1 bg-blue-600 rounded-full mb-4"></div>
                   <div>
                     <h4 className="font-semibold">Samira Holt</h4>
-                    <p className="text-sm text-gray-600">Director of Sales, NorthBridge Technologies</p>
+                    <p className="text-sm text-gray-600">{t('home.testimonials.holt.role')}</p>
                   </div>
                 </div>
               </div>
@@ -741,54 +742,60 @@ export function HomePage() {
           <section id="pricing" className="w-full py-16 md:py-24 bg-gradient-to-br from-white via-indigo-50/50 to-white">
             <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
               <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl leading-[1.2] pb-1 text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                Our Products
+                {t('home.products.title')}
               </h2>
               <p className="text-xl text-gray-600 text-center mb-16 max-w-3xl mx-auto">
-                Choose the solutions that fit your business needs
+                {t('home.products.subtitle')}
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {[
                   { 
-                    title: "Qualified Leads", 
-                    description: "AI-powered lead identification matching your exact target profile", 
+                    title: t('home.products.qualifiedLeads.title'), 
+                    description: t('home.products.qualifiedLeads.description'), 
                     price: "$1-4", 
-                    unit: "each",
+                    unit: t('home.products.units.each'),
+                    monthly: false,
                     icon: <Users className="w-8 h-8 text-blue-600" />
                   },
                   { 
-                    title: "Psychometrics", 
-                    description: "Detailed personality insights for better engagement", 
+                    title: t('home.products.psychometrics.title'), 
+                    description: t('home.products.psychometrics.description'), 
                     price: "$2.50", 
-                    unit: "each",
+                    unit: t('home.products.units.each'),
+                    monthly: false,
                     icon: <Brain className="w-8 h-8 text-blue-600" />
                   },
                   { 
-                    title: "Verified Contacts", 
-                    description: "GDPR-compliant contact details with accuracy verification", 
+                    title: t('home.products.verifiedContacts.title'), 
+                    description: t('home.products.verifiedContacts.description'), 
                     price: "$1.50", 
-                    unit: "each",
+                    unit: t('home.products.units.each'),
+                    monthly: false,
                     icon: <Phone className="w-8 h-8 text-blue-600" />
                   },
                   { 
-                    title: "Sales Coaching", 
-                    description: "Live coaching to optimize your sales process", 
+                    title: t('home.products.salesCoaching.title'), 
+                    description: t('home.products.salesCoaching.description'), 
                     price: "$50", 
-                    unit: "per hour",
+                    unit: t('home.products.units.perHour'),
+                    monthly: false,
                     icon: <MessageSquare className="w-8 h-8 text-blue-600" />
                   },
                   { 
-                    title: "Web Optimization", 
-                    description: "Complete website optimization for lead generation", 
+                    title: t('home.products.webOptimization.title'), 
+                    description: t('home.products.webOptimization.description'), 
                     price: "$300", 
-                    unit: "per month",
+                    unit: t('home.products.units.perMonth'),
+                    monthly: true,
                     icon: <Globe className="w-8 h-8 text-blue-600" />
                   },
                   {
-                    title: "Social Media",
-                    description: "Strategic social media management and optimization",
+                    title: t('home.products.socialMedia.title'),
+                    description: t('home.products.socialMedia.description'),
                     price: "$250",
-                    unit: "per month",
+                    unit: t('home.products.units.perMonth'),
+                    monthly: true,
                     icon: <Share2 className="w-8 h-8 text-blue-600" />
                   }
                 ].map((product, index) => (
@@ -812,12 +819,12 @@ export function HomePage() {
                         }
                       }}
                     >
-                      Get Started
+                      {t('home.getStartedCta')}
                     </button>
-                    {product.unit === "per month" && (
+                    {product.monthly && (
                       <p className="text-xs text-gray-500 mt-3">
-                        This monthly price renews until you cancel. Cancel before the renewal date to stop the next charge.{" "}
-                        <Link to="/legal?policy=terms" className="underline">Terms</Link>
+                        {t('home.products.monthlyRenewal')}{" "}
+                        <Link to="/legal?policy=terms" className="underline">{t('home.packages.terms')}</Link>
                       </p>
                     )}
                   </div>
@@ -829,10 +836,10 @@ export function HomePage() {
           <section id="packages" className="w-full py-16 md:py-24 bg-gradient-to-br from-white via-blue-50/50 to-white">
             <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
               <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl leading-[1.2] pb-1 text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                Our Packages
+                {t('home.packages.title')}
               </h2>
               <p className="text-xl text-gray-600 text-center mb-16 max-w-3xl mx-auto">
-                Choose the perfect package for your business size and needs
+                {t('home.packages.subtitle')}
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -840,35 +847,35 @@ export function HomePage() {
                   <div className="bg-blue-50 w-16 h-16 rounded-xl flex items-center justify-center mb-6">
                     <Users className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-4">Solopreneurs Package</h3>
-                  <p className="text-gray-600 mb-6">Launch your business growth with powerful, proven tools.</p>
+                  <h3 className="text-2xl font-bold mb-4">{t('home.packages.solo.title')}</h3>
+                  <p className="text-gray-600 mb-6">{t('home.packages.solo.description')}</p>
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center">
                       <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
-                      <span>100 Qualified Leads/Month</span>
+                      <span>{t('home.packages.solo.feature1')}</span>
                     </li>
                     <li className="flex items-center">
                       <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
-                      <span>Free CRM Access</span>
+                      <span>{t('home.packages.solo.feature2')}</span>
                     </li>
                     <li className="flex items-center">
                       <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
-                      <span>100 LinkedIn Profiles</span>
+                      <span>{t('home.packages.solo.feature3')}</span>
                     </li>
                   </ul>
                   <p className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
                     $200
-                    <span className="text-lg text-gray-600">/month</span>
+                    <span className="text-lg text-gray-600">{t('home.packages.perMonthSuffix')}</span>
                   </p>
                   <button 
                     className="w-full px-6 py-3 text-base font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300 shadow-md hover:shadow-lg"
                     onClick={() => navigate('/signup')}
                   >
-                    Get Started
+                    {t('home.getStartedCta')}
                   </button>
                   <p className="text-xs text-gray-500 mt-3">
-                    $200 renews each month until you cancel. Cancel before the renewal date to stop the next charge.{" "}
-                    <Link to="/legal?policy=terms" className="underline">Terms</Link>
+                    {t('home.packages.renewal', { price: '$200' })}{" "}
+                    <Link to="/legal?policy=terms" className="underline">{t('home.packages.terms')}</Link>
                   </p>
                 </div>
 
@@ -876,35 +883,35 @@ export function HomePage() {
                   <div className="bg-blue-50 w-16 h-16 rounded-xl flex items-center justify-center mb-6">
                     <Building className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-4">SME Package</h3>
-                  <p className="text-gray-600 mb-6">Scale your sales operation with precision and power.</p>
+                  <h3 className="text-2xl font-bold mb-4">{t('home.packages.sme.title')}</h3>
+                  <p className="text-gray-600 mb-6">{t('home.packages.sme.description')}</p>
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center">
                       <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
-                      <span>500 Qualified Leads/Month</span>
+                      <span>{t('home.packages.sme.feature1')}</span>
                     </li>
                     <li className="flex items-center">
                       <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
-                      <span>Advanced CRM Features</span>
+                      <span>{t('home.packages.sme.feature2')}</span>
                     </li>
                     <li className="flex items-center">
                       <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
-                      <span>1,000 LinkedIn Profiles</span>
+                      <span>{t('home.packages.sme.feature3')}</span>
                     </li>
                   </ul>
                   <p className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
                     $2,000
-                    <span className="text-lg text-gray-600">/month</span>
+                    <span className="text-lg text-gray-600">{t('home.packages.perMonthSuffix')}</span>
                   </p>
                   <button 
                     className="w-full px-6 py-3 text-base font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300 shadow-md hover:shadow-lg"
                     onClick={() => navigate('/signup')}
                   >
-                    Get Started
+                    {t('home.getStartedCta')}
                   </button>
                   <p className="text-xs text-gray-500 mt-3">
-                    $2,000 renews each month until you cancel. Cancel before the renewal date to stop the next charge.{" "}
-                    <Link to="/legal?policy=terms" className="underline">Terms</Link>
+                    {t('home.packages.renewal', { price: '$2,000' })}{" "}
+                    <Link to="/legal?policy=terms" className="underline">{t('home.packages.terms')}</Link>
                   </p>
                 </div>
 
@@ -912,30 +919,30 @@ export function HomePage() {
                   <div className="bg-blue-50 w-16 h-16 rounded-xl flex items-center justify-center mb-6">
                     <Award className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-4">Enterprise Solutions</h3>
-                  <p className="text-gray-600 mb-6">Enterprise-grade solutions for market leaders.</p>
+                  <h3 className="text-2xl font-bold mb-4">{t('home.packages.enterprise.title')}</h3>
+                  <p className="text-gray-600 mb-6">{t('home.packages.enterprise.description')}</p>
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center">
                       <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
-                      <span>Unlimited Qualified Leads</span>
+                      <span>{t('home.packages.enterprise.feature1')}</span>
                     </li>
                     <li className="flex items-center">
                       <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
-                      <span>Custom API Integration</span>
+                      <span>{t('home.packages.enterprise.feature2')}</span>
                     </li>
                     <li className="flex items-center">
                       <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
-                      <span>24/7 Priority Support</span>
+                      <span>{t('home.packages.enterprise.feature3')}</span>
                     </li>
                   </ul>
                   <p className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                    Custom
+                    {t('home.packages.custom')}
                   </p>
                   <button 
                     className="w-full px-6 py-3 text-base font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300 shadow-md hover:shadow-lg"
                     onClick={() => navigate('/contact')}
                   >
-                    Contact Sales
+                    {t('home.packages.contactSales')}
                   </button>
                 </div>
               </div>
@@ -948,21 +955,21 @@ export function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
               <div>
                 <Link to="/">
-                  <img src="/images/leadlab-logo.png" alt="The Lead Lab Logo" className="h-12 w-auto mb-4" />
+                  <img src="/images/leadlab-logo.png" alt={t('home.logoAlt')} className="h-12 w-auto mb-4" />
                 </Link>
-                <p className="text-gray-600">Transforming lead generation with AI-powered intelligence</p>
+                <p className="text-gray-600">{t('home.footer.tagline')}</p>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">Product</h4>
+                <h4 className="font-semibold mb-4">{t('footerProduct')}</h4>
                 <ul className="space-y-2">
-                  <li><a href="#features" onClick={scrollToSection('features')} className="text-gray-600 hover:text-blue-600">Features</a></li>
-                  <li><a href="#pricing" onClick={scrollToSection('pricing')} className="text-gray-600 hover:text-blue-600">Products</a></li>
-                  <li><a href="#packages" onClick={scrollToSection('packages')} className="text-gray-600 hover:text-blue-600">Packages</a></li>
-                  <li><a href="#testimonials" onClick={scrollToSection('testimonials')} className="text-gray-600 hover:text-blue-600">Testimonials</a></li>
+                  <li><a href="#features" onClick={scrollToSection('features')} className="text-gray-600 hover:text-blue-600">{t('home.footer.features')}</a></li>
+                  <li><a href="#pricing" onClick={scrollToSection('pricing')} className="text-gray-600 hover:text-blue-600">{t('home.footer.products')}</a></li>
+                  <li><a href="#packages" onClick={scrollToSection('packages')} className="text-gray-600 hover:text-blue-600">{t('home.footer.packages')}</a></li>
+                  <li><a href="#testimonials" onClick={scrollToSection('testimonials')} className="text-gray-600 hover:text-blue-600">{t('home.footer.testimonials')}</a></li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">Company</h4>
+                <h4 className="font-semibold mb-4">{t('footerCompany')}</h4>
                 <ul className="space-y-2">
                   <li>
                     <a
@@ -970,7 +977,7 @@ export function HomePage() {
                       onClick={scrollToSection('about')}
                       className="text-gray-600 hover:text-blue-600"
                     >
-                      About
+                      {t('home.footer.about')}
                     </a>
                   </li>
                   <li>
@@ -979,7 +986,7 @@ export function HomePage() {
                       onClick={scrollToSection('pricing')}
                       className="text-gray-600 hover:text-blue-600"
                     >
-                      Pricing
+                      {t('home.footer.pricing')}
                     </a>
                   </li>
                   <li>
@@ -988,45 +995,45 @@ export function HomePage() {
                       onClick={scrollToSection('services')}
                       className="text-gray-600 hover:text-blue-600"
                     >
-                      Services
+                      {t('home.footer.services')}
                     </a>
                   </li>
                   <li>
                     <Link to="/contact" className="text-gray-600 hover:text-blue-600">
-                      Contact
+                      {t('home.footer.contact')}
                     </Link>
                   </li>
                   <li>
                     <Link to="/intake/data-request" className="text-gray-600 hover:text-blue-600">
-                      Data request
+                      {t('dataRequestTitle')}
                     </Link>
                   </li>
                   <li>
                     <Link to="/intake/business-diagnostic" className="text-gray-600 hover:text-blue-600">
-                      Business diagnostic
+                      {t('diagnosticTitle')}
                     </Link>
                   </li>
                   <li>
                     <Link to="/intake/pitch-your-idea" className="text-gray-600 hover:text-blue-600">
-                      Pitch your idea
+                      {t('pitchTitle')}
                     </Link>
                   </li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">Legal</h4>
+                <h4 className="font-semibold mb-4">{t('footerLegal')}</h4>
                 <ul className="space-y-2">
-                  <li><Link to="/legal?policy=privacy" className="text-gray-600 hover:text-blue-600">Privacy Policy</Link></li>
-                  <li><Link to="/legal?policy=terms" className="text-gray-600 hover:text-blue-600">Terms of Service</Link></li>
-                  <li><Link to="/legal?policy=kvkk" className="text-gray-600 hover:text-blue-600">Data Protection Policy Turkiye</Link></li>
-                  <li><Link to="/legal?policy=internationalDataProtection" className="text-gray-600 hover:text-blue-600">Data Protection Policy International</Link></li>
-                  <li><Link to="/legal?policy=cookie" className="text-gray-600 hover:text-blue-600">Cookie Policy</Link></li>
-                  <li><Link to="/legal?policy=dmca" className="text-gray-600 hover:text-blue-600">Copyright / DMCA</Link></li>
+                  <li><Link to="/legal?policy=privacy" className="text-gray-600 hover:text-blue-600">{t('privacyTitle')}</Link></li>
+                  <li><Link to="/legal?policy=terms" className="text-gray-600 hover:text-blue-600">{t('termsTitle')}</Link></li>
+                  <li><Link to="/legal?policy=kvkk" className="text-gray-600 hover:text-blue-600">{t('legal.titles.kvkk')}</Link></li>
+                  <li><Link to="/legal?policy=internationalDataProtection" className="text-gray-600 hover:text-blue-600">{t('legal.titles.internationalDataProtection')}</Link></li>
+                  <li><Link to="/legal?policy=cookie" className="text-gray-600 hover:text-blue-600">{t('cookiesTitle')}</Link></li>
+                  <li><Link to="/legal?policy=dmca" className="text-gray-600 hover:text-blue-600">{t('legal.titles.dmca')}</Link></li>
                 </ul>
               </div>
             </div>
             <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center">
-              <p className="text-gray-600">© {new Date().getFullYear()} The Lead Lab. All rights reserved.</p>
+              <p className="text-gray-600">{t('home.footer.rights', { year: new Date().getFullYear() })}</p>
               <div className="flex space-x-6 mt-4 md:mt-0">
                 <a href="https://www.linkedin.com/company/the-lead-lab-network/" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-blue-600">
                   <FontAwesomeIcon icon={faLinkedin} size="lg" />

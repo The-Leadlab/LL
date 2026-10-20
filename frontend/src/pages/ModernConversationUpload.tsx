@@ -10,8 +10,10 @@ import { conversationsAPI } from '@/services/api/conversations';
 import { leadsAPI } from '@/services/api/leads';
 import { useAuthStore } from '@/store/auth';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export function ModernConversationUpload() {
+  const { t } = useTranslation('messages');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -28,7 +30,7 @@ export function ModernConversationUpload() {
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      if (!file || !leadId || !user?.id) throw new Error('Select lead and file');
+      if (!file || !leadId || !user?.id) throw new Error(t('conv.selectLeadAndFile'));
       // Persist recording row first; URL can be replaced by backend processing later.
       return conversationsAPI.createRecording({
         user_id: user.id,
@@ -40,10 +42,10 @@ export function ModernConversationUpload() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['call-recordings'] });
-      toast.success('Recording uploaded');
+      toast.success(t('conv.uploaded'));
       navigate('/conversations');
     },
-    onError: () => toast.error('Could not upload recording'),
+    onError: () => toast.error(t('conv.uploadFailed')),
   });
   
   return (
@@ -54,11 +56,11 @@ export function ModernConversationUpload() {
           className="mb-6 flex items-center space-x-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-50"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Conversations</span>
+          <span>{t('conv.backToConversations')}</span>
         </button>
         
         <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
-          Upload Call Recording
+          {t('conv.uploadTitle')}
         </h1>
         
         <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 border border-neutral-200 dark:border-neutral-700">
@@ -67,10 +69,10 @@ export function ModernConversationUpload() {
               <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
             </div>
             <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50 mb-2">
-              Upload Call Recording
+              {t('conv.uploadTitle')}
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400 mb-6 text-center">
-              Drag and drop your audio file here, or click to browse
+              {t('conv.dragDrop')}
             </p>
             <input
               type="file"
@@ -83,10 +85,10 @@ export function ModernConversationUpload() {
               htmlFor="file-upload"
               className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 cursor-pointer transition-colors"
             >
-              Choose File
+              {t('conv.chooseFile')}
             </label>
             <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
-              Supported formats: MP3, WAV, M4A (Max 100MB)
+              {t('conv.supportedFormats')}
             </p>
             <div className="mt-6 w-full max-w-lg space-y-3">
               <select
@@ -94,7 +96,7 @@ export function ModernConversationUpload() {
                 value={leadId ?? ''}
                 onChange={(e) => setLeadId(Number(e.target.value) || null)}
               >
-                <option value="">Select related lead</option>
+                <option value="">{t('conv.selectLead')}</option>
                 {(leadsData || []).map((lead: any) => (
                   <option key={lead.id} value={lead.id}>
                     {lead.first_name} {lead.last_name} {lead.company ? `- ${lead.company}` : ''}
@@ -108,9 +110,9 @@ export function ModernConversationUpload() {
                 className="w-full rounded-lg bg-primary-600 px-4 py-2 text-white disabled:opacity-60"
               >
                 {uploadMutation.isPending ? (
-                  <span className="inline-flex items-center"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Uploading...</span>
+                  <span className="inline-flex items-center"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t('conv.uploading')}</span>
                 ) : (
-                  `Upload${file ? `: ${file.name}` : ''}`
+                  file ? t('conv.uploadFile', { name: file.name }) : t('conv.upload')
                 )}
               </button>
             </div>

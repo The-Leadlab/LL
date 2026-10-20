@@ -5,8 +5,10 @@ import { toast } from 'react-hot-toast'
 import authService from '../services/auth'
 import { PublicHeader } from '../components/layout/PublicHeader'
 import { getApiErrorMessage } from '../lib/apiError'
+import { useTranslation } from 'react-i18next'
 
 export function ResetPassword() {
+  const { t } = useTranslation('auth')
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
@@ -27,19 +29,19 @@ export function ResetPassword() {
     setError('')
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
+      setError(t('resetPage.passwordsMismatch'))
       setIsLoading(false)
       return
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters')
+      setError(t('resetPage.passwordMinLength'))
       setIsLoading(false)
       return
     }
 
     if (!token) {
-      setError('Invalid or expired reset token')
+      setError(t('resetPage.invalidToken'))
       setIsLoading(false)
       return
     }
@@ -51,12 +53,12 @@ export function ResetPassword() {
         password_confirmation: formData.confirmPassword,
       })
       setSuccess(true)
-      toast.success('Password reset successfully!')
+      toast.success(t('resetPage.successToast'))
       setTimeout(() => {
         navigate('/signin')
       }, 2500)
     } catch (err: unknown) {
-      const errorMessage = getApiErrorMessage(err, 'Failed to reset password')
+      const errorMessage = getApiErrorMessage(err, t('resetPage.failed'))
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -76,17 +78,16 @@ export function ResetPassword() {
         <div className="flex items-center justify-center px-4 py-16">
           <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-blue-100">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">
-              Invalid Reset Link
+              {t('resetPage.invalidLinkTitle')}
             </h1>
             <p className="text-gray-600 mb-6">
-              This password reset link is invalid or has expired. Please request a new
-              one.
+              {t('resetPage.invalidLinkBody')}
             </p>
             <Link
               to="/forgot-password"
               className="inline-flex items-center justify-center px-6 py-3 text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md"
             >
-              Request New Link
+              {t('resetPage.requestNewLink')}
             </Link>
           </div>
         </div>
@@ -104,7 +105,7 @@ export function ResetPassword() {
           className="inline-flex items-center text-blue-600 hover:text-indigo-700 font-medium"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Sign In
+          {t('backToSignIn')}
         </Link>
       </div>
 
@@ -116,12 +117,12 @@ export function ResetPassword() {
                 {success ? <CheckCircle2 className="h-6 w-6" /> : <Lock className="h-6 w-6" />}
               </div>
               <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                {success ? 'Password Updated' : 'Reset Your Password'}
+                {success ? t('resetPage.updatedTitle') : t('resetPage.title')}
               </h1>
               <p className="text-gray-600 mt-2">
                 {success
-                  ? 'You can now sign in with your new password.'
-                  : 'Choose a strong new password for your LeadLab account.'}
+                  ? t('resetPage.updatedSubtitle')
+                  : t('resetPage.subtitle')}
               </p>
             </div>
 
@@ -134,13 +135,13 @@ export function ResetPassword() {
             {success ? (
               <div className="text-center space-y-4">
                 <div className="bg-emerald-50 text-emerald-800 p-4 rounded-xl border border-emerald-100 text-sm">
-                  Your password has been reset successfully. Redirecting to sign in…
+                  {t('resetPage.successBanner')}
                 </div>
                 <Link
                   to="/signin"
                   className="inline-flex w-full items-center justify-center px-6 py-3 text-base font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md"
                 >
-                  Go to Sign In
+                  {t('verifyEmailPage.goToSignIn')}
                 </Link>
               </div>
             ) : (
@@ -150,7 +151,7 @@ export function ResetPassword() {
                     htmlFor="password"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    New Password
+                    {t('resetPage.newPassword')}
                   </label>
                   <div className="relative">
                     <input
@@ -163,13 +164,13 @@ export function ResetPassword() {
                       minLength={8}
                       autoComplete="new-password"
                       className="w-full px-4 py-2.5 pr-11 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="At least 8 characters"
+                      placeholder={t('resetPage.newPasswordPlaceholder')}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showPassword ? t('signInPage.hidePassword') : t('signInPage.showPassword')}
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
@@ -181,7 +182,7 @@ export function ResetPassword() {
                     htmlFor="confirmPassword"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Confirm New Password
+                    {t('resetPage.confirmNewPassword')}
                   </label>
                   <div className="relative">
                     <input
@@ -194,13 +195,13 @@ export function ResetPassword() {
                       minLength={8}
                       autoComplete="new-password"
                       className="w-full px-4 py-2.5 pr-11 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Re-enter new password"
+                      placeholder={t('resetPage.confirmPlaceholder')}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((v) => !v)}
                       className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showConfirmPassword ? t('signInPage.hidePassword') : t('signInPage.showPassword')}
                     >
                       {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
@@ -215,10 +216,10 @@ export function ResetPassword() {
                   {isLoading ? (
                     <div className="flex items-center justify-center">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                      Resetting...
+                      {t('resetPage.resetting')}
                     </div>
                   ) : (
-                    'Update Password'
+                    t('resetPage.updatePassword')
                   )}
                 </button>
               </form>

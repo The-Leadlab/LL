@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { forecastsAPI, Forecast, ForecastPeriod } from '@/services/api/forecasts';
 import { Button } from '@/components/ui/Button';
@@ -16,6 +17,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/Dialog';
 
 export const ForecastDashboard: React.FC = () => {
+  const { t } = useTranslation('modules');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -52,13 +54,13 @@ export const ForecastDashboard: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['forecast-periods'] });
       toast({
-        title: 'Forecast period created',
-        description: 'You can now save your forecast for this period.',
+        title: t('forecasting.toast.periodCreatedTitle'),
+        description: t('forecasting.toast.periodCreated'),
       });
     },
     onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : 'Could not create period';
-      toast({ title: 'Error', description: msg, variant: 'destructive' });
+      const msg = err instanceof Error ? err.message : t('forecasting.toast.periodFailed');
+      toast({ title: t('forecasting.toast.error'), description: msg, variant: 'destructive' });
     },
   });
 
@@ -69,8 +71,8 @@ export const ForecastDashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['my-forecast'] });
       setIsEditDialogOpen(false);
       toast({
-        title: 'Success',
-        description: 'Forecast updated successfully'
+        title: t('forecasting.toast.success'),
+        description: t('forecasting.toast.updated')
       });
     },
     onError: (err: unknown) => {
@@ -85,8 +87,8 @@ export const ForecastDashboard: React.FC = () => {
         typeof err.response.data === 'object' &&
         'detail' in err.response.data
         ? String((err.response.data as { detail?: unknown }).detail)
-        : 'Could not save forecast';
-      toast({ title: 'Save failed', description: msg, variant: 'destructive' });
+        : t('forecasting.toast.saveFailed');
+      toast({ title: t('forecasting.toast.saveFailedTitle'), description: msg, variant: 'destructive' });
     },
   });
 
@@ -96,8 +98,8 @@ export const ForecastDashboard: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-forecast'] });
       toast({
-        title: 'Success',
-        description: 'Forecast submitted for review'
+        title: t('forecasting.toast.success'),
+        description: t('forecasting.toast.submitted')
       });
     }
   });
@@ -106,7 +108,7 @@ export const ForecastDashboard: React.FC = () => {
     mutationFn: (id: number) => forecastsAPI.deleteForecast(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-forecast'] });
-      toast({ title: 'Deleted', description: 'Draft forecast removed.' });
+      toast({ title: t('forecasting.toast.deletedTitle'), description: t('forecasting.toast.deleted') });
     },
   });
 
@@ -132,8 +134,8 @@ export const ForecastDashboard: React.FC = () => {
   const handleSave = () => {
     if (!activePeriod) {
       toast({
-        title: 'No active period',
-        description: 'Create a forecast period first, or ask an admin to open one.',
+        title: t('forecasting.toast.noActivePeriodTitle'),
+        description: t('forecasting.toast.noActivePeriod'),
         variant: 'destructive',
       });
       return;
@@ -169,9 +171,9 @@ export const ForecastDashboard: React.FC = () => {
     return (
       <PageContainer>
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-          <p className="font-medium text-red-800">Could not load forecast period</p>
+          <p className="font-medium text-red-800">{t('forecasting.loadPeriodFailed')}</p>
           <Button className="mt-4" variant="outline" onClick={() => refetchActivePeriod()}>
-            Retry
+            {t('forecasting.retry')}
           </Button>
         </div>
       </PageContainer>
@@ -206,15 +208,18 @@ export const ForecastDashboard: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Sales Forecast</h1>
+            <h1 className="text-3xl font-bold">{t('forecasting.title')}</h1>
             <p className="text-gray-600 mt-1">
               {activePeriod ? (
-                <>
-                  {activePeriod.period_type.charAt(0).toUpperCase() + activePeriod.period_type.slice(1)} Period: {' '}
-                  {formatDate(activePeriod.start_date)} - {formatDate(activePeriod.end_date)}
-                </>
+                t('forecasting.periodLine', {
+                  type: t(`forecasting.periodTypes.${activePeriod.period_type}`, {
+                    defaultValue: activePeriod.period_type.charAt(0).toUpperCase() + activePeriod.period_type.slice(1),
+                  }),
+                  start: formatDate(activePeriod.start_date),
+                  end: formatDate(activePeriod.end_date),
+                })
               ) : (
-                'No active forecast period'
+                t('forecasting.noPeriod')
               )}
             </p>
           </div>
@@ -223,16 +228,16 @@ export const ForecastDashboard: React.FC = () => {
               <DialogTrigger asChild>
                 <Button variant="outline" onClick={handleEdit} disabled={!activePeriod}>
                   <Edit className="h-4 w-4 mr-2" />
-                  Update Forecast
+                  {t('forecasting.update')}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Update Your Forecast</DialogTitle>
+                  <DialogTitle>{t('forecasting.updateTitle')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="pipeline">Pipeline Amount</Label>
+                    <Label htmlFor="pipeline">{t('forecasting.pipelineAmount')}</Label>
                     <Input
                       id="pipeline"
                       type="number"
@@ -242,7 +247,7 @@ export const ForecastDashboard: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="best_case">Best Case Amount</Label>
+                    <Label htmlFor="best_case">{t('forecasting.bestCaseAmount')}</Label>
                     <Input
                       id="best_case"
                       type="number"
@@ -252,7 +257,7 @@ export const ForecastDashboard: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="commit">Commit Amount</Label>
+                    <Label htmlFor="commit">{t('forecasting.commitAmount')}</Label>
                     <Input
                       id="commit"
                       type="number"
@@ -262,7 +267,7 @@ export const ForecastDashboard: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="closed">Closed Amount</Label>
+                    <Label htmlFor="closed">{t('forecasting.closedAmount')}</Label>
                     <Input
                       id="closed"
                       type="number"
@@ -279,7 +284,7 @@ export const ForecastDashboard: React.FC = () => {
                     {saveMutation.isPending && (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     )}
-                    Save Forecast
+                    {t('forecasting.save')}
                   </Button>
                 </div>
               </DialogContent>
@@ -287,7 +292,7 @@ export const ForecastDashboard: React.FC = () => {
             {myForecast && myForecast.id > 0 && myForecast.status === 'draft' && (
               <Button onClick={() => submitMutation.mutate(myForecast.id)}>
                 <Send className="h-4 w-4 mr-2" />
-                Submit for Review
+                {t('forecasting.submit')}
               </Button>
             )}
             {myForecast && myForecast.id > 0 && myForecast.status === 'draft' && (
@@ -297,7 +302,7 @@ export const ForecastDashboard: React.FC = () => {
                 onClick={() => deleteMutation.mutate(myForecast.id)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete Draft
+                {t('forecasting.deleteDraft')}
               </Button>
             )}
           </div>
@@ -306,9 +311,9 @@ export const ForecastDashboard: React.FC = () => {
         {!activePeriod && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <p className="font-medium text-amber-900">No active forecast period</p>
+              <p className="font-medium text-amber-900">{t('forecasting.noPeriod')}</p>
               <p className="text-sm text-amber-800 mt-1">
-                Create a period for the current month so you can save numbers. Your org can add other ranges from the API or admin tools if needed.
+                {t('forecasting.noPeriodBody')}
               </p>
             </div>
             <Button
@@ -319,7 +324,7 @@ export const ForecastDashboard: React.FC = () => {
               {createPeriodMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              Create this month&apos;s period
+              {t('forecasting.createPeriod')}
             </Button>
           </div>
         )}
@@ -330,24 +335,24 @@ export const ForecastDashboard: React.FC = () => {
             {myForecast.status === 'draft' && (
               <Badge variant="secondary">
                 <Edit className="h-3 w-3 mr-1" />
-                Draft
+                {t('forecasting.draft')}
               </Badge>
             )}
             {myForecast.status === 'submitted' && (
               <Badge className="bg-blue-100 text-blue-800">
                 <Send className="h-3 w-3 mr-1" />
-                Submitted
+                {t('forecasting.submitted')}
               </Badge>
             )}
             {myForecast.status === 'approved' && (
               <Badge className="bg-green-100 text-green-800">
                 <CheckCircle className="h-3 w-3 mr-1" />
-                Approved
+                {t('forecasting.approved')}
               </Badge>
             )}
             {myForecast.manager_adjusted_commit && (
               <Badge variant="outline">
-                Manager Adjusted
+                {t('forecasting.managerAdjusted')}
               </Badge>
             )}
           </div>
@@ -358,45 +363,45 @@ export const ForecastDashboard: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium text-gray-600">
-                Pipeline
+                {t('forecasting.pipeline')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">
                 {formatCurrency(myForecast?.pipeline_amount || 0)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">Total opportunity value</p>
+              <p className="text-sm text-gray-500 mt-1">{t('forecasting.pipelineHint')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium text-gray-600">
-                Best Case
+                {t('forecasting.bestCase')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-blue-600">
                 {formatCurrency(myForecast?.best_case_amount || 0)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">Optimistic forecast</p>
+              <p className="text-sm text-gray-500 mt-1">{t('forecasting.bestCaseHint')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium text-gray-600">
-                Commit
+                {t('forecasting.commit')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-green-600">
                 {formatCurrency(finalCommit)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">Your commitment</p>
+              <p className="text-sm text-gray-500 mt-1">{t('forecasting.commitHint')}</p>
               {myForecast?.manager_adjusted_commit && (
                 <p className="text-xs text-orange-600 mt-1">
-                  Manager: {formatCurrency(myForecast.manager_adjusted_commit)}
+                  {t('forecasting.manager', { amount: formatCurrency(myForecast.manager_adjusted_commit) })}
                 </p>
               )}
             </CardContent>
@@ -405,14 +410,14 @@ export const ForecastDashboard: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium text-gray-600">
-                Closed
+                {t('forecasting.closed')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-purple-600">
                 {formatCurrency(myForecast?.closed_amount || 0)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">Won deals</p>
+              <p className="text-sm text-gray-500 mt-1">{t('forecasting.closedHint')}</p>
             </CardContent>
           </Card>
         </div>
@@ -423,26 +428,26 @@ export const ForecastDashboard: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5" />
-                Quota Attainment
+                {t('forecasting.quotaAttainment')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm text-gray-600">Quota</p>
+                    <p className="text-sm text-gray-600">{t('forecasting.quota')}</p>
                     <p className="text-2xl font-bold">
                       {formatCurrency(myForecast.quota_amount)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Closed</p>
+                    <p className="text-sm text-gray-600">{t('forecasting.closed')}</p>
                     <p className="text-2xl font-bold text-green-600">
                       {formatCurrency(myForecast.closed_amount)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Attainment</p>
+                    <p className="text-sm text-gray-600">{t('forecasting.attainment')}</p>
                     <p className={`text-2xl font-bold ${quotaAttainment >= 100 ? 'text-green-600' : quotaAttainment >= 75 ? 'text-blue-600' : 'text-orange-600'}`}>
                       {quotaAttainment.toFixed(1)}%
                     </p>
@@ -464,13 +469,13 @@ export const ForecastDashboard: React.FC = () => {
           <Card>
             <CardContent className="py-12 text-center">
               <TrendingUp className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-semibold mb-2">No forecast yet</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('forecasting.emptyTitle')}</h3>
               <p className="text-gray-600 mb-4">
-                Create your forecast for this period
+                {t('forecasting.emptyBody')}
               </p>
               <Button onClick={handleEdit}>
                 <Plus className="h-4 w-4 mr-2" />
-                Create Forecast
+                {t('forecasting.create')}
               </Button>
             </CardContent>
           </Card>

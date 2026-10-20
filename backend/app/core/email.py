@@ -17,6 +17,7 @@ from app.services.system_email_layout import (
     p,
     render_system_email,
 )
+from app.core.i18n import i18n
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,20 @@ def _clean_secret(value: Optional[str]) -> Optional[str]:
         return None
     cleaned = str(value).strip().strip('"').strip("'")
     return cleaned or None
+
+
+def normalize_email_language(lang: Optional[str]) -> str:
+    """Map preference / Accept-Language to supported email locale (en|fr)."""
+    if not lang:
+        return "en"
+    code = str(lang).strip().lower().replace("_", "-")
+    if code.startswith("fr"):
+        return "fr"
+    return "en"
+
+
+def _t(key: str, lang: str, **kwargs) -> str:
+    return i18n.get(key, lang=normalize_email_language(lang), **kwargs)
 
 
 class EmailSender:
@@ -273,78 +288,70 @@ class EmailSender:
             print(f"❌ Failed to send email via Resend API to {to_email}: {str(e)}")
             return False
 
-    async def send_welcome_email(self, to_email: str, first_name: str, login_link: str) -> bool:
+    async def send_welcome_email(
+        self,
+        to_email: str,
+        first_name: str,
+        login_link: str,
+        language: Optional[str] = None,
+    ) -> bool:
         """Send welcome email to new users"""
-        subject = "Welcome to LeadLab"
+        lang = normalize_email_language(language)
+        subject = _t("email.welcome.subject", lang)
         body = (
-            p(f"Hi {first_name},")
-            + p(
-                "Welcome to LeadLab. We're glad you're here — your workspace is ready "
-                "for lead generation, CRM, and team collaboration."
-            )
+            p(_t("email.welcome.greeting", lang, first_name=first_name))
+            + p(_t("email.welcome.body", lang))
             + info_card(
-                "<p style='margin:0 0 8px 0;font-size:14px;font-weight:600;color:#0f172a;'>What you can do</p>"
-                "<p style='margin:0 0 6px 0;font-size:14px;line-height:1.5;color:#334155;'>Generate and qualify leads</p>"
-                "<p style='margin:0 0 6px 0;font-size:14px;line-height:1.5;color:#334155;'>Track performance with analytics</p>"
-                "<p style='margin:0 0 6px 0;font-size:14px;line-height:1.5;color:#334155;'>Run outreach campaigns</p>"
-                "<p style='margin:0;font-size:14px;line-height:1.5;color:#334155;'>Collaborate with your team</p>"
+                f"<p style='margin:0 0 8px 0;font-size:14px;font-weight:600;color:#0f172a;'>{_t('email.welcome.whatYouCanDo', lang)}</p>"
+                f"<p style='margin:0 0 6px 0;font-size:14px;line-height:1.5;color:#334155;'>{_t('email.welcome.perk1', lang)}</p>"
+                f"<p style='margin:0 0 6px 0;font-size:14px;line-height:1.5;color:#334155;'>{_t('email.welcome.perk2', lang)}</p>"
+                f"<p style='margin:0 0 6px 0;font-size:14px;line-height:1.5;color:#334155;'>{_t('email.welcome.perk3', lang)}</p>"
+                f"<p style='margin:0;font-size:14px;line-height:1.5;color:#334155;'>{_t('email.welcome.perk4', lang)}</p>"
             )
-            + p("Ready to get started? Open your dashboard below.")
+            + p(_t("email.welcome.ctaPrompt", lang))
         )
         html_content, _ = render_system_email(
-            title="Welcome to LeadLab",
-            preheader=f"Hi {first_name}, your LeadLab account is ready.",
+            title=_t("email.welcome.title", lang),
+            preheader=_t("email.welcome.preheader", lang, first_name=first_name),
             body_html=body,
-            cta_label="Open dashboard",
+            cta_label=_t("email.welcome.cta", lang),
             cta_url=login_link,
         )
-        text_content = f"""Welcome to LeadLab
-
-Hi {first_name},
-
-Welcome to LeadLab. Your workspace is ready.
-
-Open your dashboard:
-{login_link}
-
-Questions? info@the-leadlab.com
-
-— The LeadLab Team
-"""
+        text_content = (
+            f"{subject}\n\n"
+            f"{_t('email.welcome.greeting', lang, first_name=first_name)}\n\n"
+            f"{_t('email.welcome.textBody', lang, login_link=login_link)}"
+        )
         return await self.send_email(to_email, subject, html_content, text_content)
 
-    async def send_email_verification(self, to_email: str, first_name: str, verification_link: str) -> bool:
+    async def send_email_verification(
+        self,
+        to_email: str,
+        first_name: str,
+        verification_link: str,
+        language: Optional[str] = None,
+    ) -> bool:
         """Send email verification email"""
-        subject = "Verify your email — LeadLab"
+        lang = normalize_email_language(language)
+        subject = _t("email.verify.subject", lang)
         body = (
-            p(f"Hi {first_name},")
-            + p(
-                "Thanks for signing up. Confirm your email address to finish setup "
-                "and unlock full access to LeadLab."
-            )
-            + muted("This link expires in <strong style='color:#0f172a;'>24 hours</strong>.")
-            + muted("If you did not create a LeadLab account, you can ignore this email.")
+            p(_t("email.verify.greeting", lang, first_name=first_name))
+            + p(_t("email.verify.body", lang))
+            + muted(_t("email.verify.expires", lang))
+            + muted(_t("email.verify.ignore", lang))
         )
         html_content, _ = render_system_email(
-            title="Verify your email",
-            preheader="Confirm your email to finish LeadLab signup.",
+            title=_t("email.verify.title", lang),
+            preheader=_t("email.verify.preheader", lang),
             body_html=body,
-            cta_label="Verify email address",
+            cta_label=_t("email.verify.cta", lang),
             cta_url=verification_link,
         )
-        text_content = f"""Verify your email — LeadLab
-
-Hi {first_name},
-
-Confirm your email address:
-{verification_link}
-
-This link expires in 24 hours.
-
-If you did not create a LeadLab account, ignore this email.
-
-— The LeadLab Team
-"""
+        text_content = (
+            f"{subject}\n\n"
+            f"{_t('email.verify.greeting', lang, first_name=first_name)}\n\n"
+            f"{_t('email.verify.textBody', lang, verification_link=verification_link)}"
+        )
         return await self.send_email(to_email, subject, html_content, text_content)
 
     async def send_token_purchase_confirmation(
@@ -352,72 +359,63 @@ If you did not create a LeadLab account, ignore this email.
         to_email: str,
         username: str,
         amount: float,
-        token_amount: float
+        token_amount: float,
+        language: Optional[str] = None,
     ) -> bool:
         """Send confirmation email for token purchases"""
-        subject = "Token purchase confirmation — LeadLab"
+        lang = normalize_email_language(language)
+        amount_s = f"{amount:.2f}"
+        tokens_s = f"{token_amount:.2f}"
+        subject = _t("email.tokens.subject", lang)
         body = (
-            p(f"Hi {username},")
-            + p("Thank you for your purchase. Your tokens are available in your account.")
+            p(_t("email.tokens.greeting", lang, username=username))
+            + p(_t("email.tokens.body", lang))
             + info_card(
-                f"<p style='margin:0 0 8px 0;font-size:14px;color:#64748b;'>Amount paid</p>"
-                f"<p style='margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;'>${amount:.2f}</p>"
-                f"<p style='margin:0 0 8px 0;font-size:14px;color:#64748b;'>Tokens received</p>"
-                f"<p style='margin:0;font-size:20px;font-weight:700;color:#0f172a;'>{token_amount:.2f}</p>"
+                f"<p style='margin:0 0 8px 0;font-size:14px;color:#64748b;'>{_t('email.tokens.amountPaid', lang)}</p>"
+                f"<p style='margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;'>${amount_s}</p>"
+                f"<p style='margin:0 0 8px 0;font-size:14px;color:#64748b;'>{_t('email.tokens.tokensReceived', lang)}</p>"
+                f"<p style='margin:0;font-size:20px;font-weight:700;color:#0f172a;'>{tokens_s}</p>"
             )
         )
         html_content, _ = render_system_email(
-            title="Token purchase confirmed",
-            preheader=f"You received {token_amount:.2f} tokens.",
+            title=_t("email.tokens.title", lang),
+            preheader=_t("email.tokens.preheader", lang, token_amount=tokens_s),
             body_html=body,
         )
-        text_content = f"""Token purchase confirmation — LeadLab
-
-Hi {username},
-
-Amount paid: ${amount:.2f}
-Tokens received: {token_amount:.2f}
-
-Your tokens have been added to your account balance.
-
-— The LeadLab Team
-"""
+        text_content = (
+            f"{subject}\n\n"
+            f"{_t('email.tokens.greeting', lang, username=username)}\n\n"
+            f"{_t('email.tokens.textBody', lang, amount=amount_s, token_amount=tokens_s)}"
+        )
         return await self.send_email(to_email, subject, html_content, text_content)
 
-    async def send_password_reset(self, to_email: str, reset_link: str) -> bool:
+    async def send_password_reset(
+        self,
+        to_email: str,
+        reset_link: str,
+        language: Optional[str] = None,
+    ) -> bool:
         """Send password reset email"""
-        subject = "Reset your LeadLab password"
+        lang = normalize_email_language(language)
+        subject = _t("email.passwordReset.subject", lang)
         body = (
-            p("Hello,")
-            + p(
-                "We received a request to reset the password for your LeadLab account. "
-                "Click the button below to choose a new one."
-            )
-            + muted("This link expires in <strong style='color:#0f172a;'>1 hour</strong> for your security.")
-            + muted("If you did not request a password reset, you can ignore this email — your account stays secure.")
+            p(_t("email.passwordReset.greeting", lang))
+            + p(_t("email.passwordReset.body", lang))
+            + muted(_t("email.passwordReset.expires", lang))
+            + muted(_t("email.passwordReset.ignore", lang))
         )
         html_content, _ = render_system_email(
-            title="Reset your password",
-            preheader="Reset your LeadLab password. This link expires in 1 hour.",
+            title=_t("email.passwordReset.title", lang),
+            preheader=_t("email.passwordReset.preheader", lang),
             body_html=body,
-            cta_label="Reset password",
+            cta_label=_t("email.passwordReset.cta", lang),
             cta_url=reset_link,
         )
-        text_content = f"""Reset your LeadLab password
-
-Hello,
-
-We received a request to reset the password for your LeadLab account.
-
-Reset your password:
-{reset_link}
-
-This link expires in 1 hour for your security.
-
-If you didn't request a password reset, you can ignore this email — your account stays secure.
-
-Need help? Contact info@the-leadlab.com
-"""
+        text_content = (
+            f"{subject}\n\n"
+            f"{_t('email.passwordReset.greeting', lang)}\n\n"
+            f"{_t('email.passwordReset.textBody', lang, reset_link=reset_link)}"
+        )
         return await self.send_email(to_email, subject, html_content, text_content)
 
     async def send_assignment_mention(
@@ -429,34 +427,57 @@ Need help? Contact info@the-leadlab.com
         entity_title: str,
         entity_url: str,
         organization_name: Optional[str] = None,
+        language: Optional[str] = None,
     ) -> bool:
         """Notify a teammate they were assigned / mentioned on a task or lead."""
-        entity_label = (entity_type or "item").strip().lower()
-        if entity_label not in {"task", "lead", "deal"}:
-            entity_label = "item"
-        subject = f"You were mentioned on a {entity_label} in LeadLab"
+        lang = normalize_email_language(language)
+        entity_key = (entity_type or "item").strip().lower()
+        if entity_key not in {"task", "lead", "deal"}:
+            entity_key = "item"
+        entity_label = _t(f"email.entity.{entity_key}", lang)
         org_bit = f" at {organization_name}" if organization_name else ""
         safe_title = entity_title or f"Untitled {entity_label}"
+        recipient = recipient_name or ("there" if lang == "en" else "bonjour")
+        if lang == "fr" and not recipient_name:
+            recipient = "bonjour"
+        subject = _t("email.mention.subject", lang, entity_label=entity_label)
         body = (
-            p(f"Hi {recipient_name or 'there'},")
-            + p(f"<strong>{mentioner_name}</strong> mentioned you on a {entity_label}{org_bit}:")
+            p(_t("email.mention.greeting", lang, recipient_name=recipient))
+            + p(
+                _t(
+                    "email.mention.body",
+                    lang,
+                    mentioner_name=mentioner_name,
+                    entity_label=entity_label,
+                    org_bit=org_bit,
+                )
+            )
             + info_card(
                 f"<p style='margin:0 0 4px 0;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:#64748b;'>{entity_label}</p>"
                 f"<p style='margin:0;font-size:18px;font-weight:600;color:#0f172a;'>{safe_title}</p>"
             )
         )
         html_content, _ = render_system_email(
-            title="You were mentioned",
-            preheader=f"{mentioner_name} mentioned you on a {entity_label}",
+            title=_t("email.mention.title", lang),
+            preheader=_t(
+                "email.mention.preheader",
+                lang,
+                mentioner_name=mentioner_name,
+                entity_label=entity_label,
+            ),
             body_html=body,
-            cta_label="Open in LeadLab",
+            cta_label=_t("email.mention.cta", lang),
             cta_url=entity_url,
         )
-        text_content = (
-            f"Hi {recipient_name or 'there'},\n\n"
-            f"{mentioner_name} mentioned you on a {entity_label}{org_bit}: {safe_title}\n\n"
-            f"Open it here: {entity_url}\n\n"
-            f"— LeadLab"
+        text_content = _t(
+            "email.mention.textBody",
+            lang,
+            recipient_name=recipient,
+            mentioner_name=mentioner_name,
+            entity_label=entity_label,
+            org_bit=org_bit,
+            safe_title=safe_title,
+            entity_url=entity_url,
         )
         return await self.send_email(to_email, subject, html_content, text_content)
 
@@ -467,80 +488,98 @@ Need help? Contact info@the-leadlab.com
         organization_name: str,
         invitation_link: str,
         role: str = "member",
-        message: str = None
+        message: str = None,
+        language: Optional[str] = None,
     ) -> bool:
         """Send team invitation email"""
-        subject = f"You're invited to join {organization_name} on LeadLab"
+        lang = normalize_email_language(language)
+        subject = _t(
+            "email.invite.subject",
+            lang,
+            organization_name=organization_name,
+        )
 
-        role_display = {
-            "admin": "Administrator",
-            "member": "Team Member",
-            "viewer": "Viewer",
-        }
-        role_text = role_display.get(role, role.title())
+        role_key = {
+            "admin": "email.invite.roleAdmin",
+            "member": "email.invite.roleMember",
+            "viewer": "email.invite.roleViewer",
+        }.get(role, "email.invite.roleMember")
+        role_text = _t(role_key, lang)
 
         perks = [
-            "Access lead management tools",
-            "View analytics and reports",
-            "Collaborate with your team",
+            _t("email.invite.perkLeads", lang),
+            _t("email.invite.perkAnalytics", lang),
+            _t("email.invite.perkCollaborate", lang),
         ]
         if role == "admin":
-            perks.insert(0, "Manage team members and settings")
+            perks.insert(0, _t("email.invite.perkManage", lang))
         if role in ("admin", "member"):
-            perks.append("Create and manage campaigns")
+            perks.append(_t("email.invite.perkCampaigns", lang))
         perks_html = "".join(
             f"<p style='margin:0 0 6px 0;font-size:14px;line-height:1.5;color:#334155;'>{item}</p>"
             for item in perks
         )
 
         message_html = ""
+        message_block = ""
         if message:
             message_html = info_card(
                 f"<p style='margin:0 0 6px 0;font-size:13px;font-weight:600;color:#0f172a;'>"
-                f"Message from {inviter_name}</p>"
+                f"{_t('email.invite.messageFrom', lang, inviter_name=inviter_name)}</p>"
                 f"<p style='margin:0;font-size:14px;line-height:1.6;color:#334155;font-style:italic;'>"
                 f"“{message}”</p>"
             )
+            message_block = f'{_t("email.invite.messageFrom", lang, inviter_name=inviter_name)}: "{message}"\n\n'
 
         body = (
-            p(f"<strong>{inviter_name}</strong> invited you to join <strong>{organization_name}</strong> on LeadLab.")
-            + p(f"Your role: {badge(role_text)}")
+            p(
+                _t(
+                    "email.invite.body",
+                    lang,
+                    inviter_name=inviter_name,
+                    organization_name=organization_name,
+                )
+            )
+            + p(_t("email.invite.yourRole", lang, role_badge=badge(role_text)))
             + message_html
             + info_card(
                 "<p style='margin:0 0 8px 0;font-size:14px;font-weight:600;color:#0f172a;'>"
-                f"As a {role_text.lower()}, you can</p>"
+                f"{_t('email.invite.asRoleYouCan', lang, role_text=role_text.lower())}</p>"
                 + perks_html
             )
-            + muted("This invitation expires in <strong style='color:#0f172a;'>72 hours</strong>.")
-            + muted(
-                "No account yet? This link opens signup so you can create one and join the team."
-            )
+            + muted(_t("email.invite.expires", lang))
+            + muted(_t("email.invite.noAccount", lang))
         )
         html_content, _ = render_system_email(
-            title=f"Join {organization_name}",
-            preheader=f"{inviter_name} invited you to {organization_name} on LeadLab.",
+            title=_t("email.invite.title", lang, organization_name=organization_name),
+            preheader=_t(
+                "email.invite.preheader",
+                lang,
+                inviter_name=inviter_name,
+                organization_name=organization_name,
+            ),
             body_html=body,
-            cta_label="Accept invitation",
+            cta_label=_t("email.invite.cta", lang),
             cta_url=invitation_link,
-            footer_note=f"You received this because {inviter_name} invited you to {organization_name}.",
+            footer_note=_t(
+                "email.invite.footer",
+                lang,
+                inviter_name=inviter_name,
+                organization_name=organization_name,
+            ),
         )
-        text_content = f"""You're invited to join {organization_name} on LeadLab
-
-{inviter_name} invited you to join {organization_name} on LeadLab.
-
-Your role: {role_text}
-
-{f'Message from {inviter_name}: "{message}"' if message else ''}
-
-Accept invitation:
-{invitation_link}
-
-This invitation expires in 72 hours.
-
-Questions? info@the-leadlab.com
-
-— The LeadLab Team
-"""
+        text_content = (
+            f"{subject}\n\n"
+            + _t(
+                "email.invite.textBody",
+                lang,
+                inviter_name=inviter_name,
+                organization_name=organization_name,
+                role_text=role_text,
+                message_block=message_block,
+                invitation_link=invitation_link,
+            )
+        )
         return await self.send_email(to_email, subject, html_content, text_content)
 
 class InvoiceEmailSender:

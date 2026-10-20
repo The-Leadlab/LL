@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'react-hot-toast'
 import { Paperclip, Ticket, X } from 'lucide-react'
 import { getApiOrigin } from '@/lib/apiOrigin'
@@ -28,6 +29,7 @@ function formatBytes(n: number) {
 
 /** Standalone public report page — no login required. */
 export default function ReportIssue({ embedded = false }: { embedded?: boolean }) {
+  const { t } = useTranslation('auth')
   const { user, token } = useAuthStore()
   const [form, setForm] = React.useState<FormState>({
     reporter_name: user
@@ -59,11 +61,11 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
     const next = [...files]
     for (const file of Array.from(list)) {
       if (next.length >= MAX_FILES) {
-        toast.error(`You can attach at most ${MAX_FILES} files`)
+        toast.error(t('reportIssuePage.maxFiles', { count: MAX_FILES }))
         break
       }
       if (file.size > MAX_BYTES) {
-        toast.error(`"${file.name}" is over 50 MB`)
+        toast.error(t('reportIssuePage.fileTooLarge', { name: file.name }))
         continue
       }
       if (next.some((f) => f.name === file.name && f.size === file.size)) continue
@@ -80,11 +82,11 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.reporter_name.trim() || !form.reporter_email.trim()) {
-      toast.error('Name and email are required.')
+      toast.error(t('reportIssuePage.nameEmailRequired'))
       return
     }
     if (!form.project_name.trim() || !form.subject.trim() || !form.description.trim()) {
-      toast.error('Project, subject, and description are required.')
+      toast.error(t('reportIssuePage.projectSubjectRequired'))
       return
     }
 
@@ -114,7 +116,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
       })
 
       if (!response.ok) {
-        let detail = 'Could not submit the report.'
+        let detail = t('reportIssuePage.submitFailed')
         try {
           const data = await response.json()
           if (typeof data?.detail === 'string') detail = data.detail
@@ -127,7 +129,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
         throw new Error(detail)
       }
 
-      toast.success('Report submitted — the LeadLab team was notified by email.')
+      toast.success(t('reportIssuePage.successToast'))
       setForm((prev) => ({
         ...prev,
         project_name: '',
@@ -137,7 +139,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
       }))
       setFiles([])
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not submit the report. Please try again.')
+      toast.error(err instanceof Error ? err.message : t('reportIssuePage.submitFailedRetry'))
     } finally {
       setIsSubmitting(false)
     }
@@ -147,17 +149,16 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
     <div className={embedded ? 'max-w-2xl mx-auto p-4 sm:p-6' : 'max-w-2xl mx-auto'}>
       <div className="flex items-center gap-3 mb-2">
         <Ticket className="w-7 h-7 text-blue-600" />
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Report an issue</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">{t('reportIssueTitle')}</h1>
       </div>
       <p className="text-sm text-gray-500 mb-6">
-        Anyone with this link can send a report — no login required. Attach screenshots, images, or
-        short videos. Ali at LeadLab is notified by email as soon as you submit.
+        {t('reportIssuePage.intro')}
       </p>
 
       <form onSubmit={onSubmit} className="space-y-4 bg-white rounded-2xl border border-blue-100 p-6 shadow-xl">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Your name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('reportIssuePage.yourName')}</label>
             <Input
               value={form.reporter_name}
               onChange={(e) => setForm({ ...form, reporter_name: e.target.value })}
@@ -165,7 +166,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Your email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('reportIssuePage.yourEmail')}</label>
             <Input
               type="email"
               value={form.reporter_email}
@@ -175,53 +176,53 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('reportIssuePage.project')}</label>
           <Input
             value={form.project_name}
             onChange={(e) => setForm({ ...form, project_name: e.target.value })}
-            placeholder="e.g. DeluxePad CRM"
+            placeholder={t('reportIssuePage.projectPlaceholder')}
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('subject')}</label>
           <Input
             value={form.subject}
             onChange={(e) => setForm({ ...form, subject: e.target.value })}
-            placeholder="Short summary of the error"
+            placeholder={t('reportIssuePage.subjectPlaceholder')}
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('reportIssuePage.priority')}</label>
           <select
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white"
             value={form.priority}
             onChange={(e) => setForm({ ...form, priority: e.target.value })}
           >
-            <option value="low">Low</option>
-            <option value="normal">Normal</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
+            <option value="low">{t('reportIssuePage.priorityLow')}</option>
+            <option value="normal">{t('reportIssuePage.priorityNormal')}</option>
+            <option value="high">{t('reportIssuePage.priorityHigh')}</option>
+            <option value="urgent">{t('reportIssuePage.priorityUrgent')}</option>
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('common:description')}</label>
           <textarea
             className="w-full min-h-[140px] rounded-md border border-gray-300 px-3 py-2 text-sm"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            placeholder="What happened, which page, and any error message you saw."
+            placeholder={t('reportIssuePage.descriptionPlaceholder')}
             required
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Attachments
+            {t('reportIssuePage.attachments')}
           </label>
           <p className="text-xs text-gray-500 mb-2">
-            Screenshots, images, or videos — up to {MAX_FILES} files, 50 MB each.
+            {t('reportIssuePage.attachmentsHelp', { count: MAX_FILES })}
           </p>
           <input
             ref={fileInputRef}
@@ -238,7 +239,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
             disabled={files.length >= MAX_FILES || isSubmitting}
           >
             <Paperclip className="w-4 h-4 mr-2" />
-            Add files
+            {t('reportIssuePage.addFiles')}
           </Button>
           {files.length > 0 && (
             <ul className="mt-3 space-y-2">
@@ -255,7 +256,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
                     type="button"
                     className="text-gray-500 hover:text-red-600 shrink-0"
                     onClick={() => removeFile(index)}
-                    aria-label={`Remove ${file.name}`}
+                    aria-label={t('reportIssuePage.removeFile', { name: file.name })}
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -267,7 +268,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
 
         <div className="flex justify-end">
           <button type="submit" disabled={isSubmitting} className={`${publicAuthCtaClassName} w-auto min-w-[160px]`}>
-            {isSubmitting ? 'Submitting…' : 'Submit report'}
+            {isSubmitting ? t('reportIssuePage.submitting') : t('submitReport')}
           </button>
         </div>
       </form>

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { X, Paperclip, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -49,6 +50,7 @@ export default function EmailComposeModal({
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation('emails');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -73,10 +75,10 @@ export default function EmailComposeModal({
     onSuccess: (result) => {
       const wasPersisted = result?.persisted !== false;
       toast({
-        title: wasPersisted ? 'Email sent successfully' : 'Email sent with warning',
+        title: wasPersisted ? t('composePage.sentSuccess') : t('composePage.sentWarning'),
         description: wasPersisted
-          ? 'Your email has been sent.'
-          : (result?.warning || 'Email was sent but local mailbox sync needs refresh.'),
+          ? t('composePage.sentSuccessBody')
+          : (result?.warning || t('composePage.sentWarningBody')),
         variant: wasPersisted ? 'default' : 'destructive',
       });
       queryClient.invalidateQueries({ queryKey: ['emails'] });
@@ -109,8 +111,8 @@ export default function EmailComposeModal({
   const handleSend = () => {
     if (!to.trim()) {
       toast({
-        title: 'Validation error',
-        description: 'Please enter at least one recipient.',
+        title: t('composePage.validationError'),
+        description: t('composePage.recipientRequired'),
         variant: 'destructive',
       });
       return;
@@ -118,8 +120,8 @@ export default function EmailComposeModal({
 
     if (!subject.trim()) {
       toast({
-        title: 'Validation error',
-        description: 'Please enter a subject.',
+        title: t('composePage.validationError'),
+        description: t('composePage.subjectRequired'),
         variant: 'destructive',
       });
       return;
@@ -155,7 +157,7 @@ export default function EmailComposeModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[80]">
       <Card className="w-full max-w-4xl max-h-[90vh] flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between border-b">
-          <CardTitle>Compose Email</CardTitle>
+          <CardTitle>{t('composePage.title')}</CardTitle>
           <Button variant="ghost" size="sm" onClick={handleClose}>
             <X className="h-4 w-4" />
           </Button>
@@ -164,7 +166,7 @@ export default function EmailComposeModal({
           <ScrollArea className="h-full">
             <div className="p-6 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="to">To</Label>
+                <Label htmlFor="to">{t('to')}</Label>
                 <Input
                   id="to"
                   value={to}
@@ -181,7 +183,7 @@ export default function EmailComposeModal({
                     size="sm"
                     onClick={() => setShowCc(true)}
                   >
-                    CC
+                    {t('composePage.cc')}
                   </Button>
                 )}
                 {!showBcc && (
@@ -191,14 +193,14 @@ export default function EmailComposeModal({
                     size="sm"
                     onClick={() => setShowBcc(true)}
                   >
-                    BCC
+                    {t('composePage.bcc')}
                   </Button>
                 )}
               </div>
 
               {showCc && (
                 <div className="space-y-2">
-                  <Label htmlFor="cc">CC</Label>
+                  <Label htmlFor="cc">{t('composePage.cc')}</Label>
                   <Input
                     id="cc"
                     value={cc}
@@ -210,7 +212,7 @@ export default function EmailComposeModal({
 
               {showBcc && (
                 <div className="space-y-2">
-                  <Label htmlFor="bcc">BCC</Label>
+                  <Label htmlFor="bcc">{t('composePage.bcc')}</Label>
                   <Input
                     id="bcc"
                     value={bcc}
@@ -221,29 +223,29 @@ export default function EmailComposeModal({
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="subject">Subject</Label>
+                <Label htmlFor="subject">{t('subject')}</Label>
                 <Input
                   id="subject"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Enter subject"
+                  placeholder={t('composePage.subjectPlaceholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="body">Message</Label>
+                <Label htmlFor="body">{t('composePage.message')}</Label>
                 <Textarea
                   id="body"
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  placeholder="Type your message here..."
+                  placeholder={t('composePage.messagePlaceholder')}
                   className="min-h-[200px]"
                 />
               </div>
 
               {attachments.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Attachments</Label>
+                  <Label>{t('composePage.attachments')}</Label>
                   <div className="space-y-2">
                     {attachments.map((file, index) => (
                       <div
@@ -283,24 +285,24 @@ export default function EmailComposeModal({
               onClick={() => fileInputRef.current?.click()}
             >
               <Paperclip className="h-4 w-4 mr-2" />
-              Attach
+              {t('composePage.attach')}
             </Button>
             <div className="mt-2 space-y-1">
               {attachments.length > 0 && (
                 <p className="text-xs text-gray-600">
-                  {attachments.length} file{attachments.length > 1 ? 's' : ''} selected:{" "}
+                  {t('composePage.filesSelected', { count: attachments.length })}{' '}
                   {attachments.slice(0, 2).map((file) => file.name).join(', ')}
-                  {attachments.length > 2 ? ` +${attachments.length - 2} more` : ''}
+                  {attachments.length > 2 ? ` ${t('composePage.moreFiles', { count: attachments.length - 2 })}` : ''}
                 </p>
               )}
               <p className="text-xs text-amber-700">
-                Attachments are not sent yet by this endpoint.
+                {t('composePage.attachmentsNotSent')}
               </p>
             </div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleClose}>
-              Cancel
+              {t('composePage.cancel')}
             </Button>
             <Button
               onClick={handleSend}
@@ -309,12 +311,12 @@ export default function EmailComposeModal({
               {sendEmailMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
+                  {t('composePage.sending')}
                 </>
               ) : (
                 <>
                   <Send className="h-4 w-4 mr-2" />
-                  Send
+                  {t('send')}
                 </>
               )}
             </Button>

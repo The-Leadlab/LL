@@ -11,6 +11,7 @@ from app.schemas.auth import TokenResponse, UserLogin, RefreshTokenInput, Refres
 from pydantic import BaseModel, EmailStr, model_validator
 from app.schemas.user import User
 from app.core.email import email_sender
+from app.core.user_language import get_user_language, language_from_request
 from app.utils.auth import generate_password_reset_token, verify_password_reset_token, generate_email_verification_token, verify_email_verification_token
 import logging
 import json
@@ -405,11 +406,13 @@ async def register(
             )
 
         login_link = f"{settings.FRONTEND_URL}/signin"
+        email_lang = language_from_request(request)
         background_tasks.add_task(
             email_sender.send_welcome_email,
             user.email,
             user.first_name,
-            login_link
+            login_link,
+            email_lang,
         )
         verification_token = generate_email_verification_token(user.email)
         verification_link = f"{settings.FRONTEND_URL}/verify-email?token={verification_token}"
@@ -418,6 +421,7 @@ async def register(
             user.email,
             user.first_name or "there",
             verification_link,
+            email_lang,
         )
         
         return User.model_validate(user)
@@ -825,6 +829,7 @@ class VerifyEmailInput(BaseModel):
 @router.post("/forgot-password")
 async def forgot_password(
     *,
+    request: Request,
     db: Session = Depends(deps.get_db),
     background_tasks: BackgroundTasks,
     forgot_password_in: ForgotPasswordInput,
@@ -841,12 +846,14 @@ async def forgot_password(
         # Generate reset token
         reset_token = generate_password_reset_token(forgot_password_in.email)
         reset_link = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+        email_lang = get_user_language(db, user.id, request=request)
         
         # Send email in background
         background_tasks.add_task(
             email_sender.send_password_reset,
             user.email,
-            reset_link
+            reset_link,
+            email_lang,
         )
         
         return {"message": "If the email exists, password reset instructions have been sent"}
@@ -861,6 +868,7 @@ async def forgot_password(
 @router.post("/resend-password-reset")
 async def resend_password_reset(
     *,
+    request: Request,
     db: Session = Depends(deps.get_db),
     background_tasks: BackgroundTasks,
     forgot_password_in: ForgotPasswordInput,
@@ -877,12 +885,14 @@ async def resend_password_reset(
         # Generate new reset token
         reset_token = generate_password_reset_token(forgot_password_in.email)
         reset_link = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+        email_lang = get_user_language(db, user.id, request=request)
         
         # Send email in background
         background_tasks.add_task(
             email_sender.send_password_reset,
             user.email,
-            reset_link
+            reset_link,
+            email_lang,
         )
         
         return {"message": "If the email exists, password reset instructions have been sent"}
@@ -968,12 +978,14 @@ async def send_verification_email(
         verification_token = generate_email_verification_token(current_user.email)
         verification_link = f"{settings.FRONTEND_URL}/verify-email?token={verification_token}"
         
+        email_lang = get_user_language(db, current_user.id)
         # Send email in background
         background_tasks.add_task(
             email_sender.send_email_verification,
             current_user.email,
             current_user.first_name,
-            verification_link
+            verification_link,
+            email_lang,
         )
         
         return {"message": "Verification email sent"}

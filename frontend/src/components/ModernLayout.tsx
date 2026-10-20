@@ -4,12 +4,15 @@
 
 import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Menu, Moon, Sun } from 'lucide-react';
 import { ModernSidebar } from './ModernSidebar';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { CommandPalette, useCommandPalette } from './CommandPalette';
 import { useDarkMode } from './ThemeProvider';
 
 export function ModernLayout() {
+  const { t } = useTranslation('common');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const closeMobile = () => setMobileNavOpen(false);
   const { open, setOpen } = useCommandPalette();
@@ -28,7 +31,7 @@ export function ModernLayout() {
       <header className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-neutral-200 bg-white px-3 dark:border-neutral-800 dark:bg-neutral-900 md:hidden">
         <button
           type="button"
-          aria-label="Open navigation"
+          aria-label={t('openNavigation')}
           className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
           onClick={() => setMobileNavOpen(true)}
         >
@@ -39,21 +42,24 @@ export function ModernLayout() {
           alt="LeadLab"
           className="h-9 w-auto object-contain dark:brightness-0 dark:invert"
         />
-        <button
-          type="button"
-          aria-label={actualTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          className="ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
-          onClick={toggleTheme}
-        >
-          {actualTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <LanguageSwitcher />
+          <button
+            type="button"
+            aria-label={actualTheme === 'dark' ? t('switchToLight') : t('switchToDark')}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            onClick={toggleTheme}
+          >
+            {actualTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+        </div>
       </header>
 
       {mobileNavOpen && (
         <button
           type="button"
           className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          aria-label="Close menu"
+          aria-label={t('closeMenu')}
           onClick={closeMobile}
         />
       )}
@@ -68,15 +74,16 @@ export function ModernLayout() {
       </div>
 
       <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto pt-14 md:pt-0">
-        <div className="hidden md:flex justify-end px-4 pt-3">
+        <div className="hidden md:flex items-center justify-end gap-2 px-4 pt-3">
+          <LanguageSwitcher />
           <button
             type="button"
-            aria-label={actualTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={actualTheme === 'dark' ? t('switchToLight') : t('switchToDark')}
             className="flex min-h-[44px] items-center gap-2 rounded-lg border border-neutral-200 px-3 text-sm dark:border-neutral-700"
             onClick={toggleTheme}
           >
             {actualTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            {actualTheme === 'dark' ? 'Light' : 'Dark'}
+            {actualTheme === 'dark' ? t('light') : t('dark')}
           </button>
         </div>
         <Outlet />

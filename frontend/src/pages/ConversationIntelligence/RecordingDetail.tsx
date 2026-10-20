@@ -9,8 +9,10 @@ import { PageContainer } from '@/components/ui/PageContainer';
 import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export const RecordingDetail: React.FC = () => {
+  const { t } = useTranslation('messages');
   const { id } = useParams<{ id: string }>();
   const recordingId = Number(id);
   const navigate = useNavigate();
@@ -31,11 +33,11 @@ export const RecordingDetail: React.FC = () => {
     mutationFn: () => conversationsAPI.deleteRecording(recordingId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['call-recordings'] });
-      toast.success('Recording deleted');
+      toast.success(t('conv.deleted'));
       navigate('/conversations');
     },
     onError: () => {
-      toast.error('Could not delete recording');
+      toast.error(t('conv.deleteFailed'));
     },
   });
 
@@ -60,9 +62,9 @@ export const RecordingDetail: React.FC = () => {
         <div className="space-y-4">
           <Button variant="outline" onClick={() => navigate('/conversations')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t('conv.back')}
           </Button>
-          <p className="text-red-600">Recording not found.</p>
+          <p className="text-red-600">{t('conv.notFound')}</p>
         </div>
       </PageContainer>
     );
@@ -71,7 +73,7 @@ export const RecordingDetail: React.FC = () => {
   const lead = (leadsResponse?.data?.results || []).find((item) => item.id === recording.lead_id);
   const leadName =
     recording.lead_name ||
-    (lead ? `${lead.first_name} ${lead.last_name}`.trim() : `Lead #${recording.lead_id}`);
+    (lead ? `${lead.first_name} ${lead.last_name}`.trim() : t('conv.leadN', { id: recording.lead_id }));
 
   return (
     <PageContainer>
@@ -79,36 +81,36 @@ export const RecordingDetail: React.FC = () => {
         <div className="flex items-center justify-between">
           <Button variant="outline" onClick={() => navigate('/conversations')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t('conv.back')}
           </Button>
           <Button
             variant="outline"
             onClick={() => {
-              if (window.confirm('Delete this recording?')) {
+              if (window.confirm(t('conv.confirmDelete'))) {
                 deleteMutation.mutate();
               }
             }}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            {t('conv.delete')}
           </Button>
         </div>
 
         <Card>
           <CardContent className="p-6 space-y-4">
-            <h1 className="text-2xl font-bold">Call Recording #{recording.id}</h1>
-            <p className="text-sm text-gray-600">Lead: {leadName}</p>
-            <p className="text-sm text-gray-600">Call date: {formatDate(recording.call_date)}</p>
-            <p className="text-sm text-gray-600">Duration: {Math.floor(recording.duration_seconds / 60)}m {recording.duration_seconds % 60}s</p>
+            <h1 className="text-2xl font-bold">{t('conv.callRecordingN', { id: recording.id })}</h1>
+            <p className="text-sm text-gray-600">{t('conv.leadLabel', { name: leadName })}</p>
+            <p className="text-sm text-gray-600">{t('conv.callDate', { date: formatDate(recording.call_date) })}</p>
+            <p className="text-sm text-gray-600">{t('conv.duration', { minutes: Math.floor(recording.duration_seconds / 60), seconds: recording.duration_seconds % 60 })}</p>
 
             <audio controls className="w-full">
               <source src={recording.recording_url} />
-              Your browser does not support audio playback.
+              {t('conv.noAudio')}
             </audio>
 
             {recording.transcript && (
               <div className="rounded-lg border p-4 bg-gray-50">
-                <h2 className="font-semibold mb-2">Transcript</h2>
+                <h2 className="font-semibold mb-2">{t('conv.transcript')}</h2>
                 <p className="text-sm whitespace-pre-wrap">{recording.transcript}</p>
               </div>
             )}

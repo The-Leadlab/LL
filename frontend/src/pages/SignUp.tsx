@@ -5,6 +5,7 @@ import { PublicAuthShell, publicAuthCtaClassName } from '../components/layout/Pu
 import api from '../services/axios'
 import { motion } from 'framer-motion'
 import { Mail, User, Briefcase, Lock, Building, Eye, EyeOff } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 const TURNSTILE_SITE_KEY = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) || ''
 
@@ -20,6 +21,7 @@ interface SignUpForm {
 }
 
 export function SignUp() {
+  const { t } = useTranslation('auth')
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -55,18 +57,18 @@ export function SignUp() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (formData.password !== confirmPassword) {
-      toast.error('Passwords do not match')
+      toast.error(t('signUpPage.passwordsMismatch'))
       return
     }
     if (!birthDate) {
-      toast.error('Enter your date of birth. Lead Lab accounts are for people 18 or older.')
+      toast.error(t('signUpPage.dobRequired'))
       return
     }
     const dob = new Date(birthDate)
     const adult = new Date()
     adult.setFullYear(adult.getFullYear() - 18)
     if (Number.isNaN(dob.getTime()) || dob > adult) {
-      toast.error('You need to be 18 or older to create an account.')
+      toast.error(t('signUpPage.mustBeAdult'))
       return
     }
     setIsLoading(true)
@@ -78,10 +80,10 @@ export function SignUp() {
         cf_turnstile_response: turnstileToken || undefined,
       })
       
-      toast.success('Account created. Check your email to verify, then sign in.')
+      toast.success(t('signUpPage.successToast'))
       navigate('/signin')
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to sign up')
+      toast.error(err.response?.data?.detail || t('signUpPage.failed'))
       console.error('Signup error:', err)
     } finally {
       setIsLoading(false)
@@ -111,15 +113,15 @@ export function SignUp() {
                 alt="LeadLab"
                 className="mx-auto mb-4 h-12 w-auto"
               />
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">Create your account</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t('signUpTitle')}</h1>
               <p className="text-gray-600 mt-3">
-                Join LeadLab and start managing your leads effectively
+                {t('signUpPage.subtitle')}
               </p>
             </motion.div>
 
             <form onSubmit={handleSubmit} className="relative space-y-6">
               <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
-                <label htmlFor="website">Website</label>
+                <label htmlFor="website">{t('signUpPage.website')}</label>
                 <input
                   id="website"
                   name="website"
@@ -136,7 +138,7 @@ export function SignUp() {
                     htmlFor="first_name"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    First Name
+                    {t('firstName')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -159,7 +161,7 @@ export function SignUp() {
                     htmlFor="last_name"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Last Name
+                    {t('lastName')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -182,7 +184,7 @@ export function SignUp() {
                     htmlFor="email"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Email Address
+                    {t('signInPage.emailAddress')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -205,7 +207,7 @@ export function SignUp() {
                     htmlFor="company"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Company
+                    {t('common:company')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -217,7 +219,7 @@ export function SignUp() {
                       name="company"
                       value={formData.company}
                       onChange={handleChange}
-                      placeholder="Your Company"
+                      placeholder={t('signUpPage.companyPlaceholder')}
                       className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
@@ -228,7 +230,7 @@ export function SignUp() {
                     htmlFor="job_title"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Job Title
+                    {t('signUpPage.jobTitle')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -240,7 +242,7 @@ export function SignUp() {
                       name="job_title"
                       value={formData.job_title}
                       onChange={handleChange}
-                      placeholder="Marketing Manager"
+                      placeholder={t('signUpPage.jobTitlePlaceholder')}
                       className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
@@ -248,7 +250,7 @@ export function SignUp() {
                 </div>
                 <div>
                   <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700 mb-1">
-                    Date of birth
+                    {t('signUpPage.dateOfBirth')}
                   </label>
                   <input
                     type="date"
@@ -260,7 +262,7 @@ export function SignUp() {
                     required
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    We ask this to confirm you are 18 or older and not a child under 13. We do not store the date.
+                    {t('signUpPage.dobHelp')}
                   </p>
                 </div>
                 <div>
@@ -268,7 +270,7 @@ export function SignUp() {
                     htmlFor="password"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Password
+                    {t('password')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -287,19 +289,20 @@ export function SignUp() {
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? t('signInPage.hidePassword') : t('signInPage.showPassword')}
                       className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 bg-transparent"
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">Password must be at least 8 characters</p>
+                  <p className="mt-1 text-xs text-gray-500">{t('signUpPage.passwordMinLength')}</p>
                 </div>
                 <div>
                   <label
                     htmlFor="confirm_password"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Confirm Password
+                    {t('confirmPassword')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -318,13 +321,14 @@ export function SignUp() {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((v) => !v)}
+                      aria-label={showConfirmPassword ? t('signInPage.hidePassword') : t('signInPage.showPassword')}
                       className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 bg-transparent"
                     >
                       {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
                   {confirmPassword && formData.password !== confirmPassword && (
-                    <p className="mt-1 text-xs text-red-600">Passwords do not match</p>
+                    <p className="mt-1 text-xs text-red-600">{t('signUpPage.passwordsMismatch')}</p>
                   )}
                 </div>
               </div>
@@ -345,10 +349,10 @@ export function SignUp() {
                   {isLoading ? (
                     <div className="flex items-center">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Creating your account...
+                      {t('signUpPage.creating')}
                     </div>
                   ) : (
-                    'Create Account'
+                    t('createAccount')
                   )}
                 </button>
               </div>
@@ -361,7 +365,7 @@ export function SignUp() {
                 </div>
                 <div className="relative flex justify-center text-sm">
                   <span className="px-2 bg-white text-gray-500">
-                    Already have an account?
+                    {t('hasAccount')}
                   </span>
                 </div>
               </div>
@@ -371,19 +375,19 @@ export function SignUp() {
                   to="/signin"
                   className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
                 >
-                  Sign in to your account
+                  {t('signUpPage.signInToAccount')}
                 </Link>
               </div>
             </div>
             
             <div className="mt-6 text-center text-xs text-gray-500">
-              By signing up, you agree to our{' '}
+              {t('legal.bySigningUp')}{' '}
               <Link to="/legal" className="text-blue-600 hover:text-blue-500 transition-colors">
-                Terms of Service
+                {t('legal.terms')}
               </Link>{' '}
-              and{' '}
+              {t('legal.andThe')}{' '}
               <Link to="/legal" className="text-blue-600 hover:text-blue-500 transition-colors">
-                Privacy Policy
+                {t('legal.privacy')}
               </Link>
             </div>
         </motion.div>

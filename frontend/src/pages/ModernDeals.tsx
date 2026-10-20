@@ -5,6 +5,7 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   DndContext,
   DragEndEvent,
@@ -132,6 +133,15 @@ const STATUS_WEIGHT: Record<string, number> = {
   'Closed Lost': 0,
 };
 
+const STATUS_LABEL_KEY: Record<DealStatusStr, string> = {
+  Lead: 'statuses.lead',
+  Qualified: 'statuses.qualified',
+  Proposal: 'statuses.proposal',
+  Negotiation: 'statuses.negotiation',
+  'Closed Won': 'statuses.closedWon',
+  'Closed Lost': 'statuses.closedLost',
+};
+
 function toAmountNumber(amount: string | number): number {
   if (typeof amount === 'number') return amount;
   const n = parseFloat(amount);
@@ -179,6 +189,7 @@ function DraggableDealCard({
   onEdit: (id: number) => void;
   onDelete: (id: number) => void;
 }) {
+  const { t } = useTranslation('deals');
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `deal-${deal.id}`,
     data: { deal },
@@ -234,7 +245,7 @@ function DraggableDealCard({
               }}
             >
               <Pencil className="mr-2 h-4 w-4" />
-              Edit deal
+              {t('editDeal')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -245,7 +256,7 @@ function DraggableDealCard({
               }}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete deal
+              {t('deleteDeal')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -253,13 +264,13 @@ function DraggableDealCard({
 
       <div className="px-4 pb-4 space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-neutral-600 dark:text-neutral-400">Stage weight</span>
+          <span className="text-neutral-600 dark:text-neutral-400">{t('stageWeight')}</span>
           <span className="font-medium text-neutral-900 dark:text-neutral-50">{weight}%</span>
         </div>
         {deal.valid_until && (
           <div className="flex items-center text-xs text-neutral-600 dark:text-neutral-400">
             <Calendar className="w-3 h-3 mr-1 shrink-0" />
-            Close by {new Date(deal.valid_until).toLocaleDateString()}
+            {t('closeBy', { date: new Date(deal.valid_until).toLocaleDateString() })}
           </div>
         )}
       </div>
@@ -268,6 +279,7 @@ function DraggableDealCard({
 }
 
 export function ModernDeals() {
+  const { t } = useTranslation('deals');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -295,15 +307,15 @@ export function ModernDeals() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deals'] });
-      toast({ title: 'Deal deleted' });
+      toast({ title: t('deleted') });
     },
     onError: () => {
-      toast({ title: 'Could not delete deal', variant: 'destructive' });
+      toast({ title: t('deleteFailed'), variant: 'destructive' });
     },
   });
 
   const handleDeleteDeal = (id: number) => {
-    if (window.confirm('Delete this deal? This cannot be undone.')) {
+    if (window.confirm(t('deleteConfirm'))) {
       deleteDeal.mutate(id);
     }
   };
@@ -315,8 +327,8 @@ export function ModernDeals() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deals'] });
       toast({
-        title: 'Stage updated',
-        description: 'Deal moved in your pipeline.',
+        title: t('stageUpdated'),
+        description: t('stageUpdatedDescription'),
       });
     },
     onError: (err: unknown) => {
@@ -333,8 +345,8 @@ export function ModernDeals() {
           ? String((err.response.data as { detail: unknown }).detail)
           : null;
       toast({
-        title: 'Could not move deal',
-        description: msg || 'Try again or refresh the page.',
+        title: t('moveFailed'),
+        description: msg || t('moveFailedDescription'),
         variant: 'destructive',
       });
     },
@@ -397,7 +409,7 @@ export function ModernDeals() {
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
-          <p className="text-neutral-600 dark:text-neutral-400">Loading deals...</p>
+          <p className="text-neutral-600 dark:text-neutral-400">{t('loading')}</p>
         </div>
       </div>
     );
@@ -408,14 +420,13 @@ export function ModernDeals() {
       <div className="mb-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">Deals</h1>
+            <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">{t('title')}</h1>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Manage your sales pipeline • ${formatMoney(totalValue)} total value • {filteredDeals.length}{' '}
-              shown
-              {searchQuery.trim() ? ` (${rawDeals.length} total)` : ''}
+              {t('pipelineSummary', { value: formatMoney(totalValue), shown: filteredDeals.length })}
+              {searchQuery.trim() ? ` ${t('totalSuffix', { total: rawDeals.length })}` : ''}
             </p>
             <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-500">
-              Drag from anywhere on a card to move it to another column. Columns highlight when you drag over them.
+              {t('dragHint')}
             </p>
           </div>
           <button
@@ -424,7 +435,7 @@ export function ModernDeals() {
             className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
           >
             <Plus className="w-5 h-5" />
-            <span>New Deal</span>
+            <span>{t('newDeal')}</span>
           </button>
         </div>
 
@@ -433,7 +444,7 @@ export function ModernDeals() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
             <input
               type="text"
-              placeholder="Search deals..."
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -445,7 +456,7 @@ export function ModernDeals() {
             className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
           >
             <Filter className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-            <span className="text-neutral-700 dark:text-neutral-300">Filters</span>
+            <span className="text-neutral-700 dark:text-neutral-300">{t('filters')}</span>
           </button>
         </div>
       </div>
@@ -464,7 +475,7 @@ export function ModernDeals() {
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${stage.dotClass}`} />
                     <h3 className="font-semibold text-neutral-900 dark:text-neutral-50 text-sm">
-                      {stage.name}
+                      {t(`stages.${stage.id}`)}
                     </h3>
                   </div>
                   <span className="text-xs text-neutral-500 dark:text-neutral-400">{stage.deals.length}</span>
@@ -487,7 +498,7 @@ export function ModernDeals() {
                 ))}
                 {stage.deals.length === 0 && (
                   <div className="text-center py-8 text-neutral-500 dark:text-neutral-400 text-sm">
-                    Drop deals here
+                    {t('dropHere')}
                   </div>
                 )}
               </DroppableStageBody>
@@ -499,7 +510,7 @@ export function ModernDeals() {
             <div className="pointer-events-none w-[280px] rounded-lg border border-primary-300 bg-white p-3 shadow-xl dark:border-primary-700 dark:bg-neutral-800">
               <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">{activeDeal.name}</p>
               <p className="text-xs text-neutral-500">
-                ${formatMoney(toAmountNumber(activeDeal.amount))} · {activeDeal.status}
+                ${formatMoney(toAmountNumber(activeDeal.amount))} · {t(STATUS_LABEL_KEY[activeDeal.status] ?? 'statuses.lead')}
               </p>
             </div>
           ) : null}
@@ -509,9 +520,9 @@ export function ModernDeals() {
       <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Filter deals</DialogTitle>
+            <DialogTitle>{t('filterTitle')}</DialogTitle>
             <DialogDescription>
-              Narrow the board by backend deal status. Leave all unchecked to show every status.
+              {t('filterDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -531,17 +542,17 @@ export function ModernDeals() {
                       });
                     }}
                   />
-                  {s}
+                  {t(STATUS_LABEL_KEY[s])}
                 </label>
               )
             )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => setStatusFilter(new Set())}>
-              Clear
+              {t('common:clear')}
             </Button>
             <Button type="button" onClick={() => setFiltersOpen(false)}>
-              Done
+              {t('done')}
             </Button>
           </DialogFooter>
         </DialogContent>

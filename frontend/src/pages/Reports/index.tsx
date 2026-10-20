@@ -51,6 +51,7 @@ import {
   ActivityReport
 } from '../../api/advancedReports';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/axios';
 
 type TimeRange = 'today' | 'week' | 'month' | 'quarter' | 'year' | 'custom';
@@ -61,6 +62,7 @@ const KPICard: React.FC<{
   icon: React.ReactNode;
   color: string;
 }> = ({ metric, icon, color }) => {
+  const { t } = useTranslation('modules');
   const getTrendIcon = () => {
     if (metric.trend === 'up') return <ArrowUpRight className="h-4 w-4 text-green-500" />;
     if (metric.trend === 'down') return <ArrowDownRight className="h-4 w-4 text-red-500" />;
@@ -102,7 +104,7 @@ const KPICard: React.FC<{
           </span>
         </div>
         <p className="text-xs text-gray-500 mt-1">
-          Previous: {metric.unit === 'USD' 
+          {t('reports.previous')} {metric.unit === 'USD' 
             ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(metric.previous_value)
             : new Intl.NumberFormat('en-US').format(metric.previous_value)
           }
@@ -114,6 +116,7 @@ const KPICard: React.FC<{
 
 // Funnel Stage Component
 const FunnelStageCard: React.FC<{ stage: ConversionFunnelStage; isLast: boolean }> = ({ stage, isLast }) => {
+  const { t } = useTranslation('modules');
   return (
     <div className="relative">
       <Card className="p-6 hover:shadow-md transition-shadow">
@@ -125,16 +128,16 @@ const FunnelStageCard: React.FC<{ stage: ConversionFunnelStage; isLast: boolean 
         </div>
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Leads</span>
+            <span className="text-sm text-gray-600">{t('reports.labels.leads')}</span>
             <span className="font-medium">{new Intl.NumberFormat('tr-TR').format(stage.lead_count)}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Drop-off</span>
+            <span className="text-sm text-gray-600">{t('reports.labels.dropOff')}</span>
             <span className="font-medium text-red-600">{stage.drop_off_count}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Avg. Time</span>
-            <span className="font-medium">{stage.average_time_days.toFixed(1)} days</span>
+            <span className="text-sm text-gray-600">{t('reports.labels.avgTime')}</span>
+            <span className="font-medium">{stage.average_time_days.toFixed(1)} {t('reports.labels.days')}</span>
           </div>
         </div>
         <Progress 
@@ -443,6 +446,7 @@ const mockActivityReports: ActivityReport[] = [
 ];
 
 export function ReportsPage() {
+  const { t } = useTranslation('modules');
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
   const [loading, setLoading] = useState(true);
@@ -640,7 +644,7 @@ export function ReportsPage() {
     } catch (error) {
       console.error('Error fetching reports data:', error);
       setUsesFallbackData(false);
-      toast.error('Failed to load reports data. Please check your connection.');
+      toast.error(t('reports.toast.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -661,9 +665,9 @@ export function ReportsPage() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      toast.success('Report exported successfully');
+      toast.success(t('reports.toast.exported'));
     } catch (error) {
-      toast.error('Failed to export report');
+      toast.error(t('reports.toast.exportFailed'));
     }
   };
 
@@ -672,8 +676,8 @@ export function ReportsPage() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
-            <p className="text-gray-600">Comprehensive business intelligence dashboard</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('reports.title')}</h1>
+            <p className="text-gray-600">{t('reports.subtitleShort')}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -698,24 +702,24 @@ export function ReportsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
             <BarChart3 className="h-8 w-8 mr-3 text-indigo-600" />
-            Reports & Analytics
+            {t('reports.title')}
           </h1>
           <p className="text-gray-600 mt-1">
-            Comprehensive business intelligence dashboard with real-time insights
+            {t('reports.subtitle')}
           </p>
           <div className="flex items-center mt-2 space-x-4 text-sm text-gray-500">
             <span className="flex items-center">
               <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
-              {usesFallbackData ? 'Sample data (API unavailable)' : 'Live Data Connected'}
+              {usesFallbackData ? t('reports.sampleData') : t('reports.liveData')}
             </span>
             <span className="flex items-center">
               <Clock className="h-4 w-4 mr-1 text-blue-500" />
-              Last Updated: {format(new Date(), 'HH:mm')}
+              {t('reports.lastUpdated', { time: format(new Date(), 'HH:mm') })}
             </span>
             {usesFallbackData && (
               <span className="flex items-center">
                 <AlertTriangle className="h-4 w-4 mr-1 text-yellow-500" />
-                Demo Mode Active
+                {t('reports.demoActive')}
               </span>
             )}
           </div>
@@ -723,15 +727,15 @@ export function ReportsPage() {
         <div className="flex items-center space-x-3">
           <Button variant="outline" size="sm" onClick={fetchAllData} className="hover:bg-blue-50 hover:border-blue-300">
             <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh Data
+            {t('reports.refresh')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => handleExport('leads')} className="hover:bg-green-50 hover:border-green-300">
             <Download className="h-4 w-4 mr-2" />
-            Export CSV
+            {t('reports.exportCsv')}
           </Button>
           <Button variant="outline" size="sm" className="hover:bg-purple-50 hover:border-purple-300">
             <Share2 className="h-4 w-4 mr-2" />
-            Share Report
+            {t('reports.share')}
           </Button>
         </div>
       </div>
@@ -741,18 +745,18 @@ export function ReportsPage() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center space-x-4">
             <Calendar className="h-5 w-5 text-gray-500" />
-            <span className="font-medium text-gray-900">Time Period:</span>
+            <span className="font-medium text-gray-900">{t('reports.timePeriod')}</span>
             <Select value={timeRange} onValueChange={(value: string) => setTimeRange(value as TimeRange)}>
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">Last 7 Days</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="quarter">This Quarter</SelectItem>
-                <SelectItem value="year">This Year</SelectItem>
-                <SelectItem value="custom">Custom Range</SelectItem>
+                <SelectItem value="today">{t('reports.range.today')}</SelectItem>
+                <SelectItem value="week">{t('reports.range.week')}</SelectItem>
+                <SelectItem value="month">{t('reports.range.month')}</SelectItem>
+                <SelectItem value="quarter">{t('reports.range.quarter')}</SelectItem>
+                <SelectItem value="year">{t('reports.range.year')}</SelectItem>
+                <SelectItem value="custom">{t('reports.range.custom')}</SelectItem>
               </SelectContent>
             </Select>
             
@@ -764,7 +768,7 @@ export function ReportsPage() {
                   onChange={(e) => setCustomStartDate(e.target.value)}
                   className="px-3 py-2 border rounded-md text-sm"
                 />
-                <span className="text-gray-500">to</span>
+                <span className="text-gray-500">{t('reports.to')}</span>
                 <input
                   type="date"
                   value={customEndDate}
@@ -783,7 +787,7 @@ export function ReportsPage() {
                 onChange={(e) => setIncludeTeam(e.target.checked)}
                 className="rounded border-gray-300"
               />
-              <span className="text-sm text-gray-700">Include Team Data</span>
+              <span className="text-sm text-gray-700">{t('reports.includeTeam')}</span>
             </label>
           </div>
         </div>
@@ -797,42 +801,42 @@ export function ReportsPage() {
             className="flex items-center space-x-2 text-gray-700 font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-gray-50 transition-all duration-200 rounded-md"
           >
             <BarChart3 className="h-4 w-4" />
-            <span>Overview</span>
+            <span>{t('reports.tabs.overview')}</span>
           </TabsTrigger>
           <TabsTrigger 
             value="performance"
             className="flex items-center space-x-2 text-gray-700 font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-gray-50 transition-all duration-200 rounded-md"
           >
             <Award className="h-4 w-4" />
-            <span>Performance</span>
+            <span>{t('reports.tabs.performance')}</span>
           </TabsTrigger>
           <TabsTrigger 
             value="pipeline"
             className="flex items-center space-x-2 text-gray-700 font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-gray-50 transition-all duration-200 rounded-md"
           >
             <TrendingUp className="h-4 w-4" />
-            <span>Pipeline</span>
+            <span>{t('reports.tabs.pipeline')}</span>
           </TabsTrigger>
           <TabsTrigger 
             value="sources"
             className="flex items-center space-x-2 text-gray-700 font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-gray-50 transition-all duration-200 rounded-md"
           >
             <Zap className="h-4 w-4" />
-            <span>Sources</span>
+            <span>{t('reports.tabs.sources')}</span>
           </TabsTrigger>
           <TabsTrigger 
             value="geographic"
             className="flex items-center space-x-2 text-gray-700 font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-gray-50 transition-all duration-200 rounded-md"
           >
             <Globe className="h-4 w-4" />
-            <span>Geographic</span>
+            <span>{t('reports.tabs.geographic')}</span>
           </TabsTrigger>
           <TabsTrigger 
             value="activity"
             className="flex items-center space-x-2 text-gray-700 font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-gray-50 transition-all duration-200 rounded-md"
           >
             <Activity className="h-4 w-4" />
-            <span>Activity</span>
+            <span>{t('reports.tabs.activity')}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -847,8 +851,7 @@ export function ReportsPage() {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-yellow-700">
-                    <strong>Demo Mode:</strong> Some or all data shown is sample data due to API connectivity issues. 
-                    The reports system is functional but showing representative data.
+                    <strong>{t('reports.demoMode')}</strong> {t('reports.demoModeBody')}
                   </p>
                 </div>
               </div>
@@ -861,7 +864,7 @@ export function ReportsPage() {
               <div className="mb-4">
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center">
                   <BarChart3 className="h-5 w-5 mr-2 text-indigo-500" />
-                  Key Performance Indicators
+                  {t('reports.kpi')}
                   <span className="ml-2 text-sm text-gray-500">
                     ({format(new Date(kpiData.period.start_date), 'MMM dd')} - {format(new Date(kpiData.period.end_date), 'MMM dd, yyyy')})
                   </span>
@@ -894,7 +897,7 @@ export function ReportsPage() {
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
               <TrendingUp className="h-5 w-5 mr-2 text-indigo-500" />
-              Sales Conversion Funnel
+              {t('reports.funnel')}
             </h2>
             {funnelData.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -909,9 +912,9 @@ export function ReportsPage() {
             ) : (
               <Card className="p-8 text-center">
                 <PieChart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Funnel Data</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noFunnel')}</h3>
                 <p className="text-gray-600">
-                  Conversion funnel data will appear here once your lead stages are configured and you have lead activity.
+                  {t('reports.noFunnelBody')}
                 </p>
               </Card>
             )}
@@ -921,7 +924,7 @@ export function ReportsPage() {
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
               <Activity className="h-5 w-5 mr-2 text-green-500" />
-              Pipeline Health Overview
+              {t('reports.pipelineHealth')}
             </h2>
             {pipelineHealth.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -939,28 +942,28 @@ export function ReportsPage() {
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Leads</span>
+                        <span className="text-sm text-gray-600">{t('reports.labels.leads')}</span>
                         <span className="font-medium">{new Intl.NumberFormat('tr-TR').format(stage.lead_count)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Total Value</span>
+                        <span className="text-sm text-gray-600">{t('reports.labels.totalValue')}</span>
                         <span className="font-medium">
                           {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'USD' }).format(stage.total_value)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Avg. Deal Size</span>
+                        <span className="text-sm text-gray-600">{t('reports.labels.avgDealSize')}</span>
                         <span className="font-medium">
                           {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'USD' }).format(stage.average_deal_size)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Stage Velocity</span>
-                        <span className="font-medium text-blue-600">{stage.stage_velocity_days.toFixed(1)} days</span>
+                        <span className="text-sm text-gray-600">{t('reports.labels.stageVelocity')}</span>
+                        <span className="font-medium text-blue-600">{stage.stage_velocity_days.toFixed(1)} {t('reports.labels.days')}</span>
                       </div>
                       <div className="mt-4">
                         <div className="flex justify-between text-xs text-gray-500 mb-1">
-                          <span>Forecast Close Rate</span>
+                          <span>{t('reports.labels.forecastCloseRate')}</span>
                           <span>{stage.forecasted_close_rate.toFixed(1)}%</span>
                         </div>
                         <Progress value={stage.forecasted_close_rate} className="h-2" />
@@ -972,9 +975,9 @@ export function ReportsPage() {
             ) : (
               <Card className="p-8 text-center">
                 <LineChart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Pipeline Data</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noPipeline')}</h3>
                 <p className="text-gray-600">
-                  Pipeline health metrics will appear here once you have active deals in your sales pipeline.
+                  {t('reports.noPipelineBody')}
                 </p>
               </Card>
             )}
@@ -986,7 +989,7 @@ export function ReportsPage() {
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
               <Award className="h-5 w-5 mr-2 text-yellow-500" />
-              User Performance Metrics
+              {t('reports.userPerformance')}
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {userPerformance.map((user) => (
@@ -997,28 +1000,28 @@ export function ReportsPage() {
                       <p className="text-sm text-gray-600">{user.user_email}</p>
                     </div>
                     <Badge variant={user.conversion_rate >= 20 ? 'default' : user.conversion_rate >= 10 ? 'outline' : 'destructive'}>
-                      {user.conversion_rate.toFixed(1)}% CR
+                      {user.conversion_rate.toFixed(1)}% {t('reports.labels.cr')}
                     </Badge>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Total Leads</span>
+                        <span className="text-sm text-gray-600">{t('reports.labels.totalLeads')}</span>
                         <span className="font-medium">{user.total_leads}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Qualified</span>
+                        <span className="text-sm text-gray-600">{t('reports.labels.qualified')}</span>
                         <span className="font-medium text-green-600">{user.qualified_leads}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Deals Won</span>
+                        <span className="text-sm text-gray-600">{t('reports.labels.dealsWon')}</span>
                         <span className="font-medium text-blue-600">{user.deals_won}</span>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Revenue</span>
+                        <span className="text-sm text-gray-600">{t('reports.labels.revenue')}</span>
                         <span className="font-medium">
                           {new Intl.NumberFormat('tr-TR', { 
                             style: 'currency', 
@@ -1028,7 +1031,7 @@ export function ReportsPage() {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Avg Deal</span>
+                        <span className="text-sm text-gray-600">{t('reports.labels.avgDeal')}</span>
                         <span className="font-medium">
                           {new Intl.NumberFormat('tr-TR', { 
                             style: 'currency', 
@@ -1038,7 +1041,7 @@ export function ReportsPage() {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Activities</span>
+                        <span className="text-sm text-gray-600">{t('reports.labels.activities')}</span>
                         <span className="font-medium">{user.activities_count}</span>
                       </div>
                     </div>
@@ -1054,7 +1057,7 @@ export function ReportsPage() {
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
               <BarChart3 className="h-5 w-5 mr-2 text-indigo-500" />
-              Detailed Pipeline Analysis
+              {t('reports.detailedPipeline')}
             </h2>
             <div className="space-y-6">
               {pipelineHealth.map((stage) => (
@@ -1072,10 +1075,10 @@ export function ReportsPage() {
                         stage.bottleneck_risk === 'low' ? 'default' :
                         stage.bottleneck_risk === 'medium' ? 'outline' : 'destructive'
                       }>
-                        {stage.bottleneck_risk.toUpperCase()} RISK
+                        {t('reports.risk', { level: stage.bottleneck_risk.toUpperCase() })}
                       </Badge>
                       <span className="text-sm text-gray-500">
-                        {stage.forecasted_close_rate.toFixed(1)}% forecast
+                        {t('reports.forecastPct', { value: stage.forecasted_close_rate.toFixed(1) })}
                       </span>
                     </div>
                   </div>
@@ -1083,7 +1086,7 @@ export function ReportsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{stage.lead_count}</div>
-                      <div className="text-sm text-gray-600">Active Leads</div>
+                      <div className="text-sm text-gray-600">{t('reports.labels.activeLeads')}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">
@@ -1093,7 +1096,7 @@ export function ReportsPage() {
                           maximumFractionDigits: 0
                         }).format(stage.total_value)}
                       </div>
-                      <div className="text-sm text-gray-600">Total Value</div>
+                      <div className="text-sm text-gray-600">{t('reports.labels.totalValue')}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">
@@ -1103,13 +1106,13 @@ export function ReportsPage() {
                           maximumFractionDigits: 0
                         }).format(stage.average_deal_size)}
                       </div>
-                      <div className="text-sm text-gray-600">Avg Deal Size</div>
+                      <div className="text-sm text-gray-600">{t('reports.labels.avgDealSize')}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">
                         {stage.stage_velocity_days.toFixed(1)}
                       </div>
-                      <div className="text-sm text-gray-600">Days in Stage</div>
+                      <div className="text-sm text-gray-600">{t('reports.labels.daysInStage')}</div>
                     </div>
                   </div>
                 </Card>
@@ -1123,7 +1126,7 @@ export function ReportsPage() {
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
               <Zap className="h-5 w-5 mr-2 text-yellow-500" />
-              Lead Source Performance
+              {t('reports.leadSources')}
             </h2>
             {leadSources.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1136,7 +1139,7 @@ export function ReportsPage() {
                       </h3>
                       <div className="flex items-center space-x-2">
                         <Badge variant={source.quality_score >= 70 ? 'default' : source.quality_score >= 40 ? 'outline' : 'destructive'}>
-                          {source.quality_score.toFixed(1)}% Quality
+                          {source.quality_score.toFixed(1)}% {t('reports.labels.quality')}
                         </Badge>
                       </div>
                     </div>
@@ -1145,27 +1148,27 @@ export function ReportsPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <div className="text-lg font-bold text-gray-900">{new Intl.NumberFormat('tr-TR').format(source.total_leads)}</div>
-                          <div className="text-sm text-gray-600">Total Leads</div>
+                          <div className="text-sm text-gray-600">{t('reports.labels.totalLeads')}</div>
                         </div>
                         <div>
                           <div className="text-lg font-bold text-green-600">{new Intl.NumberFormat('tr-TR').format(source.qualified_leads)}</div>
-                          <div className="text-sm text-gray-600">Qualified</div>
+                          <div className="text-sm text-gray-600">{t('reports.labels.qualified')}</div>
                         </div>
                         <div>
                           <div className="text-lg font-bold text-blue-600">{source.deals_won}</div>
-                          <div className="text-sm text-gray-600">Won Deals</div>
+                          <div className="text-sm text-gray-600">{t('reports.labels.wonDeals')}</div>
                         </div>
                         <div>
                           <div className="text-lg font-bold text-purple-600">
                             {source.conversion_rate.toFixed(1)}%
                           </div>
-                          <div className="text-sm text-gray-600">Conversion</div>
+                          <div className="text-sm text-gray-600">{t('reports.labels.conversion')}</div>
                         </div>
                       </div>
                       
                       <div className="pt-4 border-t">
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-600">Total Revenue</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.totalRevenue')}</span>
                           <span className="font-semibold text-green-600">
                             {new Intl.NumberFormat('tr-TR', { 
                               style: 'currency', 
@@ -1175,7 +1178,7 @@ export function ReportsPage() {
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">ROI</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.roi')}</span>
                           <span className={`font-semibold ${source.roi_percentage > 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {source.roi_percentage > 0 ? '+' : ''}{source.roi_percentage.toFixed(1)}%
                           </span>
@@ -1188,9 +1191,9 @@ export function ReportsPage() {
             ) : (
               <Card className="p-8 text-center">
                 <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Lead Source Data</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noSources')}</h3>
                 <p className="text-gray-600">
-                  Lead source performance metrics will appear here once you have leads from different sources.
+                  {t('reports.noSourcesBody')}
                 </p>
               </Card>
             )}
@@ -1202,7 +1205,7 @@ export function ReportsPage() {
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
               <Globe className="h-5 w-5 mr-2 text-blue-500" />
-              Geographic Insights
+              {t('reports.geographic')}
             </h2>
             {geoInsights.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1217,24 +1220,24 @@ export function ReportsPage() {
                         {geo.city && <p className="text-sm text-gray-600 ml-6">{geo.city}</p>}
                       </div>
                       <Badge variant={geo.conversion_rate >= 15 ? 'default' : geo.conversion_rate >= 8 ? 'outline' : 'destructive'}>
-                        {geo.conversion_rate.toFixed(1)}% CR
+                        {geo.conversion_rate.toFixed(1)}% {t('reports.labels.cr')}
                       </Badge>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Leads</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.leads')}</span>
                           <span className="font-medium">{new Intl.NumberFormat('tr-TR').format(geo.lead_count)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Deals</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.deals')}</span>
                           <span className="font-medium text-blue-600">{geo.deal_count}</span>
                         </div>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Revenue</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.revenue')}</span>
                           <span className="font-medium text-green-600">
                             {new Intl.NumberFormat('tr-TR', { 
                               style: 'currency', 
@@ -1245,7 +1248,7 @@ export function ReportsPage() {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Avg Deal</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.avgDeal')}</span>
                           <span className="font-medium">
                             {new Intl.NumberFormat('tr-TR', { 
                               style: 'currency', 
@@ -1263,9 +1266,9 @@ export function ReportsPage() {
             ) : (
               <Card className="p-8 text-center">
                 <Globe className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Geographic Data</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noGeo')}</h3>
                 <p className="text-gray-600">
-                  Geographic insights will appear here once your leads include location information.
+                  {t('reports.noGeoBody')}
                 </p>
               </Card>
             )}
@@ -1275,7 +1278,7 @@ export function ReportsPage() {
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
               <Briefcase className="h-5 w-5 mr-2 text-indigo-500" />
-              Sector Analysis
+              {t('reports.sectorAnalysis')}
             </h2>
             {sectorAnalysis.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1287,24 +1290,24 @@ export function ReportsPage() {
                         {sector.sector}
                       </h3>
                       <Badge variant={sector.conversion_rate >= 15 ? 'default' : sector.conversion_rate >= 8 ? 'outline' : 'destructive'}>
-                        {sector.conversion_rate.toFixed(1)}% CR
+                        {sector.conversion_rate.toFixed(1)}% {t('reports.labels.cr')}
                       </Badge>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Leads</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.leads')}</span>
                           <span className="font-medium">{new Intl.NumberFormat('tr-TR').format(sector.lead_count)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Deals</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.deals')}</span>
                           <span className="font-medium text-blue-600">{sector.deal_count}</span>
                         </div>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Revenue</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.revenue')}</span>
                           <span className="font-medium text-green-600">
                             {new Intl.NumberFormat('tr-TR', { 
                               style: 'currency', 
@@ -1315,7 +1318,7 @@ export function ReportsPage() {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Avg Deal</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.avgDeal')}</span>
                           <span className="font-medium">
                             {new Intl.NumberFormat('tr-TR', { 
                               style: 'currency', 
@@ -1333,9 +1336,9 @@ export function ReportsPage() {
             ) : (
               <Card className="p-8 text-center">
                 <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Sector Data</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noSector')}</h3>
                 <p className="text-gray-600">
-                  Sector analysis will appear here once your leads include industry/sector information.
+                  {t('reports.noSectorBody')}
                 </p>
               </Card>
             )}
@@ -1347,7 +1350,7 @@ export function ReportsPage() {
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
               <Activity className="h-5 w-5 mr-2 text-green-500" />
-              Team Activity Performance
+              {t('reports.teamActivity')}
             </h2>
             {activityReports.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1362,7 +1365,7 @@ export function ReportsPage() {
                         <p className="text-sm text-gray-600 ml-6">{report.user_email}</p>
                       </div>
                       <Badge variant={report.activity_success_rate >= 80 ? 'default' : report.activity_success_rate >= 60 ? 'outline' : 'destructive'}>
-                        {report.activity_success_rate.toFixed(1)}% Success
+                        {report.activity_success_rate.toFixed(1)}% {t('reports.labels.success')}
                       </Badge>
                     </div>
                     
@@ -1373,35 +1376,35 @@ export function ReportsPage() {
                             <Phone className="h-4 w-4 text-blue-500 mr-1" />
                             <span className="text-lg font-bold text-gray-900">{report.calls_made}</span>
                           </div>
-                          <div className="text-xs text-gray-600">Calls</div>
+                          <div className="text-xs text-gray-600">{t('reports.labels.calls')}</div>
                         </div>
                         <div>
                           <div className="flex items-center justify-center mb-2">
                             <Mail className="h-4 w-4 text-green-500 mr-1" />
                             <span className="text-lg font-bold text-gray-900">{report.emails_sent}</span>
                           </div>
-                          <div className="text-xs text-gray-600">Emails</div>
+                          <div className="text-xs text-gray-600">{t('reports.labels.emails')}</div>
                         </div>
                         <div>
                           <div className="flex items-center justify-center mb-2">
                             <MessageSquare className="h-4 w-4 text-purple-500 mr-1" />
                             <span className="text-lg font-bold text-gray-900">{report.meetings_held}</span>
                           </div>
-                          <div className="text-xs text-gray-600">Meetings</div>
+                          <div className="text-xs text-gray-600">{t('reports.labels.meetings')}</div>
                         </div>
                       </div>
                       
                       <div className="pt-4 border-t">
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-600">Total Activities</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.totalActivities')}</span>
                           <span className="font-semibold">{new Intl.NumberFormat('tr-TR').format(report.total_activities)}</span>
                         </div>
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-600">Tasks Completed</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.tasksCompleted')}</span>
                           <span className="font-semibold text-green-600">{report.tasks_completed}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Avg Response Time</span>
+                          <span className="text-sm text-gray-600">{t('reports.labels.avgResponse')}</span>
                           <span className="font-semibold text-blue-600">{report.average_response_time.toFixed(1)}h</span>
                         </div>
                       </div>
@@ -1412,9 +1415,9 @@ export function ReportsPage() {
             ) : (
               <Card className="p-8 text-center">
                 <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Activity Data</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noActivity')}</h3>
                 <p className="text-gray-600">
-                  Team activity performance metrics will appear here once your team starts logging activities.
+                  {t('reports.noActivityBody')}
                 </p>
               </Card>
             )}

@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 interface EmailMessage {
   id: number;
@@ -44,6 +45,7 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
   onMarkUnread,
   onReply
 }) => {
+  const { t } = useTranslation('emails');
   const formatEmailDate = (dateString: string) => {
     const date = new Date(dateString);
     return format(date, 'EEEE, dd MMMM yyyy HH:mm');
@@ -86,7 +88,7 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Email Details</DialogTitle>
+            <DialogTitle>{t('detail.title')}</DialogTitle>
             <Button
               variant="ghost"
               size="sm"
@@ -102,15 +104,15 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
             <div className="border-b pb-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold mb-2">{email.subject || '(No Subject)'}</h2>
+                  <h2 className="text-xl font-semibold mb-2">{email.subject || t('inboxPage.noSubject')}</h2>
                   <div className="flex items-center space-x-2">
                     <Badge variant={email.is_important ? "destructive" : "outline"}>
-                      {email.is_important ? 'Important' : 'Standard'}
+                      {email.is_important ? t('detail.important') : t('detail.standard')}
                     </Badge>
                     {email.is_starred && (
                       <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
                         <Star className="h-3 w-3 mr-1 fill-current" />
-                        Starred
+                        {t('detail.starred')}
                       </Badge>
                     )}
                   </div>
@@ -122,25 +124,25 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
             <div className="border-b pb-4 flex flex-wrap items-center gap-2">
               <Button onClick={handleReply} size="sm">
                 <Reply className="h-4 w-4 mr-2" />
-                Reply
+                {t('reply')}
               </Button>
               <Button onClick={handleReplyAll} size="sm" variant="outline">
                 <ReplyAll className="h-4 w-4 mr-2" />
-                Reply All
+                {t('detail.replyAll')}
               </Button>
               <Button onClick={handleForward} size="sm" variant="outline">
                 <Forward className="h-4 w-4 mr-2" />
-                Forward
+                {t('forward')}
               </Button>
               {onMarkUnread && (
                 <Button onClick={handleMarkUnread} size="sm" variant="outline">
-                  Mark unread
+                  {t('inboxPage.markUnread')}
                 </Button>
               )}
               {onArchive && (
                 <Button onClick={handleArchive} size="sm" variant="outline">
                   <Archive className="h-4 w-4 mr-2" />
-                  Archive
+                  {t('inboxPage.archive')}
                 </Button>
               )}
               <Button
@@ -150,7 +152,7 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
                 className="ml-auto"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                {t('detail.delete')}
               </Button>
             </div>
 
@@ -176,7 +178,7 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
             {/* Recipient Info */}
             <div className="bg-gray-50 p-3 rounded-lg">
               <div className="text-sm space-y-1">
-                <div><strong>To:</strong> {email.to_address}</div>
+                <div><strong>{t('detail.toLabel')}</strong> {email.to_address}</div>
               </div>
             </div>
 
@@ -197,12 +199,12 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
               <div className="border-t pt-4">
                 <h4 className="font-semibold mb-2 flex items-center">
                   <Paperclip className="h-4 w-4 mr-2" />
-                  Attachments
+                  {t('composePage.attachments')}
                 </h4>
                 <div className="space-y-2">
                   {/* This would show actual attachments if we had the data */}
                   <div className="p-3 bg-gray-50 rounded text-sm text-gray-600">
-                    Attachments would be displayed here
+                    {t('detail.attachmentsPlaceholder')}
                   </div>
                 </div>
               </div>

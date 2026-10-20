@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileText, Loader2, Plus, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -19,6 +20,7 @@ const emptyForm = () => ({
 });
 
 export function OutreachTemplatesPage() {
+  const { t } = useTranslation('emails');
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -67,11 +69,11 @@ export function OutreachTemplatesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['outreach-templates'] });
-      toast({ title: editingId ? 'Template updated' : 'Template created' });
+      toast({ title: editingId ? t('templatesPage.updated') : t('templatesPage.created') });
       resetForm();
     },
     onError: (error: Error) => {
-      toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
+      toast({ title: t('templatesPage.saveFailed'), description: error.message, variant: 'destructive' });
     },
   });
 
@@ -79,7 +81,7 @@ export function OutreachTemplatesPage() {
     mutationFn: (id: number) => outreachAPI.deleteTemplate(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['outreach-templates'] });
-      toast({ title: 'Template deleted' });
+      toast({ title: t('templatesPage.deleted') });
     },
   });
 
@@ -95,8 +97,8 @@ export function OutreachTemplatesPage() {
     <div className="container mx-auto space-y-6 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Outreach Templates</h1>
-          <p className="mt-1 text-sm text-gray-600">Reusable subject/body snippets with optional A/B subjects.</p>
+          <h1 className="text-2xl font-semibold">{t('templatesPage.title')}</h1>
+          <p className="mt-1 text-sm text-gray-600">{t('templatesPage.subtitle')}</p>
         </div>
         <Button
           type="button"
@@ -106,32 +108,32 @@ export function OutreachTemplatesPage() {
           }}
         >
           <Plus className="mr-2 h-4 w-4" />
-          New template
+          {t('newTemplate')}
         </Button>
       </div>
 
       {showForm && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">{editingId ? 'Edit template' : 'New template'}</CardTitle>
+            <CardTitle className="text-lg">{editingId ? t('templatesPage.editTemplate') : t('newTemplate')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label>Name</Label>
+              <Label>{t('templatesPage.name')}</Label>
               <Input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
             </div>
             <div>
-              <Label>Subject</Label>
+              <Label>{t('subject')}</Label>
               <Input
                 value={form.subject}
                 onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
               />
             </div>
             <div>
-              <Label>Format</Label>
+              <Label>{t('templatesPage.format')}</Label>
               <Select
                 value={form.format}
                 onValueChange={(v) => setForm((f) => ({ ...f, format: v as 'text' | 'html' }))}
@@ -140,13 +142,13 @@ export function OutreachTemplatesPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="text">Text</SelectItem>
+                  <SelectItem value="text">{t('templatesPage.formatText')}</SelectItem>
                   <SelectItem value="html">HTML</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Body</Label>
+              <Label>{t('templatesPage.body')}</Label>
               <Textarea
                 className="min-h-[160px] font-mono text-sm"
                 value={form.body}
@@ -154,11 +156,11 @@ export function OutreachTemplatesPage() {
               />
             </div>
             <div>
-              <Label>A/B subjects (comma-separated)</Label>
+              <Label>{t('templatesPage.abSubjects')}</Label>
               <Input
                 value={form.ab_subjects}
                 onChange={(e) => setForm((f) => ({ ...f, ab_subjects: e.target.value }))}
-                placeholder="Variant A, Variant B"
+                placeholder={t('templatesPage.abPlaceholder')}
               />
             </div>
             <div className="flex gap-2">
@@ -168,10 +170,10 @@ export function OutreachTemplatesPage() {
                 onClick={() => saveMutation.mutate()}
               >
                 {saveMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Save
+                {t('templatesPage.save')}
               </Button>
               <Button type="button" variant="outline" onClick={resetForm}>
-                Cancel
+                {t('templatesPage.cancel')}
               </Button>
             </div>
           </CardContent>
@@ -182,7 +184,7 @@ export function OutreachTemplatesPage() {
         {templates.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-sm text-gray-500">
-              No templates yet.
+              {t('templatesPage.empty')}
             </CardContent>
           </Card>
         ) : (
@@ -198,20 +200,20 @@ export function OutreachTemplatesPage() {
                   <p className="mt-1 truncate text-sm text-gray-600">{tpl.subject}</p>
                   {tpl.ab_subjects && tpl.ab_subjects.length > 0 && (
                     <p className="mt-1 text-xs text-gray-500">
-                      A/B: {tpl.ab_subjects.join(' · ')}
+                      {t('templatesPage.abLabel', { subjects: tpl.ab_subjects.join(' · ') })}
                     </p>
                   )}
                 </div>
                 <div className="flex gap-2">
                   <Button type="button" variant="outline" size="sm" onClick={() => startEdit(tpl)}>
-                    Edit
+                    {t('templatesPage.edit')}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      if (window.confirm('Delete this template?')) deleteMutation.mutate(tpl.id);
+                      if (window.confirm(t('templatesPage.confirmDelete'))) deleteMutation.mutate(tpl.id);
                     }}
                   >
                     <Trash2 className="h-3 w-3" />

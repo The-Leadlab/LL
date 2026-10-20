@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery, useQueryClient, InvalidateQueryFilters } from '@tanstack/react-query';
@@ -342,6 +343,7 @@ const formatPhoneNumber = (value: string, format: string = '### ### ####') => {
 };
 
 export function LeadForm() {
+  const { t } = useTranslation('modules');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -407,7 +409,7 @@ export function LeadForm() {
   const onSubmit = async (data: FormValues) => {
     try {
       if (!user) {
-        toast.error('User session not found');
+        toast.error(t('leadForm.toast.noSession'));
         return;
       }
 
@@ -428,7 +430,7 @@ export function LeadForm() {
       const created = response.data;
       // API returns the lead object (with id), not always { success: true }
       if (created?.id || created?.success) {
-        toast.success('Lead created successfully');
+        toast.success(t('leadForm.toast.created'));
         const clientId = leadData.client_id;
         try {
           if (clientId) sessionStorage.setItem('leadlab.leads.selectedClientId', String(clientId));
@@ -441,7 +443,7 @@ export function LeadForm() {
         navigate(clientId ? `/leads?client_id=${clientId}` : '/leads');
       } else {
         console.error('Lead creation failed:', response.data);
-        toast.error(created?.message || 'Failed to create lead');
+        toast.error(created?.message || t('leadForm.toast.createFailed'));
       }
     } catch (error: any) {
       console.error('Error creating lead:', error);
@@ -452,9 +454,9 @@ export function LeadForm() {
       const errorMessage = error.response?.data?.detail || 
                           error.response?.data?.message || 
                           error.message || 
-                          'Failed to create lead';
+                          t('leadForm.toast.createFailed');
       
-      toast.error(`Error: ${errorMessage}`);
+      toast.error(t('leadForm.toast.error', { message: errorMessage }));
     }
   };
 
@@ -465,12 +467,12 @@ export function LeadForm() {
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/leads')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Leads
+              {t('leadForm.back')}
             </Button>
             <Separator orientation="vertical" className="h-6" />
             <div>
-              <h1 className="text-2xl font-semibold">New Lead</h1>
-              <p className="text-sm text-gray-500">Create a new lead in your pipeline</p>
+              <h1 className="text-2xl font-semibold">{t('leadForm.title')}</h1>
+              <p className="text-sm text-gray-500">{t('leadForm.subtitle')}</p>
             </div>
           </div>
         </div>
@@ -486,8 +488,8 @@ export function LeadForm() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Basic Information</CardTitle>
-                <CardDescription>Enter the lead's basic contact information.</CardDescription>
+                <CardTitle>{t('leadForm.basicTitle')}</CardTitle>
+                <CardDescription>{t('leadForm.basicDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <FormField
@@ -624,8 +626,8 @@ export function LeadForm() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Contact Details</CardTitle>
-                <CardDescription>Additional contact information and social profiles.</CardDescription>
+                <CardTitle>{t('leadForm.contactTitle')}</CardTitle>
+                <CardDescription>{t('leadForm.contactDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
@@ -801,8 +803,8 @@ export function LeadForm() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Additional Information</CardTitle>
-                <CardDescription>Other relevant details about the lead.</CardDescription>
+                <CardTitle>{t('leadForm.additionalTitle')}</CardTitle>
+                <CardDescription>{t('leadForm.additionalDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <FormField
@@ -889,18 +891,18 @@ export function LeadForm() {
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button variant="outline" onClick={() => navigate('/leads')}>
-                  Cancel
+                  {t('common:cancel')}
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating Lead...
+                      {t('leadForm.creating')}
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4 mr-2" />
-                      Create Lead
+                      {t('leadForm.create')}
                     </>
                   )}
                 </Button>
@@ -914,6 +916,7 @@ export function LeadForm() {
 }
 
 export const LeadEditForm: React.FC<LeadEditFormProps> = ({ lead, onClose }) => {
+  const { t } = useTranslation('modules');
   const queryClient = useQueryClient();
   const { register, handleSubmit, formState: { errors } } = useForm<LeadFormData>({
     defaultValues: {
@@ -948,13 +951,13 @@ export const LeadEditForm: React.FC<LeadEditFormProps> = ({ lead, onClose }) => 
       };
       
       await api.put(`/leads/${lead.id}`, formData);
-      toast.success('Lead updated successfully');
+      toast.success(t('leadForm.toast.updated'));
       // Invalidate and refetch leads query
       await queryClient.invalidateQueries({ queryKey: ['leads'] });
       onClose();
     } catch (error) {
       console.error('Error updating lead:', error);
-      toast.error('Failed to update lead');
+      toast.error(t('leadForm.toast.updateFailed'));
     }
   };
 

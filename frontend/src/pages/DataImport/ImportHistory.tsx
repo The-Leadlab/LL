@@ -11,8 +11,10 @@ import {
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export const ImportHistory: React.FC = () => {
+  const { t } = useTranslation('modules');
   const navigate = useNavigate();
 
   // Fetch import jobs
@@ -40,7 +42,7 @@ export const ImportHistory: React.FC = () => {
     return (
       <Badge className={style.color}>
         <Icon className={`h-3 w-3 mr-1 ${status === 'processing' ? 'animate-spin' : ''}`} />
-        {style.label}
+        {t(`dataImport.history.status.${status in styles ? status : 'pending'}`, { defaultValue: style.label })}
       </Badge>
     );
   };
@@ -71,14 +73,14 @@ export const ImportHistory: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Import History</h1>
+            <h1 className="text-3xl font-bold">{t('dataImport.history.title')}</h1>
             <p className="text-gray-600 mt-1">
-              View and manage your data imports
+              {t('dataImport.history.subtitle')}
             </p>
           </div>
           <Button onClick={() => navigate('/data-import/wizard')}>
             <Plus className="h-4 w-4 mr-2" />
-            New Import
+            {t('dataImport.history.newImport')}
           </Button>
         </div>
 
@@ -92,7 +94,7 @@ export const ImportHistory: React.FC = () => {
                     <FileText className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Total Imports</p>
+                    <p className="text-sm text-gray-600">{t('dataImport.history.totalImports')}</p>
                     <p className="text-2xl font-bold">{stats.total_jobs}</p>
                   </div>
                 </div>
@@ -105,7 +107,7 @@ export const ImportHistory: React.FC = () => {
                     <CheckCircle className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Completed</p>
+                    <p className="text-sm text-gray-600">{t('dataImport.history.completed')}</p>
                     <p className="text-2xl font-bold">{stats.completed_jobs}</p>
                   </div>
                 </div>
@@ -118,7 +120,7 @@ export const ImportHistory: React.FC = () => {
                     <TrendingUp className="h-6 w-6 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Records Imported</p>
+                    <p className="text-sm text-gray-600">{t('dataImport.history.recordsImported')}</p>
                     <p className="text-2xl font-bold">{stats.total_records_imported}</p>
                   </div>
                 </div>
@@ -130,7 +132,7 @@ export const ImportHistory: React.FC = () => {
         {/* Import Jobs List */}
         <Card>
           <CardHeader>
-            <CardTitle>Import History</CardTitle>
+            <CardTitle>{t('dataImport.history.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             {importJobs && importJobs.length > 0 ? (
@@ -156,16 +158,16 @@ export const ImportHistory: React.FC = () => {
 
                           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm text-gray-600 mb-3">
                             <div>
-                              <span className="font-medium">Total:</span> {job.total_records}
+                              <span className="font-medium">{t('dataImport.history.totalColon')}</span> {job.total_records}
                             </div>
                             <div className="text-green-600">
-                              <span className="font-medium">Success:</span> {job.successful_records}
+                              <span className="font-medium">{t('dataImport.history.successColon')}</span> {job.successful_records}
                             </div>
                             <div className="text-red-600">
-                              <span className="font-medium">Failed:</span> {job.failed_records}
+                              <span className="font-medium">{t('dataImport.history.failedColon')}</span> {job.failed_records}
                             </div>
                             <div className="text-gray-500">
-                              <span className="font-medium">Skipped:</span> {job.skipped_records}
+                              <span className="font-medium">{t('dataImport.history.skippedColon')}</span> {job.skipped_records}
                             </div>
                             <div>
                               <Clock className="h-4 w-4 inline mr-1" />
@@ -176,7 +178,7 @@ export const ImportHistory: React.FC = () => {
                           {job.status === 'processing' && (
                             <div className="space-y-1">
                               <div className="flex justify-between text-xs text-gray-600">
-                                <span>Progress</span>
+                                <span>{t('dataImport.progress')}</span>
                                 <span>
                                   {job.processed_records} / {job.total_records}
                                 </span>
@@ -194,13 +196,13 @@ export const ImportHistory: React.FC = () => {
 
                           {job.status === 'completed' && job.import_summary && (
                             <div className="text-sm text-gray-600">
-                              ✓ Import completed successfully
+                              {t('dataImport.history.completedOk')}
                             </div>
                           )}
 
                           {job.status === 'failed' && job.error_log && job.error_log.length > 0 && (
                             <div className="text-sm text-red-600">
-                              ✗ {job.error_log[0].message || 'Import failed'}
+                              ✗ {job.error_log[0].message || t('dataImport.history.importFailed')}
                             </div>
                           )}
                         </div>
@@ -211,12 +213,12 @@ export const ImportHistory: React.FC = () => {
                             size="sm"
                             onClick={() => navigate(`/data-import/jobs/${job.id}`)}
                           >
-                            View Details
+                            {t('dataImport.history.viewDetails')}
                           </Button>
                           {job.status === 'completed' && (
                             <Button variant="outline" size="sm">
                               <Download className="h-4 w-4 mr-1" />
-                              Export Report
+                              {t('dataImport.history.exportReport')}
                             </Button>
                           )}
                         </div>
@@ -228,13 +230,13 @@ export const ImportHistory: React.FC = () => {
             ) : (
               <div className="text-center py-12">
                 <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-semibold mb-2">No imports yet</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('dataImport.history.emptyTitle')}</h3>
                 <p className="text-gray-600 mb-4">
-                  Start importing data from CSV files or other CRM systems
+                  {t('dataImport.history.emptyBody')}
                 </p>
                 <Button onClick={() => navigate('/data-import/wizard')}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Start Your First Import
+                  {t('dataImport.history.startFirst')}
                 </Button>
               </div>
             )}

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { ArrowUpDown, Eye, FileSpreadsheet, GripVertical, Layers, Loader2, Mail, RefreshCw, RotateCcw, Search, Send, Sparkles, Upload, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
@@ -34,14 +35,14 @@ type LeadGroupBy = 'none' | 'personality' | 'source' | 'sector' | 'stage';
 type LeadSortBy = 'first_name' | 'company' | 'job_title' | 'source' | 'sector' | 'created_at';
 
 const MERGE_FIELDS = [
-  { token: 'first_name', label: 'First name' },
-  { token: 'last_name', label: 'Last name' },
-  { token: 'full_name', label: 'Full name' },
-  { token: 'email', label: 'Email' },
-  { token: 'company', label: 'Company' },
-  { token: 'job_title', label: 'Job title' },
-  { token: 'id', label: 'Lead ID' },
-  { token: 'unique_lead_id', label: 'Sheet / external ID' },
+  { token: 'first_name' },
+  { token: 'last_name' },
+  { token: 'full_name' },
+  { token: 'email' },
+  { token: 'company' },
+  { token: 'job_title' },
+  { token: 'id' },
+  { token: 'unique_lead_id' },
 ] as const;
 
 const BATCH_SIZE = 25;
@@ -63,17 +64,17 @@ function hourCapFromMinutes(minutes: number): string {
   return String(Math.max(1, Math.min(MAX_EMAILS_PER_HOUR, Math.round(60 / minutes))));
 }
 const IMPORT_FIELD_OPTIONS = [
-  { value: 'skip', label: 'Ignore this column' },
-  { value: 'email', label: 'Email' },
-  { value: 'first_name', label: 'First name' },
-  { value: 'last_name', label: 'Last name' },
-  { value: 'full_name', label: 'Full name' },
-  { value: 'company', label: 'Company' },
-  { value: 'job_title', label: 'Job title' },
-  { value: 'unique_lead_id', label: 'Sheet / external ID' },
-  { value: 'status', label: 'Status (Sent / skip)' },
-  { value: 'telephone', label: 'Phone' },
-  { value: 'linkedin', label: 'LinkedIn' },
+  { value: 'skip' },
+  { value: 'email' },
+  { value: 'first_name' },
+  { value: 'last_name' },
+  { value: 'full_name' },
+  { value: 'company' },
+  { value: 'job_title' },
+  { value: 'unique_lead_id' },
+  { value: 'status' },
+  { value: 'telephone' },
+  { value: 'linkedin' },
 ];
 
 function sheetStatus(lead: Lead): string {
@@ -338,6 +339,7 @@ async function fetchAllLeads(clientId?: number, search?: string): Promise<Lead[]
 }
 
 export function ColdOutreachPage() {
+  const { t } = useTranslation('emails');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -374,7 +376,7 @@ export function ColdOutreachPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [lastBatchId, setLastBatchId] = useState<string | null>(null);
-  const [rewriteInstruction, setRewriteInstruction] = useState('Make this more concise and personal.');
+  const [rewriteInstruction, setRewriteInstruction] = useState(() => t('outreach.rewriteDefault'));
   const [templateId, setTemplateId] = useState<string>('');
   const [pasteEmails, setPasteEmails] = useState('');
   const [sheetChoice, setSheetChoice] = useState('');
@@ -533,8 +535,8 @@ export function ColdOutreachPage() {
 
     setShowAdvancedSend(true);
 
-    toast({ title: 'Campaign loaded', description: campaignSource.name });
-  }, [campaignId, campaignSource, campaignMode, accounts, campaignStepsMissing, campaignDetail, toast]);
+    toast({ title: t('outreach.campaignLoaded'), description: campaignSource.name });
+  }, [campaignId, campaignSource, campaignMode, accounts, campaignStepsMissing, campaignDetail, toast, t]);
 
   const { data: googleStatus } = useQuery({
     queryKey: ['outreach-google-status'],
@@ -563,18 +565,18 @@ export function ColdOutreachPage() {
     const oauth = searchParams.get('sheets_oauth') || searchParams.get('email_oauth');
     if (!oauth) return;
     if (oauth === 'success') {
-      toast({ title: 'Google connected', description: 'You can import a spreadsheet on this page.' });
+      toast({ title: t('outreach.googleConnected'), description: t('outreach.googleConnectedBody') });
       queryClient.invalidateQueries({ queryKey: ['outreach-google-status'] });
       queryClient.invalidateQueries({ queryKey: ['outreach-google-spreadsheets'] });
     } else {
       toast({
-        title: 'Google connection failed',
-        description: searchParams.get('reason') || 'Please try again.',
+        title: t('outreach.googleFailed'),
+        description: searchParams.get('reason') || t('outreach.tryAgain'),
         variant: 'destructive',
       });
     }
     setSearchParams({}, { replace: true });
-  }, [queryClient, searchParams, setSearchParams, toast]);
+  }, [queryClient, searchParams, setSearchParams, toast, t]);
 
   useEffect(() => {
     setSheetTab('');
@@ -720,14 +722,14 @@ export function ColdOutreachPage() {
         queryClient.invalidateQueries({ queryKey: ['outreach-delivery-stats'] }),
       ]);
       toast({
-        title: 'Ready to resend',
-        description: `Cleared bounce/failed flags on ${result.cleared} lead${result.cleared === 1 ? '' : 's'}. Select them and send again.`,
+        title: t('outreach.readyToResend'),
+        description: t('outreach.clearedBounce', { count: result.cleared }),
       });
       setStatusFilter('ready');
     },
     onError: (error: unknown) => {
       toast({
-        title: 'Could not clear bounce',
+        title: t('outreach.clearBounceFailed'),
         description: extractEmailErrorMessage(error),
         variant: 'destructive',
       });
@@ -747,12 +749,12 @@ export function ColdOutreachPage() {
   const applyTemplate = (id: string) => {
     setTemplateId(id);
     if (!id || id === 'none') return;
-    const tpl = templates.find((t) => String(t.id) === id);
+    const tpl = templates.find((item) => String(item.id) === id);
     if (!tpl) return;
     setSubject(tpl.subject);
     setBody(tpl.body);
     setFormat((tpl.format as 'text' | 'html') || 'text');
-    toast({ title: 'Template loaded', description: tpl.name });
+    toast({ title: t('outreach.templateLoaded'), description: tpl.name });
   };
 
   const rewriteMutation = useMutation({
@@ -776,11 +778,11 @@ export function ColdOutreachPage() {
     onSuccess: (result) => {
       if (result.subject) setSubject(result.subject);
       if (result.body) setBody(result.body);
-      toast({ title: 'AI rewrite applied', description: 'Review the updated subject and body before sending.' });
+      toast({ title: t('outreach.rewriteApplied'), description: t('outreach.rewriteAppliedBody') });
     },
     onError: (error) => {
       toast({
-        title: 'Rewrite failed',
+        title: t('outreach.rewriteFailed'),
         description: extractEmailErrorMessage(error).description,
         variant: 'destructive',
       });
@@ -829,10 +831,15 @@ export function ColdOutreachPage() {
     const updated = result.updated || 0;
     const alreadySent = result.already_sent || 0;
     toast({
-      title: idsToSelect.length ? 'People added and selected' : 'Import finished',
+      title: idsToSelect.length ? t('outreach.peopleAdded') : t('outreach.importFinished'),
       description: idsToSelect.length
-        ? `${idsToSelect.length} ready to email on ${selectedClient?.name || 'this list'}. Write your message on the right, then Send.`
-        : `Imported ${result.imported}${updated ? `, updated ${updated}` : ''}, skipped ${result.skipped}${alreadySent ? `, already Sent ${alreadySent}` : ''}.`,
+        ? t('outreach.peopleAddedBody', { count: idsToSelect.length, list: selectedClient?.name || t('outreach.thisList') })
+        : `${[
+            t('outreach.importedCount', { count: result.imported }),
+            updated ? t('outreach.updatedCount', { count: updated }) : '',
+            t('outreach.skippedCount', { count: result.skipped }),
+            alreadySent ? t('outreach.alreadySentCount', { count: alreadySent }) : '',
+          ].filter(Boolean).join(', ')}.`,
     });
     requestAnimationFrame(() => {
       listSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -842,8 +849,8 @@ export function ColdOutreachPage() {
   const ensureImportClient = () => {
     if (importClientId) return true;
     toast({
-      title: 'Choose a client list first',
-      description: 'Pick the list these people belong to (for example Paystack), then add them again.',
+      title: t('outreach.chooseClientFirst'),
+      description: t('outreach.chooseClientFirstBody'),
       variant: 'destructive',
     });
     return false;
@@ -858,7 +865,7 @@ export function ColdOutreachPage() {
     onSuccess: applyImportedLeads,
     onError: (error) => {
       toast({
-        title: 'Could not add emails',
+        title: t('outreach.addEmailsFailed'),
         description: extractEmailErrorMessage(error).description,
         variant: 'destructive',
       });
@@ -876,7 +883,7 @@ export function ColdOutreachPage() {
     onSuccess: applyImportedLeads,
     onError: (error) => {
       toast({
-        title: 'Sheet import failed',
+        title: t('outreach.sheetImportFailed'),
         description: extractEmailErrorMessage(error).description,
         variant: 'destructive',
       });
@@ -901,7 +908,7 @@ export function ColdOutreachPage() {
     },
     onError: (error) => {
       toast({
-        title: 'Could not read columns',
+        title: t('outreach.readColumnsFailed'),
         description: extractEmailErrorMessage(error).description,
         variant: 'destructive',
       });
@@ -919,8 +926,8 @@ export function ColdOutreachPage() {
     if (!ensureImportClient()) return;
     if (!selectedSheetId) {
       toast({
-        title: 'Paste a Google Sheet URL',
-        description: 'Copy the spreadsheet link from Google Sheets, then click Preview.',
+        title: t('outreach.pasteSheetUrl'),
+        description: t('outreach.pasteSheetUrlBody'),
         variant: 'destructive',
       });
       return;
@@ -936,7 +943,7 @@ export function ColdOutreachPage() {
     } catch (error) {
       setConnectingGoogle(false);
       toast({
-        title: 'Could not start Google sign-in',
+        title: t('outreach.googleStartFailed'),
         description: extractEmailErrorMessage(error).description,
         variant: 'destructive',
       });
@@ -990,7 +997,7 @@ export function ColdOutreachPage() {
     reader.onload = () => {
       const text = typeof reader.result === 'string' ? reader.result : '';
       if (!text.trim()) {
-        toast({ title: 'Empty file', variant: 'destructive' });
+        toast({ title: t('outreach.emptyFile'), variant: 'destructive' });
         return;
       }
       openPreviewFromText(text, 'csv_upload');
@@ -1000,14 +1007,14 @@ export function ColdOutreachPage() {
 
   const sendMutation = useMutation({
     mutationFn: async () => {
-      if (!accountId) throw new Error('Choose a sending mailbox first.');
+      if (!accountId) throw new Error(t('outreach.errChooseMailbox'));
       const ids = selectedOrder;
-      if (!ids.length) throw new Error('Select at least one lead.');
+      if (!ids.length) throw new Error(t('outreach.errSelectLead'));
       if (campaignMode === 'existing' && !campaignId) {
-        throw new Error('Choose a campaign, or switch to New campaign and name it.');
+        throw new Error(t('outreach.errChooseCampaign'));
       }
       if (campaignMode === 'new' && !campaignName.trim()) {
-        throw new Error('Name this campaign before sending.');
+        throw new Error(t('outreach.errNameCampaign'));
       }
       const minutes = Math.max(
         0,
@@ -1016,7 +1023,7 @@ export function ColdOutreachPage() {
       const delay = Math.round(minutes * 60 * 100) / 100;
       const scheduleIso = scheduleAt ? new Date(scheduleAt).toISOString() : null;
       if (scheduleAt && Number.isNaN(Date.parse(scheduleAt))) {
-        throw new Error('Invalid schedule date/time.');
+        throw new Error(t('outreach.errInvalidSchedule'));
       }
       const timing = {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
@@ -1075,20 +1082,20 @@ export function ColdOutreachPage() {
       ]);
       if (summary.mode === 'queued' || (summary.queued || 0) > 0) {
         toast({
-          title: 'Campaign queued',
-          description: `Queued ${summary.queued || summary.total} emails, 5 minutes apart. The first goes out now; the rest send automatically.`,
+          title: t('outreach.campaignQueued'),
+          description: t('outreach.campaignQueuedBody', { count: summary.queued || summary.total }),
         });
       } else {
         toast({
-          title: 'Campaign finished',
-          description: `Sent ${summary.sent} of ${summary.total}. Failed ${summary.failed}, skipped ${summary.skipped}.`,
+          title: t('outreach.campaignFinished'),
+          description: t('outreach.campaignFinishedBody', { sent: summary.sent, total: summary.total, failed: summary.failed, skipped: summary.skipped }),
         });
       }
     },
     onError: (error) => {
       setProgress(null);
       toast({
-        title: 'Could not send outreach',
+        title: t('outreach.sendFailed'),
         description: extractEmailErrorMessage(error).description,
         variant: 'destructive',
       });
@@ -1106,14 +1113,40 @@ export function ColdOutreachPage() {
     hasCampaign &&
     !sendMutation.isPending;
   const sendBlockedReason = !hasCampaign
-    ? 'Name a new campaign or choose an existing one before sending.'
+    ? t('outreach.blockedCampaign')
     : !accountId
-      ? 'Choose a mailbox to send from.'
+      ? t('outreach.blockedMailbox')
       : selectedIds.size === 0
-        ? 'Select people in the list first (or add them below).'
+        ? t('outreach.blockedRecipients')
         : !canPreview
-          ? 'Add a subject and message before sending.'
+          ? t('outreach.blockedContent')
           : null;
+
+  const deliveryText = (label: string): string => {
+    switch (label.trim().toLowerCase()) {
+      case 'ready': return t('outreach.statReady');
+      case 'no email': return t('outreach.noEmail');
+      case 'sent': return t('outreach.statSent');
+      case 'bounced': return t('bounced');
+      case 'failed': return t('outreach.statFailed');
+      default: return label;
+    }
+  };
+
+  const groupText = (key: string): string => {
+    switch (key) {
+      case 'All leads': return t('outreach.groups.allLeads');
+      case 'No type / source': return t('outreach.groups.noSource');
+      case 'No sector': return t('outreach.groups.noSector');
+      case 'No stage': return t('outreach.groups.noStage');
+      case 'Unknown': return t('outreach.unknown');
+      case 'Dominant (D)': return t('outreach.disc.D');
+      case 'Influential (I)': return t('outreach.disc.I');
+      case 'Steady (S)': return t('outreach.disc.S');
+      case 'Conscientious (C)': return t('outreach.disc.C');
+      default: return key;
+    }
+  };
 
   if (accountsLoading) {
     return (
@@ -1128,15 +1161,14 @@ export function ColdOutreachPage() {
       <div className="container mx-auto p-6">
         <Card>
           <CardHeader>
-            <CardTitle>Connect a mailbox first</CardTitle>
+            <CardTitle>{t('outreach.connectMailboxTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="mb-4 text-gray-600">
-              Cold outreach sends from your connected Gmail/SMTP account. Add one under Settings → Integrations,
-              then come back here.
+              {t('outreach.connectMailboxBody')}
             </p>
             <Button type="button" onClick={() => navigate('/settings/integrations')}>
-              Open Integrations
+              {t('inboxPage.openIntegrations')}
             </Button>
           </CardContent>
         </Card>
@@ -1148,9 +1180,9 @@ export function ColdOutreachPage() {
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Cold Outreach</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{t('coldOutreach')}</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Choose recipients, write the email, send — track delivery, bounces, and resends in one place.
+            {t('outreach.subtitle')}
           </p>
         </div>
         <Button
@@ -1164,7 +1196,7 @@ export function ColdOutreachPage() {
           }}
         >
           <RefreshCw className={`h-3.5 w-3.5 ${deliveryStatsLoading || leadsLoading ? 'animate-spin' : ''}`} />
-          Refresh
+          {t('inboxPage.refresh')}
         </Button>
       </div>
 
@@ -1172,12 +1204,12 @@ export function ColdOutreachPage() {
         <CardContent className="space-y-4 pt-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Campaign</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('outreach.campaign')}</p>
               <h2 className="mt-0.5 text-lg font-semibold text-slate-900">
-                Start here — new or existing
+                {t('outreach.startHere')}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                Pick how this send is tracked before selecting people or writing the email.
+                {t('outreach.startHereBody')}
               </p>
             </div>
             <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 shadow-inner">
@@ -1190,7 +1222,7 @@ export function ColdOutreachPage() {
                 }`}
                 onClick={() => setCampaignMode('new')}
               >
-                New campaign
+                {t('newCampaign')}
               </button>
               <button
                 type="button"
@@ -1201,32 +1233,32 @@ export function ColdOutreachPage() {
                 }`}
                 onClick={() => setCampaignMode('existing')}
               >
-                Existing campaign
+                {t('outreach.existingCampaign')}
               </button>
             </div>
           </div>
           {campaignMode === 'new' ? (
             <div className="max-w-xl">
-              <Label htmlFor="outreach-campaign-name">Campaign name</Label>
+              <Label htmlFor="outreach-campaign-name">{t('outreach.campaignName')}</Label>
               <Input
                 id="outreach-campaign-name"
                 className="mt-1"
                 value={campaignName}
                 onChange={(event) => setCampaignName(event.target.value)}
-                placeholder="e.g. Paystack Lucas wave 2"
+                placeholder={t('outreach.campaignNamePlaceholder')}
               />
             </div>
           ) : (
             <div className="max-w-xl">
-              <Label>Choose campaign</Label>
+              <Label>{t('outreach.chooseCampaign')}</Label>
               <Select value={campaignId || undefined} onValueChange={setCampaignId}>
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select an existing campaign" />
+                  <SelectValue placeholder={t('outreach.selectCampaign')} />
                 </SelectTrigger>
                 <SelectContent>
                   {campaigns.length === 0 ? (
                     <SelectItem value="__none" disabled>
-                      No campaigns yet — create a new one
+                      {t('outreach.noCampaigns')}
                     </SelectItem>
                   ) : (
                     campaigns.map((item: EmailSequence) => (
@@ -1239,7 +1271,7 @@ export function ColdOutreachPage() {
               </Select>
               {selectedCampaign && (
                 <p className="mt-1.5 text-xs text-slate-500">
-                  Loads subject, body, and send pace from this campaign when available.
+                  {t('outreach.campaignLoadsHint')}
                 </p>
               )}
             </div>
@@ -1249,12 +1281,12 @@ export function ColdOutreachPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {[
-          { label: 'Ready', value: readyLeadCount, tone: 'text-slate-900' },
-          { label: 'Sent', value: sentLeadCount, tone: 'text-emerald-700' },
-          { label: 'Bounced', value: bouncedLeadCount, tone: 'text-rose-700' },
-          { label: 'Failed', value: failedLeadCount, tone: 'text-amber-700' },
+          { label: t('outreach.statReady'), value: readyLeadCount, tone: 'text-slate-900' },
+          { label: t('outreach.statSent'), value: sentLeadCount, tone: 'text-emerald-700' },
+          { label: t('bounced'), value: bouncedLeadCount, tone: 'text-rose-700' },
+          { label: t('outreach.statFailed'), value: failedLeadCount, tone: 'text-amber-700' },
           {
-            label: 'Jobs tracked',
+            label: t('outreach.statJobs'),
             value: Object.values(deliveryStats?.jobs_by_status || {}).reduce((a, b) => a + b, 0),
             tone: 'text-indigo-700',
           },
@@ -1273,16 +1305,16 @@ export function ColdOutreachPage() {
         <div className="rounded-xl border border-rose-200 bg-rose-50/70 px-4 py-3 text-sm text-rose-900">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p>
-              <span className="font-semibold">{deliveryStats.leads_bounced}</span> bounced lead
-              {deliveryStats.leads_bounced === 1 ? '' : 's'}
+              <span className="font-semibold">{deliveryStats.leads_bounced}</span>{' '}
+              {t('outreach.bouncedLeads', { count: deliveryStats.leads_bounced })}
               {(deliveryStats.jobs_by_status?.failed || 0) > 0 && (
                 <>
                   {' '}
-                  · <span className="font-semibold">{deliveryStats.jobs_by_status.failed}</span> failed jobs
+                  · <span className="font-semibold">{deliveryStats.jobs_by_status.failed}</span> {t('outreach.failedJobs')}
                 </>
               )}
-              {timeFilter !== 'all' ? ` in the last ${timeFilter} days` : ''}.
-              Filter to Bounced and use Retry to clear flags and queue again.
+              {timeFilter !== 'all' ? ` ${t('outreach.inLastDays', { days: timeFilter })}` : ''}.{' '}
+              {t('outreach.bouncedHint')}
             </p>
             <Button
               type="button"
@@ -1291,12 +1323,12 @@ export function ColdOutreachPage() {
               className="border-rose-300 bg-white text-rose-800 hover:bg-rose-50"
               onClick={() => setStatusFilter('bounced')}
             >
-              View bounced
+              {t('outreach.viewBounced')}
             </Button>
           </div>
           {deliveryStats.jobs_failed_errors?.length > 0 && (
             <p className="mt-2 truncate text-xs text-rose-800/80">
-              Latest error: {deliveryStats.jobs_failed_errors[0].error || 'Unknown'}
+              {t('outreach.latestError', { error: deliveryStats.jobs_failed_errors[0].error || t('outreach.unknown') })}
             </p>
           )}
         </div>
@@ -1307,17 +1339,17 @@ export function ColdOutreachPage() {
           <CardHeader className="border-b border-slate-100 pb-4">
             <CardTitle className="flex items-center gap-2 text-lg text-slate-900">
               <Users className="h-5 w-5 text-slate-700" />
-              Recipients
+              {t('recipients')}
             </CardTitle>
             <p className="text-sm text-slate-500">
-              Organize like Leads: filter by personality, type/source, sector, and stage — then sort or group the list.
+              {t('outreach.recipientsHint')}
             </p>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div ref={listSectionRef} className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <div>
-                  <Label>Client list</Label>
+                  <Label>{t('outreach.clientList')}</Label>
                   <Select
                     value={clientId}
                     onValueChange={(value) => {
@@ -1327,10 +1359,10 @@ export function ColdOutreachPage() {
                     }}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Choose a client" />
+                      <SelectValue placeholder={t('outreach.chooseClient')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All clients</SelectItem>
+                      <SelectItem value="all">{t('outreach.allClients')}</SelectItem>
                       {clients.map((client) => (
                         <SelectItem key={client.id} value={String(client.id)}>
                           {client.name}
@@ -1341,7 +1373,7 @@ export function ColdOutreachPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Status</Label>
+                  <Label>{t('outreach.status')}</Label>
                   <Select
                     value={statusFilter}
                     onValueChange={(value) =>
@@ -1352,16 +1384,16 @@ export function ColdOutreachPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ready">Ready ({readyLeadCount})</SelectItem>
-                      <SelectItem value="sent">Sent ({sentLeadCount})</SelectItem>
-                      <SelectItem value="bounced">Bounced ({bouncedLeadCount})</SelectItem>
-                      <SelectItem value="failed">Failed ({failedLeadCount})</SelectItem>
-                      <SelectItem value="all">All ({leads.length})</SelectItem>
+                      <SelectItem value="ready">{t('outreach.statReady')} ({readyLeadCount})</SelectItem>
+                      <SelectItem value="sent">{t('outreach.statSent')} ({sentLeadCount})</SelectItem>
+                      <SelectItem value="bounced">{t('bounced')} ({bouncedLeadCount})</SelectItem>
+                      <SelectItem value="failed">{t('outreach.statFailed')} ({failedLeadCount})</SelectItem>
+                      <SelectItem value="all">{t('outreach.all')} ({leads.length})</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Added in</Label>
+                  <Label>{t('outreach.addedIn')}</Label>
                   <Select
                     value={timeFilter}
                     onValueChange={(value) => setTimeFilter(value as 'all' | '7' | '30' | '90')}
@@ -1370,42 +1402,42 @@ export function ColdOutreachPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All time</SelectItem>
-                      <SelectItem value="7">Last 7 days</SelectItem>
-                      <SelectItem value="30">Last 30 days</SelectItem>
-                      <SelectItem value="90">Last 90 days</SelectItem>
+                      <SelectItem value="all">{t('outreach.allTime')}</SelectItem>
+                      <SelectItem value="7">{t('outreach.lastDays', { days: 7 })}</SelectItem>
+                      <SelectItem value="30">{t('outreach.lastDays', { days: 30 })}</SelectItem>
+                      <SelectItem value="90">{t('outreach.lastDays', { days: 90 })}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Personality</Label>
+                  <Label>{t('outreach.personality')}</Label>
                   <Select value={personalityFilter} onValueChange={setPersonalityFilter}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="all">{t('outreach.all')}</SelectItem>
                       <SelectItem value="D">
                         <span className="flex items-center gap-1.5">
-                          <span className="inline-block h-2 w-2 rounded-full bg-red-500" /> Dominant
+                          <span className="inline-block h-2 w-2 rounded-full bg-red-500" /> {t('outreach.discShort.D')}
                         </span>
                       </SelectItem>
                       <SelectItem value="I">
                         <span className="flex items-center gap-1.5">
-                          <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" /> Influential
+                          <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" /> {t('outreach.discShort.I')}
                         </span>
                       </SelectItem>
                       <SelectItem value="S">
                         <span className="flex items-center gap-1.5">
-                          <span className="inline-block h-2 w-2 rounded-full bg-green-500" /> Steady
+                          <span className="inline-block h-2 w-2 rounded-full bg-green-500" /> {t('outreach.discShort.S')}
                         </span>
                       </SelectItem>
                       <SelectItem value="C">
                         <span className="flex items-center gap-1.5">
-                          <span className="inline-block h-2 w-2 rounded-full bg-blue-500" /> Conscientious
+                          <span className="inline-block h-2 w-2 rounded-full bg-blue-500" /> {t('outreach.discShort.C')}
                         </span>
                       </SelectItem>
-                      <SelectItem value="unknown">Unknown</SelectItem>
+                      <SelectItem value="unknown">{t('outreach.unknown')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1413,7 +1445,7 @@ export function ColdOutreachPage() {
 
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 <div>
-                  <Label>Pipeline stage</Label>
+                  <Label>{t('outreach.pipelineStage')}</Label>
                   <Select
                     value={filterStageId != null ? String(filterStageId) : 'all'}
                     onValueChange={(value) =>
@@ -1421,10 +1453,10 @@ export function ColdOutreachPage() {
                     }
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="All stages" />
+                      <SelectValue placeholder={t('outreach.allStages')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All stages</SelectItem>
+                      <SelectItem value="all">{t('outreach.allStages')}</SelectItem>
                       {stages.map((stage) => (
                         <SelectItem key={stage.id} value={String(stage.id)}>
                           {stage.name}
@@ -1434,16 +1466,16 @@ export function ColdOutreachPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Lead type / source</Label>
+                  <Label>{t('outreach.leadSource')}</Label>
                   <Select
                     value={filterSource || 'all'}
                     onValueChange={(value) => setFilterSource(value === 'all' ? '' : value)}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="All types" />
+                      <SelectValue placeholder={t('outreach.allTypes')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All types</SelectItem>
+                      <SelectItem value="all">{t('outreach.allTypes')}</SelectItem>
                       {sourceOptions.map((source) => (
                         <SelectItem key={source} value={source}>
                           {source}
@@ -1453,16 +1485,16 @@ export function ColdOutreachPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Sector</Label>
+                  <Label>{t('outreach.sector')}</Label>
                   <Select
                     value={filterSector || 'all'}
                     onValueChange={(value) => setFilterSector(value === 'all' ? '' : value)}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="All sectors" />
+                      <SelectValue placeholder={t('outreach.allSectors')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All sectors</SelectItem>
+                      <SelectItem value="all">{t('outreach.allSectors')}</SelectItem>
                       {sectorOptions.map((sector) => (
                         <SelectItem key={sector} value={sector}>
                           {sector}
@@ -1476,30 +1508,30 @@ export function ColdOutreachPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                   <ArrowUpDown className="h-4 w-4 text-slate-500" />
-                  <span className="text-slate-500">Sort</span>
+                  <span className="text-slate-500">{t('outreach.sort')}</span>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as LeadSortBy)}
                     className="bg-transparent text-slate-800 outline-none"
                   >
-                    <option value="first_name">Name</option>
-                    <option value="company">Company</option>
-                    <option value="job_title">Job title</option>
-                    <option value="source">Lead type / source</option>
-                    <option value="sector">Sector</option>
-                    <option value="created_at">Newest</option>
+                    <option value="first_name">{t('outreach.sortName')}</option>
+                    <option value="company">{t('outreach.sortCompany')}</option>
+                    <option value="job_title">{t('outreach.sortJobTitle')}</option>
+                    <option value="source">{t('outreach.leadSource')}</option>
+                    <option value="sector">{t('outreach.sector')}</option>
+                    <option value="created_at">{t('outreach.sortNewest')}</option>
                   </select>
                   <button
                     type="button"
                     onClick={() => setSortDesc((v) => !v)}
                     className="rounded px-1.5 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
                   >
-                    {sortDesc ? 'Desc' : 'Asc'}
+                    {sortDesc ? t('outreach.desc') : t('outreach.asc')}
                   </button>
                 </label>
                 <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                   <Layers className="h-4 w-4 text-slate-500" />
-                  <span className="text-slate-500">Group</span>
+                  <span className="text-slate-500">{t('outreach.group')}</span>
                   <select
                     value={groupBy}
                     onChange={(e) => {
@@ -1508,11 +1540,11 @@ export function ColdOutreachPage() {
                     }}
                     className="bg-transparent text-slate-800 outline-none"
                   >
-                    <option value="none">None</option>
-                    <option value="personality">Personality</option>
-                    <option value="source">Lead type / source</option>
-                    <option value="sector">Sector</option>
-                    <option value="stage">Stage</option>
+                    <option value="none">{t('outreach.groupNone')}</option>
+                    <option value="personality">{t('outreach.personality')}</option>
+                    <option value="source">{t('outreach.leadSource')}</option>
+                    <option value="sector">{t('outreach.sector')}</option>
+                    <option value="stage">{t('outreach.groupStage')}</option>
                   </select>
                 </label>
                 {organizeFilterCount > 0 && (
@@ -1529,7 +1561,7 @@ export function ColdOutreachPage() {
                       setCollapsedGroups({});
                     }}
                   >
-                    Clear organize ({organizeFilterCount})
+                    {t('outreach.clearOrganize', { count: organizeFilterCount })}
                   </Button>
                 )}
               </div>
@@ -1542,18 +1574,18 @@ export function ColdOutreachPage() {
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder={
                     selectedClient
-                      ? `Search ${selectedClient.name}`
-                      : 'Search loaded people'
+                      ? t('outreach.searchClient', { name: selectedClient.name })
+                      : t('outreach.searchPeople')
                   }
                 />
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={selectVisibleWithEmail}>
-                  Select visible
+                  {t('outreach.selectVisible')}
                 </Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => setSelectedOrder([])}>
-                  Clear
+                  {t('outreach.clear')}
                 </Button>
                 {(statusFilter === 'bounced' || statusFilter === 'failed' || bouncedLeadCount > 0) && (
                   <Button
@@ -1578,11 +1610,11 @@ export function ColdOutreachPage() {
                     ) : (
                       <RotateCcw className="h-3.5 w-3.5" />
                     )}
-                    Retry selected
+                    {t('outreach.retrySelected')}
                   </Button>
                 )}
                 <span className="ml-auto text-sm font-medium text-slate-700">
-                  {selectedIds.size} selected · {visibleLeads.length} shown
+                  {t('outreach.selectedShown', { selected: selectedIds.size, shown: visibleLeads.length })}
                 </span>
               </div>
 
@@ -1590,12 +1622,12 @@ export function ColdOutreachPage() {
                 {leadsLoading ? (
                   <div className="flex items-center justify-center p-10 text-sm text-slate-500">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Loading people…
+                    {t('outreach.loadingPeople')}
                   </div>
                 ) : leadsError ? (
                   <div className="px-6 py-10 text-center">
                     <p className="text-sm text-red-600">
-                      Could not load people
+                      {t('outreach.loadPeopleFailed')}
                       {leadsFetchError instanceof Error ? `: ${leadsFetchError.message}` : ''}
                     </p>
                     <Button
@@ -1604,7 +1636,7 @@ export function ColdOutreachPage() {
                       className="mt-4"
                       onClick={() => void refetchLeads()}
                     >
-                      Retry
+                      {t('outreach.retry')}
                     </Button>
                   </div>
                 ) : visibleLeads.length === 0 ? (
@@ -1612,13 +1644,13 @@ export function ColdOutreachPage() {
                     <Users className="mx-auto h-8 w-8 text-slate-300" />
                     <h3 className="mt-3 text-base font-medium text-slate-900">
                       {selectedClient
-                        ? `No people on ${selectedClient.name} yet`
-                        : 'No people match this filter'}
+                        ? t('outreach.noPeopleOnClient', { name: selectedClient.name })
+                        : t('outreach.noPeopleMatch')}
                     </h3>
                     <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
                       {clientId === 'all'
-                        ? 'Pick a client list above, then add people.'
-                        : 'Try another status or time range, or add people below.'}
+                        ? t('outreach.pickClientHint')
+                        : t('outreach.tryOtherFilter')}
                     </p>
                     <div className="mt-4">
                       <Button
@@ -1629,7 +1661,7 @@ export function ColdOutreachPage() {
                           setAddPeopleMethod('paste');
                         }}
                       >
-                        Add people
+                        {t('outreach.addPeople')}
                       </Button>
                     </div>
                   </div>
@@ -1650,13 +1682,13 @@ export function ColdOutreachPage() {
                               }}
                             />
                           </TableHead>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Company</TableHead>
+                          <TableHead>{t('outreach.colName')}</TableHead>
+                          <TableHead>{t('outreach.colEmail')}</TableHead>
+                          <TableHead>{t('outreach.colCompany')}</TableHead>
                           <TableHead className="w-12 text-center">DISC</TableHead>
-                          {clientId === 'all' && <TableHead>Client</TableHead>}
-                          <TableHead>Status</TableHead>
-                          <TableHead className="w-24 text-right">Actions</TableHead>
+                          {clientId === 'all' && <TableHead>{t('outreach.colClient')}</TableHead>}
+                          <TableHead>{t('outreach.status')}</TableHead>
+                          <TableHead className="w-24 text-right">{t('outreach.colActions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1681,7 +1713,7 @@ export function ColdOutreachPage() {
                                       }
                                     >
                                       <span className="text-slate-500">{collapsed ? '▸' : '▾'}</span>
-                                      {group.key}
+                                      {groupText(group.key)}
                                       <span className="ml-1 rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-600">
                                         {group.leads.length}
                                       </span>
@@ -1731,7 +1763,7 @@ export function ColdOutreachPage() {
                                 {[lead.first_name, lead.last_name].filter(Boolean).join(' ') || '—'}
                               </TableCell>
                               <TableCell className="max-w-[220px] truncate font-mono text-xs text-slate-600">
-                                {lead.email || 'No email'}
+                                {lead.email || t('outreach.noEmail')}
                               </TableCell>
                               <TableCell className="max-w-[160px] truncate">{lead.company || '—'}</TableCell>
                               <TableCell className="text-center">
@@ -1759,7 +1791,7 @@ export function ColdOutreachPage() {
                                           : 'border-slate-200 bg-slate-50 text-slate-600'
                                   }
                                 >
-                                  {status}
+                                  {deliveryText(status)}
                                 </Badge>
                               </TableCell>
                               <TableCell
@@ -1776,7 +1808,7 @@ export function ColdOutreachPage() {
                                     onClick={() => clearBounceMutation.mutate([lead.id])}
                                   >
                                     <RotateCcw className="h-3 w-3" />
-                                    Retry
+                                    {t('outreach.retry')}
                                   </Button>
                                 )}
                               </TableCell>
@@ -1793,10 +1825,16 @@ export function ColdOutreachPage() {
               </div>
 
               <p className="text-xs text-slate-500">
-                {selectedClient ? `${selectedClient.name} · ` : 'All clients · '}
-                {readyLeadCount} ready · {sentLeadCount} sent · {bouncedLeadCount} bounced · {failedLeadCount}{' '}
-                failed · {leads.filter((lead) => lead.email).length} of {leads.length} have an email
-                {timeFilter !== 'all' ? ` · time filter: last ${timeFilter}d` : ''}
+                {selectedClient ? `${selectedClient.name} · ` : `${t('outreach.allClients')} · `}
+                {t('outreach.summaryLine', {
+                  ready: readyLeadCount,
+                  sent: sentLeadCount,
+                  bounced: bouncedLeadCount,
+                  failed: failedLeadCount,
+                  withEmail: leads.filter((lead) => lead.email).length,
+                  total: leads.length,
+                })}
+                {timeFilter !== 'all' ? ` · ${t('outreach.timeFilterSummary', { days: timeFilter })}` : ''}
               </p>
             </div>
 
@@ -1805,13 +1843,13 @@ export function ColdOutreachPage() {
                 <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                   <div>
                     <h3 className="text-sm font-semibold text-slate-900">
-                      Send queue
+                      {t('outreach.sendQueue')}
                       <span className="ml-1.5 text-xs font-normal text-slate-500">
-                        ({selectedOrder.length} lead{selectedOrder.length !== 1 ? 's' : ''})
+                        ({t('outreach.leadsCount', { count: selectedOrder.length })})
                       </span>
                     </h3>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      Drag to reorder — #1 is emailed first.
+                      {t('outreach.dragHint')}
                     </p>
                   </div>
                   <Button
@@ -1821,7 +1859,7 @@ export function ColdOutreachPage() {
                     className="text-xs text-slate-500"
                     onClick={() => setSelectedOrder([])}
                   >
-                    Clear all
+                    {t('outreach.clearAll')}
                   </Button>
                 </div>
                 <DragDropContext
@@ -1909,28 +1947,28 @@ export function ColdOutreachPage() {
                 onClick={() => setShowAddPeople((open) => !open)}
               >
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">Add people</h3>
+                  <h3 className="text-sm font-semibold text-slate-900">{t('outreach.addPeople')}</h3>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    Paste, CSV, or Google Sheet onto {selectedClient ? selectedClient.name : 'a client list'}.
+                    {t('outreach.addPeopleHint', { list: selectedClient ? selectedClient.name : t('outreach.aClientList') })}
                   </p>
                 </div>
-                <span className="text-sm text-slate-500">{showAddPeople ? 'Hide' : 'Show'}</span>
+                <span className="text-sm text-slate-500">{showAddPeople ? t('outreach.hide') : t('outreach.show')}</span>
               </button>
 
               {showAddPeople && (
               <div className="mt-3">
               {clientId === 'all' && (
                   <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
-                    Choose a specific client list before importing.
+                    {t('outreach.chooseSpecificClient')}
                   </p>
               )}
 
               <div className="mt-3 flex flex-wrap gap-1 rounded-md border border-slate-200 bg-white p-1">
                 {(
                   [
-                    { id: 'paste', label: 'Paste' },
-                    { id: 'csv', label: 'CSV file' },
-                    { id: 'sheet', label: 'Google Sheet' },
+                    { id: 'paste', label: t('outreach.methodPaste') },
+                    { id: 'csv', label: t('outreach.methodCsv') },
+                    { id: 'sheet', label: t('outreach.methodSheet') },
                   ] as const
                 ).map((method) => (
                   <button
@@ -1951,7 +1989,7 @@ export function ColdOutreachPage() {
               <div className="mt-3 space-y-3">
                 {addPeopleMethod === 'paste' && (
                   <>
-                    <Label>Paste emails or a CSV table</Label>
+                    <Label>{t('outreach.pasteLabel')}</Label>
                     <Textarea
                       value={pasteEmails}
                       onChange={(event) => setPasteEmails(event.target.value)}
@@ -1968,7 +2006,7 @@ export function ColdOutreachPage() {
                       ) : (
                         <Upload className="mr-1 h-4 w-4" />
                       )}
-                      Preview &amp; add to list
+                      {t('outreach.previewAdd')}
                     </Button>
                   </>
                 )}
@@ -1976,11 +2014,11 @@ export function ColdOutreachPage() {
                 {addPeopleMethod === 'csv' && (
                   <>
                     <p className="text-sm text-slate-600">
-                      Upload a CSV with email, first name, last name, and company columns. We will preview the mapping before saving.
+                      {t('outreach.csvHint')}
                     </p>
                     <label className="inline-flex cursor-pointer items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50">
                       <FileSpreadsheet className="mr-2 h-4 w-4" />
-                      Choose CSV file
+                      {t('outreach.chooseCsv')}
                       <input
                         type="file"
                         accept=".csv,text/csv,text/plain"
@@ -2004,13 +2042,13 @@ export function ColdOutreachPage() {
                       <div className="space-y-2">
                         {googleStatus?.connected && googleStatus?.can_write_sheets === false && (
                           <p className="text-xs text-amber-800">
-                            Reconnect Google so LeadLab can write Sent back into the Status column after each send.
+                            {t('outreach.reconnectHint')}
                           </p>
                         )}
                         {sheetFiles.length > 0 && (
                           <Select value={sheetChoice || undefined} onValueChange={setSheetChoice}>
                             <SelectTrigger className="bg-white">
-                              <SelectValue placeholder="Choose a spreadsheet" />
+                              <SelectValue placeholder={t('outreach.chooseSpreadsheet')} />
                             </SelectTrigger>
                             <SelectContent>
                               {sheetFiles.map((file) => (
@@ -2025,12 +2063,12 @@ export function ColdOutreachPage() {
                           className="bg-white"
                           value={sheetUrl}
                           onChange={(event) => setSheetUrl(event.target.value)}
-                          placeholder="Paste a Google Sheets URL"
+                          placeholder={t('outreach.pasteSheetsUrlPlaceholder')}
                         />
                         {sheetTabs.length > 0 && (
                           <Select value={sheetTab || undefined} onValueChange={setSheetTab}>
                             <SelectTrigger className="bg-white">
-                              <SelectValue placeholder="Choose a tab" />
+                              <SelectValue placeholder={t('outreach.chooseTab')} />
                             </SelectTrigger>
                             <SelectContent>
                               {sheetTabs.map((tab) => (
@@ -2058,27 +2096,27 @@ export function ColdOutreachPage() {
                             ) : (
                               <FileSpreadsheet className="mr-1 h-4 w-4" />
                             )}
-                            Preview &amp; add to list
+                            {t('outreach.previewAdd')}
                           </Button>
                           {googleStatus?.can_write_sheets === false && (
                             <Button type="button" variant="outline" onClick={() => void connectGoogle()} disabled={connectingGoogle}>
                               {connectingGoogle ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
-                              Reconnect Google
+                              {t('outreach.reconnectGoogle')}
                             </Button>
                           )}
                         </div>
                         <p className="text-xs text-slate-500">
-                          Rows marked Sent are skipped. After a successful send we write Sent into that cell.
+                          {t('outreach.sheetSentHint')}
                         </p>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         <Button type="button" variant="outline" onClick={() => void connectGoogle()} disabled={connectingGoogle}>
                           {connectingGoogle ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-1 h-4 w-4" />}
-                          Connect Google Sheets
+                          {t('outreach.connectSheets')}
                         </Button>
                         <p className="text-xs text-slate-500">
-                          Google opens a permission page. Scroll to the bottom and click Continue, then Allow.
+                          {t('outreach.googlePermissionHint')}
                         </p>
                       </div>
                     )}
@@ -2095,30 +2133,30 @@ export function ColdOutreachPage() {
           <CardHeader className="border-b border-slate-100 pb-4">
             <CardTitle className="flex items-center gap-2 text-lg text-slate-900">
               <Mail className="h-5 w-5 text-slate-700" />
-              Compose &amp; send
+              {t('outreach.composeAndSend')}
             </CardTitle>
             <p className="text-sm text-slate-500">
-              Write once, preview as the recipient will see it, then send to the selected people.
+              {t('outreach.composeHint')}
             </p>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Campaign</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('outreach.campaign')}</p>
               <p className="mt-0.5 font-medium text-slate-900">
                 {campaignMode === 'new'
-                  ? campaignName.trim() || 'Name this campaign above'
-                  : selectedCampaign?.name || 'Choose an existing campaign above'}
+                  ? campaignName.trim() || t('outreach.nameCampaignAbove')
+                  : selectedCampaign?.name || t('outreach.chooseCampaignAbove')}
               </p>
               <p className="mt-0.5 text-xs text-slate-500">
-                {campaignMode === 'new' ? 'New campaign' : 'Existing campaign'} — change it in the bar at the top of this page.
+                {campaignMode === 'new' ? t('newCampaign') : t('outreach.existingCampaign')} — {t('outreach.changeCampaignHint')}
               </p>
             </div>
 
             <div>
-              <Label>Send from</Label>
+              <Label>{t('outreach.sendFrom')}</Label>
               <Select value={accountId} onValueChange={setAccountId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose mailbox" />
+                  <SelectValue placeholder={t('outreach.chooseMailbox')} />
                 </SelectTrigger>
                 <SelectContent>
                   {accounts.map((account) => (
@@ -2129,37 +2167,37 @@ export function ColdOutreachPage() {
                 </SelectContent>
               </Select>
               <p className="mt-1 text-xs text-slate-500">
-                Sends as {selectedAccount?.email || 'this mailbox'} via Gmail or SMTP — never Resend / no-reply.
+                {t('outreach.sendsAs', { email: selectedAccount?.email || t('outreach.thisMailbox') })}
               </p>
             </div>
 
             <div>
-              <Label>Subject</Label>
+              <Label>{t('subject')}</Label>
               <Input
                 value={subject}
                 onChange={(event) => setSubject(event.target.value)}
-                placeholder="Quick intro from {{company}}'s network"
+                placeholder={t('outreach.subjectPlaceholder', { token: '{{company}}' })}
               />
             </div>
 
             <div>
-              <Label>Message</Label>
+              <Label>{t('composePage.message')}</Label>
               <Textarea
                 ref={bodyTextareaRef}
                 className="min-h-[160px] text-sm"
                 value={body}
                 onChange={(event) => setBody(event.target.value)}
-                placeholder={'Hi {{first_name}},\n\nI wanted to reach out…'}
+                placeholder={t('outreach.bodyPlaceholder', { token: '{{first_name}}' })}
               />
               <div className="mt-2">
                 <Select onValueChange={(token) => token && insertMergeToken(token)}>
                   <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Insert field" />
+                    <SelectValue placeholder={t('outreach.insertField')} />
                   </SelectTrigger>
                   <SelectContent>
                     {MERGE_FIELDS.map((field) => (
                       <SelectItem key={field.token} value={field.token}>
-                        {field.label}
+                        {t(`outreach.mergeFields.${field.token}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -2172,7 +2210,7 @@ export function ColdOutreachPage() {
                 checked={skipIfSent}
                 onCheckedChange={(checked) => setSkipIfSent(Boolean(checked))}
               />
-              <Label className="font-normal">Skip people already sent in this campaign</Label>
+              <Label className="font-normal">{t('outreach.skipIfSent')}</Label>
             </div>
 
             <div className="flex items-center gap-3">
@@ -2181,26 +2219,24 @@ export function ColdOutreachPage() {
                 className="text-sm text-slate-600 underline-offset-2 hover:underline"
                 onClick={() => setShowAdvancedSend((open) => !open)}
               >
-                {showAdvancedSend ? 'Hide extra options' : 'Pace, schedule, template…'}
+                {showAdvancedSend ? t('outreach.hideExtra') : t('outreach.showExtra')}
               </button>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
                 <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                {parsePositiveNumber(delayMinutes)
-                  ? `${delayMinutes} min between emails`
-                  : '5 min between emails'}
+                {t('outreach.minBetween', { minutes: parsePositiveNumber(delayMinutes) ? delayMinutes : 5 })}
               </span>
             </div>
 
             {showAdvancedSend && (
               <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
             <div>
-              <Label>Load template</Label>
+              <Label>{t('outreach.loadTemplate')}</Label>
               <Select value={templateId || 'none'} onValueChange={applyTemplate}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a template" />
+                  <SelectValue placeholder={t('outreach.chooseTemplate')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="none">{t('outreach.groupNone')}</SelectItem>
                   {templates.map((tpl) => (
                     <SelectItem key={tpl.id} value={String(tpl.id)}>
                       {tpl.name}
@@ -2211,30 +2247,30 @@ export function ColdOutreachPage() {
             </div>
 
             <div>
-              <Label>Format</Label>
+              <Label>{t('templatesPage.format')}</Label>
               <Select value={format} onValueChange={(value) => setFormat(value as 'text' | 'html')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="text">Simple text</SelectItem>
+                  <SelectItem value="text">{t('outreach.simpleText')}</SelectItem>
                   <SelectItem value="html">HTML</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label>AI rewrite instruction</Label>
+              <Label>{t('outreach.rewriteInstruction')}</Label>
               <Input
                 value={rewriteInstruction}
                 onChange={(event) => setRewriteInstruction(event.target.value)}
-                placeholder="Make this shorter and friendlier"
+                placeholder={t('outreach.rewritePlaceholder')}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Minutes between each email</Label>
+                <Label>{t('outreach.minutesBetween')}</Label>
                 <Input
                   type="number"
                   min={0.1}
@@ -2259,7 +2295,7 @@ export function ColdOutreachPage() {
                 />
               </div>
               <div>
-                <Label>Emails per minute</Label>
+                <Label>{t('outreach.emailsPerMinute')}</Label>
                 <Input
                   type="number"
                   min={0.1}
@@ -2284,12 +2320,12 @@ export function ColdOutreachPage() {
             </div>
             <p className="-mt-2 text-xs text-gray-500">
               {parsePositiveNumber(delayMinutes)
-                ? `That's about ${maxPerHour || hourCapFromMinutes(parsePositiveNumber(delayMinutes))} emails per hour. The hourly cap fills in automatically.`
-                : 'Set minutes between emails or emails per minute. The hourly cap fills in automatically.'}
+                ? t('outreach.paceSummary', { count: maxPerHour || hourCapFromMinutes(parsePositiveNumber(delayMinutes)) })
+                : t('outreach.paceEmpty')}
             </p>
 
             <div>
-              <Label>Schedule start (optional)</Label>
+              <Label>{t('outreach.scheduleStart')}</Label>
               <Input
                 type="datetime-local"
                 value={scheduleAt}
@@ -2299,7 +2335,7 @@ export function ColdOutreachPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Send window start</Label>
+                <Label>{t('outreach.windowStart')}</Label>
                 <Input
                   type="time"
                   value={sendWindowStart}
@@ -2307,7 +2343,7 @@ export function ColdOutreachPage() {
                 />
               </div>
               <div>
-                <Label>Send window end</Label>
+                <Label>{t('outreach.windowEnd')}</Label>
                 <Input
                   type="time"
                   value={sendWindowEnd}
@@ -2321,21 +2357,21 @@ export function ColdOutreachPage() {
                 checked={weekdaysOnly}
                 onCheckedChange={(checked) => setWeekdaysOnly(Boolean(checked))}
               />
-              <Label className="font-normal">Weekdays only (Mon–Fri)</Label>
+              <Label className="font-normal">{t('outreach.weekdaysOnly')}</Label>
             </div>
 
             <div>
-              <Label>Max emails per hour</Label>
+              <Label>{t('outreach.maxPerHour')}</Label>
               <Input
                 type="number"
                 min={1}
                 max={MAX_EMAILS_PER_HOUR}
                 value={maxPerHour}
                 onChange={(event) => setMaxPerHour(event.target.value)}
-                placeholder="Filled from send pace"
+                placeholder={t('outreach.maxPerHourPlaceholder')}
               />
               <p className="mt-1 text-xs text-gray-500">
-                Auto-filled from the pace above. Lower it if you want a stricter hourly cap.
+                {t('outreach.maxPerHourHint')}
               </p>
             </div>
 
@@ -2345,30 +2381,30 @@ export function ColdOutreachPage() {
                 disabled={Boolean(scheduleAt)}
                 onCheckedChange={(checked) => setUseQueue(Boolean(checked))}
               />
-              <Label className="font-normal">Queue and send automatically (5 min apart)</Label>
+              <Label className="font-normal">{t('outreach.queueAuto')}</Label>
             </div>
               </div>
             )}
 
             {lastBatchId && (
               <p className="text-xs text-gray-600">
-                Last batch: <code>{lastBatchId}</code>{' '}
+                {t('outreach.lastBatch')} <code>{lastBatchId}</code>{' '}
                 <button
                   type="button"
                   className="underline"
                   onClick={async () => {
                     await emailAPI.cancelOutreachBatch(lastBatchId);
-                    toast({ title: 'Batch cancelled', description: 'Pending jobs in this batch were cancelled.' });
+                    toast({ title: t('outreach.batchCancelled'), description: t('outreach.batchCancelledBody') });
                   }}
                 >
-                  Cancel pending
+                  {t('outreach.cancelPending')}
                 </button>
               </p>
             )}
 
             {progress && (
               <p className="text-sm text-gray-600">
-                Processing {progress.done} / {progress.total}…
+                {t('outreach.processing', { done: progress.done, total: progress.total })}
               </p>
             )}
 
@@ -2390,7 +2426,7 @@ export function ColdOutreachPage() {
                 ) : (
                   <Sparkles className="mr-2 h-4 w-4" />
                 )}
-                Rewrite with AI
+                {t('outreach.rewriteWithAi')}
               </Button>
               <Button
                 type="button"
@@ -2399,14 +2435,14 @@ export function ColdOutreachPage() {
                 onClick={() => setPreviewOpen(true)}
               >
                 <Eye className="mr-2 h-4 w-4" />
-                Preview email
+                {t('outreach.previewEmail')}
               </Button>
               <Button
                 type="button"
                 disabled={!canSend}
                 onClick={() => {
-                  const verb = scheduleAt || useQueue ? 'Queue' : 'Send';
-                  if (!window.confirm(`${verb} this email for ${selectedIds.size} lead${selectedIds.size === 1 ? '' : 's'}?`)) {
+                  const willQueue = Boolean(scheduleAt || useQueue);
+                  if (!window.confirm(t(willQueue ? 'outreach.confirmQueue' : 'outreach.confirmSend', { count: selectedIds.size }))) {
                     return;
                   }
                   sendMutation.mutate();
@@ -2417,7 +2453,7 @@ export function ColdOutreachPage() {
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
                 )}
-                {scheduleAt || useQueue ? `Queue ${selectedIds.size || 0}` : `Send to ${selectedIds.size || 0}`}
+                {scheduleAt || useQueue ? t('outreach.queueN', { count: selectedIds.size || 0 }) : t('outreach.sendToN', { count: selectedIds.size || 0 })}
               </Button>
               </div>
             </div>
@@ -2428,12 +2464,12 @@ export function ColdOutreachPage() {
       <Dialog open={Boolean(importPreview)} onOpenChange={(open) => !open && closeImportPreview()}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Add people to {selectedClient?.name || 'this list'}</DialogTitle>
+            <DialogTitle>{t('outreach.dialogAddTitle', { list: selectedClient?.name || t('outreach.thisList') })}</DialogTitle>
             <DialogDescription>
-              We found {importPreview?.total_rows || 0} rows
+              {t('outreach.dialogFound', { count: importPreview?.total_rows || 0 })}
               {importPreview?.has_status
-                ? ` (${importPreview.sent_count || 0} already Sent, ${importPreview.ready_count ?? importPreview.total_rows} ready)`
-                : ''}. Confirm the column mapping, then add them under your client list so you can select and send.
+                ? ` (${t('outreach.dialogSentReady', { sent: importPreview.sent_count || 0, ready: importPreview.ready_count ?? importPreview.total_rows })})`
+                : ''}. {t('outreach.dialogConfirm')}
             </DialogDescription>
           </DialogHeader>
           {importPreview && (
@@ -2454,7 +2490,7 @@ export function ColdOutreachPage() {
                       <SelectContent>
                         {IMPORT_FIELD_OPTIONS.map((option) => (
                           <SelectItem key={`${header}-${option.value}`} value={option.value}>
-                            {option.label}
+                            {t(`outreach.importFields.${option.value}`)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -2466,12 +2502,12 @@ export function ColdOutreachPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Email</TableHead>
-                      <TableHead>First name</TableHead>
-                      <TableHead>Last name</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t('outreach.colEmail')}</TableHead>
+                      <TableHead>{t('outreach.importFields.first_name')}</TableHead>
+                      <TableHead>{t('outreach.importFields.last_name')}</TableHead>
+                      <TableHead>{t('outreach.colCompany')}</TableHead>
+                      <TableHead>{t('outreach.colId')}</TableHead>
+                      <TableHead>{t('outreach.status')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -2482,7 +2518,7 @@ export function ColdOutreachPage() {
                         <TableCell>{row.last_name || '—'}</TableCell>
                         <TableCell>{row.company || '—'}</TableCell>
                         <TableCell>{row.unique_lead_id || '—'}</TableCell>
-                        <TableCell>{row.status || 'Ready'}</TableCell>
+                        <TableCell>{deliveryText(row.status || 'Ready')}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -2490,7 +2526,7 @@ export function ColdOutreachPage() {
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={closeImportPreview}>
-                  Cancel
+                  {t('composePage.cancel')}
                 </Button>
                 <Button
                   type="button"
@@ -2500,7 +2536,7 @@ export function ColdOutreachPage() {
                   {(importTextMutation.isPending || importSheetMutation.isPending) && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Import {importPreview.total_rows} people onto {selectedClient?.name || 'list'}
+                  {t('outreach.importN', { count: importPreview.total_rows, list: selectedClient?.name || t('outreach.listFallback') })}
                 </Button>
               </div>
             </div>
@@ -2511,41 +2547,41 @@ export function ColdOutreachPage() {
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Email preview</DialogTitle>
+            <DialogTitle>{t('outreach.previewTitle')}</DialogTitle>
             <DialogDescription>
               {previewLead
-                ? `Showing merge fields for ${previewLead.first_name || ''} ${previewLead.last_name || ''} (${previewLead.email || 'no email'}).`
-                : 'Select a lead to see personalized merge fields.'}
+                ? t('outreach.previewFor', { name: `${previewLead.first_name || ''} ${previewLead.last_name || ''}`.trim(), email: previewLead.email || t('outreach.noEmailLower') })
+                : t('outreach.previewSelectLead')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <div className="text-xs uppercase text-gray-500">From</div>
+              <div className="text-xs uppercase text-gray-500">{t('from')}</div>
               <div className="text-sm">
                 {selectedAccount
                   ? `${selectedAccount.display_name ? `${selectedAccount.display_name} ` : ''}<${selectedAccount.email}>`
-                  : 'Choose a connected mailbox before sending.'}
+                  : t('outreach.previewChooseMailbox')}
               </div>
             </div>
             <div>
-              <div className="text-xs uppercase text-gray-500">Subject</div>
-              <div className="font-medium">{previewSubject || '(empty subject)'}</div>
+              <div className="text-xs uppercase text-gray-500">{t('subject')}</div>
+              <div className="font-medium">{previewSubject || t('outreach.emptySubject')}</div>
             </div>
             {previewAsHtml ? (
               <iframe
-                title="HTML preview"
+                title={t('outreach.htmlPreview')}
                 sandbox="allow-popups allow-popups-to-escape-sandbox"
                 className="h-[28rem] w-full rounded-md border bg-white"
                 srcDoc={previewHtmlDocument}
               />
             ) : (
               <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md border bg-slate-50 p-3 text-sm">
-                {previewBody || '(empty message)'}
+                {previewBody || t('outreach.emptyMessage')}
               </pre>
             )}
             {previewAsHtml && format !== 'html' ? (
               <p className="text-xs text-amber-700">
-                Showing a visual HTML preview because the body looks like HTML. Switch Format to HTML before sending.
+                {t('outreach.htmlPreviewNote')}
               </p>
             ) : null}
           </div>

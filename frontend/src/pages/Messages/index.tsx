@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { Search, Send, Plus, Users, MoreVertical, Phone, Video, Info, Smile, Paperclip, Hash, AtSign, ExternalLink } from 'lucide-react';
 import { messagesApi, ConversationSummary, ConversationMessages, Message, ConversationUser } from '../../api/messages';
 import { Button } from '../../components/ui/Button';
@@ -10,6 +11,8 @@ import toast from 'react-hot-toast';
 import { messageAttachmentUrl, openAttachmentInNewTab } from '@/lib/apiAttachmentUrls';
 
 export function MessagesPage() {
+  const { t, i18n } = useTranslation('messages');
+  const locale = i18n.language || 'en';
   const { user } = useAuth();
   const [searchText, setSearchText] = useState('');
   const [selectedContact, setSelectedContact] = useState<ConversationUser | null>(null);
@@ -149,7 +152,7 @@ export function MessagesPage() {
       onlineActivityService.recordActivity();
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Could not send message');
+      toast.error(t('sendFailed'));
     } finally {
       setSending(false);
     }
@@ -164,11 +167,11 @@ export function MessagesPage() {
       await messagesApi.sendMessageWithAttachment(selectedContact.id, file);
       await loadConversationMessages(selectedContact.id);
       await loadConversations();
-      toast.success('Attachment sent');
+      toast.success(t('attachmentSent'));
       onlineActivityService.recordActivity();
     } catch (err) {
       console.error('Error uploading attachment:', err);
-      toast.error('Could not send attachment');
+      toast.error(t('attachmentFailed'));
     } finally {
       setUploadingAttachment(false);
     }
@@ -207,26 +210,25 @@ export function MessagesPage() {
     const diffInDays = Math.floor(diffInHours / 24);
     
     if (diffInMinutes < 1) {
-      return 'now';
+      return t('time.now');
     } else if (diffInMinutes < 60) {
       return `${diffInMinutes}m`;
     } else if (diffInHours < 24) {
       return `${diffInHours}h`;
     } else if (diffInDays === 1) {
-      return 'yesterday';
+      return t('time.yesterday');
     } else if (diffInDays < 7) {
-      return date.toLocaleDateString('en-US', { weekday: 'short' });
+      return date.toLocaleDateString(locale, { weekday: 'short' });
     } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
     }
   };
 
   const formatMessageTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { 
+    return date.toLocaleTimeString(locale, { 
       hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
+      minute: '2-digit'
     });
   };
 
@@ -260,9 +262,9 @@ export function MessagesPage() {
   };
 
   const formatMessageDate = (dateString: string) => {
-    if (isToday(dateString)) return 'Today';
-    if (isYesterday(dateString)) return 'Yesterday';
-    return new Date(dateString).toLocaleDateString('en-US', { 
+    if (isToday(dateString)) return t('time.today');
+    if (isYesterday(dateString)) return t('time.yesterdayCap');
+    return new Date(dateString).toLocaleDateString(locale, { 
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
@@ -406,7 +408,7 @@ export function MessagesPage() {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-bold text-gray-900 flex items-center">
               <Hash className="h-5 w-5 mr-2 text-purple-600" />
-              Messages
+              {t('title')}
             </h1>
             <button
               onClick={() => setShowNewConversation(!showNewConversation)}
@@ -423,7 +425,7 @@ export function MessagesPage() {
               type="text"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              placeholder={showNewConversation ? "Find teammates..." : "Search conversations..."}
+              placeholder={showNewConversation ? t('findTeammates') : t('searchConversations')}
               className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
             />
           </div>
@@ -439,22 +441,21 @@ export function MessagesPage() {
             // Team Members List
             <div className="p-2">
               <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Team Members ({filteredUsers.length})
+                {t('teamMembers', { count: filteredUsers.length })}
               </div>
               {filteredUsers.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
                   <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-sm">{searchText ? 'No teammates found' : 'No teammates available'}</p>
+                  <p className="text-sm">{searchText ? t('noTeammatesFound') : t('noTeammatesAvailable')}</p>
                   {!searchText && (
                     <p className="text-xs text-gray-400 mt-3 max-w-xs mx-auto leading-relaxed">
-                      Teammates are everyone in your organization (you are not listed here). Add or invite people
-                      under{' '}
+                      {t('teammatesHelp')}{' '}
                       <Link to="/settings/team" className="text-purple-600 hover:underline font-medium">
-                        Settings → Team
+                        {t('settingsTeam')}
                       </Link>{' '}
-                      or{' '}
+                      {t('or')}{' '}
                       <Link to="/team-management" className="text-purple-600 hover:underline font-medium">
-                        Team management
+                        {t('teamManagement')}
                       </Link>
                       .
                     </p>
@@ -482,9 +483,9 @@ export function MessagesPage() {
                           {user.first_name} {user.last_name}
                         </h3>
                           {isUserOnline(user.id) ? (
-                            <span className="text-xs text-green-600 font-medium">● Online</span>
+                            <span className="text-xs text-green-600 font-medium">● {t('online')}</span>
                           ) : (
-                            <span className="text-xs text-gray-400 font-medium">● Offline</span>
+                            <span className="text-xs text-gray-400 font-medium">● {t('offline')}</span>
                           )}
                         </div>
                         <p className="text-sm text-gray-500 truncate">{user.email}</p>
@@ -498,13 +499,13 @@ export function MessagesPage() {
             // Conversations List
             <div className="p-2">
               <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Recent ({filteredConversations.length})
+                {t('recent', { count: filteredConversations.length })}
               </div>
               {filteredConversations.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
                   <Hash className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-sm">{searchText ? 'No conversations found' : 'No conversations yet'}</p>
-                  <p className="text-xs text-gray-400 mt-1">Start a new conversation to get started</p>
+                  <p className="text-sm">{searchText ? t('noConversationsFound') : t('noConversationsYet')}</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('startNewHint')}</p>
                 </div>
               ) : (
                 filteredConversations.map((conv) => (
@@ -542,7 +543,7 @@ export function MessagesPage() {
                         <p className={`text-sm truncate mt-1 ${
                           conv.unread_count > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'
                         }`}>
-                          {conv.last_message?.content || 'No messages yet'}
+                          {conv.last_message?.content || t('noMessagesYet')}
                         </p>
                       </div>
                     </div>
@@ -575,7 +576,7 @@ export function MessagesPage() {
                       {selectedContact.first_name} {selectedContact.last_name}
                     </h2>
                     <p className={`text-sm font-medium ${isUserOnline(selectedContact.id) ? 'text-green-600' : 'text-gray-500'}`}>
-                      {isUserOnline(selectedContact.id) ? 'Active now' : 'Offline'}
+                      {isUserOnline(selectedContact.id) ? t('activeNow') : t('offlineCap')}
                     </p>
                   </div>
                 </div>
@@ -588,7 +589,7 @@ export function MessagesPage() {
                         ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-100' 
                         : 'text-gray-300 cursor-not-allowed'
                     }`}
-                    title={isUserOnline(selectedContact.id) ? 'Voice call' : 'User is offline'}
+                    title={isUserOnline(selectedContact.id) ? t('voiceCallLower') : t('userOffline')}
                   >
                     <Phone className="h-5 w-5" />
                   </button>
@@ -600,7 +601,7 @@ export function MessagesPage() {
                         ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-100' 
                         : 'text-gray-300 cursor-not-allowed'
                     }`}
-                    title={isUserOnline(selectedContact.id) ? 'Video call' : 'User is offline'}
+                    title={isUserOnline(selectedContact.id) ? t('videoCallLower') : t('userOffline')}
                   >
                     <Video className="h-5 w-5" />
                   </button>
@@ -609,7 +610,7 @@ export function MessagesPage() {
                     className={`p-2 rounded-lg transition-colors ${
                       showUserInfo ? 'bg-purple-100 text-purple-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                     }`}
-                    title="User information"
+                    title={t('userInformation')}
                   >
                     <Info className="h-5 w-5" />
                   </button>
@@ -618,7 +619,7 @@ export function MessagesPage() {
                     className={`p-2 rounded-lg transition-colors ${
                       showMoreMenu ? 'bg-purple-100 text-purple-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                     }`}
-                    title="More options"
+                    title={t('moreOptions')}
                   >
                     <MoreVertical className="h-5 w-5" />
                   </button>
@@ -627,16 +628,16 @@ export function MessagesPage() {
                   {showMoreMenu && (
                     <div className="absolute top-12 right-0 bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-[200px] z-10">
                       <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors">
-                        Export Chat History
+                        {t('exportHistory')}
                       </button>
                       <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors">
-                        Clear Chat History
+                        {t('clearHistory')}
                       </button>
                       <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors">
-                        Block User
+                        {t('blockUser')}
                       </button>
                       <button className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors">
-                        Report User
+                        {t('reportUser')}
                       </button>
                     </div>
                   )}
@@ -693,11 +694,11 @@ export function MessagesPage() {
                                   <Video className="h-5 w-5 mr-2 text-blue-600" />
                                 )}
                                 <span className="font-semibold text-gray-900">
-                                  {getCallType(message.content) === 'voice' ? 'Voice Call' : 'Video Call'} Invitation
+                                  {getCallType(message.content) === 'voice' ? t('voiceCallInvitation') : t('videoCallInvitation')}
                                 </span>
                               </div>
                               <p className="text-sm text-gray-600 mb-3">
-                                {isOwnMessage ? 'You' : selectedContact.first_name} started a call
+                                {t('startedCall', { name: isOwnMessage ? t('you') : selectedContact.first_name })}
                               </p>
                               {extractCallUrl(message.content) && (
                                 <button
@@ -705,7 +706,7 @@ export function MessagesPage() {
                                   className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                                 >
                                   <ExternalLink className="h-4 w-4 mr-2" />
-                                  Join Call
+                                  {t('joinCall')}
                                 </button>
                               )}
                               <p className={`text-xs mt-2 ${
@@ -755,7 +756,7 @@ export function MessagesPage() {
                                       } catch (err: unknown) {
                                         console.error(err);
                                         const msg =
-                                          err instanceof Error ? err.message : 'Could not open attachment';
+                                          err instanceof Error ? err.message : t('openAttachmentFailed');
                                         toast.error(msg);
                                       } finally {
                                         setOpeningAttachmentKey(null);
@@ -763,7 +764,7 @@ export function MessagesPage() {
                                     }}
                                     className={`text-xs underline disabled:opacity-50 ${isOwnMessage ? 'text-white' : 'text-purple-600'}`}
                                   >
-                                    {openingAttachmentKey === attKey ? 'Opening…' : 'Open'}
+                                    {openingAttachmentKey === attKey ? t('opening') : t('open')}
                                   </button>
                                 </div>
                                 <p
@@ -806,10 +807,10 @@ export function MessagesPage() {
                       {getInitials(selectedContact.first_name, selectedContact.last_name)}
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Start a conversation with {selectedContact.first_name}
+                      {t('startConversationWith', { name: selectedContact.first_name })}
                     </h3>
                     <p className="text-gray-500 text-sm">
-                      Send a message to begin your conversation
+                      {t('sendToBegin')}
                     </p>
                   </div>
                 </div>
@@ -831,7 +832,7 @@ export function MessagesPage() {
                   disabled={uploadingAttachment || !selectedContact}
                   onClick={() => attachmentInputRef.current?.click()}
                   className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-40"
-                  aria-label="Attach file"
+                  aria-label={t('attachFile')}
                 >
                   <Paperclip className={`h-5 w-5 ${uploadingAttachment ? 'animate-pulse' : ''}`} />
                 </button>
@@ -840,7 +841,7 @@ export function MessagesPage() {
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder={`Message ${selectedContact.first_name}...`}
+                    placeholder={t('messagePlaceholder', { name: selectedContact.first_name })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none max-h-32 text-sm"
                     rows={1}
                     style={{ minHeight: '48px' }}
@@ -866,7 +867,14 @@ export function MessagesPage() {
                 </button>
               </div>
               <div className="mt-2 text-xs text-gray-500 px-1">
-                Press <kbd className="px-1 py-0.5 text-xs font-medium bg-gray-100 border border-gray-300 rounded">Enter</kbd> to send, <kbd className="px-1 py-0.5 text-xs font-medium bg-gray-100 border border-gray-300 rounded">Shift + Enter</kbd> for new line
+                <Trans
+                  i18nKey="keyboardHint"
+                  t={t}
+                  components={{
+                    enter: <kbd className="px-1 py-0.5 text-xs font-medium bg-gray-100 border border-gray-300 rounded" />,
+                    shiftEnter: <kbd className="px-1 py-0.5 text-xs font-medium bg-gray-100 border border-gray-300 rounded" />,
+                  }}
+                />
               </div>
             </div>
           </>
@@ -877,17 +885,16 @@ export function MessagesPage() {
               <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto mb-6 shadow-lg">
                 <Hash className="h-10 w-10" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to Messages</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('welcomeTitle')}</h2>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                Stay connected with your team. Select a conversation from the sidebar to start messaging, 
-                or create a new conversation with any team member.
+                {t('welcomeBody')}
               </p>
               <button
                 onClick={() => setShowNewConversation(true)}
                 className="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm font-medium"
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Start New Conversation
+                {t('startNewConversation')}
               </button>
             </div>
           </div>
@@ -900,7 +907,7 @@ export function MessagesPage() {
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">User Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('userInformation')}</h3>
               <button
                 onClick={() => setShowUserInfo(false)}
                 className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -927,7 +934,7 @@ export function MessagesPage() {
               <p className={`text-sm font-medium mb-2 ${
                 isUserOnline(selectedContact.id) ? 'text-green-600' : 'text-gray-500'
               }`}>
-                {isUserOnline(selectedContact.id) ? '● Active now' : '● Offline'}
+                {isUserOnline(selectedContact.id) ? `● ${t('activeNow')}` : `● ${t('offlineCap')}`}
               </p>
               <p className="text-sm text-gray-600">{selectedContact.email}</p>
             </div>
@@ -935,7 +942,7 @@ export function MessagesPage() {
 
           {/* Quick Actions */}
           <div className="px-6 py-4 border-b border-gray-200">
-            <h5 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h5>
+            <h5 className="text-sm font-semibold text-gray-900 mb-3">{t('quickActions')}</h5>
             <div className="space-y-2">
               <button 
                 onClick={handleVoiceCall}
@@ -947,7 +954,7 @@ export function MessagesPage() {
                 }`}
               >
                 <Phone className="h-5 w-5 mr-3" />
-                Voice Call
+                {t('voiceCall')}
               </button>
               <button 
                 onClick={handleVideoCall}
@@ -959,27 +966,27 @@ export function MessagesPage() {
                 }`}
               >
                 <Video className="h-5 w-5 mr-3" />
-                Video Call
+                {t('videoCall')}
               </button>
             </div>
           </div>
 
           {/* User Details */}
           <div className="px-6 py-4 flex-1">
-            <h5 className="text-sm font-semibold text-gray-900 mb-3">Details</h5>
+            <h5 className="text-sm font-semibold text-gray-900 mb-3">{t('details')}</h5>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</label>
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('email')}</label>
                 <p className="text-sm text-gray-900 mt-1">{selectedContact.email}</p>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</label>
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('status')}</label>
                 <p className="text-sm text-gray-900 mt-1">
-                  {isUserOnline(selectedContact.id) ? 'Online' : 'Offline'}
+                  {isUserOnline(selectedContact.id) ? t('online') : t('offlineCap')}
                 </p>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">User ID</label>
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('userId')}</label>
                 <p className="text-sm text-gray-900 mt-1">#{selectedContact.id}</p>
               </div>
             </div>
@@ -989,13 +996,13 @@ export function MessagesPage() {
           <div className="px-6 py-4 border-t border-gray-200">
             <div className="space-y-2">
               <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                Export Chat History
+                {t('exportHistory')}
               </button>
               <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                Clear Chat History
+                {t('clearHistory')}
               </button>
               <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                Block User
+                {t('blockUser')}
               </button>
             </div>
           </div>

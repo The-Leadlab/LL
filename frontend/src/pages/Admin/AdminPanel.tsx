@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Users, Building2, Info, FileSpreadsheet, Tag, Receipt, ClipboardList, Ticket } from 'lucide-react';
 import { LeadManagement } from './LeadManagement';
 import { UserManagement } from './UserManagement';
@@ -77,12 +78,13 @@ const tabs: Tab[] = [
 ];
 
 export function AdminPanel() {
+  const { t } = useTranslation('modules');
   const [activeTab, setActiveTab] = React.useState(tabs[0].id);
   const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component || tabs[0].component;
 
   return (
     <div className="p-4 sm:p-6 min-w-0 overflow-x-hidden">
-      <h1 className="text-2xl font-bold mb-6">Admin Panel</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('adminPanel.title')}</h1>
       
       {/* Tabs */}
       <div className="flex space-x-4 mb-6 overflow-x-auto pb-2">
@@ -93,6 +95,7 @@ export function AdminPanel() {
           return (
             <button
               key={tab.id}
+              title={t(`adminPanel.tabs.${tab.id}.description`)}
               onClick={() => setActiveTab(tab.id)}
               className={`
                 flex items-center px-4 py-2 rounded-lg transition-colors min-w-max
@@ -102,7 +105,7 @@ export function AdminPanel() {
               `}
             >
               <Icon className={`w-5 h-5 mr-2 ${isActive ? 'text-blue-700' : 'text-gray-500'}`} />
-              <span className="font-medium">{tab.title}</span>
+              <span className="font-medium">{t(`adminPanel.tabs.${tab.id}.title`)}</span>
             </button>
           );
         })}

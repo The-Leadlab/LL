@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 /**
  * Full-page deal view with edit form (PUT /deals/{id}).
  */
@@ -35,6 +36,7 @@ interface ApiDeal {
 }
 
 export function ModernDealDetail() {
+  const { t } = useTranslation('modules');
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -139,14 +141,14 @@ export function ModernDealDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deal', dealId] });
       queryClient.invalidateQueries({ queryKey: ['deals'] });
-      toast({ title: 'Deal saved' });
+      toast({ title: t('dealDetail.toast.saved') });
     },
     onError: (err: unknown) => {
       const msg =
         err && typeof err === 'object' && 'message' in err
           ? String((err as { message?: string }).message)
-          : 'Could not save deal';
-      toast({ title: 'Save failed', description: msg, variant: 'destructive' });
+          : t('dealDetail.toast.saveError');
+      toast({ title: t('dealDetail.toast.saveFailed'), description: msg, variant: 'destructive' });
     },
   });
 
@@ -157,24 +159,24 @@ export function ModernDealDetail() {
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ['deal', dealId] });
       queryClient.invalidateQueries({ queryKey: ['deals'] });
-      toast({ title: 'Deal deleted' });
+      toast({ title: t('dealDetail.toast.deleted') });
       navigate('/deals', { replace: true });
     },
     onError: () => {
-      toast({ title: 'Could not delete deal', variant: 'destructive' });
+      toast({ title: t('dealDetail.toast.deleteFailed'), variant: 'destructive' });
     },
   });
 
   if (!Number.isFinite(dealId) || dealId <= 0) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
-        <p className="text-neutral-600 dark:text-neutral-400">Invalid deal.</p>
+        <p className="text-neutral-600 dark:text-neutral-400">{t('dealDetail.invalid')}</p>
         <button
           type="button"
           onClick={() => navigate('/deals')}
           className="mt-4 text-primary-600 hover:underline"
         >
-          Back to deals
+          {t('dealDetail.backToDeals')}
         </button>
       </div>
     );
@@ -191,13 +193,13 @@ export function ModernDealDetail() {
   if (error || !deal) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
-        <p className="text-neutral-600 dark:text-neutral-400">Could not load this deal.</p>
+        <p className="text-neutral-600 dark:text-neutral-400">{t('dealDetail.loadFailed')}</p>
         <button
           type="button"
           onClick={() => navigate('/deals')}
           className="mt-4 text-primary-600 hover:underline"
         >
-          Back to deals
+          {t('dealDetail.backToDeals')}
         </button>
       </div>
     );
@@ -214,11 +216,11 @@ export function ModernDealDetail() {
         className="mb-6 inline-flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to pipeline
+        {t('dealDetail.backToPipeline')}
       </button>
 
       <div className="max-w-2xl rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-8 shadow-sm">
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">Edit deal</h1>
+        <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">{t('dealDetail.title')}</h1>
 
         <form
           className="space-y-4"
@@ -273,21 +275,21 @@ export function ModernDealDetail() {
               onChange={(e) => setValidUntil(e.target.value)}
               className="mt-1"
             />
-            <p className="mt-1 text-xs text-neutral-500">Leave empty to save as no expiry date.</p>
+            <p className="mt-1 text-xs text-neutral-500">{t('dealDetail.noExpiryHint')}</p>
           </div>
           <div className="flex flex-wrap gap-3 pt-2">
             <Button type="submit" disabled={updateMutation.isPending || deleteMutation.isPending}>
               {updateMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving…
+                  {t('dealDetail.saving')}
                 </>
               ) : (
-                'Save changes'
+                t('dealDetail.save')
               )}
             </Button>
             <Button type="button" variant="outline" onClick={() => navigate(`/leads/${deal.lead_id}`)}>
-              Open lead: {leadName || `#${deal.lead_id}`}
+              {t('dealDetail.openLead')}: {leadName || `#${deal.lead_id}`}
             </Button>
             <Button
               type="button"
@@ -295,7 +297,7 @@ export function ModernDealDetail() {
               className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
               disabled={deleteMutation.isPending || updateMutation.isPending}
               onClick={() => {
-                if (window.confirm('Delete this deal? This cannot be undone.')) {
+                if (window.confirm(t('dealDetail.confirmDelete'))) {
                   deleteMutation.mutate();
                 }
               }}

@@ -12,6 +12,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { formatLocalDateTime } from '@/lib/localDateTime';
 import { leadsAPI, type LeadStats } from '@/services/api/leads';
 import api from '@/services/axios';
@@ -75,6 +76,8 @@ function KpiWowBadge({
 }
 
 export function ModernDashboard() {
+  const { t, i18n } = useTranslation('admin');
+  const dateLocale = i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-US';
   const navigate = useNavigate();
 
   // Fetch lead statistics
@@ -122,16 +125,16 @@ export function ModernDashboard() {
   // Lead activity chart (last 7 days — real counts from API)
   const revenueData =
     dashboardStats.leads?.trend?.slice(-7).map((item: { date: string; new_leads: number }) => ({
-      name: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      name: new Date(item.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }),
       leads: item.new_leads,
     })) || [];
 
   // Pipeline distribution data
   const pipelineData = [
-    { name: 'New', value: leadStats.new || 0 },
-    { name: 'Qualified', value: leadStats.qualified || 0 },
-    { name: 'Contacted', value: leadStats.contacted || 0 },
-    { name: 'Converted', value: leadStats.converted || 0 },
+    { name: t('leads:new'), value: leadStats.new || 0 },
+    { name: t('leads:qualified'), value: leadStats.qualified || 0 },
+    { name: t('leads:contacted'), value: leadStats.contacted || 0 },
+    { name: t('leads:converted'), value: leadStats.converted || 0 },
   ].filter(item => item.value > 0);
 
   // Loading state
@@ -140,7 +143,7 @@ export function ModernDashboard() {
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
-          <p className="text-neutral-600 dark:text-neutral-400">Loading dashboard...</p>
+          <p className="text-neutral-600 dark:text-neutral-400">{t('dashboardPage.loading')}</p>
         </div>
       </div>
     );
@@ -151,10 +154,10 @@ export function ModernDashboard() {
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8 flex items-center justify-center">
         <div className="max-w-md rounded-xl border border-red-200 dark:border-red-900 bg-white dark:bg-neutral-800 p-8 text-center shadow-sm">
           <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-2">
-            Could not load dashboard
+            {t('dashboardPage.loadFailedTitle')}
           </p>
           <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
-            One or more requests failed. Check your connection or sign in again.
+            {t('dashboardPage.loadFailedBody')}
           </p>
           <button
             type="button"
@@ -164,7 +167,7 @@ export function ModernDashboard() {
             }}
             className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
           >
-            Retry
+            {t('common:retry')}
           </button>
         </div>
       </div>
@@ -176,10 +179,10 @@ export function ModernDashboard() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">
-          Dashboard
+          {t('dashboard')}
         </h1>
         <p className="text-neutral-600 dark:text-neutral-400">
-          Welcome back! Here's what's happening with your sales today.
+          {t('dashboardPage.welcome')}
         </p>
       </div>
 
@@ -198,17 +201,17 @@ export function ModernDashboard() {
             <KpiWowBadge
               value={dashboardStats.leads?.wow_new_leads_pct_change}
               suffix="%"
-              sublabel="New leads vs prior 7 days (count)"
+              sublabel={t('dashboardPage.wowLeadsHint')}
             />
           </div>
           <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
             {totalLeads.toLocaleString()}
           </h3>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            Total Leads
+            {t('dashboardPage.totalLeads')}
             {typeof dashboardStats.leads?.new_leads_last_7d === 'number' && (
               <span className="block text-xs text-neutral-500 mt-0.5">
-                {dashboardStats.leads.new_leads_last_7d} new in last 7 days
+                {t('dashboardPage.newInLast7d', { count: dashboardStats.leads.new_leads_last_7d })}
               </span>
             )}
           </p>
@@ -227,14 +230,14 @@ export function ModernDashboard() {
             <KpiWowBadge
               value={dashboardStats.opportunities?.pipeline_value_wow_pct_change}
               suffix="%"
-              sublabel="New open pipeline $ created vs prior 7 days"
+              sublabel={t('dashboardPage.wowPipelineHint')}
             />
           </div>
           <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
             {formatPipelineUsd(pipelineValue)}
           </h3>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">Open Pipeline</p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">Excludes Closed Won and Closed Lost</p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('dashboardPage.openPipeline')}</p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">{t('dashboardPage.excludesClosed')}</p>
         </button>
 
         {/* Tasks */}
@@ -249,14 +252,14 @@ export function ModernDashboard() {
             </div>
             <span className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
               {dashboardStats.tasks?.overdue
-                ? `${dashboardStats.tasks.overdue} overdue`
-                : 'None overdue'}
+                ? t('dashboardPage.overdueCount', { count: dashboardStats.tasks.overdue })
+                : t('dashboardPage.noneOverdue')}
             </span>
           </div>
           <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
             {(dashboardStats.tasks?.open || 0).toLocaleString()}
           </h3>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">Tasks</p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('dashboardPage.tasks')}</p>
         </button>
 
         {/* Active Deals */}
@@ -273,12 +276,12 @@ export function ModernDashboard() {
             dashboardStats.opportunities.won > 0 ? (
               <span className="flex items-center text-sm font-medium text-orange-600 dark:text-orange-400">
                 <ArrowUp className="w-4 h-4 mr-1" />
-                {dashboardStats.opportunities.won} won
+                {t('dashboardPage.wonCount', { count: dashboardStats.opportunities.won })}
               </span>
             ) : (
               <span
                 className="text-sm font-medium text-neutral-400 dark:text-neutral-500"
-                title="Closed-won deals (last snapshot)"
+                title={t('dashboardPage.closedWonHint')}
               >
                 —
               </span>
@@ -287,7 +290,7 @@ export function ModernDashboard() {
           <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
             {activeDeals}
           </h3>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">Active Deals</p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('dashboardPage.activeDeals')}</p>
         </button>
       </div>
 
@@ -296,7 +299,7 @@ export function ModernDashboard() {
         {/* Revenue Trend */}
         <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm">
           <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-4">
-            Lead Activity (Last 7 Days)
+            {t('dashboardPage.leadActivity')}
           </h3>
           {revenueData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
@@ -318,13 +321,13 @@ export function ModernDashboard() {
                   stroke="#3b82f6"
                   strokeWidth={2}
                   dot={{ fill: '#3b82f6', r: 4 }}
-                  name="New Leads"
+                  name={t('dashboardPage.newLeadsSeries')}
                 />
               </LineChart>
             </ResponsiveContainer>
           ) : (
             <div className="h-[250px] flex items-center justify-center text-neutral-500 dark:text-neutral-400">
-              No data available
+              {t('common:noData')}
             </div>
           )}
         </div>
@@ -332,7 +335,7 @@ export function ModernDashboard() {
         {/* Pipeline Distribution */}
         <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm">
           <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-4">
-            Pipeline Distribution
+            {t('dashboardPage.pipelineDistribution')}
           </h3>
           {pipelineData.length > 0 ? (
             <div className="flex items-center">
@@ -375,7 +378,7 @@ export function ModernDashboard() {
             </div>
           ) : (
             <div className="h-[250px] flex items-center justify-center text-neutral-500 dark:text-neutral-400">
-              No pipeline data available
+              {t('dashboardPage.noPipelineData')}
             </div>
           )}
         </div>
@@ -387,13 +390,13 @@ export function ModernDashboard() {
         <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
-              Recent Activities
+              {t('dashboardPage.recentActivities')}
             </h3>
             <button
               onClick={() => navigate('/leads')}
               className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
             >
-              View all
+              {t('dashboardPage.viewAll')}
             </button>
           </div>
           <div className="space-y-4">
@@ -412,8 +415,8 @@ export function ModernDashboard() {
               ))
             ) : (
               <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
-                <p>No recent activities</p>
-                <p className="text-sm mt-2">Start adding leads to see activities here</p>
+                <p>{t('dashboardPage.noRecentActivities')}</p>
+                <p className="text-sm mt-2">{t('dashboardPage.startAddingLeads')}</p>
               </div>
             )}
           </div>
@@ -423,13 +426,13 @@ export function ModernDashboard() {
         <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
-              Upcoming Tasks
+              {t('dashboardPage.upcomingTasks')}
             </h3>
             <button
               onClick={() => navigate('/tasks')}
               className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
             >
-              View all
+              {t('dashboardPage.viewAll')}
             </button>
           </div>
           <div className="space-y-4">
@@ -438,19 +441,19 @@ export function ModernDashboard() {
                 <div className="flex items-center space-x-3">
                   <CheckSquare className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                   <span className="text-sm text-neutral-900 dark:text-neutral-50">
-                    {dashboardStats.tasks.open} open tasks
+                    {t('dashboardPage.openTasksCount', { count: dashboardStats.tasks.open })}
                   </span>
                 </div>
                 {dashboardStats.tasks.overdue > 0 && (
                   <span className="px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 rounded text-xs font-medium">
-                    {dashboardStats.tasks.overdue} overdue
+                    {t('dashboardPage.overdueCount', { count: dashboardStats.tasks.overdue })}
                   </span>
                 )}
               </div>
             ) : (
               <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
-                <p>No upcoming tasks</p>
-                <p className="text-sm mt-2">You're all caught up!</p>
+                <p>{t('dashboardPage.noUpcomingTasks')}</p>
+                <p className="text-sm mt-2">{t('dashboardPage.allCaughtUp')}</p>
               </div>
             )}
           </div>

@@ -23,6 +23,7 @@ import {
   X
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { buildInvoicePdf } from '../../lib/simplePdf';
 import { leadsAPI, organizationsAPI } from '../../services/api';
 import { invoiceService } from '../../services/invoices';
@@ -107,6 +108,7 @@ const initialInvoiceData: InvoiceData = {
 };
 
 export function InvoiceMaker() {
+  const { t } = useTranslation('modules');
   const [invoiceData, setInvoiceData] = useState<InvoiceData>(initialInvoiceData);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [selectedLead, setSelectedLead] = useState<string>('');
@@ -218,12 +220,12 @@ export function InvoiceMaker() {
     try {
       // Validate required fields
       if (!invoiceData.clientName || !invoiceData.companyName) {
-        toast.error('Please fill in required fields (Client Name, Company Name)');
+        toast.error(t('invoice.toast.requiredFields'));
         return;
       }
       
       if (invoiceData.items.length === 0) {
-        toast.error('Please add at least one invoice item');
+        toast.error(t('invoice.toast.needItem'));
         return;
       }
       
@@ -239,9 +241,9 @@ export function InvoiceMaker() {
       
       localStorage.setItem('invoices', JSON.stringify(savedInvoices));
       setSavedInvoices(savedInvoices);
-      toast.success('Invoice saved successfully!');
+      toast.success(t('invoice.toast.saved'));
     } catch (error) {
-      toast.error('Failed to save invoice');
+      toast.error(t('invoice.toast.saveFailed'));
     }
   };
 
@@ -281,9 +283,9 @@ export function InvoiceMaker() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success('PDF download started');
+      toast.success(t('invoice.toast.pdfStarted'));
     } catch (error) {
-      toast.error('Failed to generate PDF');
+      toast.error(t('invoice.toast.pdfFailed'));
     }
   };
 
@@ -291,17 +293,17 @@ export function InvoiceMaker() {
   const sendInvoice = async () => {
     try {
       if (!invoiceData.clientEmail) {
-        toast.error('Client email is required to send invoice');
+        toast.error(t('invoice.toast.emailRequired'));
         return;
       }
       
       if (!invoiceData.clientName) {
-        toast.error('Client name is required');
+        toast.error(t('invoice.toast.nameRequired'));
         return;
       }
 
       // Show loading state
-      const loadingToast = toast.loading('Sending invoice...');
+      const loadingToast = toast.loading(t('invoice.toast.sending'));
       
       // Prepare invoice data for API
       const emailRequest = {
@@ -328,17 +330,17 @@ export function InvoiceMaker() {
       toast.dismiss(loadingToast);
       
       if (response.success) {
-        toast.success(`Invoice #${invoiceData.invoiceNumber} sent successfully to ${invoiceData.clientEmail}`);
+        toast.success(t('invoice.toast.sent', { number: invoiceData.invoiceNumber, email: invoiceData.clientEmail }));
         setInvoiceData(prev => ({ ...prev, status: 'sent' }));
         
         // Save the updated status
         saveInvoice();
       } else {
-        toast.error(response.message || 'Failed to send invoice');
+        toast.error(response.message || t('invoice.toast.sendFailed'));
       }
       
     } catch (error: any) {
-      toast.error(error.message || 'Failed to send invoice');
+      toast.error(error.message || t('invoice.toast.sendFailed'));
       console.error('Send invoice error:', error);
     }
   };
@@ -500,9 +502,9 @@ export function InvoiceMaker() {
                 className="flex items-center space-x-2"
               >
                 <X className="h-4 w-4" />
-                <span className="hidden sm:inline">Back to Edit</span>
+                <span className="hidden sm:inline">{t('invoice.backToEdit')}</span>
               </Button>
-              <h2 className="text-lg font-semibold text-gray-900 truncate">Invoice Preview</h2>
+              <h2 className="text-lg font-semibold text-gray-900 truncate">{t('invoice.previewTitle')}</h2>
             </div>
             
             <div className="flex flex-wrap items-center gap-2 min-w-0">
@@ -512,14 +514,14 @@ export function InvoiceMaker() {
                 className="flex items-center space-x-2"
               >
                 <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Download PDF</span>
+                <span className="hidden sm:inline">{t('invoice.downloadPdf')}</span>
               </Button>
               <Button
                 onClick={sendInvoice}
                 className="flex items-center space-x-2"
               >
                 <Send className="h-4 w-4" />
-                <span className="hidden sm:inline">Send Invoice</span>
+                <span className="hidden sm:inline">{t('invoice.sendInvoice')}</span>
               </Button>
             </div>
           </div>
@@ -540,8 +542,8 @@ export function InvoiceMaker() {
         <div className="flex items-center space-x-3 min-w-0">
           <FileText className="h-8 w-8 shrink-0 text-blue-600" />
           <div className="min-w-0">
-            <h2 className="text-2xl font-bold text-gray-900">Invoice Maker</h2>
-            <p className="text-gray-600">Create professional invoices for your clients</p>
+            <h2 className="text-2xl font-bold text-gray-900">{t('invoice.title')}</h2>
+            <p className="text-gray-600">{t('invoice.subtitle')}</p>
           </div>
         </div>
         
@@ -552,7 +554,7 @@ export function InvoiceMaker() {
             className="flex items-center space-x-2"
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">New Invoice</span>
+            <span className="hidden sm:inline">{t('invoice.newInvoice')}</span>
           </Button>
           <Button
             variant="outline"
@@ -560,14 +562,14 @@ export function InvoiceMaker() {
             className="flex items-center space-x-2"
           >
             <Save className="h-4 w-4" />
-            <span className="hidden sm:inline">Save Draft</span>
+            <span className="hidden sm:inline">{t('invoice.saveDraft')}</span>
           </Button>
           <Button
             onClick={() => setIsPreviewMode(true)}
             className="flex items-center space-x-2"
           >
             <Eye className="h-4 w-4" />
-            <span className="hidden sm:inline">Preview</span>
+            <span className="hidden sm:inline">{t('invoice.preview')}</span>
           </Button>
         </div>
       </div>
@@ -580,13 +582,13 @@ export function InvoiceMaker() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Calendar className="h-5 w-5" />
-                <span>Invoice Details</span>
+                <span>{t('invoice.details')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                  <Label htmlFor="invoiceNumber">{t('invoice.number')}</Label>
                   <div className="flex space-x-2">
                     <Input
                       id="invoiceNumber"
@@ -599,14 +601,14 @@ export function InvoiceMaker() {
                       size="sm"
                       onClick={() => setInvoiceData(prev => ({ ...prev, invoiceNumber: generateInvoiceNumber() }))}
                       className="px-3"
-                      title="Generate New Invoice Number"
+                      title={t('invoice.generateNumber')}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="date">Invoice Date</Label>
+                  <Label htmlFor="date">{t('invoice.date')}</Label>
                   <Input
                     id="date"
                     type="date"
@@ -615,7 +617,7 @@ export function InvoiceMaker() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="dueDate">Due Date</Label>
+                  <Label htmlFor="dueDate">{t('invoice.dueDate')}</Label>
                   <Input
                     id="dueDate"
                     type="date"
@@ -627,7 +629,7 @@ export function InvoiceMaker() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">{t('invoice.status')}</Label>
                   <Select
                     value={invoiceData.status}
                     onValueChange={(value) => setInvoiceData(prev => ({ ...prev, status: value as any }))}
@@ -636,15 +638,15 @@ export function InvoiceMaker() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="sent">Sent</SelectItem>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="overdue">Overdue</SelectItem>
+                      <SelectItem value="draft">{t('invoice.statuses.draft')}</SelectItem>
+                      <SelectItem value="sent">{t('invoice.statuses.sent')}</SelectItem>
+                      <SelectItem value="paid">{t('invoice.statuses.paid')}</SelectItem>
+                      <SelectItem value="overdue">{t('invoice.statuses.overdue')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="paymentTerms">Payment Terms</Label>
+                  <Label htmlFor="paymentTerms">{t('invoice.paymentTerms')}</Label>
                   <Select
                     value={invoiceData.paymentTerms}
                     onValueChange={(value) => setInvoiceData(prev => ({ ...prev, paymentTerms: value }))}
@@ -657,7 +659,7 @@ export function InvoiceMaker() {
                       <SelectItem value="Net 30">Net 30</SelectItem>
                       <SelectItem value="Net 45">Net 45</SelectItem>
                       <SelectItem value="Net 60">Net 60</SelectItem>
-                      <SelectItem value="Due on Receipt">Due on Receipt</SelectItem>
+                      <SelectItem value="Due on Receipt">{t('invoice.dueOnReceipt')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -670,13 +672,13 @@ export function InvoiceMaker() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Building2 className="h-5 w-5" />
-                <span>Company Information</span>
+                <span>{t('invoice.companyInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="companyName">Company Name</Label>
+                  <Label htmlFor="companyName">{t('invoice.companyName')}</Label>
                   <Input
                     id="companyName"
                     value={invoiceData.companyName}
@@ -684,7 +686,7 @@ export function InvoiceMaker() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="companyEmail">Email</Label>
+                  <Label htmlFor="companyEmail">{t('invoice.email')}</Label>
                   <Input
                     id="companyEmail"
                     type="email"
@@ -696,7 +698,7 @@ export function InvoiceMaker() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="companyPhone">Phone</Label>
+                  <Label htmlFor="companyPhone">{t('invoice.phone')}</Label>
                   <Input
                     id="companyPhone"
                     value={invoiceData.companyPhone}
@@ -704,7 +706,7 @@ export function InvoiceMaker() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="companyWebsite">Website</Label>
+                  <Label htmlFor="companyWebsite">{t('invoice.website')}</Label>
                   <Input
                     id="companyWebsite"
                     value={invoiceData.companyWebsite}
@@ -714,7 +716,7 @@ export function InvoiceMaker() {
               </div>
               
               <div>
-                <Label htmlFor="companyAddress">Address</Label>
+                <Label htmlFor="companyAddress">{t('invoice.address')}</Label>
                 <Textarea
                   id="companyAddress"
                   value={invoiceData.companyAddress}
@@ -730,13 +732,13 @@ export function InvoiceMaker() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <User className="h-5 w-5" />
-                <span>Client Information</span>
+                <span>{t('invoice.clientInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Quick select from leads */}
               <div className="min-w-0 w-full">
-                <Label htmlFor="selectLead">Quick Select from Leads</Label>
+                <Label htmlFor="selectLead">{t('invoice.quickSelect')}</Label>
                 <Select
                   value={selectedLead}
                   onValueChange={(value) => {
@@ -745,12 +747,12 @@ export function InvoiceMaker() {
                   }}
                 >
                   <SelectTrigger className="w-full min-w-0">
-                    <SelectValue placeholder="Select a lead to populate client info" />
+                    <SelectValue placeholder={t('invoice.selectLeadPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent className="max-w-[calc(100vw-2rem)]">
                     {(leads?.data?.results || []).map((lead: any) => (
                       <SelectItem key={lead.id} value={lead.id.toString()}>
-                        {lead.first_name} {lead.last_name} - {lead.company || 'No Company'}
+                        {lead.first_name} {lead.last_name} - {lead.company || t('invoice.noCompany')}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -759,7 +761,7 @@ export function InvoiceMaker() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="clientName">Client Name</Label>
+                  <Label htmlFor="clientName">{t('invoice.clientName')}</Label>
                   <Input
                     id="clientName"
                     value={invoiceData.clientName}
@@ -767,7 +769,7 @@ export function InvoiceMaker() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="clientCompany">Company</Label>
+                  <Label htmlFor="clientCompany">{t('invoice.company')}</Label>
                   <Input
                     id="clientCompany"
                     value={invoiceData.clientCompany}
@@ -778,7 +780,7 @@ export function InvoiceMaker() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="clientEmail">Email</Label>
+                  <Label htmlFor="clientEmail">{t('invoice.email')}</Label>
                   <Input
                     id="clientEmail"
                     type="email"
@@ -787,7 +789,7 @@ export function InvoiceMaker() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="clientPhone">Phone</Label>
+                  <Label htmlFor="clientPhone">{t('invoice.phone')}</Label>
                   <Input
                     id="clientPhone"
                     value={invoiceData.clientPhone}
@@ -797,7 +799,7 @@ export function InvoiceMaker() {
               </div>
               
               <div>
-                <Label htmlFor="clientAddress">Address</Label>
+                <Label htmlFor="clientAddress">{t('invoice.address')}</Label>
                 <Textarea
                   id="clientAddress"
                   value={invoiceData.clientAddress}
@@ -814,11 +816,11 @@ export function InvoiceMaker() {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <FileText className="h-5 w-5" />
-                  <span>Invoice Items</span>
+                  <span>{t('invoice.items')}</span>
                 </div>
                 <Button onClick={addItem} size="sm" className="flex items-center space-x-2">
                   <Plus className="h-4 w-4" />
-                  <span>Add Item</span>
+                  <span>{t('invoice.addItem')}</span>
                 </Button>
               </CardTitle>
             </CardHeader>
@@ -827,18 +829,18 @@ export function InvoiceMaker() {
                 {invoiceData.items.map((item, index) => (
                   <div key={item.id} className="grid grid-cols-1 gap-3 p-4 bg-gray-50 rounded-lg sm:grid-cols-12 sm:gap-4">
                     <div className="min-w-0 sm:col-span-5">
-                      <Label htmlFor={`description-${item.id}`}>Description</Label>
+                      <Label htmlFor={`description-${item.id}`}>{t('invoice.description')}</Label>
                       <Input
                         id={`description-${item.id}`}
                         value={item.description}
                         onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                        placeholder="Item description"
+                        placeholder={t('invoice.itemDescription')}
                         className="w-full min-w-0"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3 sm:contents">
                       <div className="min-w-0 sm:col-span-2">
-                        <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
+                        <Label htmlFor={`quantity-${item.id}`}>{t('invoice.quantity')}</Label>
                         <Input
                           id={`quantity-${item.id}`}
                           type="number"
@@ -849,7 +851,7 @@ export function InvoiceMaker() {
                         />
                       </div>
                       <div className="min-w-0 sm:col-span-2">
-                        <Label htmlFor={`unitPrice-${item.id}`}>Unit Price ({invoiceData.currencySymbol})</Label>
+                        <Label htmlFor={`unitPrice-${item.id}`}>{t('invoice.unitPrice', { symbol: invoiceData.currencySymbol })}</Label>
                         <Input
                           id={`unitPrice-${item.id}`}
                           type="number"
@@ -862,7 +864,7 @@ export function InvoiceMaker() {
                       </div>
                     </div>
                     <div className="min-w-0 sm:col-span-2">
-                      <Label>Total</Label>
+                      <Label>{t('invoice.total')}</Label>
                       <div className="mt-2 p-2 bg-white rounded border text-right font-medium">
                         {invoiceData.currencySymbol}{item.total.toFixed(2)}
                       </div>
@@ -873,7 +875,7 @@ export function InvoiceMaker() {
                         size="sm"
                         onClick={() => removeItem(item.id)}
                         className="w-full min-h-[40px]"
-                        aria-label="Remove item"
+                        aria-label={t('invoice.removeItem')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -883,7 +885,7 @@ export function InvoiceMaker() {
                 
                 {invoiceData.items.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
-                    No items added yet. Click "Add Item" to get started.
+                    {t('invoice.noItems')}
                   </div>
                 )}
               </div>
@@ -893,27 +895,27 @@ export function InvoiceMaker() {
           {/* Additional Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Additional Information</CardTitle>
+              <CardTitle>{t('invoice.additionalInfo')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t('invoice.notes')}</Label>
                 <Textarea
                   id="notes"
                   value={invoiceData.notes}
                   onChange={(e) => setInvoiceData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Additional notes for the client"
+                  placeholder={t('invoice.notesPlaceholder')}
                   rows={3}
                 />
               </div>
               
               <div>
-                <Label htmlFor="terms">Terms & Conditions</Label>
+                <Label htmlFor="terms">{t('invoice.terms')}</Label>
                 <Textarea
                   id="terms"
                   value={invoiceData.terms}
                   onChange={(e) => setInvoiceData(prev => ({ ...prev, terms: e.target.value }))}
-                  placeholder="Payment terms and conditions"
+                  placeholder={t('invoice.termsPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -928,13 +930,13 @@ export function InvoiceMaker() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Calculator className="h-5 w-5" />
-                <span>Financial Summary</span>
+                <span>{t('invoice.financialSummary')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Currency Selection */}
               <div className="space-y-2">
-                <Label htmlFor="currency">Currency</Label>
+                <Label htmlFor="currency">{t('invoice.currency')}</Label>
                 <Select
                   value={invoiceData.currency}
                   onValueChange={(value) => {
@@ -957,24 +959,24 @@ export function InvoiceMaker() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="TRY">Turkish Lira (₺)</SelectItem>
-                    <SelectItem value="USD">US Dollar ($)</SelectItem>
-                    <SelectItem value="EUR">Euro (€)</SelectItem>
-                      <SelectItem value="CHF">Swiss Franc (CHF)</SelectItem>
-                    <SelectItem value="GBP">British Pound (£)</SelectItem>
-                    <SelectItem value="JPY">Japanese Yen (¥)</SelectItem>
+                    <SelectItem value="TRY">{t('invoice.currencies.TRY')}</SelectItem>
+                    <SelectItem value="USD">{t('invoice.currencies.USD')}</SelectItem>
+                    <SelectItem value="EUR">{t('invoice.currencies.EUR')}</SelectItem>
+                      <SelectItem value="CHF">{t('invoice.currencies.CHF')}</SelectItem>
+                    <SelectItem value="GBP">{t('invoice.currencies.GBP')}</SelectItem>
+                    <SelectItem value="JPY">{t('invoice.currencies.JPY')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="text-gray-600">{t('invoice.subtotal')}</span>
                   <span className="font-medium">{invoiceData.currencySymbol}{invoiceData.subtotal.toFixed(2)}</span>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="taxRate">Tax Rate (%)</Label>
+                  <Label htmlFor="taxRate">{t('invoice.taxRate')}</Label>
                   <Input
                     id="taxRate"
                     type="number"
@@ -987,12 +989,12 @@ export function InvoiceMaker() {
                 </div>
                 
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Tax ({invoiceData.taxRate}%):</span>
+                  <span className="text-gray-600">{t('invoice.tax', { rate: invoiceData.taxRate })}</span>
                   <span className="font-medium">{invoiceData.currencySymbol}{invoiceData.taxAmount.toFixed(2)}</span>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="discountAmount">Discount Amount ({invoiceData.currencySymbol})</Label>
+                  <Label htmlFor="discountAmount">{t('invoice.discountAmount', { symbol: invoiceData.currencySymbol })}</Label>
                   <Input
                     id="discountAmount"
                     type="number"
@@ -1005,14 +1007,14 @@ export function InvoiceMaker() {
                 
                 {invoiceData.discountAmount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Discount:</span>
+                    <span className="text-gray-600">{t('invoice.discount')}</span>
                     <span className="font-medium text-red-600">-{invoiceData.currencySymbol}{invoiceData.discountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 
                 <div className="border-t pt-3">
                   <div className="flex justify-between text-lg font-bold">
-                    <span>Total:</span>
+                    <span>{t('invoice.totalColon')}</span>
                     <span className="text-blue-600">{invoiceData.currencySymbol}{invoiceData.total.toFixed(2)}</span>
                   </div>
                 </div>
@@ -1023,7 +1025,7 @@ export function InvoiceMaker() {
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>{t('invoice.quickActions')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Button
@@ -1031,7 +1033,7 @@ export function InvoiceMaker() {
                 className="w-full flex items-center space-x-2"
               >
                 <Eye className="h-4 w-4" />
-                <span>Preview Invoice</span>
+                <span>{t('invoice.previewInvoice')}</span>
               </Button>
               
               <Button
@@ -1040,7 +1042,7 @@ export function InvoiceMaker() {
                 className="w-full flex items-center space-x-2"
               >
                 <Save className="h-4 w-4" />
-                <span>Save as Draft</span>
+                <span>{t('invoice.saveAsDraft')}</span>
               </Button>
               
               <Button
@@ -1049,7 +1051,7 @@ export function InvoiceMaker() {
                 className="w-full flex items-center space-x-2"
               >
                 <Download className="h-4 w-4" />
-                <span>Download PDF</span>
+                <span>{t('invoice.downloadPdf')}</span>
               </Button>
               
               <Button
@@ -1059,7 +1061,7 @@ export function InvoiceMaker() {
                 className="w-full flex items-center space-x-2"
               >
                 <Send className="h-4 w-4" />
-                <span>Send to Client</span>
+                <span>{t('invoice.sendToClient')}</span>
               </Button>
             </CardContent>
           </Card>
@@ -1067,12 +1069,12 @@ export function InvoiceMaker() {
           {/* Invoice Status */}
           <Card>
             <CardHeader>
-              <CardTitle>Invoice Status</CardTitle>
+              <CardTitle>{t('invoice.invoiceStatus')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Status:</span>
+                  <span className="text-gray-600">{t('invoice.statusColon')}</span>
                   <Badge className={`
                     ${invoiceData.status === 'paid' ? 'bg-green-100 text-green-800' : ''}
                     ${invoiceData.status === 'sent' ? 'bg-blue-100 text-blue-800' : ''}
@@ -1084,17 +1086,17 @@ export function InvoiceMaker() {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Items:</span>
+                  <span className="text-gray-600">{t('invoice.itemsColon')}</span>
                   <span className="font-medium">{invoiceData.items.length}</span>
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Created:</span>
+                  <span className="text-gray-600">{t('invoice.createdColon')}</span>
                   <span className="font-medium">{new Date(invoiceData.date).toLocaleDateString()}</span>
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Due:</span>
+                  <span className="text-gray-600">{t('invoice.dueColon')}</span>
                   <span className="font-medium">{new Date(invoiceData.dueDate).toLocaleDateString()}</span>
                 </div>
               </div>
@@ -1107,28 +1109,28 @@ export function InvoiceMaker() {
       {savedInvoices.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Saved Invoices</CardTitle>
+            <CardTitle>{t('invoice.saved')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-2">Invoice #</th>
-                    <th className="text-left py-2">Client</th>
-                    <th className="text-left py-2">Company</th>
-                    <th className="text-left py-2">Amount</th>
-                    <th className="text-left py-2">Status</th>
-                    <th className="text-left py-2">Date</th>
-                    <th className="text-left py-2">Actions</th>
+                    <th className="text-left py-2">{t('invoice.cols.number')}</th>
+                    <th className="text-left py-2">{t('invoice.cols.client')}</th>
+                    <th className="text-left py-2">{t('invoice.cols.company')}</th>
+                    <th className="text-left py-2">{t('invoice.cols.amount')}</th>
+                    <th className="text-left py-2">{t('invoice.cols.status')}</th>
+                    <th className="text-left py-2">{t('invoice.cols.date')}</th>
+                    <th className="text-left py-2">{t('invoice.cols.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {savedInvoices.map((invoice, index) => (
                     <tr key={index} className="border-b">
                       <td className="py-2 font-medium">{invoice.invoiceNumber}</td>
-                      <td className="py-2">{invoice.clientName || 'N/A'}</td>
-                      <td className="py-2">{invoice.clientCompany || 'N/A'}</td>
+                      <td className="py-2">{invoice.clientName || t('invoice.na')}</td>
+                      <td className="py-2">{invoice.clientCompany || t('invoice.na')}</td>
                       <td className="py-2">{invoice.currencySymbol || '₺'}{invoice.total.toFixed(2)}</td>
                       <td className="py-2">
                         <Badge className={`
@@ -1148,7 +1150,7 @@ export function InvoiceMaker() {
                             variant="outline"
                             onClick={() => setInvoiceData(invoice)}
                           >
-                            Edit
+                            {t('invoice.edit')}
                           </Button>
                           <Button
                             size="sm"
@@ -1158,7 +1160,7 @@ export function InvoiceMaker() {
                               setIsPreviewMode(true);
                             }}
                           >
-                            View
+                            {t('invoice.view')}
                           </Button>
                         </div>
                       </td>

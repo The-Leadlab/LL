@@ -1,0 +1,16 @@
+{
+  "generic": "Une erreur s'est produite. Veuillez réessayer.",
+  "network": "Erreur réseau. Vérifiez votre connexion.",
+  "unauthorized": "Vous n'êtes pas autorisé à faire cela.",
+  "forbidden": "Accès refusé.",
+  "notFound": "Introuvable.",
+  "validation": "Veuillez vérifier le formulaire et réessayer.",
+  "server": "Erreur serveur. Veuillez réessayer plus tard.",
+  "sessionExpired": "Session expirée. Veuillez vous reconnecter.",
+  "rateLimited": "Trop de requêtes. Veuillez patienter.",
+  "invalidCredentials": "E-mail ou mot de passe invalide.",
+  "emailTaken": "Cet e-mail est déjà enregistré.",
+  "weakPassword": "Le mot de passe est trop faible.",
+  "inviteInvalid": "Cette invitation est invalide ou a expiré.",
+  "permissionDenied": "Vous n'avez pas la permission pour cette action."
+}

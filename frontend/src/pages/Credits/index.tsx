@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { creditsAPI, CreditBalance, CreditPackage } from '../../services/api/credits';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const CREDIT_USAGE_RATES = {
   'lead_import': 1,
@@ -25,6 +26,7 @@ const CREDIT_USAGE_RATES = {
 };
 
 export function CreditsPage() {
+  const { t } = useTranslation('modules');
   const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
@@ -47,10 +49,10 @@ export function CreditsPage() {
         // Redirect to Stripe checkout
         window.location.href = response.checkout_url;
       } else {
-        toast.error('Unable to create checkout session');
+        toast.error(t('credits.toast.checkoutFailed'));
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to initiate purchase');
+      toast.error(error.response?.data?.detail || t('credits.toast.purchaseFailed'));
     }
   };
 
@@ -59,10 +61,10 @@ export function CreditsPage() {
       creditsAPI.consumeCredits({ feature, credits }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
-      toast.success('Credits consumed successfully');
+      toast.success(t('credits.toast.consumed'));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Failed to consume credits');
+      toast.error(error.response?.data?.detail || t('credits.toast.consumeFailed'));
     },
   });
 
@@ -115,8 +117,8 @@ export function CreditsPage() {
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Credits Management</h1>
-        <p className="text-gray-600">Manage your CRM credits and purchase additional packages</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('credits.title')}</h1>
+        <p className="text-gray-600">{t('credits.subtitle')}</p>
       </div>
 
       {/* Current Balance */}
@@ -125,10 +127,10 @@ export function CreditsPage() {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <CreditCard className="h-6 w-6" />
-              <span>Current Balance</span>
+              <span>{t('credits.currentBalance')}</span>
             </div>
             <Badge className={getStatusColor(balance?.subscription_status || 'trial')}>
-              {balance?.subscription_status || 'Trial'}
+              {t(`credits.status.${balance?.subscription_status || 'trial'}`, { defaultValue: balance?.subscription_status || 'Trial' })}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -139,7 +141,7 @@ export function CreditsPage() {
             </span>
             {isLowCredits && (
               <Badge variant="destructive" className="animate-pulse">
-                Low Credits
+                {t('credits.lowCredits')}
               </Badge>
             )}
           </div>
@@ -150,9 +152,9 @@ export function CreditsPage() {
             {Object.entries(CREDIT_USAGE_RATES).map(([feature, cost]) => (
               <div key={feature} className="text-center p-3 bg-gray-50 rounded-lg">
                 <div className="font-semibold text-sm text-gray-700">
-                  {feature.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  {t(`credits.features.${feature}`, { defaultValue: feature.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) })}
                 </div>
-                <div className="text-xs text-gray-500">{cost} credits</div>
+                <div className="text-xs text-gray-500">{t('credits.creditsCount', { count: cost })}</div>
               </div>
             ))}
           </div>
@@ -161,10 +163,10 @@ export function CreditsPage() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="h-5 w-5 text-blue-600" />
-                <span className="font-medium text-blue-900">Trial Account</span>
+                <span className="font-medium text-blue-900">{t('credits.trialTitle')}</span>
               </div>
               <p className="text-sm text-blue-700 mt-1">
-                You're currently on a trial account with free credits. Upgrade to unlock all features!
+                {t('credits.trialBody')}
               </p>
             </div>
           )}
@@ -173,7 +175,7 @@ export function CreditsPage() {
 
       {/* Credit Packages */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Credit Packages</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('credits.packages')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.isArray(packagesData) && packagesData.map((pkg, index) => (
             <Card 
@@ -197,18 +199,18 @@ export function CreditsPage() {
                   <div className="text-2xl font-bold text-blue-600">
                     {pkg.credits.toLocaleString()}
                   </div>
-                  <div className="text-sm text-gray-500">Credits</div>
+                  <div className="text-sm text-gray-500">{t('credits.creditsLabel')}</div>
                 </div>
                 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Price per credit:</span>
+                    <span>{t('credits.pricePerCredit')}</span>
                     <span>${(pkg.price / pkg.credits).toFixed(3)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span>Best for:</span>
+                    <span>{t('credits.bestFor')}</span>
                     <span className="text-gray-600">
-                      {index === 0 ? 'Small teams' : index === 1 ? 'Growing business' : 'Enterprise'}
+                      {index === 0 ? t('credits.bestForTiers.small') : index === 1 ? t('credits.bestForTiers.growing') : t('credits.bestForTiers.enterprise')}
                     </span>
                   </div>
                 </div>
@@ -221,7 +223,7 @@ export function CreditsPage() {
                     purchasePackage(pkg.id);
                   }}
                 >
-                  {selectedPackage === pkg.id ? 'Purchase Now' : 'Select Package'}
+                  {selectedPackage === pkg.id ? t('credits.purchaseNow') : t('credits.selectPackage')}
                 </Button>
               </CardContent>
             </Card>
@@ -233,11 +235,11 @@ export function CreditsPage() {
       {process.env.NODE_ENV === 'development' && (
         <Card className="border-amber-200 bg-amber-50">
           <CardHeader>
-            <CardTitle className="text-amber-800">Test Credit Consumption</CardTitle>
+            <CardTitle className="text-amber-800">{t('credits.testTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-amber-700">
-              Test different features to see how credits are consumed:
+              {t('credits.testBody')}
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {Object.entries(CREDIT_USAGE_RATES).map(([feature, cost]) => (
@@ -248,7 +250,7 @@ export function CreditsPage() {
                   onClick={() => consumeCredits.mutate({ feature, credits: cost })}
                   disabled={consumeCredits.isPending}
                 >
-                  Test {feature.replace('_', ' ')} ({cost} credits)
+                  {t('credits.testFeature', { feature: t(`credits.features.${feature}`, { defaultValue: feature.replace('_', ' ') }), cost })}
                 </Button>
               ))}
             </div>

@@ -115,6 +115,10 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const storedLang =
+      (typeof localStorage !== 'undefined' && localStorage.getItem('leadlab_language')) ||
+      'en';
+    config.headers['Accept-Language'] = storedLang.startsWith('fr') ? 'fr' : 'en';
     // Multipart uploads: default Content-Type is application/json — strip so the browser sets boundary
     if (config.data instanceof FormData) {
       const h = config.headers as Record<string, unknown>;

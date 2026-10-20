@@ -1,8 +1,13 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import i18n from '@/i18n'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+function appLocale(): string {
+  return i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-US'
 }
 
 export function formatCurrency(amount: number | string, currency: string = 'USD'): string {
@@ -12,7 +17,7 @@ export function formatCurrency(amount: number | string, currency: string = 'USD'
     return '0.00'
   }
 
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat(appLocale(), {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 2,
@@ -31,15 +36,17 @@ export function formatDate(date: Date | string | null | undefined, format: strin
     return ''
   }
 
+  const locale = appLocale()
+
   switch (format) {
     case 'short':
-      return dateObj.toLocaleDateString('en-US', {
+      return dateObj.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
       })
     case 'long':
-      return dateObj.toLocaleDateString('en-US', {
+      return dateObj.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -47,12 +54,12 @@ export function formatDate(date: Date | string | null | undefined, format: strin
         minute: '2-digit',
       })
     case 'time':
-      return dateObj.toLocaleTimeString('en-US', {
+      return dateObj.toLocaleTimeString(locale, {
         hour: '2-digit',
         minute: '2-digit',
       })
     case 'datetime':
-      return dateObj.toLocaleString('en-US', {
+      return dateObj.toLocaleString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -62,7 +69,7 @@ export function formatDate(date: Date | string | null | undefined, format: strin
     case 'relative':
       return formatRelativeTime(dateObj)
     default:
-      return dateObj.toLocaleDateString()
+      return dateObj.toLocaleDateString(locale)
   }
 }
 

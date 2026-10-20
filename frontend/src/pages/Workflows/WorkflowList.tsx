@@ -12,8 +12,10 @@ import { PageContainer } from '@/components/ui/PageContainer';
 import { Badge } from '@/components/ui/Badge';
 import { useNavigate } from 'react-router-dom';
 import { formatDate } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export const WorkflowList: React.FC = () => {
+  const { t } = useTranslation('modules');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -31,8 +33,8 @@ export const WorkflowList: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workflows'] });
       toast({
-        title: 'Success',
-        description: 'Mind mapping status updated'
+        title: t('workflows.toast.success'),
+        description: t('workflows.toast.statusUpdated')
       });
     }
   });
@@ -43,23 +45,14 @@ export const WorkflowList: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workflows'] });
       toast({
-        title: 'Success',
-        description: 'Mind mapping item deleted successfully'
+        title: t('workflows.toast.success'),
+        description: t('workflows.toast.deleted')
       });
     }
   });
 
   const getTriggerLabel = (trigger: string) => {
-    const labels: Record<string, string> = {
-      manual: 'Manual',
-      record_created: 'Record Created',
-      record_updated: 'Record Updated',
-      field_changed: 'Field Changed',
-      time_based: 'Time-Based',
-      webhook: 'Webhook',
-      scheduled: 'Scheduled'
-    };
-    return labels[trigger] || trigger;
+    return t(`workflows.triggers.${trigger}`, { defaultValue: trigger });
   };
 
   const workflowList: Workflow[] = Array.isArray(workflows)
@@ -93,14 +86,14 @@ export const WorkflowList: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Mind Mapping</h1>
+            <h1 className="text-3xl font-bold">{t('workflows.title')}</h1>
             <p className="text-gray-600 mt-1">
-              Map your process visually with connected steps
+              {t('workflows.subtitle')}
             </p>
           </div>
           <Button onClick={() => navigate('/workflows/new')}>
             <Plus className="h-4 w-4 mr-2" />
-            Create Map
+            {t('workflows.createMap')}
           </Button>
         </div>
 
@@ -113,7 +106,7 @@ export const WorkflowList: React.FC = () => {
                   <WorkflowIcon className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total Maps</p>
+                  <p className="text-sm text-gray-600">{t('workflows.totalMaps')}</p>
                   <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
               </div>
@@ -126,7 +119,7 @@ export const WorkflowList: React.FC = () => {
                   <Play className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Active</p>
+                  <p className="text-sm text-gray-600">{t('workflows.active')}</p>
                   <p className="text-2xl font-bold">{stats.active}</p>
                 </div>
               </div>
@@ -139,7 +132,7 @@ export const WorkflowList: React.FC = () => {
                   <Pause className="h-6 w-6 text-gray-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Inactive</p>
+                  <p className="text-sm text-gray-600">{t('workflows.inactive')}</p>
                   <p className="text-2xl font-bold">{stats.inactive}</p>
                 </div>
               </div>
@@ -161,12 +154,12 @@ export const WorkflowList: React.FC = () => {
                         {workflow.is_active ? (
                           <Badge className="bg-green-100 text-green-800">
                             <Play className="h-3 w-3 mr-1" />
-                            Active
+                            {t('workflows.active')}
                           </Badge>
                         ) : (
                           <Badge variant="secondary">
                             <Pause className="h-3 w-3 mr-1" />
-                            Inactive
+                            {t('workflows.inactive')}
                           </Badge>
                         )}
                       </div>
@@ -184,9 +177,9 @@ export const WorkflowList: React.FC = () => {
                           <span>{workflow.trigger_object}</span>
                         </div>
                         <span>•</span>
-                        <span>{workflow.flow_definition?.nodes?.length ?? 0} steps</span>
+                        <span>{t('workflows.steps', { count: workflow.flow_definition?.nodes?.length ?? 0 })}</span>
                         <span>•</span>
-                        <span>Created {formatDate(workflow.created_at)}</span>
+                        <span>{t('workflows.created', { date: formatDate(workflow.created_at) })}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -196,7 +189,7 @@ export const WorkflowList: React.FC = () => {
                         onClick={() => navigate(`/workflows/${workflow.id}`)}
                       >
                         <Edit className="h-4 w-4 mr-1" />
-                        Edit
+                        {t('workflows.edit')}
                       </Button>
                       <Button
                         variant="outline"
@@ -211,12 +204,12 @@ export const WorkflowList: React.FC = () => {
                         {workflow.is_active ? (
                           <>
                             <Pause className="h-4 w-4 mr-1" />
-                            Pause
+                            {t('workflows.pause')}
                           </>
                         ) : (
                           <>
                             <Play className="h-4 w-4 mr-1" />
-                            Activate
+                            {t('workflows.activate')}
                           </>
                         )}
                       </Button>
@@ -224,7 +217,7 @@ export const WorkflowList: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          if (confirm('Are you sure you want to delete this workflow?')) {
+                          if (confirm(t('workflows.confirmDelete'))) {
                             deleteMutation.mutate(workflow.id);
                           }
                         }}
@@ -240,13 +233,13 @@ export const WorkflowList: React.FC = () => {
             <Card>
               <CardContent className="py-12 text-center">
                 <WorkflowIcon className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-semibold mb-2">No mind maps yet</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('workflows.emptyTitle')}</h3>
                 <p className="text-gray-600 mb-4">
-                  Create your first mind map to organize your process
+                  {t('workflows.emptyBody')}
                 </p>
                 <Button onClick={() => navigate('/workflows/new')}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Map
+                  {t('workflows.createMap')}
                 </Button>
               </CardContent>
             </Card>

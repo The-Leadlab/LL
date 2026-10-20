@@ -4,8 +4,10 @@ import { notificationsAPI } from '@/services/api/notifications';
 import { PageContainer } from '@/components/ui/PageContainer';
 import { Button } from '@/components/ui/Button';
 import { Bell, CheckCheck, Loader2, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function ModernNotifications() {
+  const { t } = useTranslation('modules');
   const queryClient = useQueryClient();
   const { data: notifications = [], isLoading, isError } = useQuery({
     queryKey: ['notifications'],
@@ -27,12 +29,12 @@ export function ModernNotifications() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Notifications</h1>
-            <p className="text-gray-600 mt-1">Latest activity across your workspace.</p>
+            <h1 className="text-3xl font-bold">{t('notificationsPage.title')}</h1>
+            <p className="text-gray-600 mt-1">{t('notificationsPage.subtitle')}</p>
           </div>
           <Button type="button" onClick={() => markAllMutation.mutate()} disabled={markAllMutation.isPending}>
             <CheckCheck className="h-4 w-4 mr-2" />
-            Mark all as read
+            {t('notificationsPage.markAll')}
           </Button>
         </div>
 
@@ -42,12 +44,12 @@ export function ModernNotifications() {
           </div>
         ) : isError ? (
           <div className="rounded-lg border p-10 text-center text-gray-600">
-            Could not load notifications.
+            {t('notificationsPage.loadFailed')}
           </div>
         ) : notifications.length === 0 ? (
           <div className="rounded-lg border p-10 text-center text-gray-600">
             <Bell className="h-10 w-10 mx-auto mb-3 text-gray-400" />
-            No notifications yet.
+            {t('notificationsPage.empty')}
           </div>
         ) : (
           <div className="space-y-3">

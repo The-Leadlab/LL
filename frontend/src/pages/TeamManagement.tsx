@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
@@ -66,20 +68,23 @@ interface TeamInvitation {
 // TeamMember type is now using User from api.ts
 
 // Form schemas
-const inviteSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  first_name: z.string().optional(),
-  last_name: z.string().optional(),
-  role: z.enum(['manager', 'member', 'viewer']),
-  message: z.string().optional(),
-});
+const createInviteSchema = (t: TFunction<'admin'>) =>
+  z.object({
+    email: z.string().email(t('teamPage.invalidEmail')),
+    first_name: z.string().optional(),
+    last_name: z.string().optional(),
+    role: z.enum(['manager', 'member', 'viewer']),
+    message: z.string().optional(),
+  });
 
-type InviteFormData = z.infer<typeof inviteSchema>;
+type InviteFormData = z.infer<ReturnType<typeof createInviteSchema>>;
 
 const EMPTY_TEAM_MEMBERS: User[] = [];
 const EMPTY_INVITATIONS: TeamInvitation[] = [];
 
 const TeamManagement: React.FC = () => {
+  const { t, i18n } = useTranslation('admin');
+  const inviteSchema = useMemo(() => createInviteSchema(t), [t]);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'members' | 'invitations'>('members');
   const queryClient = useQueryClient();
@@ -172,10 +177,10 @@ const TeamManagement: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['invitation-stats'] });
       setIsInviteDialogOpen(false);
       form.reset();
-      toast.success('Team invitation sent successfully!');
+      toast.success(t('teamPage.inviteSent'));
     },
     onError: (error: any) => {
-      toast.error(getErrorMessage(error, 'Failed to send invitation'));
+      toast.error(getErrorMessage(error, t('teamPage.inviteFailed')));
     },
   });
 
@@ -184,10 +189,10 @@ const TeamManagement: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team-invitations'] });
       queryClient.invalidateQueries({ queryKey: ['invitation-stats'] });
-      toast.success('Invitation cancelled successfully');
+      toast.success(t('teamPage.inviteCancelled'));
     },
     onError: (error: any) => {
-      toast.error(getErrorMessage(error, 'Failed to cancel invitation'));
+      toast.error(getErrorMessage(error, t('teamPage.cancelFailed')));
     },
   });
 
@@ -195,16 +200,16 @@ const TeamManagement: React.FC = () => {
     mutationFn: (invitationId: number) => api.teamInvitations.resendInvitation(invitationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team-invitations'] });
-      toast.success('Invitation resent successfully');
+      toast.success(t('teamPage.inviteResent'));
     },
     onError: (error: any) => {
-      toast.error(getErrorMessage(error, 'Failed to resend invitation'));
+      toast.error(getErrorMessage(error, t('teamPage.resendFailed')));
     },
   });
 
   const addExistingUserMutation = useMutation({
     mutationFn: async (candidate: User) => {
-      if (!currentOrgId) throw new Error('No organization selected');
+      if (!currentOrgId) throw new Error(t('teamPage.noOrganization'));
       return api.users.update(candidate.id, {
         organization_id: currentOrgId,
         email: candidate.email,
@@ -217,17 +222,17 @@ const TeamManagement: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['assignable-users'] });
       setExistingUserEmail('');
       setFoundExistingUser(null);
-      toast.success('Existing user added to your organization');
+      toast.success(t('teamPage.existingUserAdded'));
     },
     onError: (error: any) => {
-      toast.error(getErrorMessage(error, 'Could not add existing user'));
+      toast.error(getErrorMessage(error, t('teamPage.addExistingFailed')));
     },
   });
 
   const searchExistingUser = async () => {
     const email = existingUserEmail.trim().toLowerCase();
     if (!email || !email.includes('@')) {
-      toast.error('Enter a valid email address');
+      toast.error(t('teamPage.enterValidEmail'));
       return;
     }
     setIsSearchingExisting(true);
@@ -236,13 +241,15 @@ const TeamManagement: React.FC = () => {
       const response = await api.users.searchPlatform(email);
       const candidate = (response as { data?: User })?.data ?? (response as unknown as User);
       if (!candidate?.id) {
-        toast.error('No platform user found with that email');
+        toast.error(t('teamPage.noPlatformUser'));
         return;
       }
       setFoundExistingUser(candidate);
-      toast.success(`Found ${candidate.first_name || ''} ${candidate.last_name || ''}`.trim() || candidate.email);
+      toast.success(
+        `${t('teamPage.foundPrefix')} ${candidate.first_name || ''} ${candidate.last_name || ''}`.trim() || candidate.email,
+      );
     } catch (error: any) {
-      toast.error(getErrorMessage(error, 'No platform user found with that email'));
+      toast.error(getErrorMessage(error, t('teamPage.noPlatformUser')));
     } finally {
       setIsSearchingExisting(false);
     }
@@ -254,7 +261,7 @@ const TeamManagement: React.FC = () => {
   };
 
   const handleCancelInvitation = (invitationId: number) => {
-    if (window.confirm('Are you sure you want to cancel this invitation?')) {
+    if (window.confirm(t('teamPage.confirmCancel'))) {
       cancelInvitationMutation.mutate(invitationId);
     }
   };
@@ -296,17 +303,17 @@ const TeamManagement: React.FC = () => {
 
   const getDisplayRole = (member: User) => {
     if (member.is_admin) {
-      return 'Administrator';
+      return t('teamPage.roleAdministrator');
     }
     switch (member.organization_role) {
       case 'manager':
-        return 'Organization Manager';
+        return t('teamPage.roleManager');
       case 'member':
-        return 'Member';
+        return t('teamPage.roleMember');
       case 'viewer':
-        return 'Viewer';
+        return t('teamPage.roleViewer');
       default:
-        return 'Member';
+        return t('teamPage.roleMember');
     }
   };
 
@@ -345,8 +352,14 @@ const TeamManagement: React.FC = () => {
     }
   };
 
+  const getInviteRoleLabel = (role: string) =>
+    t(`teamPage.inviteRoles.${role}`, { defaultValue: role.charAt(0).toUpperCase() + role.slice(1) });
+
+  const getInviteStatusLabel = (status: string) =>
+    t(`teamPage.inviteStatus.${status}`, { defaultValue: status.charAt(0).toUpperCase() + status.slice(1) });
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -362,26 +375,26 @@ const TeamManagement: React.FC = () => {
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate('/organization')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Organization
+            {t('teamPage.backToOrganization')}
           </Button>
           <Separator orientation="vertical" className="h-6" />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
-            <p className="text-gray-600 mt-1">Manage your team members and invitations</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('teamPage.title')}</h1>
+            <p className="text-gray-600 mt-1">{t('teamPage.subtitle')}</p>
           </div>
         </div>
         <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
               <UserPlus className="h-4 w-4" />
-              Invite Team Member
+              {t('teamPage.inviteMember')}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Invite Team Member</DialogTitle>
+              <DialogTitle>{t('teamPage.inviteMember')}</DialogTitle>
               <DialogDescription>
-                Send an invitation to join your organization
+                {t('teamPage.inviteDescription')}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -391,9 +404,9 @@ const TeamManagement: React.FC = () => {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email Address *</FormLabel>
+                      <FormLabel>{t('teamPage.emailAddress')} *</FormLabel>
                       <FormControl>
-                        <Input placeholder="colleague@company.com" {...field} />
+                        <Input placeholder={t('teamPage.emailPlaceholder')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -406,9 +419,9 @@ const TeamManagement: React.FC = () => {
                     name="first_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First Name</FormLabel>
+                        <FormLabel>{t('teamPage.firstName')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="John" {...field} />
+                          <Input placeholder={t('teamPage.firstNamePlaceholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -420,9 +433,9 @@ const TeamManagement: React.FC = () => {
                     name="last_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last Name</FormLabel>
+                        <FormLabel>{t('teamPage.lastName')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Doe" {...field} />
+                          <Input placeholder={t('teamPage.lastNamePlaceholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -435,30 +448,30 @@ const TeamManagement: React.FC = () => {
                   name="role"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role *</FormLabel>
+                      <FormLabel>{t('teamPage.role')} *</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a role" />
+                            <SelectValue placeholder={t('teamPage.selectRole')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="manager">
                             <div className="flex items-center gap-2">
                               <Users className="h-4 w-4" />
-                              Organization Manager
+                              {t('teamPage.roleManager')}
                             </div>
                           </SelectItem>
                           <SelectItem value="member">
                             <div className="flex items-center gap-2">
                               <Users className="h-4 w-4" />
-                              Team Member
+                              {t('teamPage.roleTeamMember')}
                             </div>
                           </SelectItem>
                           <SelectItem value="viewer">
                             <div className="flex items-center gap-2">
                               <Eye className="h-4 w-4" />
-                              Viewer
+                              {t('teamPage.roleViewer')}
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -473,10 +486,10 @@ const TeamManagement: React.FC = () => {
                   name="message"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Personal Message (Optional)</FormLabel>
+                      <FormLabel>{t('teamPage.personalMessage')}</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="Add a personal message to the invitation..."
+                          placeholder={t('teamPage.personalMessagePlaceholder')}
                           className="resize-none"
                           rows={3}
                           {...field}
@@ -493,7 +506,7 @@ const TeamManagement: React.FC = () => {
                     variant="outline"
                     onClick={() => setIsInviteDialogOpen(false)}
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </Button>
                   <Button 
                     type="submit" 
@@ -505,7 +518,7 @@ const TeamManagement: React.FC = () => {
                     ) : (
                       <Send className="h-4 w-4" />
                     )}
-                    Send Invitation
+                    {t('teamPage.sendInvitation')}
                   </Button>
                 </div>
               </form>
@@ -524,7 +537,7 @@ const TeamManagement: React.FC = () => {
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          Team Members ({displayedTeamMembers.length})
+          {t('teamPage.tabMembers', { count: displayedTeamMembers.length })}
         </button>
         <button
           onClick={() => setSelectedTab('invitations')}
@@ -534,7 +547,7 @@ const TeamManagement: React.FC = () => {
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          Invitations ({invitations.length})
+          {t('teamPage.tabInvitations', { count: invitations.length })}
         </button>
       </div>
 
@@ -545,7 +558,7 @@ const TeamManagement: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Members</p>
+                  <p className="text-sm font-medium text-gray-600">{t('teamPage.statTotalMembers')}</p>
                   <p className="text-2xl font-bold text-gray-900">{displayedTeamMembers.length}</p>
                 </div>
                 <Users className="h-8 w-8 text-blue-500" />
@@ -557,7 +570,7 @@ const TeamManagement: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Pending Invites</p>
+                  <p className="text-sm font-medium text-gray-600">{t('teamPage.statPending')}</p>
                   <p className="text-2xl font-bold text-yellow-600">{invitationStats.pending}</p>
                 </div>
                 <Clock className="h-8 w-8 text-yellow-500" />
@@ -569,7 +582,7 @@ const TeamManagement: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Accepted</p>
+                  <p className="text-sm font-medium text-gray-600">{t('teamPage.statAccepted')}</p>
                   <p className="text-2xl font-bold text-green-600">{invitationStats.accepted}</p>
                 </div>
                 <CheckCircle className="h-8 w-8 text-green-500" />
@@ -581,7 +594,7 @@ const TeamManagement: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Invites</p>
+                  <p className="text-sm font-medium text-gray-600">{t('teamPage.statTotalInvites')}</p>
                   <p className="text-2xl font-bold text-gray-900">{invitationStats.total}</p>
                 </div>
                 <Mail className="h-8 w-8 text-gray-500" />
@@ -595,21 +608,21 @@ const TeamManagement: React.FC = () => {
       {selectedTab === 'members' && (
         <Card>
           <CardHeader>
-            <CardTitle>Team Members</CardTitle>
+            <CardTitle>{t('teamPage.membersCardTitle')}</CardTitle>
             <CardDescription>
-              Manage your organization's team members and their roles
+              {t('teamPage.membersCardDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="mb-6 rounded-lg border p-4 bg-gray-50">
-              <h4 className="text-sm font-semibold text-gray-900 mb-2">Add Existing Platform User</h4>
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('teamPage.addExistingTitle')}</h4>
               <p className="text-xs text-gray-600 mb-3">
-                Look up an existing LeadLab account by email and move them into your organization.
+                {t('teamPage.addExistingHelp')}
               </p>
               <div className="flex flex-col md:flex-row gap-3">
                 <Input
                   type="email"
-                  placeholder="colleague@company.com"
+                  placeholder={t('teamPage.emailPlaceholder')}
                   value={existingUserEmail}
                   onChange={(e) => {
                     setExistingUserEmail(e.target.value);
@@ -629,24 +642,24 @@ const TeamManagement: React.FC = () => {
                   onClick={() => void searchExistingUser()}
                   disabled={isSearchingExisting || !existingUserEmail.trim()}
                 >
-                  {isSearchingExisting ? 'Searching...' : 'Find User'}
+                  {isSearchingExisting ? t('teamPage.searching') : t('teamPage.findUser')}
                 </Button>
                 <Button
                   onClick={() => {
                     if (!foundExistingUser) {
-                      toast.error('Find a user by email first');
+                      toast.error(t('teamPage.findUserFirst'));
                       return;
                     }
                     addExistingUserMutation.mutate(foundExistingUser);
                   }}
                   disabled={!foundExistingUser || addExistingUserMutation.isPending}
                 >
-                  {addExistingUserMutation.isPending ? 'Adding...' : 'Add to Team'}
+                  {addExistingUserMutation.isPending ? t('teamPage.adding') : t('teamPage.addToTeam')}
                 </Button>
               </div>
               {foundExistingUser && (
                 <p className="mt-3 text-sm text-gray-700">
-                  Ready to add:{' '}
+                  {t('teamPage.readyToAdd')}{' '}
                   <span className="font-medium">
                     {foundExistingUser.first_name} {foundExistingUser.last_name}
                   </span>{' '}
@@ -662,21 +675,21 @@ const TeamManagement: React.FC = () => {
             ) : teamMembersError ? (
               <div className="text-center py-8">
                 <XCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading team members</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('teamPage.errorLoadingMembers')}</h3>
                 <p className="text-red-600 mb-4">{teamMembersError.message}</p>
                 <Button onClick={() => window.location.reload()}>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry
+                  {t('common:retry')}
                 </Button>
               </div>
             ) : displayedTeamMembers.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No team members yet</h3>
-                <p className="text-gray-600 mb-4">Start building your team by inviting members</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('teamPage.noMembers')}</h3>
+                <p className="text-gray-600 mb-4">{t('teamPage.noMembersHint')}</p>
                 <Button onClick={() => setIsInviteDialogOpen(true)}>
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Invite First Member
+                  {t('teamPage.inviteFirstMember')}
                 </Button>
               </div>
             ) : (
@@ -707,7 +720,7 @@ const TeamManagement: React.FC = () => {
                         </div>
                       </Badge>
                       <Badge variant={member.is_active ? 'default' : 'secondary'}>
-                        {member.is_active ? 'Active' : 'Inactive'}
+                        {member.is_active ? t('teamPage.active') : t('teamPage.inactive')}
                       </Badge>
                     </div>
                   </div>
@@ -721,9 +734,9 @@ const TeamManagement: React.FC = () => {
       {selectedTab === 'invitations' && (
         <Card>
           <CardHeader>
-            <CardTitle>Team Invitations</CardTitle>
+            <CardTitle>{t('teamPage.invitationsCardTitle')}</CardTitle>
             <CardDescription>
-              Track and manage pending team invitations
+              {t('teamPage.invitationsCardDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -734,11 +747,11 @@ const TeamManagement: React.FC = () => {
             ) : invitations.length === 0 ? (
               <div className="text-center py-8">
                 <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No invitations sent</h3>
-                <p className="text-gray-600 mb-4">Send your first team invitation to get started</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('teamPage.noInvitations')}</h3>
+                <p className="text-gray-600 mb-4">{t('teamPage.noInvitationsHint')}</p>
                 <Button onClick={() => setIsInviteDialogOpen(true)}>
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Send Invitation
+                  {t('teamPage.sendInvitation')}
                 </Button>
               </div>
             ) : (
@@ -759,7 +772,7 @@ const TeamManagement: React.FC = () => {
                           </h4>
                           <p className="text-sm text-gray-600">{invitation.email}</p>
                           <p className="text-xs text-gray-500">
-                            Invited by {invitation.invited_by_name} • {formatDate(invitation.created_at)}
+                            {t('teamPage.invitedBy', { name: invitation.invited_by_name })} • {formatDate(invitation.created_at)}
                           </p>
                         </div>
                       </div>
@@ -767,13 +780,13 @@ const TeamManagement: React.FC = () => {
                         <Badge className={getRoleBadgeColor(invitation.role)}>
                           <div className="flex items-center gap-1">
                             {getRoleIcon(invitation.role)}
-                            {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}
+                            {getInviteRoleLabel(invitation.role)}
                           </div>
                         </Badge>
                         <Badge className={getStatusBadgeColor(invitation.status)}>
                           <div className="flex items-center gap-1">
                             {getStatusIcon(invitation.status)}
-                            {invitation.status.charAt(0).toUpperCase() + invitation.status.slice(1)}
+                            {getInviteStatusLabel(invitation.status)}
                           </div>
                         </Badge>
                         {invitation.status === 'pending' && (
@@ -804,7 +817,7 @@ const TeamManagement: React.FC = () => {
                         <Separator className="my-3" />
                         <div className="bg-gray-50 p-3 rounded-md">
                           <p className="text-sm text-gray-700">
-                            <strong>Message:</strong> {invitation.message}
+                            <strong>{t('teamPage.messageLabel')}</strong> {invitation.message}
                           </p>
                         </div>
                       </>
@@ -815,7 +828,7 @@ const TeamManagement: React.FC = () => {
                         <Alert>
                           <Clock className="h-4 w-4" />
                           <AlertDescription>
-                            Expires on {formatDate(invitation.expires_at)}
+                            {t('teamPage.expiresOn', { date: formatDate(invitation.expires_at) })}
                           </AlertDescription>
                         </Alert>
                       </>

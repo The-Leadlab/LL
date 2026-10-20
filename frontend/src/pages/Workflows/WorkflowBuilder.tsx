@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { workflowsAPI, Workflow, WorkflowEdge, WorkflowNode } from '@/services/api/workflows';
 import { Button } from '@/components/ui/Button';
@@ -108,6 +109,7 @@ function parseApiError(err: unknown): string {
 }
 
 const WorkflowBuilder: React.FC = () => {
+  const { t } = useTranslation('modules');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -222,13 +224,13 @@ const WorkflowBuilder: React.FC = () => {
     },
     onSuccess: (wf) => {
       queryClient.invalidateQueries({ queryKey: ['workflows'] });
-      toast({ title: 'Saved', description: 'Mind map saved successfully.' });
+      toast({ title: t('workflows.builder.toast.saved'), description: t('workflows.builder.toast.savedBody') });
       const created = (wf && typeof wf === 'object' && 'id' in wf ? wf : (wf as { data?: { id?: number } })?.data) as { id?: number } | undefined;
       if ((!id || id === 'new') && created?.id) {
         navigate(`/workflows/${created.id}`);
       }
     },
-    onError: (err) => toast({ title: 'Save failed', description: parseApiError(err), variant: 'destructive' }),
+    onError: (err) => toast({ title: t('workflows.builder.toast.saveFailed'), description: parseApiError(err), variant: 'destructive' }),
   });
 
   const addNodeAt = useCallback((template: NodeTemplate, x: number, y: number) => {
@@ -324,7 +326,7 @@ const WorkflowBuilder: React.FC = () => {
     const next = [...customTemplates, tpl];
     setCustomTemplates(next);
     localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(next));
-    toast({ title: 'Template created', description: 'This mind map is now reusable from templates.' });
+    toast({ title: t('workflows.builder.toast.templateCreated'), description: t('workflows.builder.toast.templateCreatedBody') });
   }, [customTemplates, name, nodes, edges, toast]);
 
   const worldFromClient = useCallback((clientX: number, clientY: number) => {
@@ -400,7 +402,7 @@ const WorkflowBuilder: React.FC = () => {
         if (!n) return;
         e.preventDefault();
         setClipboardNode(structuredClone(n));
-        toast({ title: 'Copied', description: 'Node copied.' });
+        toast({ title: t('workflows.builder.toast.copied'), description: t('workflows.builder.toast.copiedBody') });
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
         if (!clipboardNode) return;
@@ -437,10 +439,10 @@ const WorkflowBuilder: React.FC = () => {
           <div className="flex items-center gap-2 min-w-0">
             <Button variant="ghost" onClick={() => navigate('/workflows')} className="shrink-0">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {t('workflows.builder.back')}
             </Button>
             <Input value={name} onChange={(e) => setName(e.target.value)} className="text-xl font-semibold border-none shadow-none min-w-0 flex-1" />
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} className="hidden md:block border-none shadow-none text-sm text-neutral-500 min-w-0 flex-1" placeholder="Describe this map..." />
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} className="hidden md:block border-none shadow-none text-sm text-neutral-500 min-w-0 flex-1" placeholder={t('workflows.builder.descPlaceholder')} />
           </div>
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <Button
@@ -452,7 +454,7 @@ const WorkflowBuilder: React.FC = () => {
               }}
             >
               <Layers className="h-4 w-4 mr-2" />
-              Blocks
+              {t('workflows.builder.blocks')}
             </Button>
             <Button
               variant="outline"
@@ -463,16 +465,16 @@ const WorkflowBuilder: React.FC = () => {
               }}
             >
               <Keyboard className="h-4 w-4 mr-2" />
-              Shortcuts
+              {t('workflows.builder.shortcuts')}
             </Button>
-            <Badge variant="secondary">Mind Map Mode</Badge>
+            <Badge variant="secondary">{t('workflows.builder.modeBadge')}</Badge>
             <Button variant="outline" onClick={saveCurrentAsTemplate}>
               <Copy className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Save as Template</span>
+              <span className="hidden sm:inline">{t('workflows.builder.saveTemplate')}</span>
             </Button>
             <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-              Save
+              {t('workflows.builder.save')}
             </Button>
           </div>
         </div>
@@ -480,12 +482,12 @@ const WorkflowBuilder: React.FC = () => {
 
       <div className="flex-1 flex overflow-hidden relative min-w-0">
         <aside className={`${showMobilePalette ? 'absolute inset-y-0 left-0 z-20 w-[min(20rem,100%)] shadow-xl' : 'hidden'} md:static md:block md:shadow-none w-80 border-r border-neutral-200 bg-white p-4 overflow-y-auto space-y-4`}>
-          <h3 className="text-sm font-semibold text-neutral-700">Mind Map Blocks</h3>
+          <h3 className="text-sm font-semibold text-neutral-700">{t('workflows.builder.paletteTitle')}</h3>
           <div className="hidden md:block rounded-md bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-800">
-            Drag maps freely, double-click text to edit, drag from bottom handle to another node to connect.
+            {t('workflows.builder.paletteHelp')}
           </div>
           <div>
-            <label className="text-xs font-medium text-neutral-500">Template</label>
+            <label className="text-xs font-medium text-neutral-500">{t('workflows.builder.template')}</label>
             <div className="flex gap-2 mt-1">
               <select
                 className="w-full rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm"
@@ -499,7 +501,7 @@ const WorkflowBuilder: React.FC = () => {
                 ))}
               </select>
               <Button variant="outline" onClick={() => applyTemplate(selectedTemplateId)}>
-                Load
+                {t('workflows.builder.load')}
               </Button>
             </div>
           </div>
@@ -507,14 +509,14 @@ const WorkflowBuilder: React.FC = () => {
           <div className="flex items-center justify-between text-xs text-neutral-600">
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={snapGrid} onChange={(e) => setSnapGrid(e.target.checked)} />
-              Snap to grid
+              {t('workflows.builder.snap')}
             </label>
             <span>{Math.round(zoom * 100)}%</span>
           </div>
 
           {(['starting', 'flow', 'logic'] as TemplateCategory[]).map((cat) => (
             <div key={cat} className="space-y-2">
-              <p className="text-xs uppercase font-semibold text-neutral-500">{cat === 'starting' ? 'Starting points' : cat === 'flow' ? 'Flow blocks' : 'Logic'}</p>
+              <p className="text-xs uppercase font-semibold text-neutral-500">{cat === 'starting' ? t('workflows.builder.catStarting') : cat === 'flow' ? t('workflows.builder.catFlow') : t('workflows.builder.catLogic')}</p>
               {NODE_TEMPLATES.filter((t) => t.category === cat).map((t) => (
                 <Card
                   key={t.type}
@@ -816,13 +818,13 @@ const WorkflowBuilder: React.FC = () => {
                           setLinkFrom(null);
                         }
                       }}
-                      title="Drop connection here"
+                      title={t('workflows.builder.dropConnection')}
                     />
                   )}
                   <div className="p-3">
                     {!isText && (
                       <div className="flex items-center justify-between mb-2">
-                        <Badge className={`${template?.color || 'bg-neutral-100 text-neutral-700'} border-none`}>{isCentral ? 'Central' : 'Node'}</Badge>
+                        <Badge className={`${template?.color || 'bg-neutral-100 text-neutral-700'} border-none`}>{isCentral ? t('workflows.builder.central') : t('workflows.builder.node')}</Badge>
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
@@ -831,7 +833,7 @@ const WorkflowBuilder: React.FC = () => {
                               e.stopPropagation();
                               addNodeAt(NODE_TEMPLATES[4], node.position.x + 280, node.position.y + 110);
                             }}
-                            title="Add box"
+                            title={t('workflows.builder.addBox')}
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </button>
@@ -842,7 +844,7 @@ const WorkflowBuilder: React.FC = () => {
                               e.stopPropagation();
                               deleteNode(node.id);
                             }}
-                            title="Remove box"
+                            title={t('workflows.builder.removeBox')}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -881,7 +883,7 @@ const WorkflowBuilder: React.FC = () => {
                         e.stopPropagation();
                         setLinkFrom(node.id);
                       }}
-                      title="Drag to connect"
+                      title={t('workflows.builder.dragConnect')}
                     />
                   )}
                 </div>
@@ -895,13 +897,13 @@ const WorkflowBuilder: React.FC = () => {
               style={{ left: contextMenu.x, top: contextMenu.y }}
             >
               <button className="w-full text-left px-3 py-2 rounded hover:bg-neutral-100 text-sm" onClick={() => { addChildNode(); setContextMenu(null); }}>
-                Add child
+                {t('workflows.builder.addChild')}
               </button>
               <button className="w-full text-left px-3 py-2 rounded hover:bg-neutral-100 text-sm" onClick={() => { addSiblingNode(); setContextMenu(null); }}>
-                Add sibling
+                {t('workflows.builder.addSibling')}
               </button>
               <button className="w-full text-left px-3 py-2 rounded hover:bg-neutral-100 text-sm" onClick={() => { addFreeText(); setContextMenu(null); }}>
-                Add text
+                {t('workflows.builder.addText')}
               </button>
               {contextMenu.nodeId && (
                 <button
@@ -911,14 +913,14 @@ const WorkflowBuilder: React.FC = () => {
                     setContextMenu(null);
                   }}
                 >
-                  Delete box
+                  {t('workflows.builder.deleteBox')}
                 </button>
               )}
             </div>
           )}
           {/* Minimap */}
           <div className="hidden md:block absolute right-4 bottom-4 w-52 h-36 rounded-lg border border-neutral-300 bg-white/95 backdrop-blur p-2">
-            <div className="text-[10px] text-neutral-500 mb-1">Minimap</div>
+            <div className="text-[10px] text-neutral-500 mb-1">{t('workflows.builder.minimap')}</div>
             <svg viewBox={`0 0 ${Math.max(1, mapBounds.maxX - mapBounds.minX)} ${Math.max(1, mapBounds.maxY - mapBounds.minY)}`} className="w-full h-[112px] rounded bg-neutral-50">
               {edges.map((edge) => {
                 const src = nodes.find((n) => n.id === edge.source);
@@ -946,40 +948,40 @@ const WorkflowBuilder: React.FC = () => {
         </div>
 
         <aside className={`${showMobileShortcuts ? 'absolute inset-y-0 right-0 z-20 w-[min(18rem,100%)] shadow-xl' : 'hidden'} md:static md:block md:shadow-none w-72 border-l border-neutral-200 bg-white p-4 overflow-y-auto`}>
-          <h3 className="text-sm font-semibold mb-3">Map Controls</h3>
+          <h3 className="text-sm font-semibold mb-3">{t('workflows.builder.controls')}</h3>
           <div className="space-y-2">
             <Button variant="outline" className="w-full justify-start" onClick={addChildNode} disabled={!selectedNode}>
               <GitBranch className="h-4 w-4 mr-2" />
-              Add Child (Tab)
+              {t('workflows.builder.addChildTab')}
             </Button>
             <Button variant="outline" className="w-full justify-start" onClick={addSiblingNode} disabled={!selectedNode}>
               <Copy className="h-4 w-4 mr-2" />
-              Add Sibling (Enter)
+              {t('workflows.builder.addSiblingEnter')}
             </Button>
             <Button variant="outline" className="w-full justify-start" onClick={addFreeText}>
               <PenSquare className="h-4 w-4 mr-2" />
-              Add Text
+              {t('workflows.builder.addTextBtn')}
             </Button>
             <Button variant="outline" className="w-full justify-start" onClick={() => selectedNodeId && deleteNode(selectedNodeId)} disabled={!selectedNodeId}>
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete Selected
+              {t('workflows.builder.deleteSelected')}
             </Button>
             <Button variant="outline" className="w-full justify-start" onClick={() => selectedEdgeId && deleteEdge(selectedEdgeId)} disabled={!selectedEdgeId}>
               <Unlink className="h-4 w-4 mr-2" />
-              Delete Selected Link
+              {t('workflows.builder.deleteSelectedLink')}
             </Button>
           </div>
           <div className="mt-5 space-y-1 text-xs text-neutral-500">
-            <p>Shortcuts:</p>
-            <p>`Tab`: child, `Enter`: sibling</p>
-            <p>`Del`: remove, `Ctrl/Cmd+C/V`: copy/paste</p>
-            <p>`Ctrl/Cmd+Z/Y`: undo/redo</p>
-              <p>Click a link, drag blue dots to reconnect.</p>
-            <p>Double-click node text to edit inline.</p>
+            <p>{t('workflows.builder.shortcutsLabel')}</p>
+            <p>{t('workflows.builder.shortcutChildSibling')}</p>
+            <p>{t('workflows.builder.shortcutDelCopy')}</p>
+            <p>{t('workflows.builder.shortcutUndo')}</p>
+              <p>{t('workflows.builder.shortcutLink')}</p>
+            <p>{t('workflows.builder.shortcutEdit')}</p>
           </div>
           {selectedNode && (
             <div className="mt-4 rounded-lg border border-neutral-200 p-3">
-              <p className="text-xs uppercase text-neutral-500 mb-1">Selected</p>
+              <p className="text-xs uppercase text-neutral-500 mb-1">{t('workflows.builder.selected')}</p>
               <p className="text-sm font-medium">
                 <MindMapFormattedText text={selectedNode.label} />
               </p>
@@ -988,28 +990,28 @@ const WorkflowBuilder: React.FC = () => {
           )}
           {selectedNode && ((selectedNode.data as any)?.kind === 'free_text' || selectedNode.type === 'free_text') && (
             <div className="mt-3 rounded-lg border border-neutral-200 p-3 space-y-2">
-              <p className="text-xs uppercase text-neutral-500">Text tools</p>
+              <p className="text-xs uppercase text-neutral-500">{t('workflows.builder.textTools')}</p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   className="w-full font-bold"
                   onClick={() => updateNodeLabel(selectedNode.id, toggleMindMapWrap(selectedNode.label, '**'))}
                 >
-                  Bold
+                  {t('workflows.builder.bold')}
                 </Button>
                 <Button
                   variant="outline"
                   className="w-full italic"
                   onClick={() => updateNodeLabel(selectedNode.id, toggleMindMapWrap(selectedNode.label, '*'))}
                 >
-                  Italic
+                  {t('workflows.builder.italic')}
                 </Button>
               </div>
             </div>
           )}
           {selectedEdge && (
             <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
-              <p className="text-xs text-red-700">Selected link: {selectedEdge.source} → {selectedEdge.target}</p>
+              <p className="text-xs text-red-700">{t('workflows.builder.selectedLink', { source: selectedEdge.source, target: selectedEdge.target })}</p>
             </div>
           )}
           <div className="mt-4 flex gap-2">

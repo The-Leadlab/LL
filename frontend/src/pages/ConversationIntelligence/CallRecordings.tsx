@@ -13,23 +13,27 @@ import {
 import { formatDate } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-  const handlePlayRecording = async (recording: CallRecording) => {
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+
+const handlePlayRecording = async (recording: CallRecording, t: TFunction) => {
     try {
       const response = await fetch(recording.recording_url, { method: 'HEAD' });
       if (!response.ok) {
         console.error('Recording playback fetch failed', { recordingId: recording.id, status: response.status });
-        toast.error('Recording is unavailable right now.');
+        toast.error(t('conv.recordingUnavailable'));
         return;
       }
       window.open(recording.recording_url, '_blank');
     } catch (error) {
       console.error('Recording playback fetch failed', { recordingId: recording.id, error });
-      toast.error('Could not open recording.');
+      toast.error(t('conv.openRecordingFailed'));
     }
   };
 
 
 export const CallRecordings: React.FC = () => {
+  const { t } = useTranslation('messages');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -64,10 +68,10 @@ export const CallRecordings: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { variant: any; icon: any; label: string }> = {
-      pending: { variant: 'secondary', icon: Clock, label: 'Pending' },
-      processing: { variant: 'default', icon: Loader2, label: 'Processing' },
-      completed: { variant: 'default', icon: CheckCircle, label: 'Completed' },
-      failed: { variant: 'destructive', icon: AlertCircle, label: 'Failed' }
+      pending: { variant: 'secondary', icon: Clock, label: t('conv.status.pending') },
+      processing: { variant: 'default', icon: Loader2, label: t('conv.status.processing') },
+      completed: { variant: 'default', icon: CheckCircle, label: t('conv.status.completed') },
+      failed: { variant: 'destructive', icon: AlertCircle, label: t('conv.status.failed') }
     };
     const style = styles[status] || styles.pending;
     const Icon = style.icon;
@@ -83,14 +87,14 @@ export const CallRecordings: React.FC = () => {
     if (score === undefined || score === null) return null;
 
     let color = 'bg-gray-100 text-gray-800';
-    let label = 'Neutral';
+    let label = t('conv.sentiment.neutral');
 
     if (score > 0.3) {
       color = 'bg-green-100 text-green-800';
-      label = 'Positive';
+      label = t('conv.sentiment.positive');
     } else if (score < -0.3) {
       color = 'bg-red-100 text-red-800';
-      label = 'Negative';
+      label = t('conv.sentiment.negative');
     }
 
     return (
@@ -122,14 +126,14 @@ export const CallRecordings: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Conversation Intelligence</h1>
+            <h1 className="text-3xl font-bold">{t('conv.title')}</h1>
             <p className="text-gray-600 mt-1">
-              AI-powered call analysis and insights
+              {t('conv.subtitle')}
             </p>
           </div>
           <Button onClick={() => navigate('/conversations/upload')}>
             <Mic className="h-4 w-4 mr-2" />
-            Upload Recording
+            {t('conv.uploadRecording')}
           </Button>
         </div>
 
@@ -143,7 +147,7 @@ export const CallRecordings: React.FC = () => {
                     <Phone className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Total Calls</p>
+                    <p className="text-sm text-gray-600">{t('conv.totalCalls')}</p>
                     <p className="text-2xl font-bold">{analytics.total_calls}</p>
                   </div>
                 </div>
@@ -156,7 +160,7 @@ export const CallRecordings: React.FC = () => {
                     <CheckCircle className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Analyzed</p>
+                    <p className="text-sm text-gray-600">{t('conv.analyzed')}</p>
                     <p className="text-2xl font-bold">{analytics.analyzed_count}</p>
                   </div>
                 </div>
@@ -169,7 +173,7 @@ export const CallRecordings: React.FC = () => {
                     <Clock className="h-6 w-6 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Avg Duration</p>
+                    <p className="text-sm text-gray-600">{t('conv.avgDuration')}</p>
                     <p className="text-2xl font-bold">{analytics.avg_duration_minutes.toFixed(1)}m</p>
                   </div>
                 </div>
@@ -182,7 +186,7 @@ export const CallRecordings: React.FC = () => {
                     <TrendingUp className="h-6 w-6 text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Avg Sentiment</p>
+                    <p className="text-sm text-gray-600">{t('conv.avgSentiment')}</p>
                     <p className="text-2xl font-bold">{analytics.avg_sentiment_score.toFixed(2)}</p>
                   </div>
                 </div>
@@ -205,7 +209,7 @@ export const CallRecordings: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold">
-                          Call Recording #{recording.id}
+                          {t('conv.callRecordingN', { id: recording.id })}
                         </h3>
                         {getStatusBadge(recording.transcription_status)}
                         {getSentimentBadge(recording.sentiment_score)}
@@ -217,7 +221,7 @@ export const CallRecordings: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-1">
                           <Users className="h-4 w-4" />
-                          <span>{recording.lead_name || leadNameById.get(recording.lead_id) || `Lead #${recording.lead_id}`}</span>
+                          <span>{recording.lead_name || leadNameById.get(recording.lead_id) || t('conv.leadN', { id: recording.lead_id })}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Phone className="h-4 w-4" />
@@ -226,7 +230,7 @@ export const CallRecordings: React.FC = () => {
                         {recording.analyzed_at && (
                           <div className="flex items-center gap-1">
                             <CheckCircle className="h-4 w-4 text-green-600" />
-                            <span>Analyzed</span>
+                            <span>{t('conv.analyzed')}</span>
                           </div>
                         )}
                       </div>
@@ -268,16 +272,16 @@ export const CallRecordings: React.FC = () => {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handlePlayRecording(recording);
+                          handlePlayRecording(recording, t);
                         }}
                       >
                         <Play className="h-4 w-4 mr-1" />
-                        Play
+                        {t('conv.play')}
                       </Button>
                       {recording.transcript && (
                         <Button variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
                           <FileText className="h-4 w-4 mr-1" />
-                          Transcript
+                          {t('conv.transcript')}
                         </Button>
                       )}
                       <Button
@@ -285,13 +289,13 @@ export const CallRecordings: React.FC = () => {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (window.confirm('Delete this recording?')) {
+                          if (window.confirm(t('conv.confirmDelete'))) {
                             deleteMutation.mutate(recording.id);
                           }
                         }}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
+                        {t('conv.delete')}
                       </Button>
                     </div>
                   </div>
@@ -302,13 +306,13 @@ export const CallRecordings: React.FC = () => {
             <Card>
               <CardContent className="py-12 text-center">
                 <Phone className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-semibold mb-2">No call recordings yet</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('conv.emptyTitle')}</h3>
                 <p className="text-gray-600 mb-4">
-                  Upload your first call recording to get AI-powered insights
+                  {t('conv.emptyBody')}
                 </p>
                 <Button onClick={() => navigate('/conversations/upload')}>
                   <Mic className="h-4 w-4 mr-2" />
-                  Upload Recording
+                  {t('conv.uploadRecording')}
                 </Button>
               </CardContent>
             </Card>

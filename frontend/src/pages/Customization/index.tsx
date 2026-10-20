@@ -9,8 +9,10 @@ import { useCustomization } from '../../contexts/CustomizationContext';
 import { toast } from 'react-hot-toast';
 import { Download, Upload, RefreshCw, Palette, Layout, Briefcase, ListTodo } from 'lucide-react';
 import { ColorPicker } from '../../components/ui/ColorPicker';
+import { useTranslation } from 'react-i18next';
 
 const CustomizationPage: React.FC = () => {
+  const { t } = useTranslation('modules');
   const {
     customization,
     isLoading,
@@ -55,7 +57,7 @@ const CustomizationPage: React.FC = () => {
 
   const handleImport = () => {
     if (!importData.trim()) {
-      toast.error('Please paste customization data');
+      toast.error(t('customizationPage.toastPaste'));
       return;
     }
     importCustomization(importData);
@@ -65,7 +67,7 @@ const CustomizationPage: React.FC = () => {
   const handleExport = () => {
     const data = exportCustomization();
     navigator.clipboard.writeText(data);
-    toast.success('Customization data copied to clipboard');
+    toast.success(t('customizationPage.toastCopied'));
   };
 
   if (isLoading) {
@@ -81,15 +83,15 @@ const CustomizationPage: React.FC = () => {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Platform Customization</h1>
+        <h1 className="text-3xl font-bold">{t('customizationPage.title')}</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExport} disabled={isSaving}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t('customizationPage.export')}
           </Button>
           <Button variant="outline" onClick={resetToDefault} disabled={isSaving}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Reset
+            {t('customizationPage.reset')}
           </Button>
         </div>
       </div>
@@ -98,52 +100,52 @@ const CustomizationPage: React.FC = () => {
         <TabsList>
           <TabsTrigger value="ui">
             <Palette className="h-4 w-4 mr-2" />
-            UI/UX
+            {t('customizationPage.tabUi')}
           </TabsTrigger>
           <TabsTrigger value="tasks">
             <ListTodo className="h-4 w-4 mr-2" />
-            Tasks
+            {t('customizationPage.tabTasks')}
           </TabsTrigger>
           <TabsTrigger value="deals">
             <Briefcase className="h-4 w-4 mr-2" />
-            Deals
+            {t('customizationPage.tabDeals')}
           </TabsTrigger>
           <TabsTrigger value="layout">
             <Layout className="h-4 w-4 mr-2" />
-            Layout
+            {t('customizationPage.tabLayout')}
           </TabsTrigger>
           <TabsTrigger value="branding">
             <Briefcase className="h-4 w-4 mr-2" />
-            Branding
+            {t('customizationPage.tabBranding')}
           </TabsTrigger>
           <TabsTrigger value="import-export">
             <Upload className="h-4 w-4 mr-2" />
-            Import/Export
+            {t('customizationPage.tabImportExport')}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="ui">
           <Card>
             <CardHeader>
-              <CardTitle>UI Customization</CardTitle>
-              <CardDescription>Customize the look and feel of your platform</CardDescription>
+              <CardTitle>{t('customizationPage.uiTitle')}</CardTitle>
+              <CardDescription>{t('customizationPage.uiDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Theme</label>
+                  <label className="text-sm font-medium">{t('customizationPage.theme')}</label>
                   <Select
                     value={customization.ui.theme}
                     onValueChange={(value) => handleUIChange('theme', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select theme" />
+                      <SelectValue placeholder={t('customizationPage.selectTheme')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="light">Light</SelectItem>
-                      <SelectItem value="dark">Dark</SelectItem>
-                      <SelectItem value="system">System</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
+                      <SelectItem value="light">{t('customizationPage.light')}</SelectItem>
+                      <SelectItem value="dark">{t('customizationPage.dark')}</SelectItem>
+                      <SelectItem value="system">{t('customizationPage.system')}</SelectItem>
+                      <SelectItem value="custom">{t('customizationPage.custom')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -151,21 +153,21 @@ const CustomizationPage: React.FC = () => {
                 {customization.ui.theme === 'custom' && (
                   <>
                     <div>
-                      <label className="text-sm font-medium">Primary Color</label>
+                      <label className="text-sm font-medium">{t('customizationPage.primaryColor')}</label>
                       <ColorPicker
                         value={customization.ui.primaryColor}
                         onChange={(value) => handleUIChange('primaryColor', value)}
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Secondary Color</label>
+                      <label className="text-sm font-medium">{t('customizationPage.secondaryColor')}</label>
                       <ColorPicker
                         value={customization.ui.secondaryColor}
                         onChange={(value) => handleUIChange('secondaryColor', value)}
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Accent Color</label>
+                      <label className="text-sm font-medium">{t('customizationPage.accentColor')}</label>
                       <ColorPicker
                         value={customization.ui.accentColor}
                         onChange={(value) => handleUIChange('accentColor', value)}
@@ -175,7 +177,7 @@ const CustomizationPage: React.FC = () => {
                 )}
 
                 <div>
-                  <label className="text-sm font-medium">Border Radius</label>
+                  <label className="text-sm font-medium">{t('customizationPage.borderRadius')}</label>
                   <Input
                     type="number"
                     value={customization.ui.borderRadius}
@@ -186,7 +188,7 @@ const CustomizationPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Spacing Scale</label>
+                  <label className="text-sm font-medium">{t('customizationPage.spacingScale')}</label>
                   <Input
                     type="number"
                     value={customization.ui.spacing}
@@ -197,7 +199,7 @@ const CustomizationPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Animation Speed</label>
+                  <label className="text-sm font-medium">{t('customizationPage.animationSpeed')}</label>
                   <Input
                     type="number"
                     value={customization.ui.animationSpeed}
@@ -210,12 +212,12 @@ const CustomizationPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium">Custom CSS</label>
+                <label className="text-sm font-medium">{t('customizationPage.customCss')}</label>
                 <textarea
                   className="w-full h-32 p-2 border rounded-md font-mono text-sm"
                   value={customization.ui.customCSS}
                   onChange={(e) => handleUIChange('customCSS', e.target.value)}
-                  placeholder="Add your custom CSS here..."
+                  placeholder={t('customizationPage.cssPh')}
                 />
               </div>
             </CardContent>
@@ -225,13 +227,13 @@ const CustomizationPage: React.FC = () => {
         <TabsContent value="tasks">
           <Card>
             <CardHeader>
-              <CardTitle>Task Customization</CardTitle>
-              <CardDescription>Customize how tasks work in your platform</CardDescription>
+              <CardTitle>{t('customizationPage.taskTitle')}</CardTitle>
+              <CardDescription>{t('customizationPage.taskDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Default Due Days</label>
+                  <label className="text-sm font-medium">{t('customizationPage.defaultDueDays')}</label>
                   <Input
                     type="number"
                     value={customization.tasks.defaultDueDays}
@@ -246,12 +248,12 @@ const CustomizationPage: React.FC = () => {
                     checked={customization.tasks.allowCustomFields}
                     onCheckedChange={(checked) => handleTaskChange('allowCustomFields', checked)}
                   />
-                  <label className="text-sm font-medium">Allow Custom Fields</label>
+                  <label className="text-sm font-medium">{t('customizationPage.allowCustomFields')}</label>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-medium mb-2">Task Statuses</h3>
+                <h3 className="text-lg font-medium mb-2">{t('customizationPage.taskStatuses')}</h3>
                 <div className="space-y-2">
                   {customization.tasks.statuses.map((status, index) => (
                     <div key={status.id} className="flex items-center gap-2 p-2 border rounded">
@@ -267,7 +269,7 @@ const CustomizationPage: React.FC = () => {
               </div>
 
               <div>
-                <h3 className="text-lg font-medium mb-2">Task Priorities</h3>
+                <h3 className="text-lg font-medium mb-2">{t('customizationPage.taskPriorities')}</h3>
                 <div className="space-y-2">
                   {customization.tasks.priorities.map((priority) => (
                     <div key={priority.id} className="flex items-center gap-2 p-2 border rounded">
@@ -276,7 +278,7 @@ const CustomizationPage: React.FC = () => {
                         style={{ backgroundColor: priority.color }}
                       />
                       <span className="flex-1">{priority.name}</span>
-                      <span>Level {priority.level}</span>
+                      <span>{t('customizationPage.level',{level:priority.level})}</span>
                     </div>
                   ))}
                 </div>
@@ -288,13 +290,13 @@ const CustomizationPage: React.FC = () => {
         <TabsContent value="deals">
           <Card>
             <CardHeader>
-              <CardTitle>Deal Customization</CardTitle>
-              <CardDescription>Customize how deals work in your platform</CardDescription>
+              <CardTitle>{t('customizationPage.dealTitle')}</CardTitle>
+              <CardDescription>{t('customizationPage.dealDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Default Currency</label>
+                  <label className="text-sm font-medium">{t('customizationPage.defaultCurrency')}</label>
                   <Input
                     value={customization.deals.defaultCurrency}
                     onChange={(e) => handleDealChange('defaultCurrency', e.target.value)}
@@ -307,12 +309,12 @@ const CustomizationPage: React.FC = () => {
                     checked={customization.deals.allowCustomPipelines}
                     onCheckedChange={(checked) => handleDealChange('allowCustomPipelines', checked)}
                   />
-                  <label className="text-sm font-medium">Allow Custom Pipelines</label>
+                  <label className="text-sm font-medium">{t('customizationPage.allowCustomPipelines')}</label>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-medium mb-2">Deal Stages</h3>
+                <h3 className="text-lg font-medium mb-2">{t('customizationPage.dealStages')}</h3>
                 <div className="space-y-2">
                   {customization.deals.stages.map((stage) => (
                     <div key={stage.id} className="flex items-center gap-2 p-2 border rounded">
@@ -333,29 +335,29 @@ const CustomizationPage: React.FC = () => {
         <TabsContent value="layout">
           <Card>
             <CardHeader>
-              <CardTitle>Layout Customization</CardTitle>
-              <CardDescription>Customize the layout and structure of your platform</CardDescription>
+              <CardTitle>{t('customizationPage.layoutTitle')}</CardTitle>
+              <CardDescription>{t('customizationPage.layoutDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Sidebar Position</label>
+                  <label className="text-sm font-medium">{t('customizationPage.sidebarPosition')}</label>
                   <Select
                     value={customization.layout.sidebarPosition}
                     onValueChange={(value) => handleLayoutChange('sidebarPosition', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select position" />
+                      <SelectValue placeholder={t('customizationPage.selectPosition')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="left">Left</SelectItem>
-                      <SelectItem value="right">Right</SelectItem>
+                      <SelectItem value="left">{t('customizationPage.left')}</SelectItem>
+                      <SelectItem value="right">{t('customizationPage.right')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Sidebar Width</label>
+                  <label className="text-sm font-medium">{t('customizationPage.sidebarWidth')}</label>
                   <Input
                     type="number"
                     value={customization.layout.sidebarWidth}
@@ -366,7 +368,7 @@ const CustomizationPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Header Height</label>
+                  <label className="text-sm font-medium">{t('customizationPage.headerHeight')}</label>
                   <Input
                     type="number"
                     value={customization.layout.headerHeight}
@@ -381,22 +383,22 @@ const CustomizationPage: React.FC = () => {
                     checked={customization.layout.footerVisible}
                     onCheckedChange={(checked) => handleLayoutChange('footerVisible', checked)}
                   />
-                  <label className="text-sm font-medium">Footer Visible</label>
+                  <label className="text-sm font-medium">{t('customizationPage.footerVisible')}</label>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Grid Density</label>
+                  <label className="text-sm font-medium">{t('customizationPage.gridDensity')}</label>
                   <Select
                     value={customization.layout.gridDensity}
                     onValueChange={(value) => handleLayoutChange('gridDensity', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select density" />
+                      <SelectValue placeholder={t('customizationPage.selectDensity')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="compact">Compact</SelectItem>
-                      <SelectItem value="comfortable">Comfortable</SelectItem>
-                      <SelectItem value="spacious">Spacious</SelectItem>
+                      <SelectItem value="compact">{t('customizationPage.compact')}</SelectItem>
+                      <SelectItem value="comfortable">{t('customizationPage.comfortable')}</SelectItem>
+                      <SelectItem value="spacious">{t('customizationPage.spacious')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -406,7 +408,7 @@ const CustomizationPage: React.FC = () => {
                     checked={customization.layout.animationsEnabled}
                     onCheckedChange={(checked) => handleLayoutChange('animationsEnabled', checked)}
                   />
-                  <label className="text-sm font-medium">Animations Enabled</label>
+                  <label className="text-sm font-medium">{t('customizationPage.animationsEnabled')}</label>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -414,7 +416,7 @@ const CustomizationPage: React.FC = () => {
                     checked={customization.layout.reducedMotion}
                     onCheckedChange={(checked) => handleLayoutChange('reducedMotion', checked)}
                   />
-                  <label className="text-sm font-medium">Reduced Motion</label>
+                  <label className="text-sm font-medium">{t('customizationPage.reducedMotion')}</label>
                 </div>
               </div>
             </CardContent>
@@ -424,22 +426,22 @@ const CustomizationPage: React.FC = () => {
         <TabsContent value="branding">
           <Card>
             <CardHeader>
-              <CardTitle>Branding</CardTitle>
-              <CardDescription>Customize your platform's branding</CardDescription>
+              <CardTitle>{t('customizationPage.tabBranding')}</CardTitle>
+              <CardDescription>{t('customizationPage.brandingDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Company Name</label>
+                  <label className="text-sm font-medium">{t('customizationPage.companyName')}</label>
                   <Input
                     value={customization.branding.companyName}
                     onChange={(e) => handleBrandingChange('companyName', e.target.value)}
-                    placeholder="Your Company Name"
+                    placeholder={t('customizationPage.companyPh')}
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Support Email</label>
+                  <label className="text-sm font-medium">{t('customizationPage.supportEmail')}</label>
                   <Input
                     type="email"
                     value={customization.branding.supportEmail}
@@ -449,7 +451,7 @@ const CustomizationPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Logo URL</label>
+                  <label className="text-sm font-medium">{t('customizationPage.logoUrl')}</label>
                   <Input
                     value={customization.branding.logoUrl || ''}
                     onChange={(e) => handleBrandingChange('logoUrl', e.target.value)}
@@ -458,7 +460,7 @@ const CustomizationPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Favicon URL</label>
+                  <label className="text-sm font-medium">{t('customizationPage.faviconUrl')}</label>
                   <Input
                     value={customization.branding.faviconUrl || ''}
                     onChange={(e) => handleBrandingChange('faviconUrl', e.target.value)}
@@ -467,7 +469,7 @@ const CustomizationPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Terms URL</label>
+                  <label className="text-sm font-medium">{t('customizationPage.termsUrl')}</label>
                   <Input
                     value={customization.branding.termsUrl || ''}
                     onChange={(e) => handleBrandingChange('termsUrl', e.target.value)}
@@ -476,7 +478,7 @@ const CustomizationPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Privacy URL</label>
+                  <label className="text-sm font-medium">{t('customizationPage.privacyUrl')}</label>
                   <Input
                     value={customization.branding.privacyUrl || ''}
                     onChange={(e) => handleBrandingChange('privacyUrl', e.target.value)}
@@ -491,32 +493,32 @@ const CustomizationPage: React.FC = () => {
         <TabsContent value="import-export">
           <Card>
             <CardHeader>
-              <CardTitle>Import/Export Customization</CardTitle>
-              <CardDescription>Share or backup your customization settings</CardDescription>
+              <CardTitle>{t('customizationPage.ieTitle')}</CardTitle>
+              <CardDescription>{t('customizationPage.ieDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Import Customization</label>
+                <label className="text-sm font-medium">{t('customizationPage.importLabel')}</label>
                 <textarea
                   className="w-full h-32 p-2 border rounded-md font-mono text-sm"
                   value={importData}
                   onChange={(e) => setImportData(e.target.value)}
-                  placeholder="Paste your customization JSON here..."
+                  placeholder={t('customizationPage.importPh')}
                 />
                 <Button onClick={handleImport} disabled={isSaving} className="mt-2">
                   <Upload className="h-4 w-4 mr-2" />
-                  Import
+                  {t('customizationPage.import')}
                 </Button>
               </div>
 
               <div>
-                <label className="text-sm font-medium">Export Customization</label>
+                <label className="text-sm font-medium">{t('customizationPage.exportLabel')}</label>
                 <div className="p-4 bg-gray-100 rounded-md font-mono text-sm whitespace-pre-wrap">
                   {exportCustomization()}
                 </div>
                 <Button onClick={handleExport} disabled={isSaving} className="mt-2">
                   <Download className="h-4 w-4 mr-2" />
-                  Copy to Clipboard
+                  {t('customizationPage.copy')}
                 </Button>
               </div>
             </CardContent>

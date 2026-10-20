@@ -15,9 +15,11 @@ import {
 import { PageContainer } from '@/components/ui/PageContainer';
 import { Badge } from '@/components/ui/Badge';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 type Step = 'upload' | 'preview' | 'mapping' | 'options' | 'importing';
 
 export const ImportWizard: React.FC = () => {
+  const { t } = useTranslation('modules');
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -63,14 +65,14 @@ export const ImportWizard: React.FC = () => {
       setFieldMapping(data.detected_fields);
       setCurrentStep('preview');
       toast({
-        title: 'Preview loaded',
-        description: `Found ${data.total_rows} records`
+        title: t('dataImport.toast.previewLoaded'),
+        description: t('dataImport.toast.foundRecords', { count: data.total_rows })
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to load preview',
+        title: t('dataImport.toast.error'),
+        description: t('dataImport.toast.previewFailed'),
         variant: 'destructive'
       });
     }
@@ -96,14 +98,14 @@ export const ImportWizard: React.FC = () => {
       setCurrentStep('importing');
       queryClient.invalidateQueries({ queryKey: ['import-jobs'] });
       toast({
-        title: 'Import started',
-        description: 'Your data is being imported'
+        title: t('dataImport.toast.importStarted'),
+        description: t('dataImport.toast.importStartedBody')
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to start import',
+        title: t('dataImport.toast.error'),
+        description: t('dataImport.toast.startFailed'),
         variant: 'destructive'
       });
     }
@@ -122,8 +124,8 @@ export const ImportWizard: React.FC = () => {
     if (file) {
       if (!file.name.endsWith('.csv')) {
         toast({
-          title: 'Invalid file',
-          description: 'Please select a CSV file',
+          title: t('dataImport.toast.invalidFile'),
+          description: t('dataImport.toast.selectCsv'),
           variant: 'destructive'
         });
         return;
@@ -146,27 +148,27 @@ export const ImportWizard: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-5 w-5" />
-          Upload CSV File
+          {t('dataImport.uploadTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <Label htmlFor="entity-type">Import To *</Label>
+          <Label htmlFor="entity-type">{t('dataImport.importTo')}</Label>
           <Select value={entityType} onValueChange={setEntityType}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="leads">Leads</SelectItem>
-              <SelectItem value="contacts">Contacts</SelectItem>
-              <SelectItem value="deals">Deals</SelectItem>
-              <SelectItem value="accounts">Accounts</SelectItem>
+              <SelectItem value="leads">{t('dataImport.entities.leads')}</SelectItem>
+              <SelectItem value="contacts">{t('dataImport.entities.contacts')}</SelectItem>
+              <SelectItem value="deals">{t('dataImport.entities.deals')}</SelectItem>
+              <SelectItem value="accounts">{t('dataImport.entities.accounts')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div>
-          <Label htmlFor="file-upload">CSV File *</Label>
+          <Label htmlFor="file-upload">{t('dataImport.csvFile')}</Label>
           <div className="mt-2">
             <Input
               id="file-upload"
@@ -193,10 +195,10 @@ export const ImportWizard: React.FC = () => {
               onChange={(e) => setImportOptions({ ...importOptions, hasHeader: e.target.checked })}
               className="rounded"
             />
-            <Label htmlFor="has-header" className="cursor-pointer">Has Header Row</Label>
+            <Label htmlFor="has-header" className="cursor-pointer">{t('dataImport.hasHeader')}</Label>
           </div>
           <div>
-            <Label htmlFor="delimiter">Delimiter</Label>
+            <Label htmlFor="delimiter">{t('dataImport.delimiter')}</Label>
             <Input
               id="delimiter"
               value={importOptions.delimiter}
@@ -205,7 +207,7 @@ export const ImportWizard: React.FC = () => {
             />
           </div>
           <div>
-            <Label htmlFor="encoding">Encoding</Label>
+            <Label htmlFor="encoding">{t('dataImport.encoding')}</Label>
             <Select
               value={importOptions.encoding}
               onValueChange={(value) => setImportOptions({ ...importOptions, encoding: value })}
@@ -228,7 +230,7 @@ export const ImportWizard: React.FC = () => {
           className="w-full"
         >
           {previewMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Preview & Continue
+          {t('dataImport.previewContinue')}
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       </CardContent>
@@ -240,16 +242,16 @@ export const ImportWizard: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Preview Data
+          {t('dataImport.previewTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-600">
-            Total rows: <span className="font-semibold">{preview?.total_rows}</span>
+            {t('dataImport.totalRows')} <span className="font-semibold">{preview?.total_rows}</span>
           </span>
           <span className="text-sm text-gray-600">
-            Showing first 5 rows
+            {t('dataImport.showingFirst')}
           </span>
         </div>
 
@@ -281,10 +283,10 @@ export const ImportWizard: React.FC = () => {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setCurrentStep('upload')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t('dataImport.back')}
           </Button>
           <Button onClick={() => setCurrentStep('mapping')} className="flex-1">
-            Configure Field Mapping
+            {t('dataImport.configureMapping')}
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </div>
@@ -297,12 +299,12 @@ export const ImportWizard: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Database className="h-5 w-5" />
-          Field Mapping
+          {t('dataImport.mappingTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-gray-600">
-          Map CSV columns to {entityType} fields. Auto-detected mappings are shown below.
+          {t('dataImport.mappingHelp', { entity: t(`dataImport.entities.${entityType}`, { defaultValue: entityType }) })}
         </p>
 
         <div className="space-y-3">
@@ -313,7 +315,7 @@ export const ImportWizard: React.FC = () => {
               </div>
               <div>
                 <Input
-                  placeholder="Target field (e.g., email, first_name, client)"
+                  placeholder={t('dataImport.targetPlaceholder')}
                   value={fieldMapping[header] || ''}
                   onChange={(e) =>
                     setFieldMapping({ ...fieldMapping, [header]: e.target.value })
@@ -327,10 +329,10 @@ export const ImportWizard: React.FC = () => {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setCurrentStep('preview')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t('dataImport.back')}
           </Button>
           <Button onClick={() => setCurrentStep('options')} className="flex-1">
-            Import Options
+            {t('dataImport.importOptions')}
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </div>
@@ -341,11 +343,11 @@ export const ImportWizard: React.FC = () => {
   const renderOptionsStep = () => (
     <Card>
       <CardHeader>
-        <CardTitle>Import Options</CardTitle>
+        <CardTitle>{t('dataImport.importOptions')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="import-client">Client (default when column skipped)</Label>
+          <Label htmlFor="import-client">{t('dataImport.clientLabel')}</Label>
           <Select
             value={importOptions.clientId != null ? String(importOptions.clientId) : undefined}
             onValueChange={(v) =>
@@ -353,18 +355,18 @@ export const ImportWizard: React.FC = () => {
             }
           >
             <SelectTrigger id="import-client">
-              <SelectValue placeholder="General (skip / default)" />
+              <SelectValue placeholder={t('dataImport.clientDefault')} />
             </SelectTrigger>
             <SelectContent>
               {activeClients.map((c) => (
                 <SelectItem key={c.id} value={String(c.id)}>
-                  {c.is_default ? 'General (skip / default)' : c.name}
+                  {c.is_default ? t('dataImport.clientDefault') : c.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            Map a CSV column to <code>client</code> for per-row assignment. Otherwise leads use this client (defaults to General). Prefer Import on the Leads page for full client support.
+            {t('dataImport.clientHelpPre')} <code>client</code> {t('dataImport.clientHelpPost')}
           </p>
         </div>
 
@@ -380,7 +382,7 @@ export const ImportWizard: React.FC = () => {
               className="rounded"
             />
             <Label htmlFor="deduplicate" className="cursor-pointer">
-              Skip duplicate records (by email)
+              {t('dataImport.dedupe')}
             </Label>
           </div>
 
@@ -395,7 +397,7 @@ export const ImportWizard: React.FC = () => {
               className="rounded"
             />
             <Label htmlFor="update-existing" className="cursor-pointer">
-              Update existing records if found
+              {t('dataImport.updateExisting')}
             </Label>
           </div>
         </div>
@@ -403,7 +405,7 @@ export const ImportWizard: React.FC = () => {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setCurrentStep('mapping')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t('dataImport.back')}
           </Button>
           <Button
             onClick={handleStartImport}
@@ -411,7 +413,7 @@ export const ImportWizard: React.FC = () => {
             className="flex-1"
           >
             {importMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Start Import
+            {t('dataImport.startImport')}
             <CheckCircle className="h-4 w-4 ml-2" />
           </Button>
         </div>
@@ -424,7 +426,7 @@ export const ImportWizard: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Loader2 className="h-5 w-5 animate-spin" />
-          Importing Data...
+          {t('dataImport.importing')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -432,7 +434,7 @@ export const ImportWizard: React.FC = () => {
           <>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Progress</span>
+                <span>{t('dataImport.progress')}</span>
                 <span className="font-semibold">{progress.progress_percentage.toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4">
@@ -446,28 +448,28 @@ export const ImportWizard: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
                 <p className="text-2xl font-bold">{progress.total_records}</p>
-                <p className="text-sm text-gray-600">Total</p>
+                <p className="text-sm text-gray-600">{t('dataImport.total')}</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-green-600">{progress.successful_records}</p>
-                <p className="text-sm text-gray-600">Success</p>
+                <p className="text-sm text-gray-600">{t('dataImport.success')}</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-red-600">{progress.failed_records}</p>
-                <p className="text-sm text-gray-600">Failed</p>
+                <p className="text-sm text-gray-600">{t('dataImport.failed')}</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-600">{progress.skipped_records}</p>
-                <p className="text-sm text-gray-600">Skipped</p>
+                <p className="text-sm text-gray-600">{t('dataImport.skipped')}</p>
               </div>
             </div>
 
             {progress.status === 'completed' && (
               <div className="text-center space-y-4">
                 <CheckCircle className="h-16 w-16 text-green-600 mx-auto" />
-                <h3 className="text-xl font-semibold">Import Complete!</h3>
+                <h3 className="text-xl font-semibold">{t('dataImport.complete')}</h3>
                 <Button onClick={() => navigate('/data-import/history')}>
-                  View Import History
+                  {t('dataImport.viewHistory')}
                 </Button>
               </div>
             )}
@@ -475,8 +477,8 @@ export const ImportWizard: React.FC = () => {
             {progress.status === 'failed' && (
               <div className="text-center space-y-4">
                 <AlertCircle className="h-16 w-16 text-red-600 mx-auto" />
-                <h3 className="text-xl font-semibold">Import Failed</h3>
-                <p className="text-gray-600">Please check the error log for details</p>
+                <h3 className="text-xl font-semibold">{t('dataImport.importFailed')}</h3>
+                <p className="text-gray-600">{t('dataImport.checkErrorLog')}</p>
               </div>
             )}
           </>
@@ -490,19 +492,19 @@ export const ImportWizard: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold">Import Data</h1>
+          <h1 className="text-3xl font-bold">{t('dataImport.title')}</h1>
           <p className="text-gray-600 mt-1">
-            Import contacts, leads, and deals from CSV files or other CRM systems
+            {t('dataImport.subtitle')}
           </p>
         </div>
 
         {/* Progress Steps */}
         <div className="flex items-center justify-center gap-4">
           {[
-            { step: 'upload', label: 'Upload', icon: Upload },
-            { step: 'preview', label: 'Preview', icon: FileText },
-            { step: 'mapping', label: 'Mapping', icon: Database },
-            { step: 'options', label: 'Options', icon: CheckCircle }
+            { step: 'upload', label: t('dataImport.steps.upload'), icon: Upload },
+            { step: 'preview', label: t('dataImport.steps.preview'), icon: FileText },
+            { step: 'mapping', label: t('dataImport.steps.mapping'), icon: Database },
+            { step: 'options', label: t('dataImport.steps.options'), icon: CheckCircle }
           ].map(({ step, label, icon: Icon }, idx) => {
             const isActive = currentStep === step;
             const isCompleted =

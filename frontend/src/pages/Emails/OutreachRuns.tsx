@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Loader2, Play, Square } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -23,6 +24,7 @@ type JobRow = {
 };
 
 function RunRow({ run }: { run: OutreachRun }) {
+  const { t } = useTranslation('emails');
   const [expanded, setExpanded] = useState(false);
 
   const { data: detail, isLoading } = useQuery({
@@ -47,7 +49,7 @@ function RunRow({ run }: { run: OutreachRun }) {
           <Badge variant={run.status === 'completed' ? 'default' : 'secondary'}>{run.status}</Badge>
         </td>
         <td className="px-4 py-3 text-sm">
-          {run.scenario?.name ?? `Scenario #${run.scenario_id}`}
+          {run.scenario?.name ?? t('runsPage.scenarioFallback', { id: run.scenario_id })}
         </td>
         <td className="px-4 py-3 text-sm text-gray-600">
           {run.started_at ? new Date(run.started_at).toLocaleString() : '—'}
@@ -62,10 +64,10 @@ function RunRow({ run }: { run: OutreachRun }) {
             {isLoading ? (
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading steps…
+                {t('runsPage.loadingSteps')}
               </div>
             ) : steps.length === 0 ? (
-              <p className="text-sm text-gray-500">No steps recorded yet.</p>
+              <p className="text-sm text-gray-500">{t('runsPage.noSteps')}</p>
             ) : (
               <ul className="space-y-2">
                 {steps.map((step) => (
@@ -75,13 +77,13 @@ function RunRow({ run }: { run: OutreachRun }) {
                   >
                     <Badge variant="outline">{step.status}</Badge>
                     <span className="font-mono text-xs">{step.node_id}</span>
-                    {step.lead_id != null && <span>Lead #{step.lead_id}</span>}
+                    {step.lead_id != null && <span>{t('runsPage.leadId', { id: step.lead_id })}</span>}
                     <span className="text-gray-500">
-                      scheduled {new Date(step.scheduled_at).toLocaleString()}
+                      {t('runsPage.scheduledAt', { date: new Date(step.scheduled_at).toLocaleString() })}
                     </span>
                     {step.executed_at && (
                       <span className="text-gray-500">
-                        · executed {new Date(step.executed_at).toLocaleString()}
+                        · {t('runsPage.executedAt', { date: new Date(step.executed_at).toLocaleString() })}
                       </span>
                     )}
                     {step.error && <span className="text-red-600">{step.error}</span>}
@@ -97,6 +99,7 @@ function RunRow({ run }: { run: OutreachRun }) {
 }
 
 export function OutreachRunsPage() {
+  const { t } = useTranslation('emails');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -134,7 +137,7 @@ export function OutreachRunsPage() {
       const skipped = jobs.filter((j) => j.status === 'skipped').length;
       const campaignName =
         jobs.find((j) => j.campaign_name)?.campaign_name ||
-        (jobs.find((j) => j.campaign_id) ? `Campaign #${jobs.find((j) => j.campaign_id)?.campaign_id}` : 'Cold outreach');
+        (jobs.find((j) => j.campaign_id) ? t('runsPage.campaignFallback', { id: jobs.find((j) => j.campaign_id)?.campaign_id }) : t('runsPage.coldOutreachFallback'));
       const latest = jobs
         .map((j) => j.sent_at || j.scheduled_at || '')
         .filter(Boolean)
@@ -142,7 +145,7 @@ export function OutreachRunsPage() {
         .reverse()[0];
       return { batchId, jobs, sent, failed, pending, skipped, campaignName, latest };
     });
-  }, [jobsPayload]);
+  }, [jobsPayload, t]);
 
   const totalPending = useMemo(
     () => jobBatches.reduce((sum, b) => sum + b.pending, 0),
@@ -161,14 +164,14 @@ export function OutreachRunsPage() {
 
       const description =
         (data as Record<string, unknown>).message as string
-        || (sent > 0 ? `${sent} sent.` : 'No due jobs found.');
+        || (sent > 0 ? t('runsPage.sentCount', { count: sent }) : t('runsPage.noDueJobs'));
 
       const failSnippet = data.failed_reasons?.length
-        ? `\n${data.failed_reasons.slice(0, 3).join('\n')}${data.failed_reasons.length > 3 ? `\n…and ${data.failed_reasons.length - 3} more` : ''}`
+        ? `\n${data.failed_reasons.slice(0, 3).join('\n')}${data.failed_reasons.length > 3 ? `\n${t('runsPage.andMore', { count: data.failed_reasons.length - 3 })}` : ''}`
         : '';
 
       toast({
-        title: hasFails ? 'Sent with errors' : sent > 0 ? 'Email sent' : 'Nothing due',
+        title: hasFails ? t('runsPage.sentWithErrors') : sent > 0 ? t('runsPage.emailSent') : t('runsPage.nothingDue'),
         description: description + failSnippet,
         variant: hasFails ? 'destructive' : 'default',
       });
@@ -178,9 +181,9 @@ export function OutreachRunsPage() {
       const detail =
         axiosErr?.response?.data?.detail
         || axiosErr?.message
-        || 'Unknown error';
+        || t('runsPage.unknownError');
       toast({
-        title: 'Could not process queue',
+        title: t('runsPage.processFailed'),
         description: detail,
         variant: 'destructive',
       });
@@ -192,12 +195,12 @@ export function OutreachRunsPage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['outreach-jobs'] });
       toast({
-        title: 'Sending stopped',
-        description: `${data.cancelled} pending job${data.cancelled === 1 ? '' : 's'} cancelled.`,
+        title: t('runsPage.sendingStopped'),
+        description: t('runsPage.jobsCancelled', { count: data.cancelled }),
       });
     },
     onError: () => {
-      toast({ title: 'Could not stop sending', variant: 'destructive' });
+      toast({ title: t('runsPage.stopSendingFailed'), variant: 'destructive' });
     },
   });
 
@@ -206,12 +209,12 @@ export function OutreachRunsPage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['outreach-jobs'] });
       toast({
-        title: 'Batch stopped',
-        description: `${data.cancelled} pending job${data.cancelled === 1 ? '' : 's'} cancelled.`,
+        title: t('runsPage.batchStopped'),
+        description: t('runsPage.jobsCancelled', { count: data.cancelled }),
       });
     },
     onError: () => {
-      toast({ title: 'Could not stop batch', variant: 'destructive' });
+      toast({ title: t('runsPage.stopBatchFailed'), variant: 'destructive' });
     },
   });
 
@@ -219,14 +222,14 @@ export function OutreachRunsPage() {
     <div className="container mx-auto space-y-6 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Runs</h1>
+          <h1 className="text-2xl font-semibold">{t('runs')}</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Emails send automatically, one every 5 minutes. Use Send next only if a job is due and the queue looks stuck.
+            {t('runsPage.subtitle')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={() => navigate('/emails/outreach')}>
-            Cold Outreach
+            {t('coldOutreach')}
           </Button>
           <Button
             type="button"
@@ -238,7 +241,7 @@ export function OutreachRunsPage() {
             ) : (
               <Play className="mr-2 h-4 w-4" />
             )}
-            Send next due email
+            {t('runsPage.sendNext')}
           </Button>
           {totalPending > 0 && (
             <Button
@@ -252,7 +255,7 @@ export function OutreachRunsPage() {
               ) : (
                 <Square className="mr-2 h-4 w-4" />
               )}
-              Stop all ({totalPending})
+              {t('runsPage.stopAll', { count: totalPending })}
             </Button>
           )}
         </div>
@@ -261,30 +264,30 @@ export function OutreachRunsPage() {
       <Card>
         <CardContent className="p-0">
           <div className="border-b px-4 py-3">
-            <h2 className="font-medium">Campaign batches</h2>
-            <p className="text-xs text-gray-500">Each Cold Outreach launch creates a batch here.</p>
+            <h2 className="font-medium">{t('runsPage.campaignBatches')}</h2>
+            <p className="text-xs text-gray-500">{t('runsPage.campaignBatchesHint')}</p>
           </div>
           {jobsLoading ? (
             <div className="flex items-center justify-center p-8 text-sm text-gray-500">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Loading batches…
+              {t('runsPage.loadingBatches')}
             </div>
           ) : jobBatches.length === 0 ? (
             <p className="p-6 text-sm text-gray-500">
-              No campaign sends yet. Launch one from Cold Outreach.
+              {t('runsPage.noBatches')}
             </p>
           ) : (
             <div className="overflow-auto">
               <table className="min-w-full text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase text-gray-500">
                   <tr>
-                    <th className="px-4 py-3">Campaign</th>
-                    <th className="px-4 py-3">Batch</th>
-                    <th className="px-4 py-3">Sent</th>
-                    <th className="px-4 py-3">Pending</th>
-                    <th className="px-4 py-3">Failed</th>
-                    <th className="px-4 py-3">Skipped</th>
-                    <th className="px-4 py-3">Latest</th>
+                    <th className="px-4 py-3">{t('runsPage.colCampaign')}</th>
+                    <th className="px-4 py-3">{t('runsPage.colBatch')}</th>
+                    <th className="px-4 py-3">{t('runsPage.colSent')}</th>
+                    <th className="px-4 py-3">{t('runsPage.colPending')}</th>
+                    <th className="px-4 py-3">{t('runsPage.colFailed')}</th>
+                    <th className="px-4 py-3">{t('runsPage.colSkipped')}</th>
+                    <th className="px-4 py-3">{t('runsPage.colLatest')}</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
@@ -315,7 +318,7 @@ export function OutreachRunsPage() {
                             ) : (
                               <Square className="mr-1 h-3 w-3" />
                             )}
-                            Stop
+                            {t('runsPage.stop')}
                           </Button>
                         )}
                       </td>
@@ -332,13 +335,13 @@ export function OutreachRunsPage() {
       <Card>
         <CardContent className="p-0">
           <div className="border-b px-4 py-3">
-            <h2 className="font-medium">Other runs</h2>
-            <p className="text-xs text-gray-500">Older automation history, if any.</p>
+            <h2 className="font-medium">{t('runsPage.otherRuns')}</h2>
+            <p className="text-xs text-gray-500">{t('runsPage.otherRunsHint')}</p>
           </div>
           {runsLoading ? (
             <div className="flex items-center justify-center p-8 text-sm text-gray-500">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Loading runs…
+              {t('runsPage.loadingRuns')}
             </div>
           ) : (
             <div className="overflow-auto">
@@ -346,11 +349,11 @@ export function OutreachRunsPage() {
                 <thead className="bg-slate-50 text-xs uppercase text-gray-500">
                   <tr>
                     <th className="px-4 py-3" />
-                    <th className="px-4 py-3">ID</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Started</th>
-                    <th className="px-4 py-3">Finished</th>
+                    <th className="px-4 py-3">{t('runsPage.colId')}</th>
+                    <th className="px-4 py-3">{t('runsPage.colStatus')}</th>
+                    <th className="px-4 py-3">{t('runsPage.colName')}</th>
+                    <th className="px-4 py-3">{t('runsPage.colStarted')}</th>
+                    <th className="px-4 py-3">{t('runsPage.colFinished')}</th>
                   </tr>
                 </thead>
                 <tbody>

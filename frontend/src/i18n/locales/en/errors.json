@@ -1,0 +1,16 @@
+{
+  "generic": "Something went wrong. Please try again.",
+  "network": "Network error. Check your connection.",
+  "unauthorized": "You are not authorized to do that.",
+  "forbidden": "Access denied.",
+  "notFound": "Not found.",
+  "validation": "Please check the form and try again.",
+  "server": "Server error. Please try again later.",
+  "sessionExpired": "Session expired. Please sign in again.",
+  "rateLimited": "Too many requests. Please wait a moment.",
+  "invalidCredentials": "Invalid email or password.",
+  "emailTaken": "This email is already registered.",
+  "weakPassword": "Password is too weak.",
+  "inviteInvalid": "This invitation is invalid or has expired.",
+  "permissionDenied": "You don't have permission for this action."
+}

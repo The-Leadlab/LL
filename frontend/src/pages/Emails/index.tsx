@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { Plus, RefreshCw, Inbox, Send, FileText, AlertCircle, Trash2, Archive, Star, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Label } from '../../components/ui/Label';
@@ -12,14 +13,15 @@ import { useNavigate } from 'react-router-dom';
 import emailAPI, { EmailMessage } from '../../services/emailAPI';
 
 const FOLDERS = [
-  { name: 'inbox', label: 'Inbox', icon: Inbox },
-  { name: 'sent', label: 'Sent', icon: Send },
-  { name: 'drafts', label: 'Drafts', icon: FileText },
-  { name: 'spam', label: 'Spam', icon: AlertCircle },
-  { name: 'trash', label: 'Trash', icon: Trash2 },
+  { name: 'inbox', icon: Inbox },
+  { name: 'sent', icon: Send },
+  { name: 'drafts', icon: FileText },
+  { name: 'spam', icon: AlertCircle },
+  { name: 'trash', icon: Trash2 },
 ];
 
 export const EmailsPage: React.FC = () => {
+  const { t } = useTranslation('emails');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
@@ -128,8 +130,10 @@ export const EmailsPage: React.FC = () => {
     }
   }, []);
 
+  const folderLabel = (name: string) => t(`inboxPage.folders.${name}`);
+
   const addLabel = () => {
-    const label = window.prompt('Create new label');
+    const label = window.prompt(t('inboxPage.createLabelPrompt'));
     if (!label) return;
     const normalized = label.trim().toUpperCase();
     if (!normalized) return;
@@ -227,15 +231,14 @@ export const EmailsPage: React.FC = () => {
       <div className="container mx-auto p-6">
         <Card>
           <CardHeader>
-            <CardTitle>Add Email Account</CardTitle>
+            <CardTitle>{t('inboxPage.addAccountTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">
-              Connect your mailbox under Settings → Integrations (SMTP / Gmail app password). Stay there until the
-              connection succeeds—then return here for Inbox and Sent.
+              {t('inboxPage.addAccountBody')}
             </p>
             <Button type="button" onClick={() => navigate('/settings/integrations')}>
-              Open Integrations
+              {t('inboxPage.openIntegrations')}
             </Button>
           </CardContent>
         </Card>
@@ -255,19 +258,19 @@ export const EmailsPage: React.FC = () => {
               disabled={!selectedAccount}
             >
               <Plus className="h-4 w-4 mr-2" />
-              New Email
+              {t('inboxPage.newEmail')}
             </Button>
           </div>
 
           {/* Account Selector */}
           <div className="p-4 border-b">
-            <Label className="text-sm font-medium text-gray-700 mb-2 block">Account</Label>
+            <Label className="text-sm font-medium text-gray-700 mb-2 block">{t('inboxPage.account')}</Label>
             <Select
               value={selectedAccount?.toString()}
               onValueChange={(value) => setSelectedAccount(Number(value))}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Account" />
+                <SelectValue placeholder={t('inboxPage.selectAccount')} />
               </SelectTrigger>
               <SelectContent>
                 {accounts.map((account) => (
@@ -281,7 +284,7 @@ export const EmailsPage: React.FC = () => {
 
           {/* Folders */}
           <div className="p-4 flex-1">
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">Folders</Label>
+            <Label className="text-sm font-medium text-gray-700 mb-3 block">{t('inboxPage.folders.title')}</Label>
             <div className="space-y-1">
               {FOLDERS.map((folder) => {
                 const Icon = folder.icon;
@@ -296,14 +299,14 @@ export const EmailsPage: React.FC = () => {
                     }`}
                   >
                     <Icon className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">{folder.label}</span>
+                    <span className="truncate">{folderLabel(folder.name)}</span>
                   </button>
                 );
               })}
             </div>
             <div className="mt-4">
               <Button variant="outline" size="sm" className="w-full" onClick={addLabel}>
-                Create label
+                {t('inboxPage.createLabel')}
               </Button>
               {customLabels.length > 0 && (
                 <div className="mt-2 space-y-1">
@@ -328,17 +331,17 @@ export const EmailsPage: React.FC = () => {
         <div className="flex-1 bg-white rounded-lg shadow-sm border flex flex-col">
             <div className="border-b px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">
-                {FOLDERS.find(f => f.name === selectedFolder)?.label}
+                {FOLDERS.some(f => f.name === selectedFolder) ? folderLabel(selectedFolder) : selectedFolder.toUpperCase()}
               </h2>
               <div className="flex items-center gap-2">
                 {selectedEmail && (
                   <>
                     <Button variant="outline" size="sm" onClick={() => markAsUnreadMutation.mutate(selectedEmail.id)}>
-                      Mark unread
+                      {t('inboxPage.markUnread')}
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => archiveEmailMutation.mutate(selectedEmail.id)}>
                       <Archive className="h-4 w-4 mr-1" />
-                      Archive
+                      {t('inboxPage.archive')}
                     </Button>
                   </>
                 )}
@@ -350,14 +353,14 @@ export const EmailsPage: React.FC = () => {
                   className="text-gray-500 hover:text-gray-700"
                 >
                   <RefreshCw className={`h-4 w-4 ${(emailsLoading || isRefreshing) ? 'animate-spin' : ''}`} />
-                  <span className="ml-2">Refresh</span>
+                  <span className="ml-2">{t('inboxPage.refresh')}</span>
                 </Button>
               </div>
             </div>
             {isRefreshing && (
               <div className="px-6 py-2 border-b bg-blue-50/50">
                 <div className="flex items-center justify-between text-xs text-blue-700 mb-1">
-                  <span>Sync in progress</span>
+                  <span>{t('inboxPage.syncInProgress')}</span>
                   <span>{Math.min(100, syncProgress)}%</span>
                 </div>
                 <div className="h-2 rounded-full bg-blue-100 overflow-hidden">
@@ -377,9 +380,9 @@ export const EmailsPage: React.FC = () => {
             ) : emailsData?.emails?.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center">
                 <Inbox className="h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No emails</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noEmails')}</h3>
                 <p className="text-sm text-gray-600">
-                  Your {FOLDERS.find(f => f.name === selectedFolder)?.label.toLowerCase()} folder is empty.
+                  {t('inboxPage.folderEmpty', { folder: (FOLDERS.some(f => f.name === selectedFolder) ? folderLabel(selectedFolder) : selectedFolder).toLowerCase() })}
                 </p>
               </div>
             ) : (
@@ -413,7 +416,7 @@ export const EmailsPage: React.FC = () => {
                           </div>
                         </div>
                         <p className="text-sm font-medium text-gray-900 truncate mb-1">
-                          {email.subject || '(No Subject)'}
+                          {email.subject || t('inboxPage.noSubject')}
                         </p>
                         <p className="text-sm text-gray-600 line-clamp-2">
                           {email.body_text?.substring(0, 150)}...

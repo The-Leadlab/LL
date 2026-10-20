@@ -7,6 +7,7 @@ import { PublicAuthShell, publicAuthCtaClassName } from '../components/layout/Pu
 import { motion } from 'framer-motion'
 import authService from '../services/auth'
 import { getApiErrorMessage } from '@/lib/apiError'
+import { useTranslation } from 'react-i18next'
 
 interface SignInForm {
   email?: string
@@ -15,6 +16,7 @@ interface SignInForm {
 }
 
 export function SignIn() {
+  const { t } = useTranslation('auth')
   const navigate = useNavigate()
   const location = useLocation()
   const { login, isAuthenticated, user, rememberMe: savedRememberMe } = useAuthStore()
@@ -49,16 +51,16 @@ export function SignIn() {
       } else if (loginType === 'username' && formData.username) {
         loginPayload.username = formData.username
       } else {
-        toast.error('Please enter either email or username')
+        toast.error(t('signInPage.enterEmailOrUsername'))
         setIsLoading(false)
         return
       }
       
       await login(loginPayload, rememberMe)
-      toast.success('Login successful!')
+      toast.success(t('loginSuccess'))
     } catch (err: any) {
       console.error('Login error:', err)
-      toast.error(getApiErrorMessage(err, 'Failed to sign in'))
+      toast.error(getApiErrorMessage(err, t('signInPage.failed')))
     } finally {
       setIsLoading(false)
     }
@@ -75,7 +77,7 @@ export function SignIn() {
       const data = await authService.initGoogleSignIn(rememberMe)
       window.location.href = data.authorization_url
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Could not start Google sign in')
+      toast.error(err?.response?.data?.detail || t('signInPage.googleFailed'))
       setIsLoading(false)
     }
   }
@@ -94,10 +96,10 @@ export function SignIn() {
           className="mx-auto mb-4 h-12 w-auto"
         />
         <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-          Welcome back
+          {t('welcomeBack')}
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          Sign in to access your account
+          {t('signInPage.subtitle')}
         </p>
       </motion.div>
 
@@ -110,7 +112,7 @@ export function SignIn() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label htmlFor={loginType} className="block text-sm font-medium leading-6 text-gray-900">
-                    {loginType === 'email' ? 'Email Address' : 'Username'}
+                    {loginType === 'email' ? t('signInPage.emailAddress') : t('signInPage.username')}
                   </label>
                   <button
                     type="button"
@@ -120,7 +122,7 @@ export function SignIn() {
                     }}
                     className="text-xs text-blue-600 hover:text-blue-500 transition-colors"
                   >
-                    Use {loginType === 'email' ? 'username' : 'email'} instead
+                    {loginType === 'email' ? t('signInPage.useUsername') : t('signInPage.useEmail')}
                   </button>
                 </div>
                 <div className="mt-2 relative">
@@ -148,7 +150,7 @@ export function SignIn() {
                       required
                       value={formData.username}
                       onChange={handleChange}
-                      placeholder="username"
+                      placeholder={t('signInPage.usernamePlaceholder')}
                       className="block w-full rounded-xl border-0 py-2.5 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 transition-all duration-200"
                     />
                   )}
@@ -157,7 +159,7 @@ export function SignIn() {
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium leading-6 text-gray-900">
-                  Password
+                  {t('password')}
                 </label>
                 <div className="relative mt-2">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -177,6 +179,7 @@ export function SignIn() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? t('signInPage.hidePassword') : t('signInPage.showPassword')}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors bg-transparent"
                   >
                     {showPassword ? (
@@ -199,14 +202,14 @@ export function SignIn() {
                     className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                   />
                   <label htmlFor="remember-me" className="ml-3 block text-sm leading-6 text-gray-700 cursor-pointer">
-                    Remember me
-                    <span className="block text-xs text-gray-500 font-normal">Keep me signed in on this device</span>
+                    {t('rememberMe')}
+                    <span className="block text-xs text-gray-500 font-normal">{t('signInPage.keepSignedIn')}</span>
                   </label>
                 </div>
 
                 <div className="text-sm leading-6">
                   <Link to="/forgot-password" className="font-semibold text-blue-600 hover:text-blue-500 transition-colors">
-                    Forgot password?
+                    {t('forgotPassword')}
                   </Link>
                 </div>
               </div>
@@ -218,7 +221,7 @@ export function SignIn() {
                   className={`group relative ${publicAuthCtaClassName}`}
                 >
                   <LogIn className="mr-2 h-5 w-5 text-blue-100" aria-hidden="true" />
-                  {isLoading ? 'Signing in...' : 'Sign in'}
+                  {isLoading ? t('signInPage.signingIn') : t('signIn')}
                 </button>
               </div>
             </form>
@@ -229,7 +232,7 @@ export function SignIn() {
                   <div className="w-full border-t border-gray-200" />
                 </div>
                 <div className="relative flex justify-center text-sm font-medium leading-6">
-                  <span className="bg-white px-6 text-gray-900">Or</span>
+                  <span className="bg-white px-6 text-gray-900">{t('common:or')}</span>
                 </div>
               </div>
 
@@ -239,26 +242,26 @@ export function SignIn() {
                   onClick={handleGoogleSignIn}
                   className="mb-4 inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
-                  Continue with Google
+                  {t('signInPage.continueWithGoogle')}
                 </button>
               </div>
 
               <div className="text-center text-sm text-gray-500">
-                Don't have an account?{' '}
+                {t('noAccount')}{' '}
                 <Link to="/signup" className="font-semibold leading-6 text-blue-600 hover:text-blue-500 transition-colors">
-                  Sign up now
+                  {t('signInPage.signUpNow')}
                 </Link>
               </div>
             </div>
 
           <div className="mt-6 text-center text-xs text-gray-500">
-            By signing in, you agree to our{' '}
+            {t('legal.bySigningIn')}{' '}
             <Link to="/legal" className="text-blue-600 hover:text-blue-500 transition-colors">
-              Terms of Service
+              {t('legal.terms')}
             </Link>{' '}
-            and{' '}
+            {t('legal.andThe')}{' '}
             <Link to="/legal" className="text-blue-600 hover:text-blue-500 transition-colors">
-              Privacy Policy
+              {t('legal.privacy')}
             </Link>
           </div>
       </motion.div>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/axios';
@@ -347,6 +348,7 @@ const LinkedInActions = ({ linkedinUrl }: { linkedinUrl: string }) => {
 };
 
 export function LeadDetail() {
+  const { t } = useTranslation('modules');
   const { id } = useParams<{ id: string }>();
   const leadId = Number(id);
   const navigate = useNavigate();
@@ -443,14 +445,14 @@ export function LeadDetail() {
       return response.data;
     },
     onSuccess: () => {
-      toast.success('Lead deleted successfully');
+      toast.success(t('leadDetail.toast.deleted'));
       // Invalidate and refetch leads list
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       navigate('/leads');
     },
     onError: (error: any) => {
       console.error('Error deleting lead:', error);
-      toast.error(error.response?.data?.detail || 'Failed to delete lead');
+      toast.error(error.response?.data?.detail || t('leadDetail.toast.deleteFailed'));
     }
   });
 
@@ -513,14 +515,14 @@ export function LeadDetail() {
       });
     },
     onSuccess: () => {
-      toast.success('Note added successfully');
+      toast.success(t('leadDetail.toast.noteAdded'));
       setNewNote('');
       setIsAddNoteOpen(false);
       queryClient.invalidateQueries({ queryKey: ['lead-notes', leadId] });
       queryClient.invalidateQueries({ queryKey: ['lead-activities', leadId] });
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.detail || 'Failed to add note');
+      toast.error(err?.response?.data?.detail || t('leadDetail.toast.noteFailed'));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['lead-notes', leadId] });
@@ -539,12 +541,12 @@ export function LeadDetail() {
       });
     },
     onSuccess: () => {
-      toast.success('Activity added');
+      toast.success(t('leadDetail.toast.activityAdded'));
       setNewActivityDescription('');
       queryClient.invalidateQueries({ queryKey: ['lead-activities', leadId] });
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.detail || 'Failed to add activity');
+      toast.error(err?.response?.data?.detail || t('leadDetail.toast.activityFailed'));
     },
   });
 
@@ -553,18 +555,18 @@ export function LeadDetail() {
       return api.post(`/leads/${leadId}/tags`, { tags: tagIds });
     },
     onSuccess: () => {
-      toast.success('Tags updated');
+      toast.success(t('leadDetail.toast.tagsUpdated'));
       queryClient.invalidateQueries({ queryKey: ['lead', id] });
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.detail || 'Failed to update tags');
+      toast.error(err?.response?.data?.detail || t('leadDetail.toast.tagsFailed'));
     },
   });
 
   const handleLinkedInConnect = async () => {
     // Check if response and response.data exist
     if (!response?.data?.linkedin) {
-      toast.error("No LinkedIn profile found for this lead");
+      toast.error(t('leadDetail.toast.noLinkedin'));
       return;
     }
 
@@ -593,20 +595,20 @@ export function LeadDetail() {
         });
         setLinkedinDialogOpen(true);
       } else {
-        toast.error('Failed to generate LinkedIn connection link');
+        toast.error(t('leadDetail.toast.linkFailed'));
       }
     } catch (error: any) {
       console.error("LinkedIn connection error:", error);
       
       // Handle specific error cases
       if (error?.response?.status === 401) {
-        toast.error("LinkedIn authentication required. Please connect your LinkedIn account first.");
+        toast.error(t('leadDetail.toast.authRequired'));
       } else if (error?.response?.status === 400) {
-        toast.error(`Invalid request: ${error?.response?.data?.detail || "Check the LinkedIn URL"}`);
+        toast.error(t('leadDetail.toast.invalidRequest', { detail: error?.response?.data?.detail || t('leadDetail.toast.checkUrl') }));
       } else if (error?.response?.status === 429) {
-        toast.error("Rate limit exceeded. Please try again later.");
+        toast.error(t('leadDetail.toast.rateLimit'));
       } else {
-        toast.error(error?.message || "Failed to generate LinkedIn connection link");
+        toast.error(error?.message || t('leadDetail.toast.linkFailed'));
       }
     } finally {
       setIsLoadingLinkedin(false);
@@ -616,7 +618,7 @@ export function LeadDetail() {
   const handleLinkedInDialogConfirm = () => {
     if (linkedinConnectionData?.connectionUrl) {
       window.open(linkedinConnectionData.connectionUrl, '_blank');
-      toast.success('LinkedIn connection page opened! Send your request there.');
+      toast.success(t('leadDetail.toast.linkedinOpened'));
     }
   };
 
@@ -658,7 +660,7 @@ export function LeadDetail() {
           className="mt-4 transition-all hover:scale-105"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Leads
+          {t('leadDetail.back')}
         </Button>
       </div>
     );
@@ -685,7 +687,7 @@ export function LeadDetail() {
   }
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this lead?')) {
+    if (window.confirm(t('leadDetail.confirmDelete'))) {
       deleteMutation.mutate(leadId);
     }
   };
@@ -762,7 +764,7 @@ export function LeadDetail() {
               size="sm"
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
-                toast.success('Link copied to clipboard');
+                toast.success(t('leadDetail.toast.linkCopied'));
               }}
               className="shrink-0 text-gray-500 hover:text-gray-800"
               title="Copy link"
@@ -862,7 +864,7 @@ export function LeadDetail() {
           {/* Personal Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
+              <CardTitle>{t('leadDetail.personalInfo')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-0">
               {personalInfo.map((info, index) => (
@@ -885,7 +887,7 @@ export function LeadDetail() {
           {/* Professional Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Professional Information</CardTitle>
+              <CardTitle>{t('leadDetail.professionalInfo')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-0">
               {professionalInfo.map((info, index) => (
@@ -907,7 +909,7 @@ export function LeadDetail() {
           {/* Location & Contact */}
           <Card>
             <CardHeader>
-              <CardTitle>Location & Contact</CardTitle>
+              <CardTitle>{t('leadDetail.locationContact')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-0">
               {locationInfo.map((info, index) => (
@@ -934,10 +936,10 @@ export function LeadDetail() {
           {/* Tags & Activity */}
           <Card className="lg:col-span-1">
             <CardHeader>
-              <CardTitle className="text-base">Tags</CardTitle>
+              <CardTitle className="text-base">{t('leadDetail.tags')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-xs text-gray-500 mb-2">Add or remove tags for this lead</p>
+              <p className="text-xs text-gray-500 mb-2">{t('leadDetail.tagsHint')}</p>
               <TagSelector
                 selectedTags={(lead.tags || []).map((t: any) =>
                   typeof t === 'object' ? t : { id: t, name: String(t) },
@@ -951,7 +953,7 @@ export function LeadDetail() {
 
           <Card className="lg:col-span-1">
             <CardHeader>
-              <CardTitle className="text-base">Recent activity</CardTitle>
+              <CardTitle className="text-base">{t('leadDetail.recentActivity')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-2 rounded-md border bg-white p-3">
@@ -1007,9 +1009,9 @@ export function LeadDetail() {
           <Card className="lg:col-span-2">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Analysis Information</CardTitle>
+                <CardTitle>{t('leadDetail.analysis')}</CardTitle>
                 <Button size="sm" onClick={() => setIsAddNoteOpen(true)}>
-                  Add a note
+                  {t('leadDetail.addNote')}
                 </Button>
               </div>
             </CardHeader>
@@ -1065,23 +1067,23 @@ export function LeadDetail() {
       <Dialog open={isAddNoteOpen} onOpenChange={setIsAddNoteOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add note</DialogTitle>
+            <DialogTitle>{t('leadDetail.addNoteTitle')}</DialogTitle>
           </DialogHeader>
           <Textarea
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Write your note here..."
+            placeholder={t('leadDetail.notePlaceholder')}
             className="min-h-[140px]"
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddNoteOpen(false)}>
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button
               onClick={() => addNoteMutation.mutate(newNote.trim())}
               disabled={!newNote.trim() || addNoteMutation.isPending}
             >
-              {addNoteMutation.isPending ? 'Saving...' : 'Save note'}
+              {addNoteMutation.isPending ? t('leadDetail.saving') : t('leadDetail.saveNote')}
             </Button>
           </DialogFooter>
         </DialogContent>

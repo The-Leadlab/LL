@@ -1,0 +1,379 @@
+{
+  "heroTitle": "Transformez vos conversations en affaires conclues",
+  "heroSubtitle": "LeadLab aide les équipes commerciales à capturer des prospects, gérer le pipeline et conclure plus vite — le tout au même endroit.",
+  "getStarted": "Commencer",
+  "bookDemo": "Réserver une démo",
+  "learnMore": "En savoir plus",
+  "aboutTitle": "À propos de The Lead Lab",
+  "aboutBody": "Nous construisons le système de vente que les équipes en croissance utilisent vraiment — CRM, prospection et insights, sans superflu.",
+  "servicesTitle": "Ce que nous proposons",
+  "pricingTitle": "Tarification simple",
+  "pricingSubtitle": "Des offres qui évoluent avec votre équipe",
+  "contactTitle": "Contactez-nous",
+  "contactSubtitle": "Questions, partenariats ou démo personnalisée — nous sommes là.",
+  "contactName": "Votre nom",
+  "contactEmail": "Votre e-mail",
+  "contactSubject": "Objet",
+  "contactMessage": "Message",
+  "contactSend": "Envoyer le message",
+  "contactSent": "Merci — nous vous répondrons bientôt",
+  "privacyTitle": "Politique de confidentialité",
+  "termsTitle": "Conditions d'utilisation",
+  "cookiesTitle": "Politique de cookies",
+  "footerRights": "Tous droits réservés",
+  "footerProduct": "Produit",
+  "footerCompany": "Entreprise",
+  "footerLegal": "Mentions légales",
+  "diagnosticTitle": "Diagnostic business",
+  "dataRequestTitle": "Demande de données",
+  "pitchTitle": "Pitcher votre idée",
+  "ctaReady": "Prêt à grandir ?",
+  "ctaSubtitle": "Rejoignez les équipes qui utilisent LeadLab pour conclure plus d'affaires.",
+
+  "home": {
+    "getStartedCta": "Commencer",
+    "logoAlt": "Logo The Lead Lab",
+    "hero": {
+      "title": "Mettre en relation les entreprises avec des prospects qualifiés",
+      "subtitle": "The Lead Lab associe données vérifiées, analyse psychographique et un CRM pratique pour que votre équipe consacre son temps aux prospects qui peuvent réellement acheter — et non à des impasses.",
+      "bookMeeting": "Réserver un rendez-vous",
+      "tellUs": "Dites-nous ce dont vous avez besoin",
+      "guide": "Nous vous orienterons vers le bon formulaire : diagnostic business, demande de données ou présentation de votre idée.",
+      "openDashboard": "Ouvrir le tableau de bord",
+      "orgSettings": "Organisation et paramètres"
+    },
+    "stats": {
+      "leadGeneration": "Hausse de la génération de prospects",
+      "costReduction": "Réduction des coûts",
+      "dataAccuracy": "Précision des données",
+      "roiImprovement": "Amélioration du ROI"
+    },
+    "about": {
+      "title": "À propos de The-LeadLab.com",
+      "intro": "Bienvenue sur The-LeadLab.com, votre destination de choix pour accélérer la croissance de votre entreprise grâce à une génération de prospects intelligente. Nous aidons les entreprises à entrer en contact avec des prospects de qualité, pré-qualifiés et correspondant exactement à votre audience cible. Que vous soyez une startup cherchant à s'implanter sur le marché ou une grande entreprise souhaitant élargir sa clientèle, notre équipe et notre plateforme allient technologie de ciblage avancée et expertise sectorielle pour fournir des prospects qui convertissent.",
+      "mission": {
+        "title": "Mission",
+        "body": "Notre mission est de doter les entreprises d'outils de génération de prospects pilotés par l'IA qui réduisent jusqu'à 60 % le coût d'acquisition client. Nous aidons les entreprises à automatiser la qualification des prospects, à améliorer les taux de contact grâce à l'engagement multicanal et à optimiser les processus de vente pour obtenir des taux de conversion 3 fois supérieurs tout en réduisant les frais du service commercial."
+      },
+      "vision": {
+        "title": "Vision",
+        "body": "Nous imaginons transformer la génération de prospects grâce à notre technologie d'IA propriétaire et à des méthodologies éprouvées. D'ici 2025, nous visons à aider 1 000 entreprises à rejoindre sans effort leurs clients idéaux grâce à des algorithmes de mise en relation intelligents, à l'analyse comportementale et à des séquences de nurturing automatisées qui garantissent que les prospects sont contactés au moment idéal."
+      },
+      "values": {
+        "title": "Valeurs",
+        "body": "Chez The-LeadLab.com, nous nous engageons à fournir des résultats mesurables en toute transparence. Nos valeurs incluent un support client 24h/24 et 7j/7, une précision des données de 85 % et des modèles tarifaires basés sur la performance. Nous nous appuyons sur des partenariats avec des fournisseurs de big data de premier plan et des experts du secteur pour que nos clients gardent toujours une longueur d'avance sur la concurrence."
+      },
+      "problemsTitle": "Les problèmes que nous résolvons",
+      "problems": {
+        "timeConsuming": {
+          "title": "Une génération de prospects chronophage",
+          "body": "Les équipes commerciales perdent un temps considérable à rechercher manuellement des prospects, à démarcher par téléphone des contacts non qualifiés et à mettre à jour des tableurs complexes. Ces ressources précieuses seraient mieux employées à conclure des affaires et à développer votre activité."
+        },
+        "qualification": {
+          "title": "Une qualification des prospects inefficace",
+          "body": "Sans processus de qualification adapté, votre équipe poursuit des prospects qui ne sont pas prêts à acheter ou qui ne correspondent pas à votre profil client idéal. Résultat : des taux de conversion plus faibles et des commerciaux frustrés."
+        },
+        "targeting": {
+          "title": "Des options de ciblage limitées",
+          "body": "La génération de prospects traditionnelle repose sur un marketing large et peu ciblé qui n'atteint pas les décideurs de votre marché. Cette approche dispersée gaspille votre budget publicitaire et produit des prospects de faible qualité qui convertissent rarement."
+        }
+      }
+    },
+    "why": {
+      "title": "Pourquoi les leaders du secteur choisissent LeadLab",
+      "subtitle": "Notre plateforme associe une technologie d'IA de pointe et des méthodologies éprouvées pour des résultats exceptionnels",
+      "accuracy": {
+        "title": "Une précision de référence",
+        "description": "95 % de précision des données, vérifiée par notre processus de validation en plusieurs étapes"
+      },
+      "implementation": {
+        "title": "Mise en place rapide",
+        "description": "Démarrez en quelques minutes grâce à notre plateforme intuitive et à une intégration fluide"
+      },
+      "roi": {
+        "title": "ROI démontré",
+        "description": "Nos clients constatent en moyenne une hausse de 300 % des prospects qualifiés en 3 mois"
+      }
+    },
+    "how": {
+      "title": "Comment fonctionne LeadLab",
+      "subtitle": "Un processus simple et puissant pour transformer votre génération de prospects",
+      "define": {
+        "title": "Définissez votre client idéal",
+        "description": "Utilisez notre outil de profilage alimenté par l'IA pour créer le persona de prospect parfait"
+      },
+      "search": {
+        "title": "Recherche alimentée par l'IA",
+        "description": "Nos algorithmes identifient et qualifient les prospects potentiels correspondant à vos critères"
+      },
+      "enrich": {
+        "title": "Enrichir et analyser",
+        "description": "Ajoutez des analyses psychométriques et vérifiez les coordonnées"
+      },
+      "convert": {
+        "title": "Convertir et passer à l'échelle",
+        "description": "Suivez les performances et optimisez votre approche pour de meilleurs résultats"
+      }
+    },
+    "results": {
+      "title": "Des résultats réels, en temps réel",
+      "subtitle": "Suivez votre réussite grâce à notre tableau de bord analytique complet"
+    },
+    "calculator": {
+      "title": "Calculateur de ROI",
+      "monthlyLeadVolume": "Volume mensuel de prospects",
+      "costPerLead": "Coût par prospect",
+      "contactRate": "Taux de contact",
+      "meetingBookedRate": "Taux de rendez-vous pris",
+      "meetingSatRate": "Taux de rendez-vous tenus",
+      "conversionRate": "Taux de conversion",
+      "averageDealValue": "Valeur moyenne d'une affaire",
+      "estimatedMonthlyRoi": "ROI mensuel estimé",
+      "totalLeads": "Total des prospects",
+      "contactedLeads": "Prospects contactés",
+      "meetingsBooked": "Rendez-vous pris",
+      "meetingsSat": "Rendez-vous tenus",
+      "convertedLeads": "Prospects convertis",
+      "totalRevenue": "Chiffre d'affaires total",
+      "totalLeadCost": "Coût total des prospects",
+      "leadsValue": "{{value}} prospects"
+    },
+    "approach": {
+      "title": "Notre approche unique",
+      "subtitle": "Transformez votre génération de prospects grâce à notre suite complète d'outils et de services",
+      "targeting": {
+        "title": "Ciblage avancé",
+        "description": "Notre plateforme d'IA identifie des prospects très qualifiés à partir de critères démographiques et comportementaux précis"
+      },
+      "psychometric": {
+        "title": "Profilage psychométrique",
+        "description": "Comprenez la personnalité de vos prospects pour adapter votre communication et améliorer les taux de conversion"
+      },
+      "verified": {
+        "title": "Coordonnées vérifiées",
+        "description": "Un réseau de fournisseurs conforme au RGPD garantissant des coordonnées exactes"
+      },
+      "linkedin": {
+        "title": "Automatisation LinkedIn",
+        "description": "Scénarios de conversation pilotés par l'IA et adaptation à la personnalité pour une prospection authentique"
+      },
+      "web": {
+        "title": "Optimisation web",
+        "description": "Développement de site complet axé sur la capture et la conversion de prospects"
+      },
+      "social": {
+        "title": "Excellence sur les réseaux sociaux",
+        "description": "Création de contenu stratégique et animation de communauté sur toutes les plateformes"
+      }
+    },
+    "testimonials": {
+      "title": "Ce que disent nos clients",
+      "subtitle": "Témoignages de leaders du secteur",
+      "schieder": {
+        "quote": "The-LeadLab.com a révolutionné notre approche de la génération de prospects. Nous avons constaté une hausse remarquable de 300 % des prospects qualifiés en seulement trois mois.",
+        "role": "Gestionnaire de patrimoine senior, LGT Wealth Management"
+      },
+      "lipscombe": {
+        "quote": "Nous avons obtenu une croissance de 200 % de nos opérations commerciales sans agrandir notre équipe, grâce à leurs données constamment fiables (95 % de précision).",
+        "role": "Responsable du développement commercial, Anchor Logistics Management"
+      },
+      "holt": {
+        "quote": "Nous avons enfin arrêté de perdre du temps avec des prospects peu adaptés. Leurs règles de qualification et le bon timing de la prospection ont considérablement amélioré notre ratio rendez-vous/opportunités.",
+        "role": "Directrice des ventes, NorthBridge Technologies"
+      }
+    },
+    "products": {
+      "title": "Nos produits",
+      "subtitle": "Choisissez les solutions adaptées aux besoins de votre entreprise",
+      "units": {
+        "each": "l'unité",
+        "perHour": "par heure",
+        "perMonth": "par mois"
+      },
+      "qualifiedLeads": {
+        "title": "Prospects qualifiés",
+        "description": "Identification de prospects par l'IA correspondant exactement à votre profil cible"
+      },
+      "psychometrics": {
+        "title": "Psychométrie",
+        "description": "Analyses de personnalité détaillées pour un meilleur engagement"
+      },
+      "verifiedContacts": {
+        "title": "Contacts vérifiés",
+        "description": "Coordonnées conformes au RGPD avec vérification de l'exactitude"
+      },
+      "salesCoaching": {
+        "title": "Coaching commercial",
+        "description": "Coaching en direct pour optimiser votre processus de vente"
+      },
+      "webOptimization": {
+        "title": "Optimisation web",
+        "description": "Optimisation complète de votre site pour la génération de prospects"
+      },
+      "socialMedia": {
+        "title": "Réseaux sociaux",
+        "description": "Gestion et optimisation stratégiques de vos réseaux sociaux"
+      },
+      "monthlyRenewal": "Ce tarif mensuel est renouvelé jusqu'à votre résiliation. Résiliez avant la date de renouvellement pour éviter le prochain prélèvement."
+    },
+    "packages": {
+      "title": "Nos forfaits",
+      "subtitle": "Choisissez le forfait idéal selon la taille et les besoins de votre entreprise",
+      "perMonthSuffix": "/mois",
+      "custom": "Sur mesure",
+      "renewal": "{{price}} est renouvelé chaque mois jusqu'à votre résiliation. Résiliez avant la date de renouvellement pour éviter le prochain prélèvement.",
+      "terms": "Conditions",
+      "contactSales": "Contacter les ventes",
+      "solo": {
+        "title": "Forfait Solopreneurs",
+        "description": "Lancez la croissance de votre activité avec des outils puissants et éprouvés.",
+        "feature1": "100 prospects qualifiés/mois",
+        "feature2": "Accès gratuit au CRM",
+        "feature3": "100 profils LinkedIn"
+      },
+      "sme": {
+        "title": "Forfait PME",
+        "description": "Développez votre activité commerciale avec précision et puissance.",
+        "feature1": "500 prospects qualifiés/mois",
+        "feature2": "Fonctionnalités CRM avancées",
+        "feature3": "1 000 profils LinkedIn"
+      },
+      "enterprise": {
+        "title": "Solutions Entreprise",
+        "description": "Des solutions de niveau entreprise pour les leaders du marché.",
+        "feature1": "Prospects qualifiés illimités",
+        "feature2": "Intégration API personnalisée",
+        "feature3": "Support prioritaire 24h/24 et 7j/7"
+      }
+    },
+    "footer": {
+      "tagline": "Transformer la génération de prospects grâce à l'intelligence artificielle",
+      "features": "Fonctionnalités",
+      "products": "Produits",
+      "packages": "Forfaits",
+      "testimonials": "Témoignages",
+      "about": "À propos",
+      "pricing": "Tarifs",
+      "services": "Services",
+      "contact": "Contact",
+      "rights": "© {{year}} The Lead Lab. Tous droits réservés."
+    }
+  },
+
+  "legal": {
+    "titles": {
+      "terms": "Conditions générales",
+      "privacy": "Politique de confidentialité",
+      "kvkk": "Politique de protection des données — Turquie",
+      "internationalDataProtection": "Politique de protection des données — International",
+      "cookie": "Politique de cookies",
+      "dmca": "Droit d'auteur / DMCA"
+    },
+    "lastUpdated": "Dernière mise à jour : {{date}}",
+    "footerQuestion": "Pour toute question concernant nos politiques, contactez-nous :",
+    "address": "Elite Park Plaza, étage 5, Umraniye / Istanbul"
+  },
+
+  "contact": {
+    "title": "Contactez-nous",
+    "intro": "Vous avez des questions sur notre plateforme ? Nous sommes là pour vous aider. Envoyez-nous un message et nous vous répondrons dans les meilleurs délais.",
+    "emailLabel": "E-mail",
+    "addressLabel": "Adresse",
+    "address": "Istanbul, Türkiye",
+    "formTitle": "Envoyez-nous un message",
+    "name": "Nom",
+    "email": "E-mail",
+    "subject": "Objet",
+    "message": "Message",
+    "sending": "Envoi en cours...",
+    "send": "Envoyer le message",
+    "success": "Message envoyé avec succès !",
+    "error": "Échec de l'envoi du message. Veuillez réessayer.",
+    "sendFailed": "Échec de l'envoi du message"
+  },
+
+  "intake": {
+    "select": {
+      "eyebrow": "Demande",
+      "title": "Que souhaitez-vous faire ?",
+      "subtitle": "Choisissez une voie. Vous remplirez un court formulaire, passerez par notre étape NDA, puis enverrez votre demande. Nous reviendrons vers vous par e-mail.",
+      "diagnosticDescription": "Partagez le contexte de votre pipeline, vos difficultés et vos objectifs — nous évaluons l'adéquation et les prochaines étapes.",
+      "dataRequestDescription": "Décrivez les listes ou segments dont vous avez besoin — zone géographique, volume et contraintes de conformité.",
+      "pitchDescription": "Décrivez une idée de développement ou d'automatisation — nous répondons avec périmètre, options et délais.",
+      "continue": "Continuer",
+      "backHome": "← Retour à l'accueil"
+    },
+    "form": {
+      "backToOptions": "Retour aux options",
+      "successTitle": "Merci pour votre envoi",
+      "successDataRequest": "Nous avons bien reçu votre demande de données. Notre équipe d'administration a été avertie par e-mail et examinera vos réponses sous peu.",
+      "successDefault": "Nous avons bien reçu vos informations. Notre équipe examinera votre demande et reviendra vers vous par e-mail. Selon le périmètre, nous pourrons envoyer un NDA formel et des créneaux de rendez-vous.",
+      "successWait": "Merci de nous laisser un court délai pour vous répondre.",
+      "backToHome": "Retour à l'accueil",
+      "submitAnother": "Envoyer une autre demande",
+      "introDataRequest": "Complétez chaque étape du questionnaire de demande de données. Vos réponses sont envoyées par e-mail à notre équipe d'administration et enregistrées dans notre système.",
+      "introForm": "Renseignez les informations ci-dessous. À l'étape suivante, vous relirez et signerez l'accord NDA avant que nous recevions votre demande.",
+      "introNda": "Relisez et complétez l'étape NDA, puis envoyez.",
+      "ndaRequired": "Veuillez accepter le NDA et saisir votre signature.",
+      "submitFailed": "Échec de l'envoi. Veuillez réessayer.",
+      "fullName": "Nom complet *",
+      "workEmail": "E-mail professionnel *",
+      "phone": "Téléphone",
+      "company": "Entreprise",
+      "companyOrg": "Entreprise / organisation",
+      "continueToNda": "Continuer vers le NDA",
+      "reviewSubmit": "Vérifier et envoyer",
+      "backToForm": "Retour au formulaire",
+      "submitRequest": "Envoyer la demande",
+      "sending": "Envoi…",
+      "select": "Sélectionner…",
+      "nda": {
+        "title": "NDA",
+        "description": "Nous pourrons vous envoyer un NDA formel par e-mail pour signature lors de la définition des prochaines étapes. Veuillez confirmer votre accord provisoire et saisir votre nom ci-dessous pour envoyer cette demande.",
+        "agree": "J'accepte et j'autorise The Lead Lab à me contacter au sujet de cette demande et des prochaines étapes.",
+        "signature": "Signature (saisissez votre nom complet) *",
+        "signaturePlaceholder": "p. ex. Jeanne Dupont"
+      },
+      "diagnostic": {
+        "sectionTitle": "Le contexte de votre entreprise",
+        "industry": "Secteur d'activité",
+        "industryPlaceholder": "p. ex. SaaS B2B, services professionnels",
+        "teamSize": "Taille de l'équipe",
+        "teamSolo": "Moi seul(e) (solopreneur)",
+        "teamRange1": "2–5",
+        "teamRange2": "6–20",
+        "teamRange3": "21+",
+        "leadVolume": "Volume mensuel de prospects (approx.)",
+        "leadVolumePlaceholder": "p. ex. 50 conversations qualifiées / mois",
+        "biggestPain": "Principale difficulté aujourd'hui",
+        "biggestPainPlaceholder": "Temps passé en recherche manuelle, mauvaise qualification, hygiène du CRM, etc.",
+        "tools": "Outils que vous utilisez aujourd'hui",
+        "toolsPlaceholder": "CRM, LinkedIn, tableurs, autres…",
+        "goals": "Objectifs pour les 12 prochains mois",
+        "aboutToSubmit": "Vous êtes sur le point d'envoyer la demande en tant que <strong>{{name}}</strong> ({{email}})."
+      },
+      "pitch": {
+        "workingTitle": "Titre provisoire *",
+        "workingTitlePlaceholder": "p. ex. Outil de suivi des recommandations partenaires pour notre équipe commerciale",
+        "elevatorPitch": "Présentation en quelques phrases (2 à 4 phrases) *",
+        "problemSolved": "Quel problème cela résout-il ? *",
+        "primaryUser": "Qui est l'utilisateur principal ?",
+        "mustHaves": "Fonctionnalités / résultats indispensables",
+        "niceToHave": "Souhaitable",
+        "budgetRange": "Fourchette budgétaire (facultatif)",
+        "budgetNone": "Je préfère ne pas le dire",
+        "budgetUnder5k": "Moins de 5 k$",
+        "budget5k25k": "5 k$ – 25 k$",
+        "budget25k100k": "25 k$ – 100 k$",
+        "budget100k": "100 k$+",
+        "budgetEnterprise": "Entreprise / à définir",
+        "timeline": "Calendrier idéal",
+        "timelinePlaceholder": "p. ex. MVP en 8 semaines",
+        "links": "Liens (Figma, Notion, Loom, dépôt…)",
+        "whyLeadLab": "Pourquoi The Lead Lab ?",
+        "yourPitch": "votre idée",
+        "aboutToSubmit": "Vous êtes sur le point d'envoyer <strong>{{title}}</strong> en tant que {{name}} ({{email}})."
+      }
+    }
+  }
+}

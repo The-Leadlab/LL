@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/auth';
 import {
   LayoutDashboard,
@@ -39,9 +40,11 @@ import {
 } from 'lucide-react';
 import { featureFlags } from '@/config/featureFlags';
 import { UserAvatar, useCurrentUserAvatar } from '@/components/UserAvatar';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface NavItem {
-  name: string;
+  /** Key in the `nav` i18n namespace */
+  labelKey: string;
   icon: any;
   path: string;
   badge?: string;
@@ -50,135 +53,136 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   {
-    name: 'Dashboard',
+    labelKey: 'dashboard',
     icon: LayoutDashboard,
     path: '/dashboard',
   },
   {
-    name: 'Leads',
+    labelKey: 'leads',
     icon: Users,
     path: '/leads',
   },
   {
-    name: 'Deals',
+    labelKey: 'deals',
     icon: Target,
     path: '/deals',
   },
   {
-    name: 'Tasks',
+    labelKey: 'tasks',
     icon: CheckSquare,
     path: '/tasks',
   },
   ...(featureFlags.navigation.showEmail
     ? [{
-        name: 'Email',
+        labelKey: 'email',
         icon: Mail,
         path: '/emails',
         children: [
-          { name: 'Inbox', icon: Mail, path: '/emails' },
-          { name: 'Cold Outreach', icon: Send, path: '/emails/outreach' },
+          { labelKey: 'inbox', icon: Mail, path: '/emails' },
+          { labelKey: 'coldOutreach', icon: Send, path: '/emails/outreach' },
           ...(featureFlags.navigation.showEmailSequences
-            ? [{ name: 'Campaigns', icon: Zap, path: '/email-sequences' }]
+            ? [{ labelKey: 'campaigns', icon: Zap, path: '/email-sequences' }]
             : []),
           ...(featureFlags.navigation.showOutreachRuns
-            ? [{ name: 'Runs', icon: PlayCircle, path: '/emails/runs' }]
+            ? [{ labelKey: 'runs', icon: PlayCircle, path: '/emails/runs' }]
             : []),
           ...(featureFlags.navigation.showOutreachTemplates
-            ? [{ name: 'Templates', icon: FileStack, path: '/emails/templates' }]
+            ? [{ labelKey: 'templates', icon: FileStack, path: '/emails/templates' }]
             : []),
         ],
       } as NavItem]
     : []),
   {
-    name: 'Messages',
+    labelKey: 'messages',
     icon: MessageSquare,
     path: '/messages',
   },
   {
-    name: 'Calendar',
+    labelKey: 'calendar',
     icon: Calendar,
     path: '/calendar',
   },
   {
-    name: 'Sales',
+    labelKey: 'sales',
     icon: ShoppingCart,
     path: '/cpq/quotes', // Fixed: now points to actual route
     children: [
-      { name: 'Quotes', icon: FileText, path: '/cpq/quotes' },
-      { name: 'Products', icon: ShoppingCart, path: '/cpq/products' },
+      { labelKey: 'quotes', icon: FileText, path: '/cpq/quotes' },
+      { labelKey: 'products', icon: ShoppingCart, path: '/cpq/products' },
     ],
   },
   ...(featureFlags.navigation.showMindMapping
     ? [{
-        name: 'Mind Mapping',
+        labelKey: 'mindMapping',
         icon: Workflow,
         path: '/workflows',
       } as NavItem]
     : []),
   ...(featureFlags.navigation.showForecasting
     ? [{
-        name: 'Forecasting',
+        labelKey: 'forecasting',
         icon: TrendingUp,
         path: '/forecasting',
       } as NavItem]
     : []),
   {
-    name: 'Conversations',
+    labelKey: 'conversations',
     icon: Phone,
     path: '/conversations',
   },
   {
-    name: 'Invoice Creation',
+    labelKey: 'invoiceCreation',
     icon: FileText,
     path: '/invoices/new',
   },
   {
-    name: 'Reports',
+    labelKey: 'reports',
     icon: BarChart3,
     path: '/reports',
   },
   {
-    name: 'AI Insights',
+    labelKey: 'aiInsights',
     icon: Sparkles,
     path: '/ai-insights',
   },
   {
-    name: 'Company',
+    labelKey: 'company',
     icon: Building2,
     path: '/settings/company',
     children: [
-      { name: 'Company', icon: Settings2, path: '/settings/company' },
-      { name: 'Territories', icon: Map, path: '/settings/territories' },
+      { labelKey: 'company', icon: Settings2, path: '/settings/company' },
+      { labelKey: 'territories', icon: Map, path: '/settings/territories' },
     ],
   },
 ];
 
 const bottomNavigation: NavItem[] = [
   {
-    name: 'Report an issue',
+    labelKey: 'reportIssue',
     icon: Ticket,
     path: '/report',
   },
   {
-    name: 'Settings',
+    labelKey: 'settings',
     icon: Settings,
     path: '/settings/profile',
   },
   {
-    name: 'Notifications',
+    labelKey: 'notifications',
     icon: Bell,
     path: '/notifications',
   },
 ];
 
 function SidebarQuickSearch({ onSubmit }: { onSubmit: (q: string) => void }) {
+  const { t } = useTranslation('nav');
   const [value, setValue] = useState('');
   return (
     <div className="relative">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
       <input
         type="text"
-        placeholder="Quick search..."
+        placeholder={t('quickSearch')}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
@@ -200,6 +204,7 @@ export function ModernSidebar({
   onNavigate?: () => void;
   forceExpanded?: boolean;
 }) {
+  const { t } = useTranslation('nav');
   const [collapsed, setCollapsed] = useState(false);
   const collapsedEffective = forceExpanded ? false : collapsed;
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -209,12 +214,12 @@ export function ModernSidebar({
   const logout = useAuthStore((s) => s.logout);
   const avatarRevision = useAuthStore((s) => s.avatarRevision);
   const sidebarAvatarUrl = useCurrentUserAvatar(user?.id, avatarRevision);
-  const adminOnlyNavNames = new Set(['Company']);
+  const adminOnlyNavKeys = new Set(['company']);
   const baseNavigation = user?.is_admin
     ? navigation
-    : navigation.filter((item) => !adminOnlyNavNames.has(item.name));
-  const visibleNavigation = user?.is_admin
-    ? [...baseNavigation, { name: 'Admin Users', icon: Users, path: '/admin' }]
+    : navigation.filter((item) => !adminOnlyNavKeys.has(item.labelKey));
+  const visibleNavigation: NavItem[] = user?.is_admin
+    ? [...baseNavigation, { labelKey: 'admin', icon: Users, path: '/admin' }]
     : baseNavigation;
 
   const handleLogout = async () => {
@@ -222,11 +227,11 @@ export function ModernSidebar({
     navigate('/signin');
   };
 
-  const toggleExpanded = (name: string) => {
+  const toggleExpanded = (labelKey: string) => {
     setExpandedItems(prev =>
-      prev.includes(name)
-        ? prev.filter(item => item !== name)
-        : [...prev, name]
+      prev.includes(labelKey)
+        ? prev.filter(item => item !== labelKey)
+        : [...prev, labelKey]
     );
   };
 
@@ -257,7 +262,7 @@ export function ModernSidebar({
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="hidden p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors shrink-0 md:inline-flex"
-          aria-label={collapsedEffective ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsedEffective ? t('expand') : t('collapse')}
         >
           {collapsedEffective ? (
             <ChevronRight className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
@@ -284,15 +289,16 @@ export function ModernSidebar({
         {visibleNavigation.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
-          const isExpanded = expandedItems.includes(item.name);
+          const isExpanded = expandedItems.includes(item.labelKey);
           const hasChildren = item.children && item.children.length > 0;
+          const label = t(item.labelKey);
 
           return (
-            <div key={item.name}>
+            <div key={item.labelKey}>
               {hasChildren ? (
                 <>
                   <button
-                    onClick={() => toggleExpanded(item.name)}
+                    onClick={() => toggleExpanded(item.labelKey)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${
                       active
                         ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
@@ -301,7 +307,7 @@ export function ModernSidebar({
                   >
                     <div className="flex items-center space-x-3">
                       <Icon className="w-5 h-5" />
-                      {!collapsedEffective && <span className="font-medium text-sm">{item.name}</span>}
+                      {!collapsedEffective && <span className="font-medium text-sm">{label}</span>}
                     </div>
                     {!collapsedEffective && (
                       <ChevronRight
@@ -326,7 +332,7 @@ export function ModernSidebar({
                             }`}
                           >
                             <ChildIcon className="w-4 h-4" />
-                            <span>{child.name}</span>
+                            <span>{t(child.labelKey)}</span>
                           </Link>
                         );
                       })}
@@ -345,7 +351,7 @@ export function ModernSidebar({
                 >
                   <div className="flex items-center space-x-3">
                     <Icon className="w-5 h-5" />
-                    {!collapsedEffective && <span className="font-medium text-sm">{item.name}</span>}
+                    {!collapsedEffective && <span className="font-medium text-sm">{label}</span>}
                   </div>
                   {!collapsedEffective && item.badge && (
                     <span className="px-2 py-0.5 bg-primary-600 text-white text-xs font-medium rounded-full">
@@ -367,7 +373,7 @@ export function ModernSidebar({
 
           return (
             <Link
-              key={item.name}
+              key={item.labelKey}
               to={item.path}
               onClick={() => onNavigate?.()}
               className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
@@ -377,15 +383,18 @@ export function ModernSidebar({
               }`}
             >
               <Icon className="w-5 h-5" />
-              {!collapsedEffective && <span className="font-medium text-sm">{item.name}</span>}
+              {!collapsedEffective && <span className="font-medium text-sm">{t(item.labelKey)}</span>}
             </Link>
           );
         })}
       </div>
 
-      {/* User Profile */}
+      {/* Language + User Profile */}
       {!collapsedEffective && (
         <div className="p-4 border-t border-neutral-200 dark:border-neutral-800">
+          <div className="px-3 pb-3">
+            <LanguageSwitcher />
+          </div>
           <div className="flex items-center space-x-3 p-3 rounded-lg">
             <button
               type="button"
@@ -412,7 +421,7 @@ export function ModernSidebar({
                 </p>
               </div>
             </button>
-            <button type="button" aria-label="Log out" onClick={handleLogout} className="min-h-[44px] min-w-[44px] flex items-center justify-center">
+            <button type="button" aria-label={t('logout')} onClick={handleLogout} className="min-h-[44px] min-w-[44px] flex items-center justify-center">
               <LogOut className="w-4 h-4 text-neutral-400 hover:text-red-500" />
             </button>
           </div>

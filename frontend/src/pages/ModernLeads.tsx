@@ -12,6 +12,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { leadsAPI, type Lead } from '@/services/api/leads';
 import { clientsAPI, type Client } from '@/services/api/clients';
 import { stagesAPI, type Stage } from '@/services/api/stages';
@@ -86,6 +87,15 @@ function getLeadPersonality(lead: Lead): string {
   if (lead.wpi && String(lead.wpi).trim()) return String(lead.wpi).trim();
   return 'Unknown';
 }
+
+/** Sentinel group keys (stable identifiers) -> i18n label keys. Other keys are user data and shown as-is. */
+const GROUP_LABEL_KEYS: Record<string, string> = {
+  'All leads': 'page.groups.allLeads',
+  'No type / source': 'page.groups.noSource',
+  'No sector': 'page.groups.noSector',
+  'No stage': 'page.groups.noStage',
+  Unknown: 'page.groups.unknown',
+};
 
 function getLeadGroupKey(lead: Lead, groupBy: LeadGroupBy): string {
   switch (groupBy) {
@@ -187,14 +197,15 @@ export function LeadsPaginationBar({
   onNext,
   onPageSizeChange,
 }: PaginationBarProps) {
+  const { t } = useTranslation('leads');
   return (
     <div
       className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800/80 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
       role="navigation"
-      aria-label="Leads pagination"
+      aria-label={t('page.paginationAria')}
     >
       <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-        <span className="font-medium">Rows per page</span>
+        <span className="font-medium">{t('page.rowsPerPage')}</span>
         <select
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -207,7 +218,11 @@ export function LeadsPaginationBar({
           ))}
         </select>
         <span className="text-neutral-500 dark:text-neutral-500">
-          {isLoadingLeads ? 'Loading leads…' : totalLeads > 0 ? `${totalLeads} total` : 'No leads'}
+          {isLoadingLeads
+            ? t('page.loadingLeadsShort')
+            : totalLeads > 0
+              ? t('page.totalCount', { count: totalLeads })
+              : t('page.noLeadsShort')}
         </span>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
@@ -218,10 +233,10 @@ export function LeadsPaginationBar({
           className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 disabled:pointer-events-none disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
         >
           <ChevronLeft className="h-4 w-4" />
-          Previous
+          {t('page.previous')}
         </button>
         <span className="min-w-[8rem] px-2 text-center text-sm tabular-nums text-neutral-700 dark:text-neutral-300">
-          Page {Math.min(page + 1, totalPages)} / {totalPages}
+          {t('page.pageOf', { current: Math.min(page + 1, totalPages), total: totalPages })}
         </span>
         <button
           type="button"
@@ -229,7 +244,7 @@ export function LeadsPaginationBar({
           onClick={onNext}
           className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 disabled:pointer-events-none disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
         >
-          Next
+          {t('page.next')}
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
@@ -247,16 +262,17 @@ function LeadsSearchField({
   isFetching?: boolean;
   onDebouncedChange: (value: string) => void;
 }) {
+  const { t } = useTranslation('leads');
   const [value, setValue] = useState(initialValue);
   const [debounced, setDebounced] = useState(initialValue.trim());
 
   useEffect(() => {
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       const next = value.trim();
       setDebounced(next);
       onDebouncedChange(next);
     }, 300);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(timer);
   }, [value, onDebouncedChange]);
 
   return (
@@ -264,7 +280,7 @@ function LeadsSearchField({
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
       <input
         type="text"
-        placeholder="Search leads by name, company, email..."
+        placeholder={t('page.searchPlaceholder')}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -277,6 +293,7 @@ function LeadsSearchField({
 }
 
 export function ModernLeads() {
+  const { t } = useTranslation('leads');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -462,14 +479,14 @@ export function ModernLeads() {
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       if (!user?.id) {
-        throw new Error('You must be logged in to import leads.');
+        throw new Error(t('page.errors.mustBeLoggedIn'));
       }
       const formData = new FormData();
       formData.append('file', file);
       formData.append('assigned_user_id', String(user.id));
       const clientForImport = importClientId ?? selectedClientId;
       if (!clientForImport) {
-        throw new Error('Select a client before importing.');
+        throw new Error(t('page.errors.selectClientImport'));
       }
       formData.append('client_id', String(clientForImport));
       return leadsAPI.uploadCSV(formData);
@@ -480,17 +497,17 @@ export function ModernLeads() {
       setIsUploadDialogOpen(false);
       setSelectedFile(null);
       toast({
-        title: "Success",
-        description: "Leads imported successfully!",
+        title: t('common:success'),
+        description: t('page.importSuccess'),
       });
     },
     onError: (error: any) => {
       const detail =
         error?.response?.data?.detail ||
         error?.message ||
-        "Failed to import leads";
+        t('page.importFailed');
       toast({
-        title: "Error",
+        title: t('common:error'),
         description: typeof detail === "string" ? detail : JSON.stringify(detail),
         variant: "destructive",
       });
@@ -502,12 +519,12 @@ export function ModernLeads() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      toast({ title: 'Lead deleted' });
+      toast({ title: t('deleted') });
     },
     onError: (error: any) => {
       toast({
-        title: 'Could not delete lead',
-        description: error?.response?.data?.detail || error?.message || 'Failed',
+        title: t('page.deleteFailed'),
+        description: error?.response?.data?.detail || error?.message || t('common:failed'),
         variant: 'destructive',
       });
     },
@@ -519,12 +536,12 @@ export function ModernLeads() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setNewClientName('');
       setSelectedClientId(created.id);
-      toast({ title: 'Client created', description: created.name });
+      toast({ title: t('page.clientCreated'), description: created.name });
     },
     onError: (error: any) => {
       toast({
-        title: 'Could not create client',
-        description: error?.response?.data?.detail || error?.message || 'Failed',
+        title: t('page.clientCreateFailed'),
+        description: error?.response?.data?.detail || error?.message || t('common:failed'),
         variant: 'destructive',
       });
     },
@@ -536,12 +553,12 @@ export function ModernLeads() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setRenamingId(null);
       setRenameValue('');
-      toast({ title: 'Client renamed' });
+      toast({ title: t('page.clientRenamed') });
     },
     onError: (error: any) => {
       toast({
-        title: 'Rename failed',
-        description: error?.response?.data?.detail || error?.message || 'Failed',
+        title: t('page.renameFailed'),
+        description: error?.response?.data?.detail || error?.message || t('common:failed'),
         variant: 'destructive',
       });
     },
@@ -553,12 +570,12 @@ export function ModernLeads() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       const general = activeClients.find((c) => c.is_default);
       if (general) setSelectedClientId(general.id);
-      toast({ title: 'Client archived' });
+      toast({ title: t('page.clientArchived') });
     },
     onError: (error: any) => {
       toast({
-        title: 'Archive failed',
-        description: error?.response?.data?.detail || error?.message || 'Failed',
+        title: t('page.archiveFailed'),
+        description: error?.response?.data?.detail || error?.message || t('common:failed'),
         variant: 'destructive',
       });
     },
@@ -569,12 +586,12 @@ export function ModernLeads() {
     onSuccess: (restored) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setSelectedClientId(restored.id);
-      toast({ title: 'Client restored' });
+      toast({ title: t('page.clientRestored') });
     },
     onError: (error: any) => {
       toast({
-        title: 'Restore failed',
-        description: error?.response?.data?.detail || error?.message || 'Failed',
+        title: t('page.restoreFailed'),
+        description: error?.response?.data?.detail || error?.message || t('common:failed'),
         variant: 'destructive',
       });
     },
@@ -582,16 +599,16 @@ export function ModernLeads() {
 
   const moveClientMutation = useMutation({
     mutationFn: async () => {
-      if (!moveTargetClientId) throw new Error('Pick a destination client');
+      if (!moveTargetClientId) throw new Error(t('page.errors.pickDestination'));
       if (moveMode === 'all_in_client') {
-        if (!selectedClientId) throw new Error('No source client');
+        if (!selectedClientId) throw new Error(t('page.errors.noSourceClient'));
         return leadsAPI.moveToClient({
           to_client_id: moveTargetClientId,
           from_client_id: selectedClientId,
           move_all_from_client: true,
         });
       }
-      if (selectedLeads.length === 0) throw new Error('Select at least one lead');
+      if (selectedLeads.length === 0) throw new Error(t('page.errors.selectOneLead'));
       return leadsAPI.moveToClient({
         to_client_id: moveTargetClientId,
         lead_ids: selectedLeads,
@@ -600,17 +617,17 @@ export function ModernLeads() {
     },
     onSuccess: (res: any) => {
       const payload = res?.data ?? res;
-      const msg = payload?.message || 'Leads moved';
+      const msg = payload?.message || t('page.leadsMoved');
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setSelectedLeads([]);
       setIsMoveDialogOpen(false);
-      toast({ title: 'Moved', description: typeof msg === 'string' ? msg : 'Leads moved' });
+      toast({ title: t('page.moved'), description: typeof msg === 'string' ? msg : t('page.leadsMoved') });
     },
     onError: (error: any) => {
       toast({
-        title: 'Move failed',
-        description: error?.response?.data?.detail || error?.message || 'Failed',
+        title: t('page.moveFailed'),
+        description: error?.response?.data?.detail || error?.message || t('common:failed'),
         variant: 'destructive',
       });
     },
@@ -654,8 +671,8 @@ export function ModernLeads() {
       ];
       if (!validTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
         toast({
-          title: "Invalid file type",
-          description: "Please upload a CSV or Excel file",
+          title: t('page.invalidFileType'),
+          description: t('page.invalidFileTypeHint'),
           variant: "destructive",
         });
         return;
@@ -668,16 +685,16 @@ export function ModernLeads() {
   const handleUpload = async () => {
     if (!selectedFile) {
       toast({
-        title: "No file selected",
-        description: "Please select a file to upload",
+        title: t('page.noFileSelected'),
+        description: t('page.noFileSelectedHint'),
         variant: "destructive",
       });
       return;
     }
     if (!user?.id) {
       toast({
-        title: "Not signed in",
-        description: "Please sign in again to import leads.",
+        title: t('page.notSignedIn'),
+        description: t('page.notSignedInHint'),
         variant: "destructive",
       });
       return;
@@ -705,20 +722,20 @@ export function ModernLeads() {
       window.URL.revokeObjectURL(url);
       
       toast({
-        title: "Success",
-        description: "Template downloaded successfully",
+        title: t('common:success'),
+        description: t('page.templateDownloaded'),
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to download template",
+        title: t('common:error'),
+        description: t('page.templateFailed'),
         variant: "destructive",
       });
     }
   };
 
   const handleExport = async () => {
-    toast({ title: 'Exporting…', description: 'Preparing your CSV download.' });
+    toast({ title: t('page.exporting'), description: t('page.exportingHint') });
     try {
       const blob = await leadsAPI.exportCSV({
         search: debouncedSearch || undefined,
@@ -737,11 +754,11 @@ export function ModernLeads() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast({ title: 'Exported', description: 'CSV download started.' });
+      toast({ title: t('page.exported'), description: t('page.exportedHint') });
     } catch {
       toast({
-        title: 'Export failed',
-        description: 'Could not download CSV.',
+        title: t('page.exportFailed'),
+        description: t('page.exportFailedHint'),
         variant: 'destructive',
       });
     }
@@ -759,7 +776,7 @@ export function ModernLeads() {
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
-          <p className="text-neutral-600 dark:text-neutral-400">Loading leads...</p>
+          <p className="text-neutral-600 dark:text-neutral-400">{t('page.loading')}</p>
         </div>
       </div>
     );
@@ -772,17 +789,17 @@ export function ModernLeads() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">
-              Leads
+              {t('title')}
             </h1>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Manage and track your sales pipeline •{' '}
+              {t('page.manageSubtitle')} •{' '}
               {debouncedSearch || activeFilterCount > 0
-                ? `${totalLeads} matching`
-                : `${totalLeads} total leads`}
+                ? t('page.matchingCount', { count: totalLeads })
+                : t('page.totalLeadsCount', { count: totalLeads })}
               {totalLeads > 0 && (
                 <>
                   {' '}
-                  · Rows {pageStart}–{pageEnd}
+                  · {t('page.rowsRange', { start: pageStart, end: pageEnd })}
                   {isFetchingLeads && (
                     <span className="ml-2 inline-flex items-center gap-1 text-primary-600">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -800,14 +817,14 @@ export function ModernLeads() {
             className="inline-flex min-h-[44px] shrink-0 items-center space-x-2 whitespace-nowrap bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
           >
             <Plus className="w-5 h-5" />
-            <span>Add Lead</span>
+            <span>{t('addLead')}</span>
           </button>
         </div>
 
         {/* Clients switcher */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mr-1">
-            Clients
+            {t('page.clients')}
           </span>
           <div className="flex flex-wrap items-center gap-2 flex-1">
             {activeClients.map((client) => {
@@ -839,7 +856,7 @@ export function ModernLeads() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700"
           >
             <Settings2 className="w-4 h-4" />
-            Manage
+            {t('page.manage')}
           </button>
         </div>
 
@@ -864,7 +881,7 @@ export function ModernLeads() {
             >
               <Filter className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
               <span className="text-neutral-700 dark:text-neutral-300">
-                Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+                {t('page.filters')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
               </span>
             </button>
           </div>
@@ -872,7 +889,7 @@ export function ModernLeads() {
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800">
               <ArrowUpDown className="h-4 w-4 text-neutral-500" />
-              <span className="text-neutral-500 dark:text-neutral-400">Sort</span>
+              <span className="text-neutral-500 dark:text-neutral-400">{t('page.sort')}</span>
               <select
                 value={sortBy}
                 onChange={(e) => {
@@ -883,26 +900,26 @@ export function ModernLeads() {
                 }}
                 className="bg-transparent text-neutral-800 outline-none dark:text-neutral-100"
               >
-                <option value="created_at">Newest</option>
-                <option value="updated_at">Recently updated</option>
-                <option value="first_name">Name</option>
-                <option value="company">Company</option>
-                <option value="job_title">Job title</option>
-                <option value="source">Lead type / source</option>
-                <option value="sector">Sector</option>
+                <option value="created_at">{t('page.sortOptions.newest')}</option>
+                <option value="updated_at">{t('page.sortOptions.updated')}</option>
+                <option value="first_name">{t('page.sortOptions.name')}</option>
+                <option value="company">{t('page.sortOptions.company')}</option>
+                <option value="job_title">{t('page.sortOptions.jobTitle')}</option>
+                <option value="source">{t('page.sortOptions.source')}</option>
+                <option value="sector">{t('page.sortOptions.sector')}</option>
               </select>
               <button
                 type="button"
                 onClick={() => setSortDesc((v) => !v)}
                 className="min-h-[36px] min-w-[44px] rounded px-2 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                title={sortDesc ? 'Descending' : 'Ascending'}
+                title={sortDesc ? t('page.descending') : t('page.ascending')}
               >
-                {sortDesc ? 'Desc' : 'Asc'}
+                {sortDesc ? t('page.descShort') : t('page.ascShort')}
               </button>
             </label>
             <label className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800">
               <Layers className="h-4 w-4 text-neutral-500" />
-              <span className="text-neutral-500 dark:text-neutral-400">Group</span>
+              <span className="text-neutral-500 dark:text-neutral-400">{t('page.group')}</span>
               <select
                 value={groupBy}
                 onChange={(e) => {
@@ -911,11 +928,11 @@ export function ModernLeads() {
                 }}
                 className="bg-transparent text-neutral-800 outline-none dark:text-neutral-100"
               >
-                <option value="none">None</option>
-                <option value="personality">Personality</option>
-                <option value="source">Lead type / source</option>
-                <option value="sector">Sector</option>
-                <option value="stage">Stage</option>
+                <option value="none">{t('page.groupOptions.none')}</option>
+                <option value="personality">{t('page.groupOptions.personality')}</option>
+                <option value="source">{t('page.groupOptions.source')}</option>
+                <option value="sector">{t('page.groupOptions.sector')}</option>
+                <option value="stage">{t('page.groupOptions.stage')}</option>
               </select>
             </label>
           </div>
@@ -929,7 +946,7 @@ export function ModernLeads() {
               >
                 <FolderInput className="w-4 h-4 text-primary-700 dark:text-primary-300" />
                 <span className="text-primary-800 dark:text-primary-200">
-                  Move {selectedLeads.length}…
+                  {t('page.moveSelected', { count: selectedLeads.length })}
                 </span>
               </button>
             )}
@@ -938,11 +955,11 @@ export function ModernLeads() {
                 type="button"
                 onClick={() => openMoveDialog('all_in_client')}
                 className="flex min-h-[44px] items-center space-x-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
-                title="Move every lead in this client to another client"
+                title={t('page.moveAllTitle')}
               >
                 <FolderInput className="w-4 h-4 shrink-0 text-neutral-600 dark:text-neutral-400" />
-                <span className="hidden sm:inline text-neutral-700 dark:text-neutral-300">Move all…</span>
-                <span className="sm:hidden text-neutral-700 dark:text-neutral-300">Move</span>
+                <span className="hidden sm:inline text-neutral-700 dark:text-neutral-300">{t('page.moveAll')}</span>
+                <span className="sm:hidden text-neutral-700 dark:text-neutral-300">{t('page.moveShort')}</span>
               </button>
             )}
             <button 
@@ -953,7 +970,7 @@ export function ModernLeads() {
               className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
             >
               <Upload className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-              <span className="text-neutral-700 dark:text-neutral-300">Import</span>
+              <span className="text-neutral-700 dark:text-neutral-300">{t('common:import')}</span>
             </button>
             
             <button
@@ -962,7 +979,7 @@ export function ModernLeads() {
               className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
             >
               <Download className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-              <span className="text-neutral-700 dark:text-neutral-300">Export</span>
+              <span className="text-neutral-700 dark:text-neutral-300">{t('common:export')}</span>
             </button>
           </div>
         </div>
@@ -1000,7 +1017,7 @@ export function ModernLeads() {
                 <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center bg-white/40 pt-16 dark:bg-neutral-900/40">
                   <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-medium text-neutral-700 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Updating results…
+                    {t('page.updatingResults')}
                   </span>
                 </div>
               )}
@@ -1019,7 +1036,7 @@ export function ModernLeads() {
                     <ChevronDown
                       className={`h-4 w-4 transition-transform ${collapsed ? '-rotate-90' : ''}`}
                     />
-                    {group.key}
+                    {GROUP_LABEL_KEYS[group.key] ? t(GROUP_LABEL_KEYS[group.key]) : group.key}
                   </span>
                   <span className="rounded-full bg-neutral-200 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-700 dark:bg-neutral-600 dark:text-neutral-100">
                     {group.leads.length}
@@ -1037,29 +1054,29 @@ export function ModernLeads() {
                             className="h-5 w-5 rounded"
                             checked={leads.length > 0 && leads.every((l) => selectedLeads.includes(l.id))}
                             onChange={toggleSelectAll}
-                            aria-label="Select all leads on this page"
+                            aria-label={t('page.selectAll')}
                           />
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                          Lead
+                          {t('page.columnLead')}
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                          Contact
+                          {t('page.columnContact')}
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                          Job Title
+                          {t('page.columnJobTitle')}
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                          Stage
+                          {t('page.columnStage')}
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                          Type / Personality
+                          {t('page.columnTypePersonality')}
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                          Assigned
+                          {t('page.columnAssigned')}
                         </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                          Actions
+                          {t('common:actions')}
                         </th>
                       </tr>
                     </thead>
@@ -1067,14 +1084,14 @@ export function ModernLeads() {
                   {groupBy !== 'none' && (
                     <thead className="bg-neutral-50/80 dark:bg-neutral-700/30 border-b border-neutral-200 dark:border-neutral-700">
                       <tr>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Select</th>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Lead</th>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Contact</th>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Job Title</th>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Stage</th>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Type / Personality</th>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Assigned</th>
-                        <th className="px-6 py-2 text-right text-xs font-medium text-neutral-500 uppercase">Actions</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnSelect')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnLead')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnContact')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnJobTitle')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnStage')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnTypePersonality')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnAssigned')}</th>
+                        <th className="px-6 py-2 text-right text-xs font-medium text-neutral-500 uppercase">{t('common:actions')}</th>
                       </tr>
                     </thead>
                   )}
@@ -1091,7 +1108,7 @@ export function ModernLeads() {
                             className="h-5 w-5 rounded"
                             checked={selectedLeads.includes(lead.id)}
                             onChange={() => toggleSelectLead(lead.id)}
-                            aria-label={`Select ${lead.full_name || lead.id}`}
+                            aria-label={t('page.selectLead', { name: lead.full_name || lead.id })}
                           />
                         </td>
                         <td className="px-6 py-4">
@@ -1104,7 +1121,7 @@ export function ModernLeads() {
                                 {lead.full_name || `${lead.first_name} ${lead.last_name}`}
                               </div>
                               <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                                {lead.company || 'No company'}
+                                {lead.company || t('page.noCompany')}
                               </div>
                             </div>
                           </div>
@@ -1118,7 +1135,7 @@ export function ModernLeads() {
                         </td>
                         <td className="px-6 py-4">
                           <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400">
-                            {lead.stage?.name || 'No stage'}
+                            {lead.stage?.name || t('page.groups.noStage')}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -1126,11 +1143,11 @@ export function ModernLeads() {
                             {lead.source || '—'}
                           </div>
                           <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                            {getLeadPersonality(lead)}
+                            {GROUP_LABEL_KEYS[getLeadPersonality(lead)] ? t(GROUP_LABEL_KEYS[getLeadPersonality(lead)]) : getLeadPersonality(lead)}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-neutral-900 dark:text-neutral-50">
-                          {lead.user ? `${lead.user.first_name} ${lead.user.last_name}` : 'Unassigned'}
+                          {lead.user ? `${lead.user.first_name} ${lead.user.last_name}` : t('page.unassigned')}
                         </td>
                         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu modal={false}>
@@ -1138,7 +1155,7 @@ export function ModernLeads() {
                               <button
                                 type="button"
                                 className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors"
-                                aria-label={`Actions for ${lead.full_name || lead.id}`}
+                                aria-label={t('page.actionsFor', { name: lead.full_name || lead.id })}
                               >
                                 <MoreVertical className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
                               </button>
@@ -1149,14 +1166,14 @@ export function ModernLeads() {
                                 onClick={() => navigate(`/leads/${lead.id}`)}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('common:view')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="cursor-pointer"
                                 onClick={() => navigate(`/leads/${lead.id}?edit=1`)}
                               >
                                 <Pencil className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('common:edit')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="cursor-pointer"
@@ -1167,20 +1184,20 @@ export function ModernLeads() {
                                 }}
                               >
                                 <FolderInput className="mr-2 h-4 w-4" />
-                                Move to client
+                                {t('page.moveToClient')}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="cursor-pointer text-red-600 focus:text-red-600"
                                 onClick={() => {
-                                  const name = lead.full_name || `${lead.first_name} ${lead.last_name}`.trim() || 'this lead';
-                                  if (window.confirm(`Delete ${name}?`)) {
+                                  const name = lead.full_name || `${lead.first_name} ${lead.last_name}`.trim() || t('page.thisLead');
+                                  if (window.confirm(t('page.deleteConfirm', { name }))) {
                                     deleteLeadMutation.mutate(lead.id);
                                   }
                                 }}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
+                                {t('common:delete')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1195,14 +1212,14 @@ export function ModernLeads() {
         })}
         {!isLoadingLeads && !isFetchingLeads && leads.length === 0 && (
           <div className="rounded-xl border border-neutral-200 bg-white py-12 text-center text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
-            No leads in this client yet. Click "Add Lead" or Import to get started.
+            {t('page.emptyClient')}
           </div>
         )}
       </div>
 
       <div className="mt-8 border-t border-neutral-200 pt-6 dark:border-neutral-700">
         <p className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-          Pagination
+          {t('page.pagination')}
         </p>
         <LeadsPaginationBar
           page={page}
@@ -1224,14 +1241,14 @@ export function ModernLeads() {
       <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Organize leads</DialogTitle>
+            <DialogTitle>{t('page.organizeTitle')}</DialogTitle>
             <DialogDescription>
-              Filter by stage, lead type/source, and sector. Combine with Sort and Group in the toolbar to organize by personality or type.
+              {t('page.organizeDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="filter-stage">Pipeline stage</Label>
+              <Label htmlFor="filter-stage">{t('page.pipelineStage')}</Label>
               <select
                 id="filter-stage"
                 value={draftFilterStageId ?? ''}
@@ -1240,7 +1257,7 @@ export function ModernLeads() {
                 }
                 className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800"
               >
-                <option value="">All stages</option>
+                <option value="">{t('page.allStages')}</option>
                 {stages.map((stage) => (
                   <option key={stage.id} value={stage.id}>
                     {stage.name}
@@ -1249,19 +1266,19 @@ export function ModernLeads() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="filter-source">Lead type / source</Label>
+              <Label htmlFor="filter-source">{t('page.sortOptions.source')}</Label>
               <Input
                 id="filter-source"
-                placeholder="e.g. inbound, referral, cold"
+                placeholder={t('page.sourcePlaceholder')}
                 value={draftFilterSource}
                 onChange={(e) => setDraftFilterSource(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="filter-sector">Sector</Label>
+              <Label htmlFor="filter-sector">{t('page.sortOptions.sector')}</Label>
               <Input
                 id="filter-sector"
-                placeholder="e.g. finance, tech"
+                placeholder={t('page.sectorPlaceholder')}
                 value={draftFilterSector}
                 onChange={(e) => setDraftFilterSector(e.target.value)}
               />
@@ -1280,7 +1297,7 @@ export function ModernLeads() {
                 setFilterSector('');
               }}
             >
-              Clear
+              {t('common:clear')}
             </Button>
             <Button
               type="button"
@@ -1291,7 +1308,7 @@ export function ModernLeads() {
                 setIsFiltersOpen(false);
               }}
             >
-              Apply
+              {t('common:apply')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1301,15 +1318,15 @@ export function ModernLeads() {
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Import Leads</DialogTitle>
+            <DialogTitle>{t('importLeads')}</DialogTitle>
             <DialogDescription>
-              Leads will be assigned to the client selected below (defaults to the Clients tab you are viewing).
+              {t('page.importDescription')}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="import-client">Client</Label>
+              <Label htmlFor="import-client">{t('page.client')}</Label>
               <select
                 id="import-client"
                 value={importClientId ?? ''}
@@ -1318,12 +1335,12 @@ export function ModernLeads() {
               >
                 {activeClients.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}{c.is_default ? ' (default)' : ''}
+                    {c.name}{c.is_default ? ` (${t('page.defaultLabel')})` : ''}
                   </option>
                 ))}
               </select>
               <p className="text-xs text-neutral-500">
-                All rows in this upload go to this client. A CSV Client column is ignored when you pick a client here.
+                {t('page.importClientHint')}
               </p>
             </div>
 
@@ -1343,7 +1360,7 @@ export function ModernLeads() {
               >
                 <Upload className="w-5 h-5 text-neutral-400" />
                 <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                  {selectedFile ? selectedFile.name : 'Click to select file'}
+                  {selectedFile ? selectedFile.name : t('page.clickToSelectFile')}
                 </span>
               </button>
               
@@ -1370,7 +1387,7 @@ export function ModernLeads() {
               )}
               
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Supported formats: CSV, XLS, XLSX
+                {t('page.supportedFormats')}
               </p>
             </div>
 
@@ -1380,7 +1397,7 @@ export function ModernLeads() {
               className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
             >
               <FileDown className="w-4 h-4" />
-              <span className="text-sm">Download Template</span>
+              <span className="text-sm">{t('page.downloadTemplate')}</span>
             </button>
           </div>
 
@@ -1393,7 +1410,7 @@ export function ModernLeads() {
               }}
               disabled={isUploading}
             >
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button
               onClick={handleUpload}
@@ -1403,12 +1420,12 @@ export function ModernLeads() {
               {isUploading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Uploading...
+                  {t('page.uploading')}
                 </>
               ) : (
                 <>
                   <Upload className="w-4 h-4 mr-2" />
-                  Import Leads
+                  {t('importLeads')}
                 </>
               )}
             </Button>
@@ -1420,16 +1437,16 @@ export function ModernLeads() {
       <Dialog open={isManageClientsOpen} onOpenChange={setIsManageClientsOpen}>
         <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Manage Clients</DialogTitle>
+            <DialogTitle>{t('page.manageClientsTitle')}</DialogTitle>
             <DialogDescription>
-              Add, rename, archive, or restore clients. General cannot be archived or renamed.
+              {t('page.manageClientsDescription')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="flex gap-2">
               <Input
-                placeholder="New client name"
+                placeholder={t('page.newClientName')}
                 value={newClientName}
                 onChange={(e) => setNewClientName(e.target.value)}
               />
@@ -1438,12 +1455,12 @@ export function ModernLeads() {
                 disabled={!newClientName.trim() || createClientMutation.isPending}
                 onClick={() => createClientMutation.mutate(newClientName.trim())}
               >
-                Add
+                {t('common:add')}
               </Button>
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Active</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t('page.active')}</p>
               {activeClients.map((client) => (
                 <div
                   key={client.id}
@@ -1463,10 +1480,10 @@ export function ModernLeads() {
                           renameClientMutation.mutate({ id: client.id, name: renameValue.trim() })
                         }
                       >
-                        Save
+                        {t('common:save')}
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => setRenamingId(null)}>
-                        Cancel
+                        {t('common:cancel')}
                       </Button>
                     </>
                   ) : (
@@ -1474,7 +1491,7 @@ export function ModernLeads() {
                       <span className="flex-1 font-medium text-neutral-900 dark:text-neutral-50">
                         {client.name}
                         {client.is_default && (
-                          <span className="ml-2 text-xs text-neutral-500">default</span>
+                          <span className="ml-2 text-xs text-neutral-500">{t('page.defaultLabel')}</span>
                         )}
                       </span>
                       {!client.is_default && (
@@ -1487,7 +1504,7 @@ export function ModernLeads() {
                               setRenameValue(client.name);
                             }}
                           >
-                            Rename
+                            {t('page.rename')}
                           </Button>
                           <Button
                             size="sm"
@@ -1495,7 +1512,7 @@ export function ModernLeads() {
                             disabled={archiveClientMutation.isPending}
                             onClick={() => archiveClientMutation.mutate(client.id)}
                           >
-                            Archive
+                            {t('page.archive')}
                           </Button>
                         </>
                       )}
@@ -1508,7 +1525,7 @@ export function ModernLeads() {
             {archivedClients.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Archived
+                  {t('page.archived')}
                 </p>
                 {archivedClients.map((client) => (
                   <div
@@ -1524,7 +1541,7 @@ export function ModernLeads() {
                       disabled={restoreClientMutation.isPending}
                       onClick={() => restoreClientMutation.mutate(client.id)}
                     >
-                      Restore
+                      {t('page.restore')}
                     </Button>
                   </div>
                 ))}
@@ -1534,7 +1551,7 @@ export function ModernLeads() {
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsManageClientsOpen(false)}>
-              Close
+              {t('common:close')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1544,15 +1561,17 @@ export function ModernLeads() {
       <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Move leads to client</DialogTitle>
+            <DialogTitle>{t('page.moveDialogTitle')}</DialogTitle>
             <DialogDescription>
               {moveMode === 'all_in_client'
-                ? `Move all leads currently in “${activeClients.find((c) => c.id === selectedClientId)?.name ?? 'this client'}” to another client.`
-                : `Move ${selectedLeads.length} selected lead(s) to another client.`}
+                ? t('page.moveAllDescription', {
+                    name: activeClients.find((c) => c.id === selectedClientId)?.name ?? t('page.thisClient'),
+                  })
+                : t('page.moveSelectedDescription', { count: selectedLeads.length })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <Label htmlFor="move-target">Destination client</Label>
+            <Label htmlFor="move-target">{t('page.destinationClient')}</Label>
             <select
               id="move-target"
               value={moveTargetClientId ?? ''}
@@ -1570,7 +1589,7 @@ export function ModernLeads() {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsMoveDialogOpen(false)}>
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button
               type="button"
@@ -1580,10 +1599,10 @@ export function ModernLeads() {
               {moveClientMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Moving…
+                  {t('page.moving')}
                 </>
               ) : (
-                'Move leads'
+                t('page.moveLeads')
               )}
             </Button>
           </DialogFooter>

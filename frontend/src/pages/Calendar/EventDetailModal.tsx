@@ -1,6 +1,9 @@
 import { format, parseISO } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import { fr as frLocale, enUS } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Event, EventCreateInput } from '../../services/api/events';
 import eventsAPI from '../../services/api/events';
@@ -70,7 +73,7 @@ const formatDate = (date: string | Date | null | undefined, timezone: string = '
   }
 };
 
-const formatDisplayDate = (date: string | Date | null | undefined, timezone: string = 'Europe/Istanbul'): string => {
+const formatDisplayDate = (date: string | Date | null | undefined, timezone: string = 'Europe/Istanbul', locale?: Locale): string => {
   if (!date) return '';
   
   try {
@@ -88,7 +91,7 @@ const formatDisplayDate = (date: string | Date | null | undefined, timezone: str
       return '';
     }
     
-    return formatInTimeZone(dateObj, timezone, "dd MMM yyyy, HH:mm");
+    return formatInTimeZone(dateObj, timezone, "dd MMM yyyy, HH:mm", { locale });
   } catch (error) {
     return '';
   }
@@ -129,7 +132,6 @@ function mergeMeetingLink(description: string, meetingLink?: string): string {
 const eventTypes = [
   { 
     value: 'meeting', 
-    label: 'Meeting', 
     icon: Users,
     color: '#6366f1', 
     bgColor: 'bg-indigo-50', 
@@ -139,7 +141,6 @@ const eventTypes = [
   },
   { 
     value: 'call', 
-    label: 'Call', 
     icon: Video,
     color: '#10b981', 
     bgColor: 'bg-emerald-50', 
@@ -149,7 +150,6 @@ const eventTypes = [
   },
   { 
     value: 'task', 
-    label: 'Task', 
     icon: Briefcase,
     color: '#f59e0b', 
     bgColor: 'bg-amber-50', 
@@ -159,7 +159,6 @@ const eventTypes = [
   },
   { 
     value: 'reminder', 
-    label: 'Reminder', 
     icon: Bell,
     color: '#ef4444', 
     bgColor: 'bg-red-50', 
@@ -169,7 +168,6 @@ const eventTypes = [
   },
   { 
     value: 'break', 
-    label: 'Break', 
     icon: Coffee,
     color: '#8b5cf6', 
     bgColor: 'bg-purple-50', 
@@ -182,7 +180,6 @@ const eventTypes = [
 const eventStatusOptions = [
   { 
     value: 'scheduled', 
-    label: 'Scheduled', 
     icon: Clock,
     color: '#6366f1', 
     bgColor: 'bg-blue-50', 
@@ -191,7 +188,6 @@ const eventStatusOptions = [
   },
   { 
     value: 'in_progress', 
-    label: 'In Progress', 
     icon: Play,
     color: '#8b5cf6', 
     bgColor: 'bg-purple-50', 
@@ -200,7 +196,6 @@ const eventStatusOptions = [
   },
   { 
     value: 'completed', 
-    label: 'Completed', 
     icon: Check,
     color: '#10b981', 
     bgColor: 'bg-emerald-50', 
@@ -209,7 +204,6 @@ const eventStatusOptions = [
   },
   { 
     value: 'cancelled', 
-    label: 'Cancelled', 
     icon: XCircle,
     color: '#ef4444', 
     bgColor: 'bg-red-50', 
@@ -219,6 +213,8 @@ const eventStatusOptions = [
 ];
 
 export default function EventDetailModal({ event, onClose, onDelete, open }: EventDetailModalProps) {
+  const { t, i18n } = useTranslation('calendar');
+  const dfLocale = i18n.language?.startsWith('fr') ? frLocale : enUS;
   const [editedEvent, setEditedEvent] = useState<EventCreateInput>(defaultEventData);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -257,7 +253,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
             timezone: eventTimezone
           });
           
-          toast.error('Event dates are missing, using current time as fallback');
+          toast.error(t('detail.datesMissing'));
           return;
         }
 
@@ -299,7 +295,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
         setMeetingLink(parsed.meetingLink);
       } catch (error) {
         console.error('Error processing event dates:', error);
-        toast.error('Error loading event details. Using default values.');
+        toast.error(t('detail.loadError'));
         
         const now = new Date();
         const thirtyMinutesLater = new Date(now.getTime() + 30 * 60000);
@@ -369,12 +365,12 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
       await eventsAPI.update(event.id, updateData);
       
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.success('Event updated successfully!');
+      toast.success(t('page.updatedOk'));
       setIsEditing(false);
       onClose();
     } catch (error) {
       console.error('Error updating event:', error);
-      toast.error('Failed to update event');
+      toast.error(t('page.updateFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -387,12 +383,12 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
       setIsDeleting(true);
       await eventsAPI.remove(event.id);
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.success('Event deleted successfully!');
+      toast.success(t('page.deletedOk'));
       onDelete(event.id);
       onClose();
     } catch (error) {
       console.error('Error deleting event:', error);
-      toast.error('Failed to delete event');
+      toast.error(t('page.deleteFailed'));
     } finally {
       setIsDeleting(false);
       setIsConfirmingDelete(false);
@@ -432,9 +428,9 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
               <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center mb-6 shadow-lg">
                 <AlertCircle className="h-8 w-8 text-white" />
               </div>
-              <DialogTitle className="text-2xl font-bold mb-3 text-gray-900">Delete Event</DialogTitle>
+              <DialogTitle className="text-2xl font-bold mb-3 text-gray-900">{t('deleteEvent')}</DialogTitle>
               <p className="text-gray-600 text-lg leading-relaxed">
-                Are you sure you want to delete this event? This action cannot be undone.
+                {t('detail.confirmDelete')}
               </p>
             </div>
             
@@ -445,7 +441,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 text-lg mb-1">{event.title}</h4>
-                  <p className="text-gray-600">{formatDisplayDate(event.start_date)}</p>
+                  <p className="text-gray-600">{formatDisplayDate(event.start_date, undefined, dfLocale)}</p>
                 </div>
               </div>
             </div>
@@ -456,14 +452,14 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                 onClick={() => setIsConfirmingDelete(false)}
                 className="px-6 py-3 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium"
               >
-                Cancel
+                {t('page.cancel')}
               </Button>
               <Button
                 onClick={handleDelete}
                 disabled={isDeleting}
                 className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg font-medium shadow-lg"
               >
-                {isDeleting ? 'Deleting...' : 'Delete Event'}
+                {isDeleting ? t('detail.deleting') : t('deleteEvent')}
               </Button>
             </div>
           </div>
@@ -479,11 +475,11 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                   </div>
                   <div>
                     <DialogTitle className="text-2xl font-bold mb-1">
-                      {isEditing ? 'Edit Event' : 'Event Details'}
+                      {isEditing ? t('editEvent') : t('detail.eventDetails')}
                     </DialogTitle>
                     <div className="flex items-center gap-2 text-white/90">
                       <StatusIcon className="h-4 w-4" />
-                      <span className="font-medium">{statusDetails.label}</span>
+                      <span className="font-medium">{t(`page.status.${statusDetails.value}`)}</span>
                     </div>
                   </div>
                 </div>
@@ -503,30 +499,30 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
               {isEditing ? (
                 <div className="space-y-6">
                   <div>
-                    <Label htmlFor="title" className="text-sm font-semibold text-gray-700 block mb-2">Event Title</Label>
+                    <Label htmlFor="title" className="text-sm font-semibold text-gray-700 block mb-2">{t('page.eventTitle')}</Label>
                     <Input
                       id="title"
                       value={editedEvent.title}
                       onChange={(e) => setEditedEvent({ ...editedEvent, title: e.target.value })}
                       className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg text-base"
-                      placeholder="Enter event title..."
+                      placeholder={t('page.eventTitlePlaceholder')}
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="description" className="text-sm font-semibold text-gray-700 block mb-2">Description</Label>
+                    <Label htmlFor="description" className="text-sm font-semibold text-gray-700 block mb-2">{t('page.description')}</Label>
                     <Textarea
                       id="description"
                       value={editedEvent.description || ''}
                       onChange={(e) => setEditedEvent({ ...editedEvent, description: e.target.value })}
                       className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 min-h-[120px] rounded-lg text-base"
-                      placeholder="Add event description..."
+                      placeholder={t('page.descriptionPlaceholder')}
                     />
                   </div>
 
                   {(editedEvent.event_type === 'meeting' || editedEvent.event_type === 'call' || editedEvent.event_type === 'video_call') && (
                     <div>
-                      <Label htmlFor="meeting-link" className="text-sm font-semibold text-gray-700 block mb-2">Meeting Link</Label>
+                      <Label htmlFor="meeting-link" className="text-sm font-semibold text-gray-700 block mb-2">{t('page.meetingLink')}</Label>
                       <Input
                         id="meeting-link"
                         type="url"
@@ -540,7 +536,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <Label htmlFor="start_date" className="text-sm font-semibold text-gray-700 block mb-2">Start Date & Time</Label>
+                      <Label htmlFor="start_date" className="text-sm font-semibold text-gray-700 block mb-2">{t('detail.startDateTime')}</Label>
                       <div className="relative">
                         <Clock className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                         <Input
@@ -554,7 +550,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                     </div>
 
                     <div>
-                      <Label htmlFor="end_date" className="text-sm font-semibold text-gray-700 block mb-2">End Date & Time</Label>
+                      <Label htmlFor="end_date" className="text-sm font-semibold text-gray-700 block mb-2">{t('detail.endDateTime')}</Label>
                       <div className="relative">
                         <Clock3 className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                         <Input
@@ -570,7 +566,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
 
                   {/* Event Type Selection Grid */}
                   <div>
-                    <Label className="text-sm font-semibold text-gray-700 block mb-3">Event Type</Label>
+                    <Label className="text-sm font-semibold text-gray-700 block mb-3">{t('page.eventType')}</Label>
                     <div className="grid grid-cols-5 gap-3">
                       {eventTypes.map((type) => {
                         const Icon = type.icon;
@@ -586,7 +582,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                             }`}
                           >
                             <Icon className="h-6 w-6 mx-auto mb-2" />
-                            <span className="text-xs font-medium">{type.label}</span>
+                            <span className="text-xs font-medium">{t(`page.types.${type.value}`)}</span>
                           </button>
                         );
                       })}
@@ -595,13 +591,13 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <Label htmlFor="status" className="text-sm font-semibold text-gray-700 block mb-2">Status</Label>
+                      <Label htmlFor="status" className="text-sm font-semibold text-gray-700 block mb-2">{t('detail.status')}</Label>
                       <Select
                         value={editedEvent.status}
                         onValueChange={(value) => setEditedEvent({ ...editedEvent, status: value as any })}
                       >
                         <SelectTrigger className="border-gray-300 focus:border-indigo-500 rounded-lg">
-                          <SelectValue placeholder="Select status" />
+                          <SelectValue placeholder={t('detail.selectStatus')} />
                         </SelectTrigger>
                         <SelectContent>
                           {eventStatusOptions.map((status) => {
@@ -612,7 +608,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                                   <div className={`p-1.5 rounded-lg ${status.bgColor}`}>
                                     <Icon className={`h-4 w-4 ${status.textColor}`} />
                                   </div>
-                                  <span>{status.label}</span>
+                                  <span>{t(`page.status.${status.value}`)}</span>
                                 </div>
                               </SelectItem>
                             );
@@ -622,7 +618,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                     </div>
 
                     <div>
-                      <Label htmlFor="location" className="text-sm font-semibold text-gray-700 block mb-2">Location</Label>
+                      <Label htmlFor="location" className="text-sm font-semibold text-gray-700 block mb-2">{t('location')}</Label>
                       <div className="relative">
                         <MapPin className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                         <Input
@@ -630,7 +626,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                           value={editedEvent.location || ''}
                           onChange={(e) => setEditedEvent({ ...editedEvent, location: e.target.value })}
                           className="pl-12 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg text-base"
-                          placeholder="Enter location..."
+                          placeholder={t('detail.locationPlaceholder')}
                         />
                       </div>
                     </div>
@@ -645,7 +641,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                         <Calendar className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Event Title</span>
+                        <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('page.eventTitle')}</span>
                         <h3 className="text-xl font-bold text-gray-900 mt-1">{event.title}</h3>
                       </div>
                     </div>
@@ -659,8 +655,8 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                           <Clock className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Start Time</span>
-                          <p className="font-semibold text-gray-900 mt-1">{formatDisplayDate(event.start_date)}</p>
+                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('page.startTime')}</span>
+                          <p className="font-semibold text-gray-900 mt-1">{formatDisplayDate(event.start_date, undefined, dfLocale)}</p>
                         </div>
                       </div>
                     </div>
@@ -671,8 +667,8 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                           <Clock3 className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">End Time</span>
-                          <p className="font-semibold text-gray-900 mt-1">{formatDisplayDate(event.end_date)}</p>
+                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('page.endTime')}</span>
+                          <p className="font-semibold text-gray-900 mt-1">{formatDisplayDate(event.end_date, undefined, dfLocale)}</p>
                         </div>
                       </div>
                     </div>
@@ -686,7 +682,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                           <AlarmCheck className="h-5 w-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Description</span>
+                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('page.description')}</span>
                           <p className="text-gray-900 mt-2 leading-relaxed whitespace-pre-wrap">{extractMeetingLink(event.description).cleanDescription}</p>
                         </div>
                       </div>
@@ -695,7 +691,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
 
                   {extractMeetingLink(event.description).meetingLink && (
                     <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                      <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Meeting Link</span>
+                      <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('page.meetingLink')}</span>
                       <a
                         href={extractMeetingLink(event.description).meetingLink}
                         target="_blank"
@@ -715,8 +711,8 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                           <TypeIcon className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Event Type</span>
-                          <p className="font-semibold text-gray-900 mt-1">{typeDetails.label}</p>
+                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('page.eventType')}</span>
+                          <p className="font-semibold text-gray-900 mt-1">{t(`page.types.${typeDetails.value}`)}</p>
                         </div>
                       </div>
                     </div>
@@ -727,8 +723,8 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                           <StatusIcon className={`h-5 w-5 ${statusDetails.textColor}`} />
                         </div>
                         <div>
-                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Status</span>
-                          <p className={`font-semibold mt-1 ${statusDetails.textColor}`}>{statusDetails.label}</p>
+                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('detail.status')}</span>
+                          <p className={`font-semibold mt-1 ${statusDetails.textColor}`}>{t(`page.status.${statusDetails.value}`)}</p>
                         </div>
                       </div>
                     </div>
@@ -742,7 +738,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                           <MapPin className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Location</span>
+                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('location')}</span>
                           <p className="font-semibold text-gray-900 mt-1">{event.location}</p>
                         </div>
                       </div>
@@ -761,14 +757,14 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                     onClick={() => setIsEditing(false)}
                     className="px-6 py-3 border-gray-300 text-gray-700 hover:bg-white rounded-lg font-medium"
                   >
-                    Cancel
+                    {t('page.cancel')}
                   </Button>
                   <Button
                     onClick={handleSave}
                     disabled={isSaving}
                     className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg font-medium shadow-lg"
                   >
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                    {isSaving ? t('detail.saving') : t('detail.saveChanges')}
                   </Button>
                 </>
               ) : (
@@ -779,7 +775,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                     className="px-6 py-3 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 rounded-lg font-medium flex items-center gap-2"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Delete
+                    {t('detail.delete')}
                   </Button>
                   <Button
                     variant="outline"
@@ -787,13 +783,13 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                     className="px-6 py-3 border-gray-300 text-gray-700 hover:bg-white rounded-lg font-medium flex items-center gap-2"
                   >
                     <Edit2 className="h-4 w-4" />
-                    Edit
+                    {t('detail.edit')}
                   </Button>
                   <Button
                     onClick={onClose}
                     className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg font-medium shadow-lg"
                   >
-                    Close
+                    {t('detail.close')}
                   </Button>
                 </>
               )}

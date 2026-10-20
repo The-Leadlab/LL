@@ -21,6 +21,7 @@ from app.schemas.team_invitation import (
 from app.schemas.user import UserCreate
 from app.core.email import email_sender
 from app.core.config import settings
+from app.core.user_language import get_user_language
 from app.core.workspace import record_team_membership
 from app import schemas
 import logging
@@ -70,6 +71,7 @@ async def _send_invitation_email_or_raise(
     invitation_link: str,
     role: str,
     message: str | None,
+    language: str | None = None,
 ) -> None:
     """Send invitation email and raise when delivery fails."""
     try:
@@ -80,6 +82,7 @@ async def _send_invitation_email_or_raise(
             invitation_link,
             role,
             message,
+            language,
         )
         if not sent:
             raise RuntimeError("Invitation email delivery returned false")
@@ -150,6 +153,7 @@ async def create_team_invitation(
             invitation_link,
             invitation.role,
             invitation.message,
+            get_user_language(db, current_user.id),
         )
 
         return invitation
@@ -390,13 +394,18 @@ async def accept_team_invitation(
         # Mark invitation as accepted
         team_invitation.accept_invitation(db=db, invitation=invitation)
         
-        # Send welcome email
+        # Send welcome email (use inviter language preference as invitee default)
         login_link = f"{settings.FRONTEND_URL}/signin"
+        inviter_lang = get_user_language(
+            db,
+            invitation.invited_by_id if invitation.invited_by_id else None,
+        )
         background_tasks.add_task(
             email_sender.send_welcome_email,
             user.email,
             user.first_name,
-            login_link
+            login_link,
+            inviter_lang,
         )
         
         return {"message": "Invitation accepted successfully", "user_id": user.id}
@@ -505,6 +514,7 @@ async def resend_team_invitation(
             invitation_link,
             updated_invitation.role,
             updated_invitation.message,
+            get_user_language(db, current_user.id),
         )
         
         return {"message": "Invitation resent successfully"}

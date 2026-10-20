@@ -178,5 +178,91 @@
         "backup": "Backup",
         "import": "Import",
         "export": "Export"
+    },
+    "email": {
+        "welcome": {
+            "subject": "Welcome to LeadLab",
+            "title": "Welcome to LeadLab",
+            "preheader": "Hi {first_name}, your LeadLab account is ready.",
+            "greeting": "Hi {first_name},",
+            "body": "Welcome to LeadLab. We're glad you're here — your workspace is ready for lead generation, CRM, and team collaboration.",
+            "whatYouCanDo": "What you can do",
+            "perk1": "Generate and qualify leads",
+            "perk2": "Track performance with analytics",
+            "perk3": "Run outreach campaigns",
+            "perk4": "Collaborate with your team",
+            "ctaPrompt": "Ready to get started? Open your dashboard below.",
+            "cta": "Open dashboard",
+            "textBody": "Welcome to LeadLab. Your workspace is ready.\n\nOpen your dashboard:\n{login_link}\n\nQuestions? info@the-leadlab.com\n\n— The LeadLab Team"
+        },
+        "verify": {
+            "subject": "Verify your email — LeadLab",
+            "title": "Verify your email",
+            "preheader": "Confirm your email to finish LeadLab signup.",
+            "greeting": "Hi {first_name},",
+            "body": "Thanks for signing up. Confirm your email address to finish setup and unlock full access to LeadLab.",
+            "expires": "This link expires in <strong style='color:#0f172a;'>24 hours</strong>.",
+            "ignore": "If you did not create a LeadLab account, you can ignore this email.",
+            "cta": "Verify email address",
+            "textBody": "Confirm your email address:\n{verification_link}\n\nThis link expires in 24 hours.\n\nIf you did not create a LeadLab account, ignore this email.\n\n— The LeadLab Team"
+        },
+        "passwordReset": {
+            "subject": "Reset your LeadLab password",
+            "title": "Reset your password",
+            "preheader": "Reset your LeadLab password. This link expires in 1 hour.",
+            "greeting": "Hello,",
+            "body": "We received a request to reset the password for your LeadLab account. Click the button below to choose a new one.",
+            "expires": "This link expires in <strong style='color:#0f172a;'>1 hour</strong> for your security.",
+            "ignore": "If you did not request a password reset, you can ignore this email — your account stays secure.",
+            "cta": "Reset password",
+            "textBody": "We received a request to reset the password for your LeadLab account.\n\nReset your password:\n{reset_link}\n\nThis link expires in 1 hour for your security.\n\nIf you didn't request a password reset, you can ignore this email — your account stays secure.\n\nNeed help? Contact info@the-leadlab.com"
+        },
+        "tokens": {
+            "subject": "Token purchase confirmation — LeadLab",
+            "title": "Token purchase confirmed",
+            "preheader": "You received {token_amount} tokens.",
+            "greeting": "Hi {username},",
+            "body": "Thank you for your purchase. Your tokens are available in your account.",
+            "amountPaid": "Amount paid",
+            "tokensReceived": "Tokens received",
+            "textBody": "Amount paid: ${amount}\nTokens received: {token_amount}\n\nYour tokens have been added to your account balance.\n\n— The LeadLab Team"
+        },
+        "mention": {
+            "subject": "You were mentioned on a {entity_label} in LeadLab",
+            "title": "You were mentioned",
+            "preheader": "{mentioner_name} mentioned you on a {entity_label}",
+            "greeting": "Hi {recipient_name},",
+            "body": "<strong>{mentioner_name}</strong> mentioned you on a {entity_label}{org_bit}:",
+            "cta": "Open in LeadLab",
+            "textBody": "Hi {recipient_name},\n\n{mentioner_name} mentioned you on a {entity_label}{org_bit}: {safe_title}\n\nOpen it here: {entity_url}\n\n— LeadLab"
+        },
+        "invite": {
+            "subject": "You're invited to join {organization_name} on LeadLab",
+            "title": "Join {organization_name}",
+            "preheader": "{inviter_name} invited you to {organization_name} on LeadLab.",
+            "body": "<strong>{inviter_name}</strong> invited you to join <strong>{organization_name}</strong> on LeadLab.",
+            "yourRole": "Your role: {role_badge}",
+            "messageFrom": "Message from {inviter_name}",
+            "asRoleYouCan": "As a {role_text}, you can",
+            "perkManage": "Manage team members and settings",
+            "perkLeads": "Access lead management tools",
+            "perkAnalytics": "View analytics and reports",
+            "perkCollaborate": "Collaborate with your team",
+            "perkCampaigns": "Create and manage campaigns",
+            "expires": "This invitation expires in <strong style='color:#0f172a;'>72 hours</strong>.",
+            "noAccount": "No account yet? This link opens signup so you can create one and join the team.",
+            "cta": "Accept invitation",
+            "footer": "You received this because {inviter_name} invited you to {organization_name}.",
+            "roleAdmin": "Administrator",
+            "roleMember": "Team Member",
+            "roleViewer": "Viewer",
+            "textBody": "{inviter_name} invited you to join {organization_name} on LeadLab.\n\nYour role: {role_text}\n\n{message_block}Accept invitation:\n{invitation_link}\n\nThis invitation expires in 72 hours.\n\nQuestions? info@the-leadlab.com\n\n— The LeadLab Team"
+        },
+        "entity": {
+            "task": "task",
+            "lead": "lead",
+            "deal": "deal",
+            "item": "item"
+        }
     }
 }

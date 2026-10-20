@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cpqAPI, Product } from '@/services/api/cpq';
 import { Button } from '@/components/ui/Button';
@@ -13,6 +14,7 @@ import { Badge } from '@/components/ui/Badge';
 import { formatCurrency } from '@/lib/utils';
 
 export const ProductList: React.FC = () => {
+  const { t } = useTranslation('modules');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -43,14 +45,14 @@ export const ProductList: React.FC = () => {
       setIsDialogOpen(false);
       resetForm();
       toast({
-        title: 'Success',
-        description: `Product ${editingProduct ? 'updated' : 'created'} successfully`
+        title: t('cpq.common.success'),
+        description: editingProduct ? t('cpq.products.toast.updated') : t('cpq.products.toast.created')
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.detail || 'Failed to save product',
+        title: t('cpq.common.error'),
+        description: error.response?.data?.detail || t('cpq.products.toast.saveFailed'),
         variant: 'destructive'
       });
     }
@@ -62,8 +64,8 @@ export const ProductList: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       toast({
-        title: 'Success',
-        description: 'Product deleted successfully'
+        title: t('cpq.common.success'),
+        description: t('cpq.products.toast.deleted')
       });
     }
   });
@@ -96,8 +98,8 @@ export const ProductList: React.FC = () => {
   const handleSubmit = () => {
     if (!formData.name || !formData.sku || !formData.base_price) {
       toast({
-        title: 'Validation Error',
-        description: 'Name, SKU, and price are required',
+        title: t('cpq.products.toast.validationTitle'),
+        description: t('cpq.products.toast.validation'),
         variant: 'destructive'
       });
       return;
@@ -137,46 +139,46 @@ export const ProductList: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Product Catalog</h1>
+            <h1 className="text-3xl font-bold">{t('cpq.products.title')}</h1>
             <p className="text-gray-600 mt-1">
-              Manage your products and pricing
+              {t('cpq.products.subtitle')}
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Product
+                {t('cpq.products.add')}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
-                  {editingProduct ? 'Edit Product' : 'Add New Product'}
+                  {editingProduct ? t('cpq.products.editTitle') : t('cpq.products.addTitle')}
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Product Name *</Label>
+                  <Label htmlFor="name">{t('cpq.products.name')}</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., Enterprise Plan"
+                    placeholder={t('cpq.products.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="sku">SKU *</Label>
+                  <Label htmlFor="sku">{t('cpq.products.sku')}</Label>
                   <Input
                     id="sku"
                     value={formData.sku}
                     onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    placeholder="e.g., ENT-001"
+                    placeholder={t('cpq.products.skuPlaceholder')}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="price">Base Price *</Label>
+                    <Label htmlFor="price">{t('cpq.products.basePrice')}</Label>
                     <Input
                       id="price"
                       type="number"
@@ -187,7 +189,7 @@ export const ProductList: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="currency">Currency</Label>
+                    <Label htmlFor="currency">{t('cpq.products.currency')}</Label>
                     <Input
                       id="currency"
                       value={formData.currency}
@@ -198,21 +200,21 @@ export const ProductList: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">{t('cpq.products.category')}</Label>
                   <Input
                     id="category"
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    placeholder="e.g., Software, Services"
+                    placeholder={t('cpq.products.categoryPlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">{t('cpq.products.description')}</Label>
                   <Input
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Optional description"
+                    placeholder={t('cpq.products.descriptionPlaceholder')}
                   />
                 </div>
                 <Button
@@ -223,7 +225,7 @@ export const ProductList: React.FC = () => {
                   {saveMutation.isPending && (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   )}
-                  {editingProduct ? 'Update Product' : 'Create Product'}
+                  {editingProduct ? t('cpq.products.update') : t('cpq.products.create')}
                 </Button>
               </div>
             </DialogContent>
@@ -239,7 +241,7 @@ export const ProductList: React.FC = () => {
                   <Package className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total Products</p>
+                  <p className="text-sm text-gray-600">{t('cpq.products.total')}</p>
                   <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
               </div>
@@ -252,7 +254,7 @@ export const ProductList: React.FC = () => {
                   <Package className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Active</p>
+                  <p className="text-sm text-gray-600">{t('cpq.products.active')}</p>
                   <p className="text-2xl font-bold">{stats.active}</p>
                 </div>
               </div>
@@ -265,7 +267,7 @@ export const ProductList: React.FC = () => {
                   <Tag className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Categories</p>
+                  <p className="text-sm text-gray-600">{t('cpq.products.categories')}</p>
                   <p className="text-2xl font-bold">{stats.categories}</p>
                 </div>
               </div>
@@ -278,7 +280,7 @@ export const ProductList: React.FC = () => {
                   <DollarSign className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Catalog Value</p>
+                  <p className="text-sm text-gray-600">{t('cpq.products.catalogValue')}</p>
                   <p className="text-2xl font-bold">
                     {formatCurrency(stats.totalValue)}
                   </p>
@@ -301,13 +303,13 @@ export const ProductList: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold">{product.name}</h3>
-                        <p className="text-sm text-gray-600">SKU: {product.sku}</p>
+                        <p className="text-sm text-gray-600">{t('cpq.products.skuLabel', { sku: product.sku })}</p>
                       </div>
                     </div>
                     {product.is_active ? (
-                      <Badge className="bg-green-100 text-green-800">Active</Badge>
+                      <Badge className="bg-green-100 text-green-800">{t('cpq.products.active')}</Badge>
                     ) : (
-                      <Badge variant="secondary">Inactive</Badge>
+                      <Badge variant="secondary">{t('cpq.products.inactive')}</Badge>
                     )}
                   </div>
                   {product.description && (
@@ -336,7 +338,7 @@ export const ProductList: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          if (confirm('Are you sure you want to delete this product?')) {
+                          if (confirm(t('cpq.products.confirmDelete'))) {
                             deleteMutation.mutate(product.id);
                           }
                         }}
@@ -352,13 +354,13 @@ export const ProductList: React.FC = () => {
             <Card className="col-span-full">
               <CardContent className="py-12 text-center">
                 <Package className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-semibold mb-2">No products yet</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('cpq.products.emptyTitle')}</h3>
                 <p className="text-gray-600 mb-4">
-                  Add your first product to start creating quotes
+                  {t('cpq.products.emptyBody')}
                 </p>
                 <Button onClick={() => setIsDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Product
+                  {t('cpq.products.add')}
                 </Button>
               </CardContent>
             </Card>

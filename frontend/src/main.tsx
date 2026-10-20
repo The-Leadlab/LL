@@ -1,9 +1,13 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import './i18n'
+import { applyAcceptLanguageHeader } from './i18n/setAppLanguage'
 import App from './App.tsx'
 import './index.css'
 import './styles/design-system.css'
 import { startHealthMonitoring } from './services/health'
+
+applyAcceptLanguageHeader()
 
 // Disable automatic scroll restoration
 if ('scrollRestoration' in history) {

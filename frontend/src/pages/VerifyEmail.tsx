@@ -1,13 +1,23 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { PublicAuthShell, publicAuthCtaClassName } from '../components/layout/PublicAuthShell'
 import { verifyEmail } from '../services/auth'
 
+type VerifyMessageKey =
+  | 'verifyEmailPage.verifying'
+  | 'verifyEmailPage.missingToken'
+  | 'verifyEmailPage.success'
+  | 'verifyEmailPage.invalid'
+
 export function VerifyEmail() {
+  const { t } = useTranslation('auth')
   const [params] = useSearchParams()
   const token = params.get('token') || ''
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>(token ? 'loading' : 'error')
-  const [message, setMessage] = useState(token ? 'Verifying your email…' : 'This verification link is missing a token.')
+  const [messageKey, setMessageKey] = useState<VerifyMessageKey>(
+    token ? 'verifyEmailPage.verifying' : 'verifyEmailPage.missingToken',
+  )
 
   useEffect(() => {
     if (!token) return
@@ -16,12 +26,12 @@ export function VerifyEmail() {
       .then(() => {
         if (cancelled) return
         setStatus('success')
-        setMessage('Your email is verified. You can sign in now.')
+        setMessageKey('verifyEmailPage.success')
       })
       .catch(() => {
         if (cancelled) return
         setStatus('error')
-        setMessage('This verification link is invalid or has expired.')
+        setMessageKey('verifyEmailPage.invalid')
       })
     return () => {
       cancelled = true
@@ -36,12 +46,12 @@ export function VerifyEmail() {
           alt="LeadLab"
           className="mx-auto mb-4 h-12 w-auto"
         />
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Email verification</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">{t('verifyEmailPage.title')}</h1>
         <p className={`mt-4 text-sm ${status === 'error' ? 'text-red-600' : 'text-slate-600'}`}>
-          {message}
+          {t(messageKey)}
         </p>
         <Link to="/signin" className={`mt-6 inline-flex ${publicAuthCtaClassName}`}>
-          Go to sign in
+          {t('verifyEmailPage.goToSignIn')}
         </Link>
       </div>
     </PublicAuthShell>

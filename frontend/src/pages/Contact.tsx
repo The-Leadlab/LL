@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'react-hot-toast'
 import { getApiOrigin } from '@/lib/apiOrigin'
 import { MarketingNav } from '../components/marketing/MarketingNav'
@@ -12,6 +13,7 @@ interface ContactForm {
 }
 
 export function Contact() {
+  const { t } = useTranslation('marketing')
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState<ContactForm>({
     name: '',
@@ -39,13 +41,13 @@ export function Contact() {
       })
       
       if (!response.ok) {
-        throw new Error('Failed to send message')
+        throw new Error(t('contact.sendFailed'))
       }
       
-      toast.success('Message sent successfully!')
+      toast.success(t('contact.success'))
       setFormData({ name: '', email: '', subject: '', message: '' })
     } catch (error) {
-      toast.error('Failed to send message. Please try again.')
+      toast.error(t('contact.error'))
     } finally {
       setIsLoading(false)
     }
@@ -66,17 +68,16 @@ export function Contact() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Contact Information */}
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-8">Contact Us</h1>
+              <h1 className="text-4xl font-bold text-gray-900 mb-8">{t('contact.title')}</h1>
               <p className="text-lg text-gray-600 mb-8">
-                Have questions about our platform? We're here to help. Send us a
-                message and we'll respond as soon as possible.
+                {t('contact.intro')}
               </p>
 
               <div className="space-y-6">
                 <div className="flex items-start space-x-4">
                   <Mail className="w-6 h-6 text-blue-600 mt-1" />
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">Email</h3>
+                    <h3 className="text-lg font-medium text-gray-900">{t('contact.emailLabel')}</h3>
                     <p className="text-gray-600">info@the-leadlab.com</p>
                   </div>
                 </div>
@@ -84,9 +85,9 @@ export function Contact() {
                 <div className="flex items-start space-x-4">
                   <MapPin className="w-6 h-6 text-blue-600 mt-1" />
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">Address</h3>
+                    <h3 className="text-lg font-medium text-gray-900">{t('contact.addressLabel')}</h3>
                     <p className="text-gray-600">
-                      Istanbul, Türkiye<br />
+                      {t('contact.address')}<br />
                     </p>
                   </div>
                 </div>
@@ -96,7 +97,7 @@ export function Contact() {
             {/* Contact Form */}
             <div className="bg-white rounded-2xl shadow-xl p-8 w-full">
               <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-                Send us a message
+                {t('contact.formTitle')}
               </h2>
 
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -105,7 +106,7 @@ export function Contact() {
                     htmlFor="name"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Name
+                    {t('contact.name')}
                   </label>
                   <input
                     type="text"
@@ -123,7 +124,7 @@ export function Contact() {
                     htmlFor="email"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Email
+                    {t('contact.email')}
                   </label>
                   <input
                     type="email"
@@ -141,7 +142,7 @@ export function Contact() {
                     htmlFor="subject"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Subject
+                    {t('contact.subject')}
                   </label>
                   <input
                     type="text"
@@ -159,7 +160,7 @@ export function Contact() {
                     htmlFor="message"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Message
+                    {t('contact.message')}
                   </label>
                   <textarea
                     id="message"
@@ -180,10 +181,10 @@ export function Contact() {
                   {isLoading ? (
                     <div className="flex items-center">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Sending...
+                      {t('contact.sending')}
                     </div>
                   ) : (
-                    'Send Message'
+                    t('contact.send')
                   )}
                 </button>
               </form>

@@ -8,6 +8,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import api from '@/services/axios';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -54,6 +55,7 @@ interface CommandPaletteProps {
 const EMPTY_LEAD_HITS: unknown[] = [];
 
 export function CommandPalette({ open, onClose }: CommandPaletteProps) {
+  const { t, i18n } = useTranslation('nav');
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -87,7 +89,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     // Navigation
     {
       id: 'nav-dashboard',
-      title: 'Go to Dashboard',
+      title: t('palette.goDashboard'),
       icon: <Home className="w-4 h-4" />,
       action: () => navigate('/dashboard'),
       shortcut: 'G D',
@@ -95,7 +97,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     },
     {
       id: 'nav-leads',
-      title: 'Go to Leads',
+      title: t('palette.goLeads'),
       icon: <Users className="w-4 h-4" />,
       action: () => navigate('/leads'),
       shortcut: 'G L',
@@ -103,7 +105,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     },
     {
       id: 'nav-deals',
-      title: 'Go to Deals',
+      title: t('palette.goDeals'),
       icon: <DollarSign className="w-4 h-4" />,
       action: () => navigate('/deals'),
       shortcut: 'G O',
@@ -111,7 +113,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     },
     {
       id: 'nav-tasks',
-      title: 'Go to Tasks',
+      title: t('palette.goTasks'),
       icon: <CheckSquare className="w-4 h-4" />,
       action: () => navigate('/tasks'),
       shortcut: 'G T',
@@ -119,7 +121,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     },
     {
       id: 'nav-calendar',
-      title: 'Go to Calendar',
+      title: t('palette.goCalendar'),
       icon: <CalendarDays className="w-4 h-4" />,
       action: () => navigate('/calendar'),
       shortcut: 'G C',
@@ -127,7 +129,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     },
     {
       id: 'nav-reports',
-      title: 'Go to Reports',
+      title: t('palette.goReports'),
       icon: <BarChart3 className="w-4 h-4" />,
       action: () => navigate('/reports'),
       shortcut: 'G R',
@@ -135,14 +137,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     },
     {
       id: 'nav-territories',
-      title: 'Go to Territories',
+      title: t('palette.goTerritories'),
       icon: <TrendingUp className="w-4 h-4" />,
       action: () => navigate('/settings/territories'),
       category: 'navigation',
     },
     {
       id: 'nav-cpq',
-      title: 'Go to CPQ (Quotes)',
+      title: t('palette.goCpq'),
       icon: <FileText className="w-4 h-4" />,
       action: () => navigate('/cpq/quotes'),
       category: 'navigation',
@@ -150,7 +152,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     ...(featureFlags.navigation.showForecasting
       ? [{
           id: 'nav-forecasting',
-          title: 'Go to Forecasting',
+          title: t('palette.goForecasting'),
           icon: <TrendingUp className="w-4 h-4" />,
           action: () => navigate('/forecasting'),
           category: 'navigation' as const,
@@ -159,7 +161,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     ...(featureFlags.navigation.showMindMapping
       ? [{
           id: 'nav-mind-mapping',
-          title: 'Go to Mind Mapping',
+          title: t('palette.goMindMapping'),
           icon: <Workflow className="w-4 h-4" />,
           action: () => navigate('/workflows'),
           category: 'navigation' as const,
@@ -168,7 +170,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     ...(featureFlags.navigation.showDataImport
       ? [{
           id: 'nav-data-import',
-          title: 'Go to Data Import',
+          title: t('palette.goDataImport'),
           icon: <Database className="w-4 h-4" />,
           action: () => navigate('/data-import/wizard'),
           category: 'navigation' as const,
@@ -176,7 +178,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       : []),
     {
       id: 'nav-settings',
-      title: 'Go to Settings',
+      title: t('palette.goSettings'),
       icon: <Settings className="w-4 h-4" />,
       action: () => navigate('/settings'),
       category: 'navigation',
@@ -185,7 +187,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     // Quick Actions
     {
       id: 'action-new-lead',
-      title: 'Create New Lead',
+      title: t('palette.createLead'),
       icon: <Plus className="w-4 h-4" />,
       action: () => navigate('/leads/new'),
       shortcut: 'CMD+N',
@@ -193,7 +195,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     },
     {
       id: 'action-new-deal',
-      title: 'Create New Deal',
+      title: t('palette.createDeal'),
       icon: <Plus className="w-4 h-4" />,
       action: () => navigate('/deals/new'),
       shortcut: 'CMD+D',
@@ -201,7 +203,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     },
     {
       id: 'action-new-task',
-      title: 'Create New Task',
+      title: t('palette.createTask'),
       icon: <Plus className="w-4 h-4" />,
       action: () => navigate('/tasks/new'),
       shortcut: 'CMD+T',
@@ -211,14 +213,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       ? [
           {
             id: 'action-send-email',
-            title: 'Send Email',
+            title: t('palette.sendEmail'),
             icon: <Mail className="w-4 h-4" />,
             action: () => navigate('/emails'),
             category: 'actions' as const,
           },
           {
             id: 'action-cold-outreach',
-            title: 'Cold Outreach',
+            title: t('palette.coldOutreach'),
             icon: <Mail className="w-4 h-4" />,
             action: () => navigate('/emails/outreach'),
             category: 'actions' as const,
@@ -227,7 +229,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             ? [
                 {
                   id: 'action-campaigns',
-                  title: 'Campaigns',
+                  title: t('palette.campaigns'),
                   icon: <Mail className="w-4 h-4" />,
                   action: () => navigate('/email-sequences'),
                   category: 'actions' as const,
@@ -238,7 +240,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             ? [
                 {
                   id: 'action-outreach-runs',
-                  title: 'Outreach Runs',
+                  title: t('palette.outreachRuns'),
                   icon: <Mail className="w-4 h-4" />,
                   action: () => navigate('/emails/runs'),
                   category: 'actions' as const,
@@ -247,7 +249,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             : []),
           {
             id: 'action-outreach-connections',
-            title: 'Outreach Connections',
+            title: t('palette.outreachConnections'),
             icon: <Mail className="w-4 h-4" />,
             action: () => navigate('/emails/connections'),
             category: 'actions' as const,
@@ -256,7 +258,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             ? [
                 {
                   id: 'action-outreach-templates',
-                  title: 'Outreach Templates',
+                  title: t('palette.outreachTemplates'),
                   icon: <Mail className="w-4 h-4" />,
                   action: () => navigate('/emails/templates'),
                   category: 'actions' as const,
@@ -287,8 +289,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
     const leadCommands: CommandItem[] = (Array.isArray(leadHits) ? leadHits : EMPTY_LEAD_HITS).map((lead: any) => ({
       id: `lead-${lead.id}`,
-      title: [lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.email || `Lead #${lead.id}`,
-      subtitle: [lead.company, lead.email].filter(Boolean).join(' · ') || 'Lead',
+      title: [lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.email || t('palette.leadNumber', { id: lead.id }),
+      subtitle: [lead.company, lead.email].filter(Boolean).join(' · ') || t('palette.leadSubtitle'),
       icon: <Users className="w-4 h-4" />,
       action: () => navigate(`/leads/${lead.id}`),
       category: 'search' as const,
@@ -298,7 +300,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     setSelectedIndex(0);
     // commands is derived from navigate/featureFlags each render; intentionally omit to avoid loops
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stable filter inputs only
-  }, [open, query, leadHits, navigate]);
+  }, [open, query, leadHits, navigate, i18n.language]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -340,10 +342,10 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   }, {} as Record<string, CommandItem[]>);
 
   const categoryLabels = {
-    navigation: 'Navigation',
-    actions: 'Quick Actions',
-    search: 'Search Results',
-    recent: 'Recent',
+    navigation: t('palette.categoryNavigation'),
+    actions: t('palette.categoryActions'),
+    search: t('palette.categorySearch'),
+    recent: t('palette.categoryRecent'),
   };
 
   return (
@@ -356,7 +358,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Search for anything... (type to filter)"
+              placeholder={t('palette.placeholder')}
               className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
               autoFocus
             />
@@ -369,11 +371,11 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         <div className="max-h-[400px] overflow-y-auto p-2">
           {canSearchLeads && isSearchingLeads && filteredCommands.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
-              Searching leads for "{query}"…
+              {t('palette.searchingLeads', { query })}
             </div>
           ) : filteredCommands.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
-              No results found for "{query}"
+              {t('palette.noResultsFor', { query })}
             </div>
           ) : (
             <>
@@ -445,14 +447,16 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-muted rounded">↑</kbd>
               <kbd className="px-1.5 py-0.5 bg-muted rounded">↓</kbd>
-              to navigate
+              {t('palette.toNavigate')}
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-muted rounded">↵</kbd>
-              to select
+              {t('palette.toSelect')}
             </span>
           </div>
-          <span>Press <kbd className="px-1.5 py-0.5 bg-muted rounded">?</kbd> for keyboard shortcuts</span>
+          <span>
+            {t('palette.pressPrefix')} <kbd className="px-1.5 py-0.5 bg-muted rounded">?</kbd> {t('palette.pressSuffix')}
+          </span>
         </div>
       </DialogContent>
     </Dialog>

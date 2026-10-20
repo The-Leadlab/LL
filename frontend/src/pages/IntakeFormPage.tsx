@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { ArrowLeft, CheckCircle } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { MarketingNav } from '../components/marketing/MarketingNav'
@@ -15,6 +16,7 @@ function isIntakeSlug(s: string | undefined): s is IntakeSlug {
 }
 
 export function IntakeFormPage() {
+  const { t } = useTranslation('marketing')
   const { formSlug } = useParams<{ formSlug: string }>()
   const slug = isIntakeSlug(formSlug) ? formSlug : null
 
@@ -56,9 +58,9 @@ export function IntakeFormPage() {
   }, [step, slug])
 
   const titleForSlug: Record<IntakeSlug, string> = {
-    'business-diagnostic': 'Business diagnostic',
-    'data-request': 'Data request',
-    'pitch-your-idea': 'Pitch your idea',
+    'business-diagnostic': t('diagnosticTitle'),
+    'data-request': t('dataRequestTitle'),
+    'pitch-your-idea': t('pitchTitle'),
   }
 
   const continueFromForm = (e: React.FormEvent) => {
@@ -74,7 +76,7 @@ export function IntakeFormPage() {
   const onSubmitBusinessDiagnostic = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!ndaAccepted || !ndaSignature.trim()) {
-      toast.error('Please accept the NDA and type your signature.')
+      toast.error(t('intake.form.ndaRequired'))
       return
     }
     setBdLoading(true)
@@ -100,7 +102,7 @@ export function IntakeFormPage() {
       })
       setStep('success')
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to submit. Please try again.')
+      toast.error(err instanceof Error ? err.message : t('intake.form.submitFailed'))
     } finally {
       setBdLoading(false)
     }
@@ -109,7 +111,7 @@ export function IntakeFormPage() {
   const onSubmitPitchYourIdea = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!ndaAccepted || !ndaSignature.trim()) {
-      toast.error('Please accept the NDA and type your signature.')
+      toast.error(t('intake.form.ndaRequired'))
       return
     }
     setPiLoading(true)
@@ -139,7 +141,7 @@ export function IntakeFormPage() {
       })
       setStep('success')
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to submit. Please try again.')
+      toast.error(err instanceof Error ? err.message : t('intake.form.submitFailed'))
     } finally {
       setPiLoading(false)
     }
@@ -151,10 +153,9 @@ export function IntakeFormPage() {
 
   const ndaBlock = (
     <div className="border-t pt-6">
-      <h4 className="text-lg font-semibold text-gray-900 mb-2">NDA</h4>
+      <h4 className="text-lg font-semibold text-gray-900 mb-2">{t('intake.form.nda.title')}</h4>
       <p className="text-sm text-gray-600 mb-4">
-        We may send a formal NDA by email for signature as we scope next steps. Please confirm provisional agreement and
-        type your name below to submit this intake.
+        {t('intake.form.nda.description')}
       </p>
       <label className="flex items-start gap-3 text-sm text-gray-700">
         <input
@@ -163,15 +164,15 @@ export function IntakeFormPage() {
           onChange={(e) => setNdaAccepted(e.target.checked)}
           className="mt-1"
         />
-        <span>I agree and authorize The Lead Lab to contact me about this request and next steps.</span>
+        <span>{t('intake.form.nda.agree')}</span>
       </label>
       <div className="mt-4">
-        <label className={labelClass}>Signature (type your full name) *</label>
+        <label className={labelClass}>{t('intake.form.nda.signature')}</label>
         <input
           className={inputClass}
           value={ndaSignature}
           onChange={(e) => setNdaSignature(e.target.value)}
-          placeholder="e.g. Jane Doe"
+          placeholder={t('intake.form.nda.signaturePlaceholder')}
         />
       </div>
     </div>
@@ -187,7 +188,7 @@ export function IntakeFormPage() {
             className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 mb-8"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to options
+            {t('intake.form.backToOptions')}
           </Link>
 
           {step === 'success' ? (
@@ -195,25 +196,25 @@ export function IntakeFormPage() {
               <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-700 mb-6">
                 <CheckCircle className="h-9 w-9" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">Thank you for submitting</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">{t('intake.form.successTitle')}</h1>
               <p className="text-gray-600 leading-relaxed max-w-lg mx-auto mb-2">
                 {slug === 'data-request'
-                  ? 'We received your data request. Our admin team has been notified by email and will review your answers shortly.'
-                  : 'We received your details. Our team will review your request and follow up by email. Depending on scope, we may send a formal NDA and scheduling options.'}
+                  ? t('intake.form.successDataRequest')
+                  : t('intake.form.successDefault')}
               </p>
-              <p className="text-sm text-gray-500 mb-8">Please allow a short time for us to respond.</p>
+              <p className="text-sm text-gray-500 mb-8">{t('intake.form.successWait')}</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
                   to="/"
                   className="inline-flex justify-center px-6 py-3 rounded-xl font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                 >
-                  Back to home
+                  {t('intake.form.backToHome')}
                 </Link>
                 <Link
                   to="/intake"
                   className="inline-flex justify-center px-6 py-3 rounded-xl font-medium border border-gray-300 text-gray-800 hover:border-blue-400"
                 >
-                  Submit another request
+                  {t('intake.form.submitAnother')}
                 </Link>
               </div>
             </div>
@@ -222,10 +223,10 @@ export function IntakeFormPage() {
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{titleForSlug[slug]}</h1>
               <p className="text-gray-600 mb-8">
                 {slug === 'data-request'
-                  ? 'Complete each step of the data request questionnaire. Your answers are emailed to our admin team and saved in our system.'
+                  ? t('intake.form.introDataRequest')
                   : step === 'form'
-                    ? 'Fill in the details below. On the next step you will review and sign the NDA acknowledgment before we receive your submission.'
-                    : 'Review and complete the NDA step, then submit.'}
+                    ? t('intake.form.introForm')
+                    : t('intake.form.introNda')}
               </p>
 
               {step === 'form' && slug === 'business-diagnostic' && (
@@ -233,10 +234,10 @@ export function IntakeFormPage() {
                   onSubmit={continueFromForm}
                   className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6"
                 >
-                  <h2 className="text-xl font-bold text-gray-900">Your business context</h2>
+                  <h2 className="text-xl font-bold text-gray-900">{t('intake.form.diagnostic.sectionTitle')}</h2>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className={labelClass}>Full name *</label>
+                      <label className={labelClass}>{t('intake.form.fullName')}</label>
                       <input
                         className={inputClass}
                         required
@@ -245,7 +246,7 @@ export function IntakeFormPage() {
                       />
                     </div>
                     <div>
-                      <label className={labelClass}>Work email *</label>
+                      <label className={labelClass}>{t('intake.form.workEmail')}</label>
                       <input
                         className={inputClass}
                         type="email"
@@ -257,73 +258,73 @@ export function IntakeFormPage() {
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className={labelClass}>Company</label>
+                      <label className={labelClass}>{t('intake.form.company')}</label>
                       <input className={inputClass} value={bdCompany} onChange={(e) => setBdCompany(e.target.value)} />
                     </div>
                     <div>
-                      <label className={labelClass}>Phone</label>
+                      <label className={labelClass}>{t('intake.form.phone')}</label>
                       <input className={inputClass} type="tel" value={bdPhone} onChange={(e) => setBdPhone(e.target.value)} />
                     </div>
                   </div>
                   <div>
-                    <label className={labelClass}>Industry / sector</label>
+                    <label className={labelClass}>{t('intake.form.diagnostic.industry')}</label>
                     <input
                       className={inputClass}
                       value={bdIndustry}
                       onChange={(e) => setBdIndustry(e.target.value)}
-                      placeholder="e.g. B2B SaaS, professional services"
+                      placeholder={t('intake.form.diagnostic.industryPlaceholder')}
                     />
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className={labelClass}>Team size</label>
+                      <label className={labelClass}>{t('intake.form.diagnostic.teamSize')}</label>
                       <select className={inputClass} value={bdTeamSize} onChange={(e) => setBdTeamSize(e.target.value)}>
-                        <option value="">Select…</option>
-                        <option value="1">Just me (solopreneur)</option>
-                        <option value="2-5">2–5</option>
-                        <option value="6-20">6–20</option>
-                        <option value="21+">21+</option>
+                        <option value="">{t('intake.form.select')}</option>
+                        <option value="1">{t('intake.form.diagnostic.teamSolo')}</option>
+                        <option value="2-5">{t('intake.form.diagnostic.teamRange1')}</option>
+                        <option value="6-20">{t('intake.form.diagnostic.teamRange2')}</option>
+                        <option value="21+">{t('intake.form.diagnostic.teamRange3')}</option>
                       </select>
                     </div>
                     <div>
-                      <label className={labelClass}>Monthly lead volume (approx.)</label>
+                      <label className={labelClass}>{t('intake.form.diagnostic.leadVolume')}</label>
                       <input
                         className={inputClass}
                         value={bdLeadVolume}
                         onChange={(e) => setBdLeadVolume(e.target.value)}
-                        placeholder="e.g. 50 qualified conversations / month"
+                        placeholder={t('intake.form.diagnostic.leadVolumePlaceholder')}
                       />
                     </div>
                   </div>
                   <div>
-                    <label className={labelClass}>Biggest pain point today</label>
+                    <label className={labelClass}>{t('intake.form.diagnostic.biggestPain')}</label>
                     <textarea
                       className={inputClass}
                       rows={3}
                       value={bdBiggestPain}
                       onChange={(e) => setBdBiggestPain(e.target.value)}
-                      placeholder="Time on manual research, poor qualification, CRM hygiene, etc."
+                      placeholder={t('intake.form.diagnostic.biggestPainPlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Tools you use today</label>
+                    <label className={labelClass}>{t('intake.form.diagnostic.tools')}</label>
                     <textarea
                       className={inputClass}
                       rows={2}
                       value={bdTools}
                       onChange={(e) => setBdTools(e.target.value)}
-                      placeholder="CRM, LinkedIn, spreadsheets, other…"
+                      placeholder={t('intake.form.diagnostic.toolsPlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Goals for the next 12 months</label>
+                    <label className={labelClass}>{t('intake.form.diagnostic.goals')}</label>
                     <textarea className={inputClass} rows={3} value={bdGoals} onChange={(e) => setBdGoals(e.target.value)} />
                   </div>
                   <button
                     type="submit"
                     className="w-full py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all"
                   >
-                    Continue to NDA
+                    {t('intake.form.continueToNda')}
                   </button>
                 </form>
               )}
@@ -337,14 +338,14 @@ export function IntakeFormPage() {
                   onSubmit={continueFromForm}
                   className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6"
                 >
-                  <h2 className="text-xl font-bold text-gray-900">Pitch your idea</h2>
+                  <h2 className="text-xl font-bold text-gray-900">{t('pitchTitle')}</h2>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className={labelClass}>Full name *</label>
+                      <label className={labelClass}>{t('intake.form.fullName')}</label>
                       <input className={inputClass} required value={piFullName} onChange={(e) => setPiFullName(e.target.value)} />
                     </div>
                     <div>
-                      <label className={labelClass}>Work email *</label>
+                      <label className={labelClass}>{t('intake.form.workEmail')}</label>
                       <input
                         className={inputClass}
                         type="email"
@@ -356,26 +357,26 @@ export function IntakeFormPage() {
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className={labelClass}>Company / org</label>
+                      <label className={labelClass}>{t('intake.form.companyOrg')}</label>
                       <input className={inputClass} value={piCompany} onChange={(e) => setPiCompany(e.target.value)} />
                     </div>
                     <div>
-                      <label className={labelClass}>Phone</label>
+                      <label className={labelClass}>{t('intake.form.phone')}</label>
                       <input className={inputClass} type="tel" value={piPhone} onChange={(e) => setPiPhone(e.target.value)} />
                     </div>
                   </div>
                   <div>
-                    <label className={labelClass}>Working title *</label>
+                    <label className={labelClass}>{t('intake.form.pitch.workingTitle')}</label>
                     <input
                       className={inputClass}
                       required
                       value={piProjectTitle}
                       onChange={(e) => setPiProjectTitle(e.target.value)}
-                      placeholder="e.g. Partner referral tracker for our sales team"
+                      placeholder={t('intake.form.pitch.workingTitlePlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Elevator pitch (2–4 sentences) *</label>
+                    <label className={labelClass}>{t('intake.form.pitch.elevatorPitch')}</label>
                     <textarea
                       className={inputClass}
                       rows={4}
@@ -385,7 +386,7 @@ export function IntakeFormPage() {
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>What problem does this solve? *</label>
+                    <label className={labelClass}>{t('intake.form.pitch.problemSolved')}</label>
                     <textarea
                       className={inputClass}
                       rows={3}
@@ -395,52 +396,52 @@ export function IntakeFormPage() {
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Who is the primary user?</label>
+                    <label className={labelClass}>{t('intake.form.pitch.primaryUser')}</label>
                     <textarea className={inputClass} rows={2} value={piTargetUser} onChange={(e) => setPiTargetUser(e.target.value)} />
                   </div>
                   <div>
-                    <label className={labelClass}>Must-have features / outcomes</label>
+                    <label className={labelClass}>{t('intake.form.pitch.mustHaves')}</label>
                     <textarea className={inputClass} rows={3} value={piMustHaves} onChange={(e) => setPiMustHaves(e.target.value)} />
                   </div>
                   <div>
-                    <label className={labelClass}>Nice-to-have</label>
+                    <label className={labelClass}>{t('intake.form.pitch.niceToHave')}</label>
                     <textarea className={inputClass} rows={2} value={piNiceToHaves} onChange={(e) => setPiNiceToHaves(e.target.value)} />
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className={labelClass}>Budget range (optional)</label>
+                      <label className={labelClass}>{t('intake.form.pitch.budgetRange')}</label>
                       <select className={inputClass} value={piBudgetRange} onChange={(e) => setPiBudgetRange(e.target.value)}>
-                        <option value="">Prefer not to say</option>
-                        <option value="under-5k">Under $5k</option>
-                        <option value="5k-25k">$5k – $25k</option>
-                        <option value="25k-100k">$25k – $100k</option>
-                        <option value="100k+">$100k+</option>
-                        <option value="enterprise">Enterprise / TBD</option>
+                        <option value="">{t('intake.form.pitch.budgetNone')}</option>
+                        <option value="under-5k">{t('intake.form.pitch.budgetUnder5k')}</option>
+                        <option value="5k-25k">{t('intake.form.pitch.budget5k25k')}</option>
+                        <option value="25k-100k">{t('intake.form.pitch.budget25k100k')}</option>
+                        <option value="100k+">{t('intake.form.pitch.budget100k')}</option>
+                        <option value="enterprise">{t('intake.form.pitch.budgetEnterprise')}</option>
                       </select>
                     </div>
                     <div>
-                      <label className={labelClass}>Ideal timeline</label>
+                      <label className={labelClass}>{t('intake.form.pitch.timeline')}</label>
                       <input
                         className={inputClass}
                         value={piTimeline}
                         onChange={(e) => setPiTimeline(e.target.value)}
-                        placeholder="e.g. MVP in 8 weeks"
+                        placeholder={t('intake.form.pitch.timelinePlaceholder')}
                       />
                     </div>
                   </div>
                   <div>
-                    <label className={labelClass}>Links (Figma, Notion, Loom, repo…)</label>
+                    <label className={labelClass}>{t('intake.form.pitch.links')}</label>
                     <textarea className={inputClass} rows={2} value={piLinks} onChange={(e) => setPiLinks(e.target.value)} />
                   </div>
                   <div>
-                    <label className={labelClass}>Why The Lead Lab?</label>
+                    <label className={labelClass}>{t('intake.form.pitch.whyLeadLab')}</label>
                     <textarea className={inputClass} rows={2} value={piWhyLeadLab} onChange={(e) => setPiWhyLeadLab(e.target.value)} />
                   </div>
                   <button
                     type="submit"
                     className="w-full py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 transition-all"
                   >
-                    Continue to NDA
+                    {t('intake.form.continueToNda')}
                   </button>
                 </form>
               )}
@@ -450,9 +451,14 @@ export function IntakeFormPage() {
                   onSubmit={onSubmitBusinessDiagnostic}
                   className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6"
                 >
-                  <h2 className="text-xl font-bold text-gray-900">Review & submit</h2>
+                  <h2 className="text-xl font-bold text-gray-900">{t('intake.form.reviewSubmit')}</h2>
                   <p className="text-sm text-gray-600">
-                    You are about to submit as <strong>{bdFullName}</strong> ({bdEmail}).
+                    <Trans
+                      i18nKey="intake.form.diagnostic.aboutToSubmit"
+                      ns="marketing"
+                      values={{ name: bdFullName, email: bdEmail }}
+                      components={{ strong: <strong /> }}
+                    />
                   </p>
                   {ndaBlock}
                   <div className="flex flex-col sm:flex-row gap-3">
@@ -465,14 +471,14 @@ export function IntakeFormPage() {
                       }}
                       className="flex-1 py-3 rounded-xl font-medium border border-gray-300 text-gray-800 hover:bg-gray-50"
                     >
-                      Back to form
+                      {t('intake.form.backToForm')}
                     </button>
                     <button
                       type="submit"
                       disabled={bdLoading}
                       className="flex-1 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-60"
                     >
-                      {bdLoading ? 'Sending…' : 'Submit request'}
+                      {bdLoading ? t('intake.form.sending') : t('intake.form.submitRequest')}
                     </button>
                   </div>
                 </form>
@@ -483,9 +489,18 @@ export function IntakeFormPage() {
                   onSubmit={onSubmitPitchYourIdea}
                   className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6"
                 >
-                  <h2 className="text-xl font-bold text-gray-900">Review & submit</h2>
+                  <h2 className="text-xl font-bold text-gray-900">{t('intake.form.reviewSubmit')}</h2>
                   <p className="text-sm text-gray-600">
-                    You are about to submit <strong>{piProjectTitle || 'your pitch'}</strong> as {piFullName} ({piEmail}).
+                    <Trans
+                      i18nKey="intake.form.pitch.aboutToSubmit"
+                      ns="marketing"
+                      values={{
+                        title: piProjectTitle || t('intake.form.pitch.yourPitch'),
+                        name: piFullName,
+                        email: piEmail,
+                      }}
+                      components={{ strong: <strong /> }}
+                    />
                   </p>
                   {ndaBlock}
                   <div className="flex flex-col sm:flex-row gap-3">
@@ -498,14 +513,14 @@ export function IntakeFormPage() {
                       }}
                       className="flex-1 py-3 rounded-xl font-medium border border-gray-300 text-gray-800 hover:bg-gray-50"
                     >
-                      Back to form
+                      {t('intake.form.backToForm')}
                     </button>
                     <button
                       type="submit"
                       disabled={piLoading}
                       className="flex-1 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60"
                     >
-                      {piLoading ? 'Sending…' : 'Submit request'}
+                      {piLoading ? t('intake.form.sending') : t('intake.form.submitRequest')}
                     </button>
                   </div>
                 </form>

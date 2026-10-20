@@ -1,0 +1,379 @@
+{
+  "heroTitle": "Turn conversations into closed deals",
+  "heroSubtitle": "LeadLab helps sales teams capture leads, manage pipelines, and close faster — all in one place.",
+  "getStarted": "Get started",
+  "bookDemo": "Book a demo",
+  "learnMore": "Learn more",
+  "aboutTitle": "About The Lead Lab",
+  "aboutBody": "We build the sales OS that growing teams actually use — CRM, outreach, and insights without the bloat.",
+  "servicesTitle": "What we offer",
+  "pricingTitle": "Simple pricing",
+  "pricingSubtitle": "Plans that scale with your team",
+  "contactTitle": "Contact us",
+  "contactSubtitle": "Questions, partnerships, or a custom demo — we're here.",
+  "contactName": "Your name",
+  "contactEmail": "Your email",
+  "contactSubject": "Subject",
+  "contactMessage": "Message",
+  "contactSend": "Send message",
+  "contactSent": "Thanks — we'll get back to you soon",
+  "privacyTitle": "Privacy Policy",
+  "termsTitle": "Terms of Service",
+  "cookiesTitle": "Cookie Policy",
+  "footerRights": "All rights reserved",
+  "footerProduct": "Product",
+  "footerCompany": "Company",
+  "footerLegal": "Legal",
+  "diagnosticTitle": "Business diagnostic",
+  "dataRequestTitle": "Data request",
+  "pitchTitle": "Pitch your idea",
+  "ctaReady": "Ready to grow?",
+  "ctaSubtitle": "Join teams using LeadLab to close more deals.",
+
+  "home": {
+    "getStartedCta": "Get Started",
+    "logoAlt": "The Lead Lab Logo",
+    "hero": {
+      "title": "Connecting Businesses with Qualified Leads",
+      "subtitle": "The Lead Lab combines verified data, psychographic insight, and a practical CRM so your team spends time with prospects who can actually buy — not chasing dead ends.",
+      "bookMeeting": "Book a meeting",
+      "tellUs": "Tell us what you need",
+      "guide": "We will guide you to the right form: business diagnostic, data request, or pitch your idea.",
+      "openDashboard": "Open app dashboard",
+      "orgSettings": "Organization & settings"
+    },
+    "stats": {
+      "leadGeneration": "Lead Generation Increase",
+      "costReduction": "Cost Reduction",
+      "dataAccuracy": "Data Accuracy",
+      "roiImprovement": "ROI Improvement"
+    },
+    "about": {
+      "title": "About The-LeadLab.com",
+      "intro": "Welcome to The-LeadLab.com, your premier destination for transforming business growth through intelligent lead generation. We empower companies to connect with high-quality, pre-qualified leads that match your exact target audience. Whether you're a startup looking to establish market presence or an enterprise seeking to expand your customer base, our sophisticated team & platform combines advanced targeting technology with industry expertise to deliver leads that convert.",
+      "mission": {
+        "title": "Mission",
+        "body": "Our mission is to empower businesses with AI-driven lead generation tools that reduce customer acquisition costs by up to 60%. We help companies automate lead qualification, enhance contact rates through multi-channel engagement, and optimize sales processes to achieve 3x higher conversion rates while reducing sales department overhead."
+      },
+      "vision": {
+        "title": "Vision",
+        "body": "We envision transforming lead generation through our proprietary AI technology and proven methodologies. By 2025, we aim to help 1000 businesses seamlessly connect with their ideal customers through intelligent matching algorithms, behavioral analytics, and automated nurturing sequences that ensure leads are contacted at the perfect moment."
+      },
+      "values": {
+        "title": "Values",
+        "body": "At The-LeadLab.com, we're committed to delivering measurable results with complete transparency. Our values include providing 24/7 customer support, maintaining 85% data accuracy, and offering performance-based pricing models. We leverage partnerships with leading big data providers and industry experts to ensure our clients always stay ahead of the competition."
+      },
+      "problemsTitle": "The Problems We Solve",
+      "problems": {
+        "timeConsuming": {
+          "title": "Time-Consuming Lead Generation",
+          "body": "Sales teams waste countless hours manually searching for prospects, cold calling unqualified leads, and updating complex spreadsheets. This drains valuable resources that could be better spent closing deals and growing your business."
+        },
+        "qualification": {
+          "title": "Inefficient Lead Qualification",
+          "body": "Without proper qualification processes, your team pursues leads that aren't ready to buy or don't match your ideal customer profile. This results in lower conversion rates and frustrated sales representatives."
+        },
+        "targeting": {
+          "title": "Limited Targeting Options",
+          "body": "Traditional lead generation relies on broad, unfocused marketing that fails to reach decision-makers in your target market. This scattershot approach wastes your advertising budget and delivers poor-quality leads that rarely convert."
+        }
+      }
+    },
+    "why": {
+      "title": "Why Industry Leaders Choose LeadLab",
+      "subtitle": "Our platform combines cutting-edge AI technology with proven methodologies to deliver exceptional results",
+      "accuracy": {
+        "title": "Industry-Leading Accuracy",
+        "description": "95% data accuracy rate, verified through our multi-step validation process"
+      },
+      "implementation": {
+        "title": "Rapid Implementation",
+        "description": "Get started in minutes with our intuitive platform and seamless integration"
+      },
+      "roi": {
+        "title": "Proven ROI",
+        "description": "Our clients see an average 300% increase in qualified leads within 3 months"
+      }
+    },
+    "how": {
+      "title": "How LeadLab Works",
+      "subtitle": "A simple yet powerful process to transform your lead generation",
+      "define": {
+        "title": "Define Your Ideal Customer",
+        "description": "Use our AI-powered profiling tool to create your perfect lead persona"
+      },
+      "search": {
+        "title": "AI-Powered Search",
+        "description": "Our algorithms identify and qualify potential leads matching your criteria"
+      },
+      "enrich": {
+        "title": "Enrich & Analyze",
+        "description": "Add psychometric insights and verify contact information"
+      },
+      "convert": {
+        "title": "Convert & Scale",
+        "description": "Track performance and optimize your approach for better results"
+      }
+    },
+    "results": {
+      "title": "Real Results, Real Time",
+      "subtitle": "Track your success with our comprehensive analytics dashboard"
+    },
+    "calculator": {
+      "title": "ROI Calculator",
+      "monthlyLeadVolume": "Monthly Lead Volume",
+      "costPerLead": "Cost per Lead",
+      "contactRate": "Contact Rate",
+      "meetingBookedRate": "Meeting Booked Rate",
+      "meetingSatRate": "Meeting Sat Rate",
+      "conversionRate": "Conversion Rate",
+      "averageDealValue": "Average Deal Value",
+      "estimatedMonthlyRoi": "Estimated Monthly ROI",
+      "totalLeads": "Total Leads",
+      "contactedLeads": "Contacted Leads",
+      "meetingsBooked": "Meetings Booked",
+      "meetingsSat": "Meetings Sat",
+      "convertedLeads": "Converted Leads",
+      "totalRevenue": "Total Revenue",
+      "totalLeadCost": "Total Lead Cost",
+      "leadsValue": "{{value}} leads"
+    },
+    "approach": {
+      "title": "Our Unique Approach",
+      "subtitle": "Transform your lead generation with our comprehensive suite of tools and services",
+      "targeting": {
+        "title": "Advanced Targeting",
+        "description": "AI-powered platform identifies highly qualified leads using precise demographic and behavioral criteria"
+      },
+      "psychometric": {
+        "title": "Psychometric Profiling",
+        "description": "Understand prospect personalities to tailor communication and improve conversion rates"
+      },
+      "verified": {
+        "title": "Verified Contact Details",
+        "description": "GDPR-compliant network of providers ensuring accurate contact information"
+      },
+      "linkedin": {
+        "title": "LinkedIn Automation",
+        "description": "AI-powered conversation flows and personality matching for authentic outreach"
+      },
+      "web": {
+        "title": "Web Optimization",
+        "description": "Comprehensive website development focused on lead capture and conversion"
+      },
+      "social": {
+        "title": "Social Media Excellence",
+        "description": "Strategic content creation and community management across all platforms"
+      }
+    },
+    "testimonials": {
+      "title": "What Our Clients Say",
+      "subtitle": "Success stories from industry leaders",
+      "schieder": {
+        "quote": "The-LeadLab.com revolutionized our approach to lead generation. We experienced a remarkable 300% surge in qualified leads in just three months.",
+        "role": "Senior Wealth Manager, LGT Wealth Management"
+      },
+      "lipscombe": {
+        "quote": "We've achieved 200% growth in sales operations without expanding our team, thanks to their consistently reliable data (95% accuracy).",
+        "role": "Head of Business Development, Anchor Logistics Management"
+      },
+      "holt": {
+        "quote": "We finally stopped wasting time on low-fit leads. Their qualification rules and outreach timing improved our meetings-to-opportunities ratio dramatically.",
+        "role": "Director of Sales, NorthBridge Technologies"
+      }
+    },
+    "products": {
+      "title": "Our Products",
+      "subtitle": "Choose the solutions that fit your business needs",
+      "units": {
+        "each": "each",
+        "perHour": "per hour",
+        "perMonth": "per month"
+      },
+      "qualifiedLeads": {
+        "title": "Qualified Leads",
+        "description": "AI-powered lead identification matching your exact target profile"
+      },
+      "psychometrics": {
+        "title": "Psychometrics",
+        "description": "Detailed personality insights for better engagement"
+      },
+      "verifiedContacts": {
+        "title": "Verified Contacts",
+        "description": "GDPR-compliant contact details with accuracy verification"
+      },
+      "salesCoaching": {
+        "title": "Sales Coaching",
+        "description": "Live coaching to optimize your sales process"
+      },
+      "webOptimization": {
+        "title": "Web Optimization",
+        "description": "Complete website optimization for lead generation"
+      },
+      "socialMedia": {
+        "title": "Social Media",
+        "description": "Strategic social media management and optimization"
+      },
+      "monthlyRenewal": "This monthly price renews until you cancel. Cancel before the renewal date to stop the next charge."
+    },
+    "packages": {
+      "title": "Our Packages",
+      "subtitle": "Choose the perfect package for your business size and needs",
+      "perMonthSuffix": "/month",
+      "custom": "Custom",
+      "renewal": "{{price}} renews each month until you cancel. Cancel before the renewal date to stop the next charge.",
+      "terms": "Terms",
+      "contactSales": "Contact Sales",
+      "solo": {
+        "title": "Solopreneurs Package",
+        "description": "Launch your business growth with powerful, proven tools.",
+        "feature1": "100 Qualified Leads/Month",
+        "feature2": "Free CRM Access",
+        "feature3": "100 LinkedIn Profiles"
+      },
+      "sme": {
+        "title": "SME Package",
+        "description": "Scale your sales operation with precision and power.",
+        "feature1": "500 Qualified Leads/Month",
+        "feature2": "Advanced CRM Features",
+        "feature3": "1,000 LinkedIn Profiles"
+      },
+      "enterprise": {
+        "title": "Enterprise Solutions",
+        "description": "Enterprise-grade solutions for market leaders.",
+        "feature1": "Unlimited Qualified Leads",
+        "feature2": "Custom API Integration",
+        "feature3": "24/7 Priority Support"
+      }
+    },
+    "footer": {
+      "tagline": "Transforming lead generation with AI-powered intelligence",
+      "features": "Features",
+      "products": "Products",
+      "packages": "Packages",
+      "testimonials": "Testimonials",
+      "about": "About",
+      "pricing": "Pricing",
+      "services": "Services",
+      "contact": "Contact",
+      "rights": "© {{year}} The Lead Lab. All rights reserved."
+    }
+  },
+
+  "legal": {
+    "titles": {
+      "terms": "Terms & Conditions",
+      "privacy": "Privacy Policy",
+      "kvkk": "Data Protection Policy Turkiye",
+      "internationalDataProtection": "Data Protection Policy International",
+      "cookie": "Cookie Policy",
+      "dmca": "Copyright / DMCA"
+    },
+    "lastUpdated": "Last updated: {{date}}",
+    "footerQuestion": "For any questions about our policies, contact us:",
+    "address": "Elite Park Plaza Floor: 5 Umraniye / Istanbul"
+  },
+
+  "contact": {
+    "title": "Contact Us",
+    "intro": "Have questions about our platform? We're here to help. Send us a message and we'll respond as soon as possible.",
+    "emailLabel": "Email",
+    "addressLabel": "Address",
+    "address": "Istanbul, Türkiye",
+    "formTitle": "Send us a message",
+    "name": "Name",
+    "email": "Email",
+    "subject": "Subject",
+    "message": "Message",
+    "sending": "Sending...",
+    "send": "Send Message",
+    "success": "Message sent successfully!",
+    "error": "Failed to send message. Please try again.",
+    "sendFailed": "Failed to send message"
+  },
+
+  "intake": {
+    "select": {
+      "eyebrow": "Intake",
+      "title": "What would you like to do?",
+      "subtitle": "Choose one path. You'll fill a short form, review our NDA step, then submit. We'll follow up by email.",
+      "diagnosticDescription": "Share your pipeline context, pain points, and goals — we assess fit and next steps.",
+      "dataRequestDescription": "Describe the lists or segments you need — geography, volume, and compliance constraints.",
+      "pitchDescription": "Outline a build or automation idea — we respond with scope, options, and timing.",
+      "continue": "Continue",
+      "backHome": "← Back to home"
+    },
+    "form": {
+      "backToOptions": "Back to options",
+      "successTitle": "Thank you for submitting",
+      "successDataRequest": "We received your data request. Our admin team has been notified by email and will review your answers shortly.",
+      "successDefault": "We received your details. Our team will review your request and follow up by email. Depending on scope, we may send a formal NDA and scheduling options.",
+      "successWait": "Please allow a short time for us to respond.",
+      "backToHome": "Back to home",
+      "submitAnother": "Submit another request",
+      "introDataRequest": "Complete each step of the data request questionnaire. Your answers are emailed to our admin team and saved in our system.",
+      "introForm": "Fill in the details below. On the next step you will review and sign the NDA acknowledgment before we receive your submission.",
+      "introNda": "Review and complete the NDA step, then submit.",
+      "ndaRequired": "Please accept the NDA and type your signature.",
+      "submitFailed": "Failed to submit. Please try again.",
+      "fullName": "Full name *",
+      "workEmail": "Work email *",
+      "phone": "Phone",
+      "company": "Company",
+      "companyOrg": "Company / org",
+      "continueToNda": "Continue to NDA",
+      "reviewSubmit": "Review & submit",
+      "backToForm": "Back to form",
+      "submitRequest": "Submit request",
+      "sending": "Sending…",
+      "select": "Select…",
+      "nda": {
+        "title": "NDA",
+        "description": "We may send a formal NDA by email for signature as we scope next steps. Please confirm provisional agreement and type your name below to submit this intake.",
+        "agree": "I agree and authorize The Lead Lab to contact me about this request and next steps.",
+        "signature": "Signature (type your full name) *",
+        "signaturePlaceholder": "e.g. Jane Doe"
+      },
+      "diagnostic": {
+        "sectionTitle": "Your business context",
+        "industry": "Industry / sector",
+        "industryPlaceholder": "e.g. B2B SaaS, professional services",
+        "teamSize": "Team size",
+        "teamSolo": "Just me (solopreneur)",
+        "teamRange1": "2–5",
+        "teamRange2": "6–20",
+        "teamRange3": "21+",
+        "leadVolume": "Monthly lead volume (approx.)",
+        "leadVolumePlaceholder": "e.g. 50 qualified conversations / month",
+        "biggestPain": "Biggest pain point today",
+        "biggestPainPlaceholder": "Time on manual research, poor qualification, CRM hygiene, etc.",
+        "tools": "Tools you use today",
+        "toolsPlaceholder": "CRM, LinkedIn, spreadsheets, other…",
+        "goals": "Goals for the next 12 months",
+        "aboutToSubmit": "You are about to submit as <strong>{{name}}</strong> ({{email}})."
+      },
+      "pitch": {
+        "workingTitle": "Working title *",
+        "workingTitlePlaceholder": "e.g. Partner referral tracker for our sales team",
+        "elevatorPitch": "Elevator pitch (2–4 sentences) *",
+        "problemSolved": "What problem does this solve? *",
+        "primaryUser": "Who is the primary user?",
+        "mustHaves": "Must-have features / outcomes",
+        "niceToHave": "Nice-to-have",
+        "budgetRange": "Budget range (optional)",
+        "budgetNone": "Prefer not to say",
+        "budgetUnder5k": "Under $5k",
+        "budget5k25k": "$5k – $25k",
+        "budget25k100k": "$25k – $100k",
+        "budget100k": "$100k+",
+        "budgetEnterprise": "Enterprise / TBD",
+        "timeline": "Ideal timeline",
+        "timelinePlaceholder": "e.g. MVP in 8 weeks",
+        "links": "Links (Figma, Notion, Loom, repo…)",
+        "whyLeadLab": "Why The Lead Lab?",
+        "yourPitch": "your pitch",
+        "aboutToSubmit": "You are about to submit <strong>{{title}}</strong> as {{name}} ({{email}})."
+      }
+    }
+  }
+}

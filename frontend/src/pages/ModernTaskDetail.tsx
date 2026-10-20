@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -22,6 +23,7 @@ function unwrapTask(payload: unknown): Task | null {
  * Renders as a page with an always-open detail panel (not a blank dialog shell).
  */
 export function ModernTaskDetail() {
+  const { t } = useTranslation('modules');
   const { id } = useParams();
   const navigate = useNavigate();
   const taskId = id ? parseInt(id, 10) : NaN;
@@ -54,13 +56,13 @@ export function ModernTaskDetail() {
   if (isError || !task) {
     return (
       <div className="p-8">
-        <p className="mb-4 text-red-600">Task not found or you don&apos;t have access.</p>
+        <p className="mb-4 text-red-600">{t('taskDetail.notFound')}</p>
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={() => void refetch()}>
-            Retry
+            {t('taskDetail.retry')}
           </Button>
           <Button type="button" onClick={() => navigate('/tasks')}>
-            Back to Tasks
+            {t('taskDetail.back')}
           </Button>
         </div>
       </div>
@@ -71,7 +73,7 @@ export function ModernTaskDetail() {
     <div className="mx-auto max-w-3xl p-4 sm:p-6">
       <Button type="button" variant="ghost" className="mb-4" onClick={() => navigate('/tasks')}>
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Tasks
+        {t('taskDetail.back')}
       </Button>
       {/* asPage: render detail content inline so /tasks/:id is never a blank shell */}
       <TaskDetailModal

@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { format, parseISO, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, addWeeks, subWeeks, isSameMonth, isToday, isSameDay, startOfDay, endOfDay } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
-import { tr } from 'date-fns/locale';
+import { fr as frLocale, enUS } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -90,7 +91,6 @@ function mergeMeetingLink(description: string, meetingLink?: string): string {
 const eventTypes = [
   { 
     value: 'meeting', 
-    label: 'Meeting', 
     icon: Users,
     color: '#6366f1', 
     bgColor: 'bg-indigo-50', 
@@ -99,7 +99,6 @@ const eventTypes = [
   },
   { 
     value: 'call', 
-    label: 'Call', 
     icon: Video,
     color: '#10b981', 
     bgColor: 'bg-emerald-50', 
@@ -108,7 +107,6 @@ const eventTypes = [
   },
   { 
     value: 'task', 
-    label: 'Task', 
     icon: Briefcase,
     color: '#f59e0b', 
     bgColor: 'bg-amber-50', 
@@ -117,7 +115,6 @@ const eventTypes = [
   },
   { 
     value: 'reminder', 
-    label: 'Reminder', 
     icon: Bell,
     color: '#ef4444', 
     bgColor: 'bg-red-50', 
@@ -126,7 +123,6 @@ const eventTypes = [
   },
   { 
     value: 'break', 
-    label: 'Break', 
     icon: Coffee,
     color: '#8b5cf6', 
     bgColor: 'bg-purple-50', 
@@ -177,10 +173,10 @@ const MONTH_DAY_EVENT_PREVIEW = 4;
 /** Default agenda list page size (load more increases this). */
 const AGENDA_PAGE_SIZE = 50;
 const AGENDA_RANGE_OPTIONS = [
-  { value: '7', label: 'Next 7 days' },
-  { value: '14', label: 'Next 14 days' },
-  { value: '30', label: 'Next 30 days' },
-  { value: '90', label: 'Next 90 days' },
+  { value: '7' },
+  { value: '14' },
+  { value: '30' },
+  { value: '90' },
 ] as const;
 
 const getSystemTimezone = () => {
@@ -193,6 +189,8 @@ const getSystemTimezone = () => {
 };
 
 export const CalendarPage = () => {
+  const { t, i18n } = useTranslation('calendar');
+  const dfLocale = i18n.language?.startsWith('fr') ? frLocale : enUS;
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
@@ -201,8 +199,8 @@ export const CalendarPage = () => {
     if (TIMEZONE_OPTIONS.some((tz) => tz.value === detectedTimezone)) {
       return TIMEZONE_OPTIONS;
     }
-    return [{ value: detectedTimezone, label: `${detectedTimezone} (Detected)` }, ...TIMEZONE_OPTIONS];
-  }, [detectedTimezone]);
+    return [{ value: detectedTimezone, label: `${detectedTimezone} (${t('page.detected')})` }, ...TIMEZONE_OPTIONS];
+  }, [detectedTimezone, t]);
   
   // States
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -301,10 +299,10 @@ export const CalendarPage = () => {
     onSuccess: () => {
       refetchEmailAccounts();
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.success('Calendar sync completed. Email calendar events have been updated.');
+      toast.success(t('page.syncDone'));
     },
     onError: () => {
-      toast.error('Calendar sync failed. Could not sync email calendar events.');
+      toast.error(t('page.syncFailed'));
     },
   });
 
@@ -355,13 +353,13 @@ export const CalendarPage = () => {
     try {
       await eventsAPI.create(formattedEvent);
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.success('Event created successfully!');
+      toast.success(t('page.createdOk'));
       return true;
     } catch (error: any) {
       console.error('Error creating event:', error);
       const errorMessage = typeof error?.response?.data?.detail === 'string'
         ? error.response.data.detail
-        : error?.message || 'Failed to create event';
+        : error?.message || t('page.createFailed');
       toast.error(errorMessage);
       return false;
     }
@@ -369,7 +367,7 @@ export const CalendarPage = () => {
 
   const handleCreateNewEvent = async () => {
     if (!newEvent.title) {
-      toast.error('Please enter an event title');
+      toast.error(t('page.titleRequired'));
       return;
     }
 
@@ -419,10 +417,10 @@ export const CalendarPage = () => {
       });
       
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.success('Event updated successfully!');
+      toast.success(t('page.updatedOk'));
     } catch (error) {
       console.error('Error updating event:', error);
-      toast.error('Failed to update event');
+      toast.error(t('page.updateFailed'));
     }
   };
 
@@ -430,10 +428,10 @@ export const CalendarPage = () => {
     try {
       await eventsAPI.remove(eventId);
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.success('Event deleted successfully!');
+      toast.success(t('page.deletedOk'));
     } catch (error) {
       console.error('Error deleting event:', error);
-      toast.error('Failed to delete event');
+      toast.error(t('page.deleteFailed'));
     }
   };
 
@@ -482,11 +480,11 @@ export const CalendarPage = () => {
       case 'week':
         const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
         const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
-        return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
+        return `${format(weekStart, 'MMM d', { locale: dfLocale })} - ${format(weekEnd, 'MMM d, yyyy', { locale: dfLocale })}`;
       case 'agenda':
-        return `Agenda — ${format(currentDate, 'MMM d')} – ${format(addDays(currentDate, agendaRangeDays - 1), 'MMM d, yyyy')}`;
+        return `${t('agenda')} — ${format(currentDate, 'MMM d', { locale: dfLocale })} – ${format(addDays(currentDate, agendaRangeDays - 1), 'MMM d, yyyy', { locale: dfLocale })}`;
       default:
-        return format(currentDate, 'MMMM yyyy');
+        return format(currentDate, 'MMMM yyyy', { locale: dfLocale });
     }
   };
 
@@ -500,7 +498,7 @@ export const CalendarPage = () => {
               size="sm"
               onClick={handlePrevious}
               className="min-h-[44px] min-w-[44px] p-2 hover:bg-gray-100 rounded-lg"
-              aria-label="Previous"
+              aria-label={t('page.previous')}
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -512,19 +510,19 @@ export const CalendarPage = () => {
               size="sm"
               onClick={handleNext}
               className="min-h-[44px] min-w-[44px] p-2 hover:bg-gray-100 rounded-lg"
-              aria-label="Next"
+              aria-label={t('page.next')}
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
             <Button variant="outline" size="sm" onClick={goToToday} className="hidden sm:inline-flex rounded-lg">
-              Today
+              {t('today')}
             </Button>
             <Input
               type="date"
               value={format(currentDate, 'yyyy-MM-dd')}
               onChange={(e) => jumpToDate(e.target.value)}
               className="hidden sm:block w-[150px] h-9 border-gray-200"
-              aria-label="Jump to date"
+              aria-label={t('page.jumpToDate')}
             />
           </div>
 
@@ -540,7 +538,7 @@ export const CalendarPage = () => {
               }`}
             >
               <Grid3X3 className="h-4 w-4" />
-              <span>Month</span>
+              <span>{t('month')}</span>
             </Button>
             <Button
               variant={viewMode === 'week' ? 'default' : 'ghost'}
@@ -553,7 +551,7 @@ export const CalendarPage = () => {
               }`}
             >
               <List className="h-4 w-4" />
-              <span>Week</span>
+              <span>{t('week')}</span>
             </Button>
             <Button
               variant={viewMode === 'agenda' ? 'default' : 'ghost'}
@@ -566,10 +564,10 @@ export const CalendarPage = () => {
               }`}
             >
               <Eye className="h-4 w-4" />
-              <span>Agenda</span>
+              <span>{t('agenda')}</span>
             </Button>
           </div>
-          <p className="text-sm text-gray-500 sm:hidden">Agenda view</p>
+          <p className="text-sm text-gray-500 sm:hidden">{t('page.agendaView')}</p>
 
           {viewMode === 'agenda' && (
             <Select
@@ -577,12 +575,12 @@ export const CalendarPage = () => {
               onValueChange={(value) => setAgendaRangeDays(Number(value) as 7 | 14 | 30 | 90)}
             >
               <SelectTrigger className="w-40 bg-white border-gray-200 h-9">
-                <SelectValue placeholder="Range" />
+                <SelectValue placeholder={t('page.range')} />
               </SelectTrigger>
               <SelectContent>
                 {AGENDA_RANGE_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {t('page.nextDays', { days: opt.value })}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -595,7 +593,7 @@ export const CalendarPage = () => {
             <SelectTrigger className="w-48 bg-white border-gray-200">
               <div className="flex items-center space-x-2">
                 <Globe className="h-4 w-4 text-gray-500" />
-                <SelectValue placeholder="Select timezone" />
+                <SelectValue placeholder={t('page.selectTimezone')} />
               </div>
             </SelectTrigger>
             <SelectContent>
@@ -612,7 +610,7 @@ export const CalendarPage = () => {
             className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm px-6 py-3 rounded-lg font-medium"
           >
             <Plus className="h-4 w-4" />
-            <span>New Event</span>
+            <span>{t('newEvent')}</span>
           </Button>
         </div>
       </div>
@@ -622,10 +620,10 @@ export const CalendarPage = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Mail className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium">Email Calendar Sync</span>
+            <span className="text-sm font-medium">{t('page.emailSync')}</span>
             {emailCalendarAccounts.length > 0 && (
               <span className="text-xs text-gray-500">
-                ({emailCalendarAccounts.length} account{emailCalendarAccounts.length !== 1 ? 's' : ''} connected)
+                ({t('page.accountsConnected', { count: emailCalendarAccounts.length })})
               </span>
             )}
           </div>
@@ -644,12 +642,12 @@ export const CalendarPage = () => {
                   {syncCalendarMutation.isPending ? (
                     <>
                       <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                      Syncing...
+                      {t('page.syncing')}
                     </>
                   ) : (
                     <>
                       <RefreshCw className="h-3 w-3 mr-1" />
-                      Sync All
+                      {t('page.syncAll')}
                     </>
                   )}
                 </Button>
@@ -659,7 +657,7 @@ export const CalendarPage = () => {
                 variant="outline"
                 size="sm"
               >
-                Add Calendar
+                {t('page.addCalendar')}
               </Button>
             </div>
         </div>
@@ -674,7 +672,7 @@ export const CalendarPage = () => {
                 {(account.provider_type || 'custom').toUpperCase()} - {account.email}
                 {account.last_calendar_sync_at && (
                   <span className="ml-1 text-blue-600">
-                    (synced {new Date(account.last_calendar_sync_at).toLocaleDateString()})
+                    ({t('page.synced', { date: new Date(account.last_calendar_sync_at).toLocaleDateString(i18n.language) })})
                   </span>
                 )}
                 <button
@@ -683,7 +681,7 @@ export const CalendarPage = () => {
                     syncCalendarMutation.mutate({ accountId: account.id });
                   }}
                   className="ml-1 text-blue-600 hover:text-blue-800 transition-colors"
-                  title="Sync this account"
+                  title={t('page.syncAccount')}
                 >
                   <RefreshCw className="h-3 w-3" />
                 </button>
@@ -701,7 +699,7 @@ export const CalendarPage = () => {
       <div className="grid grid-cols-7 gap-1 mb-4">
         {dayNames.map((day) => (
           <div key={day} className="text-center py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">
-            {day}
+            {t(`page.dayShort.${day}`)}
           </div>
         ))}
       </div>
@@ -776,7 +774,7 @@ export const CalendarPage = () => {
                       setExpandedMonthDay(day);
                     }}
                   >
-                    +{dayEvents.length - MONTH_DAY_EVENT_PREVIEW} more
+                    {t('page.moreEvents', { count: dayEvents.length - MONTH_DAY_EVENT_PREVIEW })}
                   </button>
                 )}
               </div>
@@ -795,7 +793,7 @@ export const CalendarPage = () => {
         {weekDays.map((day) => (
           <div key={day.toISOString()} className="text-center py-4 border-b border-gray-200">
             <div className="text-sm font-semibold text-gray-600 uppercase tracking-wider">
-              {format(day, 'EEE')}
+              {format(day, 'EEE', { locale: dfLocale })}
             </div>
             <div className={`
               text-lg font-bold mt-1 w-10 h-10 rounded-full flex items-center justify-center mx-auto
@@ -883,14 +881,14 @@ export const CalendarPage = () => {
           {agendaEvents.length === 0 ? (
             <div className="text-center py-20">
               <CalendarIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No upcoming events</h3>
-              <p className="text-gray-500 mb-6">Create your first event to get started</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('page.noUpcoming')}</h3>
+              <p className="text-gray-500 mb-6">{t('page.createFirst')}</p>
               <Button 
                 onClick={() => setNewEventDialogOpen(true)}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Create Event
+                {t('page.createEvent')}
               </Button>
             </div>
           ) : (
@@ -900,7 +898,8 @@ export const CalendarPage = () => {
                 const eventDate = formatInTimeZone(
                   event.start,
                   selectedTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-                  'EEEE, MMMM d, yyyy'
+                  'EEEE, MMMM d, yyyy',
+                  { locale: dfLocale }
                 );
                 const isToday = isSameDay(event.start, new Date());
                 const isPast = event.start < new Date();
@@ -930,7 +929,7 @@ export const CalendarPage = () => {
                             text-sm px-3 py-1 rounded-full font-medium
                             ${isToday ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}
                           `}>
-                            {isToday ? 'Today' : eventDate}
+                            {isToday ? t('today') : eventDate}
                           </div>
                         </div>
                         
@@ -939,7 +938,7 @@ export const CalendarPage = () => {
                             <Clock className="h-4 w-4" />
                             <span>
                               {event.is_all_day 
-                                ? 'All day' 
+                                ? t('allDay') 
                                 : `${format(event.start, 'HH:mm')} - ${format(event.end, 'HH:mm')}`
                               }
                             </span>
@@ -973,7 +972,7 @@ export const CalendarPage = () => {
                 variant="outline"
                 onClick={() => setAgendaVisibleCount((count) => count + AGENDA_PAGE_SIZE)}
               >
-                Load more ({sortedAgendaEvents.length - agendaVisibleCount} remaining)
+                {t('page.loadMore', { count: sortedAgendaEvents.length - agendaVisibleCount })}
               </Button>
             </div>
           )}
@@ -988,7 +987,7 @@ export const CalendarPage = () => {
         <div className="flex items-center justify-center py-20">
           <div className="flex items-center space-x-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            <span className="text-gray-500">Loading calendar...</span>
+            <span className="text-gray-500">{t('page.loading')}</span>
           </div>
         </div>
       );
@@ -1018,7 +1017,7 @@ export const CalendarPage = () => {
         <Dialog open={!!expandedMonthDay} onOpenChange={(open) => !open && setExpandedMonthDay(null)}>
           <DialogContent className="sm:max-w-md">
             <DialogTitle>
-              {expandedMonthDay ? format(expandedMonthDay, 'EEEE, MMMM d, yyyy') : 'Day events'}
+              {expandedMonthDay ? format(expandedMonthDay, 'EEEE, MMMM d, yyyy', { locale: dfLocale }) : t('page.dayEvents')}
             </DialogTitle>
             <div className="space-y-2 max-h-[60vh] overflow-y-auto mt-2">
               {expandedMonthDay &&
@@ -1044,7 +1043,7 @@ export const CalendarPage = () => {
                   );
                 })}
               {expandedMonthDay && getEventsForDay(expandedMonthDay).length === 0 && (
-                <p className="text-sm text-gray-500">No events on this day.</p>
+                <p className="text-sm text-gray-500">{t('page.noEventsDay')}</p>
               )}
             </div>
           </DialogContent>
@@ -1099,7 +1098,7 @@ export const CalendarPage = () => {
                 <div className="p-2 bg-indigo-100 rounded-lg">
                   <CalendarIcon className="h-5 w-5 text-indigo-600" />
                 </div>
-                Create New Event
+                {t('page.createNewEvent')}
               </DialogTitle>
               <Button
                 variant="ghost"
@@ -1115,33 +1114,33 @@ export const CalendarPage = () => {
               <div className="space-y-6">
                 <div>
                   <Label htmlFor="title" className="text-sm font-semibold text-gray-700 block mb-2">
-                    Event Title
+                    {t('page.eventTitle')}
                   </Label>
                   <Input
                     id="title"
                     value={newEvent.title}
                     onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
                     className="border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 h-11"
-                    placeholder="Enter event title"
+                    placeholder={t('page.eventTitlePlaceholder')}
                   />
                 </div>
 
                 <div>
                   <Label htmlFor="description" className="text-sm font-semibold text-gray-700 block mb-2">
-                    Description
+                    {t('page.description')}
                   </Label>
                   <Textarea
                     id="description"
                     value={newEvent.description}
                     onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                     className="border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 min-h-[100px] resize-none"
-                    placeholder="Add event description..."
+                    placeholder={t('page.descriptionPlaceholder')}
                   />
                 </div>
 
                 <div>
                   <Label htmlFor="location" className="text-sm font-semibold text-gray-700 block mb-2">
-                    Location
+                    {t('location')}
                   </Label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -1150,7 +1149,7 @@ export const CalendarPage = () => {
                       value={newEvent.location}
                       onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
                       className="pl-11 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 h-11"
-                      placeholder="Add location"
+                      placeholder={t('page.locationPlaceholder')}
                     />
                   </div>
                 </div>
@@ -1158,7 +1157,7 @@ export const CalendarPage = () => {
                 {(newEvent.event_type === 'meeting' || newEvent.event_type === 'call' || newEvent.event_type === 'video_call') && (
                   <div>
                     <Label htmlFor="meeting_link" className="text-sm font-semibold text-gray-700 block mb-2">
-                      Meeting Link
+                      {t('page.meetingLink')}
                     </Label>
                     <Input
                       id="meeting_link"
@@ -1172,7 +1171,7 @@ export const CalendarPage = () => {
                 )}
 
                 <div className="space-y-3">
-                  <Label className="text-sm font-semibold text-gray-700">Event Type</Label>
+                  <Label className="text-sm font-semibold text-gray-700">{t('page.eventType')}</Label>
                   <div className="grid grid-cols-5 gap-3">
                     {eventTypes.map(type => (
                       <div 
@@ -1188,7 +1187,7 @@ export const CalendarPage = () => {
                       >
                         <type.icon className={`h-6 w-6 ${newEvent.event_type === type.value ? type.textColor : 'text-gray-500'}`} />
                         <span className={`text-xs font-medium text-center ${newEvent.event_type === type.value ? type.textColor : 'text-gray-700'}`}>
-                          {type.label}
+                          {t(`page.types.${type.value}`)}
                         </span>
                       </div>
                     ))}
@@ -1197,31 +1196,31 @@ export const CalendarPage = () => {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <Label className="text-sm font-semibold text-gray-700 mb-2 block">Event type</Label>
+                    <Label className="text-sm font-semibold text-gray-700 mb-2 block">{t('page.eventTypeLower')}</Label>
                     <Select
                       value={newEvent.event_type}
                       onValueChange={(v) => setNewEvent({ ...newEvent, event_type: v })}
                     >
                       <SelectTrigger className="h-11 border-gray-200">
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder={t('page.selectType')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {eventTypes.map((t) => (
-                          <SelectItem key={t.value} value={t.value}>
-                            {t.label}
+                        {eventTypes.map((et) => (
+                          <SelectItem key={et.value} value={et.value}>
+                            {t(`page.types.${et.value}`)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-semibold text-gray-700 mb-2 block">Timezone</Label>
+                    <Label className="text-sm font-semibold text-gray-700 mb-2 block">{t('page.timezone')}</Label>
                     <Select
                       value={newEvent.timezone}
                       onValueChange={(v) => setNewEvent({ ...newEvent, timezone: v })}
                     >
                       <SelectTrigger className="h-11 border-gray-200">
-                        <SelectValue placeholder="Timezone" />
+                        <SelectValue placeholder={t('page.timezone')} />
                       </SelectTrigger>
                       <SelectContent>
                         {timezoneOptions.map((tz) => (
@@ -1237,7 +1236,7 @@ export const CalendarPage = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="start_time" className="text-sm font-semibold text-gray-700 block mb-2">
-                      Start Time
+                      {t('page.startTime')}
                     </Label>
                     <div className="relative">
                       <Clock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -1253,7 +1252,7 @@ export const CalendarPage = () => {
 
                   <div>
                     <Label htmlFor="end_time" className="text-sm font-semibold text-gray-700 block mb-2">
-                      End Time
+                      {t('page.endTime')}
                     </Label>
                     <div className="relative">
                       <Clock3 className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -1270,7 +1269,7 @@ export const CalendarPage = () => {
 
                 <div>
                   <Label htmlFor="duration-preset" className="text-sm font-semibold text-gray-700 block mb-2">
-                    Quick duration (from start)
+                    {t('page.quickDuration')}
                   </Label>
                   <select
                     id="duration-preset"
@@ -1290,18 +1289,18 @@ export const CalendarPage = () => {
                       });
                     }}
                   >
-                    <option value="">Choose duration…</option>
-                    <option value="15">15 minutes</option>
-                    <option value="30">30 minutes</option>
-                    <option value="45">45 minutes</option>
-                    <option value="60">1 hour</option>
-                    <option value="90">1.5 hours</option>
-                    <option value="120">2 hours</option>
+                    <option value="">{t('page.chooseDuration')}</option>
+                    <option value="15">{t('page.minutes', { count: 15 })}</option>
+                    <option value="30">{t('page.minutes', { count: 30 })}</option>
+                    <option value="45">{t('page.minutes', { count: 45 })}</option>
+                    <option value="60">{t('page.oneHour')}</option>
+                    <option value="90">{t('page.oneHalfHours')}</option>
+                    <option value="120">{t('page.twoHours')}</option>
                   </select>
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-sm font-semibold text-gray-700">Duration mode</Label>
+                  <Label className="text-sm font-semibold text-gray-700">{t('page.durationMode')}</Label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
@@ -1315,7 +1314,7 @@ export const CalendarPage = () => {
                       onClick={() => setNewEvent({ ...newEvent, is_all_day: false })}
                     >
                       <Clock className="h-5 w-5 mr-2" />
-                      Time Specific
+                      {t('page.timeSpecific')}
                     </button>
                     <button
                       type="button"
@@ -1329,7 +1328,7 @@ export const CalendarPage = () => {
                       onClick={() => setNewEvent({ ...newEvent, is_all_day: true })}
                     >
                       <CalendarDays className="h-5 w-5 mr-2" />
-                      All Day
+                      {t('page.allDayBtn')}
                     </button>
                   </div>
                 </div>
@@ -1342,14 +1341,14 @@ export const CalendarPage = () => {
                 onClick={() => setNewEventDialogOpen(false)}
                 className="border-gray-300 hover:bg-gray-100 px-6"
               >
-                Cancel
+                {t('page.cancel')}
               </Button>
               <Button 
                 onClick={handleCreateNewEvent}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 shadow-sm"
                 disabled={!newEvent.title}
               >
-                Create Event
+                {t('page.createEvent')}
               </Button>
             </div>
           </DialogContent>

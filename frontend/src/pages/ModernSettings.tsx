@@ -27,6 +27,10 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { applyLanguageFromSettings } from '@/i18n/setAppLanguage';
+import { getUserSettings } from '@/services/settings';
 import { updateProfile, uploadAvatar, changePassword } from '@/services/users';
 import { useAuthStore } from '@/store/auth';
 import api from '@/lib/axios';
@@ -37,16 +41,16 @@ import { UserAvatar, useCurrentUserAvatar } from '@/components/UserAvatar';
 type Tab = 'profile' | 'notifications' | 'company' | 'security' | 'billing' | 'team' | 'integrations';
 
 const tabs = [
-  { id: 'profile' as Tab, name: 'Profile', icon: User },
-  { id: 'notifications' as Tab, name: 'Notifications', icon: Bell },
-  { id: 'company' as Tab, name: 'Company', icon: Building2 },
-  { id: 'security' as Tab, name: 'Security', icon: Lock },
-  { id: 'billing' as Tab, name: 'Billing', icon: CreditCard },
-  { id: 'team' as Tab, name: 'Team', icon: Users },
-  { id: 'integrations' as Tab, name: 'Integrations', icon: Zap },
+  { id: 'profile' as Tab, labelKey: 'profile', icon: User },
+  { id: 'notifications' as Tab, labelKey: 'notifications', icon: Bell },
+  { id: 'company' as Tab, labelKey: 'company', icon: Building2 },
+  { id: 'security' as Tab, labelKey: 'security', icon: Lock },
+  { id: 'billing' as Tab, labelKey: 'billing', icon: CreditCard },
+  { id: 'team' as Tab, labelKey: 'team', icon: Users },
+  { id: 'integrations' as Tab, labelKey: 'integrations', icon: Zap },
 ];
 
-const TAB_IDS = new Set(tabs.map((t) => t.id));
+const TAB_IDS = new Set(tabs.map((tabItem) => tabItem.id));
 
 function tabFromPath(pathname: string, param?: string): Tab {
   const fromParam = param && TAB_IDS.has(param as Tab) ? (param as Tab) : null;
@@ -56,6 +60,7 @@ function tabFromPath(pathname: string, param?: string): Tab {
 }
 
 export function ModernSettings() {
+  const { t } = useTranslation('settings');
   const { tab } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -64,9 +69,9 @@ export function ModernSettings() {
   const adminOnlyTabs = new Set<Tab>(['company', 'billing', 'team']);
   const visibleTabs = user?.is_admin
     ? tabs
-    : tabs.filter((t) => !adminOnlyTabs.has(t.id));
+    : tabs.filter((tabItem) => !adminOnlyTabs.has(tabItem.id));
 
-  const allowedIds = new Set(visibleTabs.map((t) => t.id));
+  const allowedIds = new Set(visibleTabs.map((tabItem) => tabItem.id));
   const requestedTab = tabFromPath(location.pathname, tab);
   const activeTab = allowedIds.has(requestedTab) ? requestedTab : 'profile';
 
@@ -79,10 +84,10 @@ export function ModernSettings() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">
-          Settings
+          {t('title')}
         </h1>
         <p className="text-neutral-600 dark:text-neutral-400">
-          Manage your account settings and preferences
+          {t('subtitle')}
         </p>
       </div>
 
@@ -107,7 +112,7 @@ export function ModernSettings() {
                     }`}
                   >
                     <Icon className="w-5 h-5" />
-                    <span className="font-medium truncate">{tab.name}</span>
+                    <span className="font-medium truncate">{t(tab.labelKey)}</span>
                   </button>
                 );
               })}
@@ -133,6 +138,8 @@ export function ModernSettings() {
 }
 
 function ProfileSettings() {
+  const { t } = useTranslation('settings');
+  const { t: tm } = useTranslation('modules');
   const { user, fetchUser } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarVersion, setAvatarVersion] = useState(0);
@@ -150,10 +157,28 @@ function ProfileSettings() {
   useEffect(() => {
     if (!user) {
       fetchUser().catch(() => {
-        toast.error('Failed to load user profile');
+        toast.error(tm('settingsPage.profile.loadFailed'));
       });
     }
   }, [user, fetchUser]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getUserSettings()
+      .then((settings: { language?: string } | undefined) => {
+        if (cancelled) return;
+        const lang = settings?.language;
+        if (lang === 'en' || lang === 'fr') {
+          void applyLanguageFromSettings(lang);
+        }
+      })
+      .catch(() => {
+        // Non-fatal: keep current UI language
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -171,11 +196,11 @@ function ProfileSettings() {
     e.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      toast.error('Please choose an image file');
+      toast.error(tm('settingsPage.profile.chooseImage'));
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      toast.error('Image must be 2MB or smaller');
+      toast.error(tm('settingsPage.profile.imageTooLarge'));
       return;
     }
     setIsUploadingAvatar(true);
@@ -192,14 +217,14 @@ function ProfileSettings() {
       }
       setAvatarVersion((v) => v + 1);
       useAuthStore.getState().bumpAvatarRevision();
-      toast.success('Photo updated');
+      toast.success(tm('settingsPage.profile.photoUpdated'));
     } catch (err: unknown) {
       const detail =
         err &&
         typeof err === 'object' &&
         'response' in err &&
         (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
-      toast.error(typeof detail === 'string' ? detail : 'Failed to upload photo');
+      toast.error(typeof detail === 'string' ? detail : tm('settingsPage.profile.photoFailed'));
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -228,7 +253,7 @@ function ProfileSettings() {
 
   const handleSave = async () => {
     if (!user) {
-      toast.error('User profile not loaded yet');
+      toast.error(tm('settingsPage.profile.notLoaded'));
       return;
     }
 
@@ -240,9 +265,9 @@ function ProfileSettings() {
         email: formState.email
       });
       await fetchUser();
-      toast.success('Profile updated successfully');
+      toast.success(tm('settingsPage.profile.saved'));
     } catch (error: any) {
-      const message = error?.response?.data?.detail || error?.response?.data?.message || 'Failed to update profile';
+      const message = error?.response?.data?.detail || error?.response?.data?.message || tm('settingsPage.profile.saveFailed');
       toast.error(message);
     } finally {
       setIsSaving(false);
@@ -252,14 +277,14 @@ function ProfileSettings() {
   return (
     <div className="p-4 sm:p-8 min-w-0">
       <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
-        Profile Settings
+        {tm('settingsPage.profile.title')}
       </h2>
 
       <div className="space-y-6">
         {/* Avatar */}
         <div>
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            Profile Photo
+            {tm('settingsPage.profile.photo')}
           </label>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
             <UserAvatar
@@ -283,10 +308,10 @@ function ProfileSettings() {
                 className="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"
               >
                 {isUploadingAvatar && <Loader2 className="animate-spin w-4 h-4" />}
-                Upload new photo
+                {tm('settingsPage.profile.uploadPhoto')}
               </button>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
-                JPG, PNG, GIF or WebP. Max 2MB
+                {tm('settingsPage.profile.photoHint')}
               </p>
             </div>
           </div>
@@ -296,7 +321,7 @@ function ProfileSettings() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              First Name
+              {tm('settingsPage.profile.firstName')}
             </label>
             <input
               type="text"
@@ -307,7 +332,7 @@ function ProfileSettings() {
           </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              Last Name
+              {tm('settingsPage.profile.lastName')}
             </label>
             <input
               type="text"
@@ -321,7 +346,7 @@ function ProfileSettings() {
         {/* Email */}
         <div>
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            Email Address
+            {tm('settingsPage.profile.email')}
           </label>
           <input
             type="email"
@@ -334,7 +359,7 @@ function ProfileSettings() {
         {/* Phone */}
         <div>
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            Phone Number
+            {tm('settingsPage.profile.phone')}
           </label>
           <input
             type="tel"
@@ -348,15 +373,26 @@ function ProfileSettings() {
         {/* Bio */}
         <div>
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            Bio
+            {tm('settingsPage.profile.bio')}
           </label>
           <textarea
             rows={4}
-            placeholder="Tell us about yourself..."
+            placeholder={tm('settingsPage.profile.bioPlaceholder')}
             value={formState.bio}
             onChange={(event) => handleChange('bio', event.target.value)}
             className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
+        </div>
+
+        {/* Language */}
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+            {t('language')}
+          </label>
+          <LanguageSwitcher size="md" />
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
+            {t('languageHint')}
+          </p>
         </div>
 
         {/* Actions */}
@@ -366,7 +402,7 @@ function ProfileSettings() {
             onClick={handleCancel}
             className="px-4 py-2 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg font-medium transition-colors"
           >
-            Cancel
+            {t('common:cancel')}
           </button>
           <button
             type="button"
@@ -375,7 +411,7 @@ function ProfileSettings() {
             className="flex items-center space-x-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
-            <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+            <span>{isSaving ? tm('settingsPage.profile.saving') : tm('settingsPage.profile.saveChanges')}</span>
           </button>
         </div>
       </div>
@@ -384,6 +420,7 @@ function ProfileSettings() {
 }
 
 function OrganizationSettings() {
+  const { t } = useTranslation('modules');
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
@@ -426,7 +463,7 @@ function OrganizationSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings-organization', orgId] });
-      toast.success('Organization updated');
+      toast.success(t('settingsPage.company.updated'));
     },
     onError: (err: unknown) => {
       const d =
@@ -434,14 +471,14 @@ function OrganizationSettings() {
         typeof err === 'object' &&
         'response' in err &&
         (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-      toast.error(typeof d === 'string' ? d : 'Could not save organization');
+      toast.error(typeof d === 'string' ? d : t('settingsPage.company.saveFailed'));
     },
   });
 
   if (!orgId) {
     return (
       <div className="p-8">
-        <p className="text-neutral-600 dark:text-neutral-400">Sign in to manage your organization.</p>
+        <p className="text-neutral-600 dark:text-neutral-400">{t('settingsPage.company.signInRequired')}</p>
       </div>
     );
   }
@@ -450,7 +487,7 @@ function OrganizationSettings() {
     return (
       <div className="p-8 flex items-center gap-2 text-neutral-600">
         <Loader2 className="h-5 w-5 animate-spin" />
-        Loading organization…
+        {t('settingsPage.company.loading')}
       </div>
     );
   }
@@ -458,7 +495,7 @@ function OrganizationSettings() {
   if (isError) {
     return (
       <div className="p-8 text-neutral-600 dark:text-neutral-300">
-        Could not load organization settings. Refresh the page and try again.
+        {t('settingsPage.company.loadFailed')}
       </div>
     );
   }
@@ -466,12 +503,12 @@ function OrganizationSettings() {
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
-        Organization Settings
+        {t('settingsPage.company.title')}
       </h2>
 
       {!canEditOrg && (
         <p className="text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-lg p-3 mb-4">
-          Only organization administrators can change these fields. You can still view them.
+          {t('settingsPage.company.adminOnly')}
         </p>
       )}
 
@@ -481,9 +518,9 @@ function OrganizationSettings() {
             <Map className="h-5 w-5 text-primary-700 dark:text-primary-300" aria-hidden />
           </div>
           <div>
-            <h3 className="font-semibold text-neutral-900 dark:text-neutral-50">Territories</h3>
+            <h3 className="font-semibold text-neutral-900 dark:text-neutral-50">{t('settingsPage.company.territories')}</h3>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              Sales territories and coverage live alongside organization settings.
+              {t('settingsPage.company.territoriesHint')}
             </p>
           </div>
         </div>
@@ -492,7 +529,7 @@ function OrganizationSettings() {
           onClick={() => navigate('/settings/territories')}
           className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-700"
         >
-          Open territories
+          {t('settingsPage.company.openTerritories')}
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
@@ -500,7 +537,7 @@ function OrganizationSettings() {
       <div className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            Company Name
+            {t('settingsPage.company.name')}
           </label>
           <input
             type="text"
@@ -513,7 +550,7 @@ function OrganizationSettings() {
 
         <div>
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            Website
+            {t('settingsPage.company.website')}
           </label>
           <input
             type="url"
@@ -527,7 +564,7 @@ function OrganizationSettings() {
 
         <div>
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            Description
+            {t('settingsPage.company.description')}
           </label>
           <textarea
             rows={3}
@@ -551,7 +588,7 @@ function OrganizationSettings() {
               }}
               className="px-4 py-2 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg font-medium transition-colors"
             >
-              Cancel
+              {t('common:cancel')}
             </button>
             <button
               type="button"
@@ -560,7 +597,7 @@ function OrganizationSettings() {
               className="flex items-center space-x-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-60"
             >
               {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              <span>Save Changes</span>
+              <span>{t('settingsPage.company.saveChanges')}</span>
             </button>
           </div>
         )}
@@ -570,6 +607,7 @@ function OrganizationSettings() {
 }
 
 function NotificationSettings() {
+  const { t } = useTranslation('modules');
   const queryClient = useQueryClient();
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications'],
@@ -592,9 +630,9 @@ function NotificationSettings() {
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
-        Notification Preferences
+        {t('settingsPage.notifications.title')}
       </h2>
-      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">Manage and review your in-app notifications.</p>
+      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">{t('settingsPage.notifications.subtitle')}</p>
 
       <div className="space-y-4">
         <div className="flex items-center gap-2">
@@ -603,28 +641,28 @@ function NotificationSettings() {
             onClick={() => createTestMutation.mutate()}
             className="px-4 py-2 bg-primary-600 text-white rounded-lg"
           >
-            Create test notification
+            {t('settingsPage.notifications.createTest')}
           </button>
           <button
             type="button"
             onClick={() => markAllMutation.mutate()}
             className="px-4 py-2 border rounded-lg"
           >
-            Mark all read
+            {t('settingsPage.notifications.markAllRead')}
           </button>
         </div>
 
         {isLoading ? (
-          <p className="text-sm text-neutral-600">Loading notifications...</p>
+          <p className="text-sm text-neutral-600">{t('settingsPage.notifications.loading')}</p>
         ) : notifications.length === 0 ? (
-          <p className="text-sm text-neutral-600">No notifications yet.</p>
+          <p className="text-sm text-neutral-600">{t('settingsPage.notifications.empty')}</p>
         ) : (
           notifications.map((item: any) => (
             <div key={item.id} className="p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg">
               <div className="font-medium text-neutral-900 dark:text-neutral-50">{item.title}</div>
               <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{item.message}</p>
               <p className="text-xs text-neutral-500 mt-2">
-                {item.is_read ? 'Read' : 'Unread'} • {new Date(item.created_at).toLocaleString()}
+                {item.is_read ? t('settingsPage.notifications.read') : t('settingsPage.notifications.unread')} • {new Date(item.created_at).toLocaleString()}
               </p>
             </div>
           ))
@@ -635,6 +673,7 @@ function NotificationSettings() {
 }
 
 function SecuritySettings() {
+  const { t } = useTranslation('modules');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -643,11 +682,11 @@ function SecuritySettings() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast.error('New password and confirmation do not match');
+      toast.error(t('settingsPage.security.mismatch'));
       return;
     }
     if (newPassword.length < 8) {
-      toast.error('New password must be at least 8 characters');
+      toast.error(t('settingsPage.security.tooShort'));
       return;
     }
     setSaving(true);
@@ -657,7 +696,7 @@ function SecuritySettings() {
         new_password: newPassword,
         confirm_password: confirmPassword,
       });
-      toast.success('Password updated');
+      toast.success(t('settingsPage.security.updated'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -667,7 +706,7 @@ function SecuritySettings() {
         typeof err === 'object' &&
         'response' in err &&
         (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
-      toast.error(typeof detail === 'string' ? detail : 'Could not update password');
+      toast.error(typeof detail === 'string' ? detail : t('settingsPage.security.updateFailed'));
     } finally {
       setSaving(false);
     }
@@ -676,18 +715,18 @@ function SecuritySettings() {
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
-        Security Settings
+        {t('settingsPage.security.title')}
       </h2>
 
       <div className="space-y-6">
         <form onSubmit={handleChangePassword}>
           <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-4">
-            Change Password
+            {t('settingsPage.security.changePassword')}
           </h3>
           <div className="space-y-4 max-w-md">
             <input
               type="password"
-              placeholder="Current password"
+              placeholder={t('settingsPage.security.currentPassword')}
               className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
@@ -695,7 +734,7 @@ function SecuritySettings() {
             />
             <input
               type="password"
-              placeholder="New password"
+              placeholder={t('settingsPage.security.newPassword')}
               className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -703,7 +742,7 @@ function SecuritySettings() {
             />
             <input
               type="password"
-              placeholder="Confirm new password"
+              placeholder={t('settingsPage.security.confirmPassword')}
               className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -715,17 +754,17 @@ function SecuritySettings() {
               className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-60 inline-flex items-center gap-2"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Update Password
+              {t('settingsPage.security.update')}
             </button>
           </div>
         </form>
 
         <div className="pt-6 border-t border-neutral-200 dark:border-neutral-700">
           <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-4">
-            Two-Factor Authentication
+            {t('settingsPage.security.twoFactor')}
           </h3>
           <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-            Two-factor authentication is not available in this release. Use a strong password above.
+            {t('settingsPage.security.twoFactorUnavailable')}
           </p>
         </div>
       </div>
@@ -734,21 +773,22 @@ function SecuritySettings() {
 }
 
 function BillingSettings() {
+  const { t } = useTranslation('modules');
   const navigate = useNavigate();
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
-        Billing & Subscription
+        {t('settingsPage.billing.title')}
       </h2>
       <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-        No payment method is stored in this screen. Credits and plan changes are managed from the Credits page.
+        {t('settingsPage.billing.body')}
       </p>
       <button
         type="button"
         onClick={() => navigate('/credits')}
         className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium"
       >
-        Open Credits
+        {t('settingsPage.billing.openCredits')}
       </button>
     </div>
   );
@@ -764,6 +804,7 @@ type OrgMemberRow = {
 };
 
 function TeamSettings() {
+  const { t } = useTranslation('modules');
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { data: members = [], isLoading, error } = useQuery({
@@ -775,46 +816,45 @@ function TeamSettings() {
   });
 
   const roleLabel = (m: OrgMemberRow) => {
-    if (m.is_admin) return 'Admin';
+    if (m.is_admin) return t('settingsPage.team.roleAdmin');
     const r = (m.organization_role || 'member').toLowerCase();
-    if (r === 'manager') return 'Manager';
-    if (r === 'viewer') return 'Viewer';
-    return 'Member';
+    if (r === 'manager') return t('settingsPage.team.roleManager');
+    if (r === 'viewer') return t('settingsPage.team.roleViewer');
+    return t('settingsPage.team.roleMember');
   };
 
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
-          Team Members
+          {t('settingsPage.team.title')}
         </h2>
         <button
           type="button"
           onClick={() => navigate('/team-management')}
           className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
         >
-          Invite / manage users
+          {t('settingsPage.team.manageUsers')}
         </button>
       </div>
 
       <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4 max-w-2xl">
-        This list matches your organization directory: the same people appear in Team management, task
-        assignees, and Messages when you start a new conversation (everyone except you).
-        Use <span className="font-medium text-neutral-800 dark:text-neutral-200">Invite / manage users</span> to
-        invite or move members.
+        {t('settingsPage.team.intro')}{' '}
+        <span className="font-medium text-neutral-800 dark:text-neutral-200">{t('settingsPage.team.manageUsers')}</span>{' '}
+        {t('settingsPage.team.introAfter')}
         {user?.is_admin ? (
           <>
             {' '}
-            As an admin, you can also open the{' '}
+            {t('settingsPage.team.adminPrefix')}{' '}
             <button
               type="button"
               className="text-primary-600 hover:text-primary-700 font-medium underline-offset-2 hover:underline"
               onClick={() => navigate('/admin')}
             >
-              Admin panel
+              {t('settingsPage.team.adminPanel')}
             </button>
             {' '}
-            for broader user management.
+            {t('settingsPage.team.adminSuffix')}
           </>
         ) : null}
       </p>
@@ -822,17 +862,17 @@ function TeamSettings() {
       {isLoading && (
         <div className="flex items-center gap-2 text-neutral-600">
           <Loader2 className="h-5 w-5 animate-spin" />
-          Loading team…
+          {t('settingsPage.team.loading')}
         </div>
       )}
       {error && (
-        <p className="text-red-600 dark:text-red-400 text-sm">Could not load team list. Try again later.</p>
+        <p className="text-red-600 dark:text-red-400 text-sm">{t('settingsPage.team.loadFailed')}</p>
       )}
 
       {!isLoading && !error && (
         <div className="space-y-3">
           {members.length === 0 ? (
-            <p className="text-neutral-600 dark:text-neutral-400">No team members found.</p>
+            <p className="text-neutral-600 dark:text-neutral-400">{t('settingsPage.team.empty')}</p>
           ) : (
             members.map((member) => (
               <div
@@ -875,6 +915,7 @@ type IntegrationTile = {
 };
 
 function EmailIntegrationPanel() {
+  const { t } = useTranslation('modules');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [provider, setProvider] = useState<'gmail' | 'outlook' | 'yahoo' | 'custom'>('custom');
@@ -906,7 +947,7 @@ function EmailIntegrationPanel() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['email-accounts'] });
       setPassword('');
-      toast.success('Mailbox connected. Inbox sync runs in the background.');
+      toast.success(t('settingsPage.integrations.email.connected'));
     },
     onError: (err: unknown) => {
       const detail =
@@ -919,7 +960,7 @@ function EmailIntegrationPanel() {
           ? detail
           : detail && typeof detail === 'object' && detail !== null && 'message' in detail
             ? String((detail as { message?: string }).message)
-            : 'Could not connect mailbox. Check address, app password, and provider.';
+            : t('settingsPage.integrations.email.connectFailed');
       toast.error(msg);
     },
   });
@@ -935,7 +976,7 @@ function EmailIntegrationPanel() {
         typeof err === 'object' &&
         'response' in err &&
         (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-      const msg = typeof detail === 'string' ? detail : 'Could not start Gmail OAuth.';
+      const msg = typeof detail === 'string' ? detail : t('settingsPage.integrations.email.gmailOAuthFailed');
       toast.error(msg);
     },
   });
@@ -947,16 +988,16 @@ function EmailIntegrationPanel() {
 
   return (
     <div className="mb-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/50 p-6">
-      <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-1">Email (IMAP / SMTP)</h3>
+      <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-1">{t('settingsPage.integrations.email.title')}</h3>
       <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-        Connect your mailbox to send outreach and sync your inbox. Use <span className="font-medium">Custom SMTP / IMAP</span> for
-        providers like Infomaniak, OVH, or any standard mail server. Gmail users can connect via OAuth below, or use
-        an <span className="font-medium">App Password</span> (Google Account → Security → 2-Step Verification → App passwords).
+        {t('settingsPage.integrations.email.intro')} <span className="font-medium">{t('settingsPage.integrations.email.customBold')}</span>{' '}
+        {t('settingsPage.integrations.email.intro2')}{' '}
+        <span className="font-medium">{t('settingsPage.integrations.email.appPasswordBold')}</span> {t('settingsPage.integrations.email.intro3')}
       </p>
 
       {isLoading ? (
         <p className="text-sm text-neutral-500 flex items-center gap-2">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading accounts…
+          <Loader2 className="h-4 w-4 animate-spin" /> {t('settingsPage.integrations.email.loadingAccounts')}
         </p>
       ) : mailAccounts.length > 0 ? (
         <ul className="mb-4 space-y-2 text-sm">
@@ -971,35 +1012,35 @@ function EmailIntegrationPanel() {
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-neutral-500 mb-4">No mailbox connected yet.</p>
+        <p className="text-sm text-neutral-500 mb-4">{t('settingsPage.integrations.email.none')}</p>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Provider</label>
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.provider')}</label>
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as typeof provider)}
             className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
           >
-            <option value="custom">Custom SMTP / IMAP (Infomaniak, OVH, etc.)</option>
-            <option value="gmail">Gmail (IMAP)</option>
-            <option value="outlook">Outlook / Microsoft 365</option>
+            <option value="custom">{t('settingsPage.integrations.email.providerCustom')}</option>
+            <option value="gmail">{t('settingsPage.integrations.email.providerGmail')}</option>
+            <option value="outlook">{t('settingsPage.integrations.email.providerOutlook')}</option>
             <option value="yahoo">Yahoo</option>
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Display name</label>
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.displayName')}</label>
           <input
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Shown as sender name"
+            placeholder={t('settingsPage.integrations.email.displayNamePlaceholder')}
             className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Email address</label>
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.address')}</label>
           <input
             type="email"
             value={emailAddr}
@@ -1010,7 +1051,7 @@ function EmailIntegrationPanel() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Password / app password</label>
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.password')}</label>
           <input
             type="password"
             value={password}
@@ -1025,12 +1066,11 @@ function EmailIntegrationPanel() {
       {provider === 'custom' && (
         <div className="mt-4 space-y-4">
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            For Infomaniak: IMAP mail.infomaniak.com:993, SMTP mail.infomaniak.com:587 (STARTTLS).
-            Use your full email address as username.
+            {t('settingsPage.integrations.email.infomaniakHint')}
           </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">IMAP host</label>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.imapHost')}</label>
               <input
                 type="text"
                 value={imapHost}
@@ -1040,7 +1080,7 @@ function EmailIntegrationPanel() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">IMAP port</label>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.imapPort')}</label>
               <input
                 type="number"
                 value={imapPort}
@@ -1050,7 +1090,7 @@ function EmailIntegrationPanel() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">SMTP host</label>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.smtpHost')}</label>
               <input
                 type="text"
                 value={smtpHost}
@@ -1060,7 +1100,7 @@ function EmailIntegrationPanel() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">SMTP port</label>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.smtpPort')}</label>
               <input
                 type="number"
                 value={smtpPort}
@@ -1080,7 +1120,7 @@ function EmailIntegrationPanel() {
           onClick={() => connectGoogleOAuthMutation.mutate()}
           className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
         >
-          {connectGoogleOAuthMutation.isPending ? 'Redirecting…' : 'Connect Gmail with Google'}
+          {connectGoogleOAuthMutation.isPending ? t('settingsPage.integrations.redirecting') : t('settingsPage.integrations.email.connectGmail')}
         </button>
         <button
           type="button"
@@ -1088,14 +1128,14 @@ function EmailIntegrationPanel() {
           onClick={() => connectMutation.mutate()}
           className="rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
         >
-          {connectMutation.isPending ? 'Connecting…' : 'Connect mailbox'}
+          {connectMutation.isPending ? t('settingsPage.integrations.email.connecting') : t('settingsPage.integrations.email.connectMailbox')}
         </button>
         <button
           type="button"
           onClick={() => navigate('/emails')}
           className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-4 py-2.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800"
         >
-          Open Inbox
+          {t('settingsPage.integrations.email.openInbox')}
         </button>
       </div>
     </div>
@@ -1103,16 +1143,17 @@ function EmailIntegrationPanel() {
 }
 
 function IntegrationsSettings() {
+  const { t } = useTranslation('modules');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const emailOauth = params.get('email_oauth');
     const calendarOauth = params.get('calendar_oauth');
-    if (emailOauth === 'success') toast.success('Gmail connected successfully. Your inbox can now sync.');
-    if (emailOauth === 'error') toast.error(`Gmail connect failed: ${params.get('reason') || 'unknown_error'}`);
-    if (calendarOauth === 'success') toast.success('Google Calendar connected successfully.');
-    if (calendarOauth === 'error') toast.error(`Calendar connect failed: ${params.get('reason') || 'unknown_error'}`);
+    if (emailOauth === 'success') toast.success(t('settingsPage.integrations.gmailSuccess'));
+    if (emailOauth === 'error') toast.error(t('settingsPage.integrations.gmailError', { reason: params.get('reason') || t('settingsPage.integrations.unknownError') }));
+    if (calendarOauth === 'success') toast.success(t('settingsPage.integrations.calendarSuccess'));
+    if (calendarOauth === 'error') toast.error(t('settingsPage.integrations.calendarError', { reason: params.get('reason') || t('settingsPage.integrations.unknownError') }));
     if (emailOauth || calendarOauth) {
       const cleanUrl = `${window.location.pathname}${window.location.hash || ''}`;
       window.history.replaceState({}, '', cleanUrl);
@@ -1146,7 +1187,7 @@ function IntegrationsSettings() {
         typeof err === 'object' &&
         'response' in err &&
         (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-      const msg = typeof detail === 'string' ? detail : 'Could not start Google Calendar OAuth flow.';
+      const msg = typeof detail === 'string' ? detail : t('settingsPage.integrations.calendarOAuthFailed');
       toast.error(msg);
     },
   });
@@ -1155,15 +1196,15 @@ function IntegrationsSettings() {
     mutationFn: (integrationId: number) => calendarIntegrationsAPI.disconnect(integrationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar-integrations'] });
-      toast.success('Google Calendar disconnected');
+      toast.success(t('settingsPage.integrations.calendarDisconnected'));
     },
-    onError: () => toast.error('Could not disconnect Google Calendar'),
+    onError: () => toast.error(t('settingsPage.integrations.calendarDisconnectFailed')),
   });
 
   const syncGoogleMutation = useMutation({
     mutationFn: (integrationId: number) => calendarIntegrationsAPI.sync(integrationId),
-    onSuccess: () => toast.success('Calendar sync queued'),
-    onError: () => toast.error('Could not queue calendar sync'),
+    onSuccess: () => toast.success(t('settingsPage.integrations.syncQueued')),
+    onError: () => toast.error(t('settingsPage.integrations.syncFailed')),
   });
 
   const tiles: IntegrationTile[] = [
@@ -1186,40 +1227,39 @@ function IntegrationsSettings() {
       name: 'Slack',
       icon: MessageSquare,
       connected: false,
-      disconnectHint: 'Slack workspace linking is not enabled for this environment yet.',
+      disconnectHint: t('settingsPage.integrations.slackHint'),
     },
   ];
 
   const handlePrimary = (tile: IntegrationTile) => {
     if (tile.connected) {
-      toast(tile.disconnectHint || 'Disconnect is not available for this integration yet.');
+      toast(tile.disconnectHint || t('settingsPage.integrations.disconnectUnavailable'));
       return;
     }
     if (tile.connectPath) {
       navigate(tile.connectPath);
       return;
     }
-    toast('This integration is not available yet.');
+    toast(t('settingsPage.integrations.unavailable'));
   };
 
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
-        Integrations
+        {t('settingsPage.integrations.title')}
       </h2>
       {connectedViaGoogleSignIn && (
         <div className="mb-4 inline-flex items-center rounded-full border border-green-300 bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-          Connected via Google Sign-In
+          {t('settingsPage.integrations.googleSignIn')}
         </div>
       )}
       <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
-        Connect email below. HubSpot and Salesforce use the Data Import wizard (CSV and CRM sources). Other connectors
-        are placeholders until enabled for your org.
+        {t('settingsPage.integrations.intro')}
       </p>
 
       <EmailIntegrationPanel />
 
-      <h3 className="text-md font-semibold text-neutral-900 dark:text-neutral-50 mb-3">Calendar</h3>
+      <h3 className="text-md font-semibold text-neutral-900 dark:text-neutral-50 mb-3">{t('settingsPage.integrations.calendar')}</h3>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="p-6 border border-neutral-200 dark:border-neutral-700 rounded-lg">
           <div className="flex items-center space-x-3 mb-4">
@@ -1227,18 +1267,20 @@ function IntegrationsSettings() {
               <CalendarDays className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div>
-              <h4 className="font-semibold text-neutral-900 dark:text-neutral-50">Google Calendar</h4>
+              <h4 className="font-semibold text-neutral-900 dark:text-neutral-50">{t('settingsPage.integrations.googleCalendar')}</h4>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 {isLoadingCalendar
-                  ? 'Loading...'
+                  ? t('settingsPage.integrations.loadingShort')
                   : googleIntegration
-                    ? `Connected${googleIntegration.provider_account_email ? ` as ${googleIntegration.provider_account_email}` : ''}`
-                    : 'Not connected'}
+                    ? googleIntegration.provider_account_email
+                      ? t('settingsPage.integrations.connectedAs', { email: googleIntegration.provider_account_email })
+                      : t('settingsPage.integrations.connected')
+                    : t('settingsPage.integrations.notConnected')}
               </p>
             </div>
           </div>
           <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-            Two-way sync foundation is now enabled. OAuth callback + webhook sync is the next milestone.
+            {t('settingsPage.integrations.calendarNote')}
           </p>
           {googleIntegration ? (
             <div className="flex gap-2">
@@ -1248,7 +1290,7 @@ function IntegrationsSettings() {
                 className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50"
                 onClick={() => connectGoogleMutation.mutate()}
               >
-                {connectGoogleMutation.isPending ? 'Redirecting…' : 'Add another calendar'}
+                {connectGoogleMutation.isPending ? t('settingsPage.integrations.redirecting') : t('settingsPage.integrations.addCalendar')}
               </button>
               <button
                 type="button"
@@ -1256,7 +1298,7 @@ function IntegrationsSettings() {
                 className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50"
                 onClick={() => syncGoogleMutation.mutate(googleIntegration.id)}
               >
-                {syncGoogleMutation.isPending ? 'Syncing…' : 'Sync now'}
+                {syncGoogleMutation.isPending ? t('settingsPage.integrations.syncing') : t('settingsPage.integrations.syncNow')}
               </button>
               <button
                 type="button"
@@ -1264,7 +1306,7 @@ function IntegrationsSettings() {
                 className="rounded-lg border border-red-300 text-red-700 px-3 py-2 text-sm font-medium hover:bg-red-50 disabled:opacity-50"
                 onClick={() => disconnectGoogleMutation.mutate(googleIntegration.id)}
               >
-                Disconnect
+                {t('settingsPage.integrations.disconnect')}
               </button>
             </div>
           ) : (
@@ -1274,15 +1316,15 @@ function IntegrationsSettings() {
               className="rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
               onClick={() => connectGoogleMutation.mutate()}
             >
-              {connectGoogleMutation.isPending ? 'Redirecting…' : 'Connect Google Calendar'}
+              {connectGoogleMutation.isPending ? t('settingsPage.integrations.redirecting') : t('settingsPage.integrations.connectCalendar')}
             </button>
           )}
           {googleIntegrations.length > 1 && (
             <div className="mt-3 text-xs text-neutral-600 dark:text-neutral-400">
-              Connected calendars:
+              {t('settingsPage.integrations.connectedCalendars')}
               <ul className="mt-1 list-disc pl-4">
                 {googleIntegrations.map((integration) => (
-                  <li key={integration.id}>{integration.provider_account_email || `Google account #${integration.id}`}</li>
+                  <li key={integration.id}>{integration.provider_account_email || t('settingsPage.integrations.googleAccount', { id: integration.id })}</li>
                 ))}
               </ul>
             </div>
@@ -1295,20 +1337,20 @@ function IntegrationsSettings() {
               <Globe className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div>
-              <h4 className="font-semibold text-neutral-900 dark:text-neutral-50">Other Calendars</h4>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">Outlook, Apple, CalDAV</p>
+              <h4 className="font-semibold text-neutral-900 dark:text-neutral-50">{t('settingsPage.integrations.otherCalendars')}</h4>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('settingsPage.integrations.otherCalendarsHint')}</p>
             </div>
           </div>
           <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-            Provider adapters are planned next. Google is the first production connector.
+            {t('settingsPage.integrations.otherCalendarsNote')}
           </p>
           <span className="inline-flex rounded-full bg-neutral-100 dark:bg-neutral-700 px-3 py-1 text-xs font-medium text-neutral-600 dark:text-neutral-300">
-            Coming next
+            {t('settingsPage.integrations.comingNext')}
           </span>
         </div>
       </div>
 
-      <h3 className="text-md font-semibold text-neutral-900 dark:text-neutral-50 mb-3">CRM &amp; messaging</h3>
+      <h3 className="text-md font-semibold text-neutral-900 dark:text-neutral-50 mb-3">{t('settingsPage.integrations.crmMessaging')}</h3>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {tiles.map((tile) => {
           const Icon = tile.icon;
@@ -1323,7 +1365,7 @@ function IntegrationsSettings() {
                     {tile.name}
                   </h3>
                   <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                    {tile.connected ? 'Connected' : 'Not connected'}
+                    {tile.connected ? t('settingsPage.integrations.connected') : t('settingsPage.integrations.notConnected')}
                   </p>
                 </div>
               </div>
@@ -1336,7 +1378,7 @@ function IntegrationsSettings() {
                     : 'bg-primary-600 hover:bg-primary-700 text-white'
                 }`}
               >
-                {tile.connected ? 'Disconnect' : 'Connect'}
+                {tile.connected ? t('settingsPage.integrations.disconnect') : t('settingsPage.integrations.connect')}
               </button>
             </div>
           );

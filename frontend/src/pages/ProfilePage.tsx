@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LinkedInConnection } from '../components/LinkedInConnection';
+import { useTranslation } from 'react-i18next'
 
 interface ProfileForm {
   firstName: string
@@ -24,6 +25,7 @@ interface ProfileForm {
 }
 
 export function ProfilePage() {
+  const { t } = useTranslation('modules')
   const { user, token, fetchUser } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +48,7 @@ export function ProfilePage() {
         await fetchUser()
       } catch (error) {
         console.error('Failed to fetch user data:', error)
-        setError('Failed to load profile data')
+        setError(t('profilePage.toast.loadFailed'))
       }
     }
 
@@ -84,11 +86,11 @@ export function ProfilePage() {
       }
 
       await fetchUser()
-      toast.success('Profile updated successfully')
+      toast.success(t('profilePage.toast.updated'))
     } catch (err: any) {
       console.error('Failed to update profile:', err)
-      setError(err.response?.data?.message || 'Failed to update profile')
-      toast.error(err.response?.data?.message || 'Failed to update profile')
+      setError(err.response?.data?.message || t('profilePage.toast.updateFailed'))
+      toast.error(err.response?.data?.message || t('profilePage.toast.updateFailed'))
     } finally {
       setLoading(false)
     }
@@ -110,11 +112,11 @@ export function ProfilePage() {
       return response.data;
     },
     onSuccess: () => {
-      toast.success('LinkedIn disconnected successfully');
+      toast.success(t('profilePage.toast.linkedinDisconnected'));
       queryClient.invalidateQueries({ queryKey: ['linkedin-status'] });
     },
     onError: () => {
-      toast.error('Failed to disconnect LinkedIn');
+      toast.error(t('profilePage.toast.linkedinDisconnectFailed'));
     }
   });
 
@@ -123,7 +125,7 @@ export function ProfilePage() {
   };
 
   const handleDisconnectLinkedIn = () => {
-    if (window.confirm('Are you sure you want to disconnect your LinkedIn account?')) {
+    if (window.confirm(t('profilePage.confirmDisconnect'))) {
       disconnectLinkedInMutation.mutate();
     }
   };
@@ -176,13 +178,13 @@ export function ProfilePage() {
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="text-center">
               <AlertTriangle className="h-16 w-16 text-orange-500 mx-auto mb-4" />
-              <div className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</div>
+              <div className="text-xl font-semibold text-gray-900 mb-2">{t('profilePage.somethingWrong')}</div>
               <div className="text-base text-red-600 mb-6">{error}</div>
               <Button 
                 onClick={() => fetchUser()}
                 className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-lg hover:from-blue-700 hover:to-indigo-800 transition-colors shadow-md"
               >
-                <RefreshCw className="w-4 h-4 mr-2" /> Try again
+                <RefreshCw className="w-4 h-4 mr-2" /> {t('profilePage.tryAgain')}
               </Button>
             </div>
           </div>
@@ -211,7 +213,7 @@ export function ProfilePage() {
                 </div>
                 <div className="mt-4 sm:mt-0 sm:ml-6 text-center sm:text-left">
                   <h1 className="text-3xl font-bold text-gray-900">
-                    {user ? `${user.first_name} ${user.last_name}` : 'User'}
+                    {user ? `${user.first_name} ${user.last_name}` : t('profilePage.user')}
                   </h1>
                   <p className="mt-1 text-gray-500 flex items-center justify-center sm:justify-start">
                     <Mail className="w-4 h-4 mr-2" /> {user?.email}
@@ -223,11 +225,11 @@ export function ProfilePage() {
                 <div className="flex items-center space-x-3 mb-4 sm:mb-0">
                   {user?.is_admin && (
                     <div className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-800">
-                      <Shield className="w-4 h-4 mr-1" /> Admin
+                      <Shield className="w-4 h-4 mr-1" /> {t('profilePage.admin')}
                     </div>
                   )}
                   <div className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
-                    <User className="w-4 h-4 mr-1" /> Active
+                    <User className="w-4 h-4 mr-1" /> {t('profilePage.active')}
                   </div>
                 </div>
               </div>
@@ -240,7 +242,7 @@ export function ProfilePage() {
               <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
                 <div className="px-6 py-6 border-b border-gray-200 bg-gray-50">
                   <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <User className="w-5 h-5 mr-2 text-blue-600" /> Personal Information
+                    <User className="w-5 h-5 mr-2 text-blue-600" /> {t('profilePage.personalInfo')}
                   </h2>
                 </div>
                 
@@ -249,14 +251,14 @@ export function ProfilePage() {
                     <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-6">
                       <div>
                         <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                          First Name
+                          {t('profilePage.firstName')}
                         </label>
                         <div className="mt-1 relative rounded-md shadow-sm">
                           <input
-                            {...register('firstName', { required: 'First name is required' })}
+                            {...register('firstName', { required: t('profilePage.firstNameRequired') })}
                             type="text"
                             className="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors placeholder:text-gray-400"
-                            placeholder="Enter your first name"
+                            placeholder={t('profilePage.firstNamePlaceholder')}
                           />
                           {errors.firstName ? (
                             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -273,14 +275,14 @@ export function ProfilePage() {
 
                       <div>
                         <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                          Last Name
+                          {t('profilePage.lastName')}
                         </label>
                         <div className="mt-1 relative rounded-md shadow-sm">
                           <input
-                            {...register('lastName', { required: 'Last name is required' })}
+                            {...register('lastName', { required: t('profilePage.lastNameRequired') })}
                             type="text"
                             className="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors placeholder:text-gray-400"
-                            placeholder="Enter your last name"
+                            placeholder={t('profilePage.lastNamePlaceholder')}
                           />
                           {errors.lastName ? (
                             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -297,7 +299,7 @@ export function ProfilePage() {
 
                       <div className="sm:col-span-2">
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                          Email
+                          {t('profilePage.email')}
                         </label>
                         <div className="mt-1 relative rounded-md shadow-sm">
                           <input
@@ -322,7 +324,7 @@ export function ProfilePage() {
                         <div className="relative flex justify-center">
                           <span className="bg-white px-3 text-sm text-gray-500 flex items-center">
                             <Key className="w-4 h-4 mr-2 text-gray-400" />
-                            Change Password
+                            {t('profilePage.changePassword')}
                           </span>
                         </div>
                       </div>
@@ -330,7 +332,7 @@ export function ProfilePage() {
                       <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-6">
                         <div>
                           <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
-                            Current Password
+                            {t('profilePage.currentPassword')}
                           </label>
                           <div className="mt-1 relative rounded-md shadow-sm">
                             <input
@@ -347,14 +349,14 @@ export function ProfilePage() {
 
                         <div>
                           <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                            New Password
+                            {t('profilePage.newPassword')}
                           </label>
                           <div className="mt-1 relative rounded-md shadow-sm">
                             <input
                               {...register('newPassword', {
                                 minLength: {
                                   value: 8,
-                                  message: 'Password must be at least 8 characters'
+                                  message: t('profilePage.passwordMin')
                                 }
                               })}
                               type="password"
@@ -372,12 +374,12 @@ export function ProfilePage() {
 
                         <div className="sm:col-span-2">
                           <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                            Confirm New Password
+                            {t('profilePage.confirmPassword')}
                           </label>
                           <div className="mt-1 relative rounded-md shadow-sm">
                             <input
                               {...register('confirmPassword', {
-                                validate: value => !watch('newPassword') || value === watch('newPassword') || 'Passwords do not match'
+                                validate: value => !watch('newPassword') || value === watch('newPassword') || t('profilePage.passwordsMismatch')
                               })}
                               type="password"
                               className="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors"
@@ -403,9 +405,9 @@ export function ProfilePage() {
                         {loading ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Saving...
+                            {t('profilePage.saving')}
                           </>
-                        ) : 'Save Changes'}
+                        ) : t('profilePage.save')}
                       </Button>
                     </div>
                   </form>
@@ -419,16 +421,16 @@ export function ProfilePage() {
               <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
                 <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-yellow-50 to-amber-50">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <CreditCard className="w-5 h-5 mr-2 text-yellow-600" /> Credits & Billing
+                    <CreditCard className="w-5 h-5 mr-2 text-yellow-600" /> {t('profilePage.creditsBilling')}
                   </h3>
                 </div>
                 <div className="p-6">
                   <p className="text-sm text-gray-600 mb-4">
-                    Manage your credits, view usage history, and purchase additional credits for premium features.
+                    {t('profilePage.creditsBody')}
                     </p>
                   <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg p-4 mb-4">
                     <p className="text-center text-yellow-700 font-medium text-sm">
-                      Professional credit-based features
+                      {t('profilePage.creditsBadge')}
                     </p>
                   </div>
                   <Button
@@ -442,7 +444,7 @@ export function ProfilePage() {
                     className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-sm"
                   >
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Manage Credits
+                    {t('profilePage.manageCredits')}
                   </Button>
                 </div>
               </div>
@@ -454,29 +456,29 @@ export function ProfilePage() {
               <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                 <div className="p-6 border-b border-gray-200 bg-blue-50">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <Shield className="w-5 h-5 mr-2 text-green-600" /> Account Status
+                    <Shield className="w-5 h-5 mr-2 text-green-600" /> {t('profilePage.accountStatus')}
                   </h3>
                 </div>
                 <div className="p-6">
                   <div className="flex items-center justify-between py-3 border-b border-gray-100">
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700">Status</h4>
+                      <h4 className="text-sm font-medium text-gray-700">{t('profilePage.status')}</h4>
                     </div>
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       user?.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {user?.is_active ? 'Active' : 'Inactive'}
+                      {user?.is_active ? t('profilePage.active') : t('profilePage.inactive')}
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between py-3 border-b border-gray-100">
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700">Account Type</h4>
+                      <h4 className="text-sm font-medium text-gray-700">{t('profilePage.accountType')}</h4>
                     </div>
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       user?.is_admin ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
                     }`}>
-                      {user?.is_admin ? 'Administrator' : 'User'}
+                      {user?.is_admin ? t('profilePage.administrator') : t('profilePage.user')}
                     </span>
                   </div>
                   
@@ -486,7 +488,7 @@ export function ProfilePage() {
                     className="mt-4 w-full border-red-300 text-red-600 hover:bg-red-50"
                   >
                     <AlertTriangle className="w-4 h-4 mr-2" />
-                    Delete Account
+                    {t('profilePage.deleteAccount')}
                   </Button>
                 </div>
               </div>

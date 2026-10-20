@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Calendar, Menu, X } from 'lucide-react'
 import { useAuthStore } from '../../store/auth'
+import { LanguageSwitcher } from '../LanguageSwitcher'
 
 const navLink =
   'text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors whitespace-nowrap'
 
 export function MarketingNav() {
+  const { t } = useTranslation('nav')
   const { isAuthenticated } = useAuthStore()
   const location = useLocation()
   const [open, setOpen] = useState(false)
@@ -17,43 +20,43 @@ export function MarketingNav() {
   const links = (
     <>
       <Link to="/" className={`${navLink} ${isActive('/')}`} onClick={() => setOpen(false)}>
-        Home
+        {t('home')}
       </Link>
       <a
         href="/#about"
         className={`${navLink}`}
         onClick={() => setOpen(false)}
       >
-        About
+        {t('about')}
       </a>
       <a
         href="/#services"
         className={`${navLink}`}
         onClick={() => setOpen(false)}
       >
-        Services
+        {t('services')}
       </a>
       <a
         href="/#pricing"
         className={`${navLink}`}
         onClick={() => setOpen(false)}
       >
-        Pricing
+        {t('pricing')}
       </a>
       <Link to="/intake/business-diagnostic" className={navLink} onClick={() => setOpen(false)}>
-        Business diagnostic
+        {t('businessDiagnostic')}
       </Link>
       <Link to="/intake/data-request" className={navLink} onClick={() => setOpen(false)}>
-        Data request
+        {t('dataRequest')}
       </Link>
       <Link to="/intake/pitch-your-idea" className={navLink} onClick={() => setOpen(false)}>
-        Pitch your idea
+        {t('pitchYourIdea')}
       </Link>
       <Link to="/contact" className={`${navLink} ${isActive('/contact')}`} onClick={() => setOpen(false)}>
-        Contact
+        {t('contact')}
       </Link>
       <Link to="/report" className={`${navLink} ${isActive('/report')}`} onClick={() => setOpen(false)}>
-        Report an issue
+        {t('reportIssue')}
       </Link>
     </>
   )
@@ -68,6 +71,7 @@ export function MarketingNav() {
         <nav className="hidden xl:flex items-center flex-wrap gap-x-5 gap-y-2 justify-end flex-1">{links}</nav>
 
         <div className="hidden xl:flex items-center gap-2 shrink-0">
+          <LanguageSwitcher />
           <a
             href="https://calendly.com/joshua-the-leadlab/15min"
             target="_blank"
@@ -75,7 +79,7 @@ export function MarketingNav() {
             className="text-sm font-medium bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-emerald-700 flex items-center gap-1"
           >
             <Calendar className="w-4 h-4" />
-            Book demo
+            {t('bookDemo')}
           </a>
           {isAuthenticated ? (
             <Link
@@ -84,7 +88,7 @@ export function MarketingNav() {
               rel="noopener noreferrer"
               className="text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg"
             >
-              Dashboard
+              {t('goToDashboard')}
             </Link>
           ) : (
             <Link
@@ -93,7 +97,7 @@ export function MarketingNav() {
               rel="noopener noreferrer"
               className="text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg"
             >
-              Sign in
+              {t('signIn')}
             </Link>
           )}
         </div>
@@ -101,7 +105,7 @@ export function MarketingNav() {
         <button
           type="button"
           className="xl:hidden p-2 rounded-lg border border-gray-200"
-          aria-label="Menu"
+          aria-label={t('common:openNavigation')}
           onClick={() => setOpen((o) => !o)}
         >
           {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -111,6 +115,9 @@ export function MarketingNav() {
       {open && (
         <div className="xl:hidden border-t bg-white px-4 py-4 flex flex-col gap-3 shadow-lg max-h-[70vh] overflow-y-auto">
           {links}
+          <div className="flex justify-center">
+            <LanguageSwitcher size="md" onChanged={() => setOpen(false)} />
+          </div>
           <a
             href="https://calendly.com/joshua-the-leadlab/15min"
             target="_blank"
@@ -118,7 +125,7 @@ export function MarketingNav() {
             className="text-sm font-medium bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg text-center"
             onClick={() => setOpen(false)}
           >
-            Book demo
+            {t('bookDemo')}
           </a>
           {isAuthenticated ? (
             <Link
@@ -128,7 +135,7 @@ export function MarketingNav() {
               className="text-center text-sm font-medium text-blue-600"
               onClick={() => setOpen(false)}
             >
-              Dashboard
+              {t('goToDashboard')}
             </Link>
           ) : (
             <Link
@@ -138,7 +145,7 @@ export function MarketingNav() {
               className="text-center text-sm font-medium text-blue-600"
               onClick={() => setOpen(false)}
             >
-              Sign in
+              {t('signIn')}
             </Link>
           )}
         </div>

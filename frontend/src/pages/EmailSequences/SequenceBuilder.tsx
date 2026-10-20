@@ -9,10 +9,12 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const emptyStep = (step = 1): SequenceStep => ({ step, delay_days: 0, subject: '', body: '' });
 
 export function SequenceBuilder() {
+  const { t } = useTranslation('emails');
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -74,21 +76,21 @@ export function SequenceBuilder() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">{isEdit ? 'Edit Campaign' : 'Campaign'}</h1>
+      <h1 className="text-2xl font-bold">{isEdit ? t('sequenceBuilder.editCampaign') : t('sequenceBuilder.campaign')}</h1>
       <Card><CardContent className="p-4 space-y-4">
         <div>
-          <Label>Name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Sequence name" />
+          <Label>{t('sequenceBuilder.name')}</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('sequenceBuilder.namePlaceholder')} />
         </div>
         <div>
-          <Label>Description</Label>
-          <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+          <Label>{t('sequenceBuilder.description')}</Label>
+          <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('sequenceBuilder.descriptionPlaceholder')} />
         </div>
         <div>
-          <Label>Send from mailbox</Label>
+          <Label>{t('sequenceBuilder.sendFromMailbox')}</Label>
           <Select value={accountId} onValueChange={setAccountId}>
             <SelectTrigger>
-              <SelectValue placeholder="Choose mailbox" />
+              <SelectValue placeholder={t('sequenceBuilder.chooseMailbox')} />
             </SelectTrigger>
             <SelectContent>
               {accounts.map((account) => (
@@ -98,11 +100,11 @@ export function SequenceBuilder() {
               ))}
             </SelectContent>
           </Select>
-          <p className="mt-1 text-xs text-gray-500">Required for the outreach worker to send sequence steps.</p>
+          <p className="mt-1 text-xs text-gray-500">{t('sequenceBuilder.mailboxRequired')}</p>
         </div>
         <label className="inline-flex items-center gap-2 text-sm">
           <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-          Active
+          {t('sequenceBuilder.active')}
         </label>
       </CardContent></Card>
 
@@ -110,21 +112,21 @@ export function SequenceBuilder() {
         {steps.map((s, i) => (
           <Card key={i}><CardContent className="p-4 space-y-3">
             <div className="flex justify-between items-center">
-              <h3 className="font-semibold">Step {i + 1}</h3>
+              <h3 className="font-semibold">{t('sequenceBuilder.step', { number: i + 1 })}</h3>
               <Button type="button" variant="ghost" size="sm" onClick={() => setSteps(steps.filter((_, idx) => idx !== i))}>
                 <Trash2 className="h-4 w-4 text-red-600" />
               </Button>
             </div>
             <div>
-              <Label>Delay (days after previous step)</Label>
+              <Label>{t('sequenceBuilder.delayDays')}</Label>
               <Input type="number" value={s.delay_days} onChange={(e) => setSteps(steps.map((x, idx) => idx === i ? { ...x, delay_days: Number(e.target.value) || 0 } : x))} />
             </div>
             <div>
-              <Label>Subject</Label>
+              <Label>{t('subject')}</Label>
               <Input value={s.subject} onChange={(e) => setSteps(steps.map((x, idx) => idx === i ? { ...x, subject: e.target.value } : x))} />
             </div>
             <div>
-              <Label>Body</Label>
+              <Label>{t('sequenceBuilder.body')}</Label>
               <textarea className="w-full min-h-[120px] rounded-md border p-2" value={s.body} onChange={(e) => setSteps(steps.map((x, idx) => idx === i ? { ...x, body: e.target.value } : x))} />
             </div>
           </CardContent></Card>
@@ -133,11 +135,11 @@ export function SequenceBuilder() {
 
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={() => setSteps([...steps, emptyStep(steps.length + 1)])}>
-          <Plus className="h-4 w-4 mr-2" /> Add step
+          <Plus className="h-4 w-4 mr-2" /> {t('sequenceBuilder.addStep')}
         </Button>
         <Button type="button" onClick={() => saveMutation.mutate()} disabled={!name.trim() || !accountId || saveMutation.isPending}>
           {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Save sequence
+          {t('sequenceBuilder.save')}
         </Button>
       </div>
     </div>

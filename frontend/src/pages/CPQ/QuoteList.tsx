@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cpqAPI, Quote } from '@/services/api/cpq';
 import { Button } from '@/components/ui/Button';
@@ -29,6 +30,7 @@ import {
 import { MoreVertical } from 'lucide-react';
 
 export const QuoteList: React.FC = () => {
+  const { t } = useTranslation('modules');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -47,18 +49,18 @@ export const QuoteList: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
       toast({
-        title: 'Success',
-        description: 'Quote status updated'
+        title: t('cpq.common.success'),
+        description: t('cpq.quotes.statusUpdated')
       });
     }
   });
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { variant: any; icon: any; label: string }> = {
-      draft: { variant: 'secondary', icon: Edit, label: 'Draft' },
-      sent: { variant: 'default', icon: Send, label: 'Sent' },
-      accepted: { variant: 'default', icon: CheckCircle, label: 'Accepted' },
-      rejected: { variant: 'destructive', icon: X, label: 'Rejected' }
+      draft: { variant: 'secondary', icon: Edit, label: t('cpq.quotes.draft') },
+      sent: { variant: 'default', icon: Send, label: t('cpq.quotes.sent') },
+      accepted: { variant: 'default', icon: CheckCircle, label: t('cpq.quotes.accepted') },
+      rejected: { variant: 'destructive', icon: X, label: t('cpq.quotes.rejected') }
     };
     const style = styles[status] || styles.draft;
     const Icon = style.icon;
@@ -98,14 +100,14 @@ export const QuoteList: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Quotes</h1>
+            <h1 className="text-3xl font-bold">{t('cpq.quotes.title')}</h1>
             <p className="text-gray-600 mt-1">
-              Manage quotes and proposals
+              {t('cpq.quotes.subtitle')}
             </p>
           </div>
           <Button onClick={() => navigate('/cpq/quotes/new')}>
             <Plus className="h-4 w-4 mr-2" />
-            Create Quote
+            {t('cpq.quotes.create')}
           </Button>
         </div>
 
@@ -118,7 +120,7 @@ export const QuoteList: React.FC = () => {
                   <FileText className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total Quotes</p>
+                  <p className="text-sm text-gray-600">{t('cpq.quotes.total')}</p>
                   <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
               </div>
@@ -131,7 +133,7 @@ export const QuoteList: React.FC = () => {
                   <Edit className="h-6 w-6 text-gray-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Draft</p>
+                  <p className="text-sm text-gray-600">{t('cpq.quotes.draft')}</p>
                   <p className="text-2xl font-bold">{stats.draft}</p>
                 </div>
               </div>
@@ -144,7 +146,7 @@ export const QuoteList: React.FC = () => {
                   <Send className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Sent</p>
+                  <p className="text-sm text-gray-600">{t('cpq.quotes.sent')}</p>
                   <p className="text-2xl font-bold">{stats.sent}</p>
                 </div>
               </div>
@@ -157,7 +159,7 @@ export const QuoteList: React.FC = () => {
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Accepted</p>
+                  <p className="text-sm text-gray-600">{t('cpq.quotes.accepted')}</p>
                   <p className="text-2xl font-bold">{stats.accepted}</p>
                 </div>
               </div>
@@ -170,7 +172,7 @@ export const QuoteList: React.FC = () => {
                   <DollarSign className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total Value</p>
+                  <p className="text-sm text-gray-600">{t('cpq.quotes.totalValue')}</p>
                   <p className="text-2xl font-bold">
                     {formatCurrency(stats.totalValue)}
                   </p>
@@ -184,35 +186,35 @@ export const QuoteList: React.FC = () => {
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>All Quotes</CardTitle>
+              <CardTitle>{t('cpq.quotes.all')}</CardTitle>
               <div className="flex gap-2">
                 <Button
                   variant={statusFilter === '' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setStatusFilter('')}
                 >
-                  All
+                  {t('cpq.quotes.filterAll')}
                 </Button>
                 <Button
                   variant={statusFilter === 'draft' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setStatusFilter('draft')}
                 >
-                  Draft
+                  {t('cpq.quotes.draft')}
                 </Button>
                 <Button
                   variant={statusFilter === 'sent' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setStatusFilter('sent')}
                 >
-                  Sent
+                  {t('cpq.quotes.sent')}
                 </Button>
                 <Button
                   variant={statusFilter === 'accepted' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setStatusFilter('accepted')}
                 >
-                  Accepted
+                  {t('cpq.quotes.accepted')}
                 </Button>
               </div>
             </div>
@@ -222,13 +224,13 @@ export const QuoteList: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Quote #</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Valid Until</TableHead>
-                    <TableHead>Approval</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('cpq.quotes.number')}</TableHead>
+                    <TableHead>{t('cpq.quotes.status')}</TableHead>
+                    <TableHead>{t('cpq.quotes.amount')}</TableHead>
+                    <TableHead>{t('cpq.quotes.created')}</TableHead>
+                    <TableHead>{t('cpq.quotes.validUntil')}</TableHead>
+                    <TableHead>{t('cpq.quotes.approval')}</TableHead>
+                    <TableHead className="text-right">{t('cpq.quotes.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -255,12 +257,12 @@ export const QuoteList: React.FC = () => {
                           quote.approved_by_id ? (
                             <Badge className="bg-green-100 text-green-800">
                               <CheckCircle className="h-3 w-3 mr-1" />
-                              Approved
+                              {t('cpq.quotes.approved')}
                             </Badge>
                           ) : (
                             <Badge variant="secondary">
                               <Clock className="h-3 w-3 mr-1" />
-                              Pending
+                              {t('cpq.quotes.pending')}
                             </Badge>
                           )
                         ) : (
@@ -277,25 +279,25 @@ export const QuoteList: React.FC = () => {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => navigate(`/cpq/quotes/${quote.id}`)}>
                               <Eye className="h-4 w-4 mr-2" />
-                              View Details
+                              {t('cpq.quotes.viewDetails')}
                             </DropdownMenuItem>
                             {quote.status === 'draft' && (
                               <>
                                 <DropdownMenuItem onClick={() => navigate(`/cpq/quotes/${quote.id}/edit`)}>
                                   <Edit className="h-4 w-4 mr-2" />
-                                  Edit
+                                  {t('cpq.quotes.edit')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => updateStatusMutation.mutate({ id: quote.id, status: 'sent' })}
                                 >
                                   <Send className="h-4 w-4 mr-2" />
-                                  Send to Customer
+                                  {t('cpq.quotes.sendToCustomer')}
                                 </DropdownMenuItem>
                               </>
                             )}
                             <DropdownMenuItem>
                               <Download className="h-4 w-4 mr-2" />
-                              Download PDF
+                              {t('cpq.quotes.downloadPdf')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -307,13 +309,13 @@ export const QuoteList: React.FC = () => {
             ) : (
               <div className="text-center py-12">
                 <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-semibold mb-2">No quotes yet</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('cpq.quotes.emptyTitle')}</h3>
                 <p className="text-gray-600 mb-4">
-                  Create your first quote to get started
+                  {t('cpq.quotes.emptyBody')}
                 </p>
                 <Button onClick={() => navigate('/cpq/quotes/new')}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Quote
+                  {t('cpq.quotes.create')}
                 </Button>
               </div>
             )}

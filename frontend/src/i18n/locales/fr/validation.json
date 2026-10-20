@@ -1,0 +1,11 @@
+{
+  "required": "Ce champ est obligatoire",
+  "email": "Entrez une adresse e-mail valide",
+  "minLength": "Doit contenir au moins {{min}} caractères",
+  "maxLength": "Doit contenir au maximum {{max}} caractères",
+  "passwordMismatch": "Les mots de passe ne correspondent pas",
+  "invalidUrl": "Entrez une URL valide",
+  "invalidPhone": "Entrez un numéro de téléphone valide",
+  "positiveNumber": "Doit être un nombre positif",
+  "invalidDate": "Entrez une date valide"
+}

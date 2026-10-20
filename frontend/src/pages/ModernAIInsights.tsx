@@ -5,6 +5,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '@/services/axios';
 import {
   Brain,
@@ -33,6 +34,7 @@ async function fetchHighPriority(): Promise<HighPriorityLead[]> {
 }
 
 export function ModernAIInsights() {
+  const { t } = useTranslation('modules');
   const {
     data: analytics,
     isLoading: loadingA,
@@ -58,7 +60,7 @@ export function ModernAIInsights() {
       <div className="flex min-h-[50vh] items-center justify-center bg-neutral-50 dark:bg-neutral-900 p-8">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-          <p className="text-neutral-600 dark:text-neutral-400">Loading AI insights…</p>
+          <p className="text-neutral-600 dark:text-neutral-400">{t('aiInsights.loading')}</p>
         </div>
       </div>
     );
@@ -69,7 +71,7 @@ export function ModernAIInsights() {
       <div className="p-8">
         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
           <AlertCircle className="h-5 w-5 shrink-0" />
-          <p>Could not load AI analytics. Ensure you are signed in and the API is available.</p>
+          <p>{t('aiInsights.loadFailed')}</p>
         </div>
       </div>
     );
@@ -88,18 +90,15 @@ export function ModernAIInsights() {
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold text-neutral-900 dark:text-neutral-50">
-          AI Insights
+          {t('aiInsights.title')}
         </h1>
         <p className="text-neutral-600 dark:text-neutral-400">
-          Organization analytics from stored lead analyses (same data as lead-level insights).
+          {t('aiInsights.subtitle')}
         </p>
         <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
-          <p className="font-medium">Why numbers can be zero</p>
+          <p className="font-medium">{t('aiInsights.zeroTitle')}</p>
           <p className="mt-1 text-blue-800 dark:text-blue-200">
-            These metrics are computed from rows in the <strong>ai_insights</strong> table for your
-            organization. They appear after lead analyses run (open a lead, use AI insights / analyze, or
-            batch analysis). No stored analyses yet means zeros and empty charts — that is expected until
-            you analyze at least one lead.
+            {t('aiInsights.zeroBody1')} <strong>ai_insights</strong> {t('aiInsights.zeroBody2')}
           </p>
         </div>
       </div>
@@ -109,7 +108,7 @@ export function ModernAIInsights() {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/20">
             <Brain className="h-6 w-6 text-purple-600 dark:text-purple-400" />
           </div>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Analyses stored</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('aiInsights.analysesStored')}</p>
           <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
             {a.total_insights}
           </p>
@@ -118,7 +117,7 @@ export function ModernAIInsights() {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/20">
             <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Avg quality score</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('aiInsights.avgQuality')}</p>
           <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
             {a.avg_quality_score?.toFixed(1) ?? '—'}
           </p>
@@ -127,7 +126,7 @@ export function ModernAIInsights() {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/20">
             <Target className="h-6 w-6 text-amber-600 dark:text-amber-400" />
           </div>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Avg priority score</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('aiInsights.avgPriority')}</p>
           <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
             {a.avg_priority_score?.toFixed(1) ?? '—'}
           </p>
@@ -136,7 +135,7 @@ export function ModernAIInsights() {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/20">
             <Users className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Avg confidence</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('aiInsights.avgConfidence')}</p>
           <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
             {typeof a.avg_confidence === 'number' ? a.avg_confidence.toFixed(2) : '—'}
           </p>
@@ -146,10 +145,10 @@ export function ModernAIInsights() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div className="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
           <h2 className="mb-4 text-lg font-semibold text-neutral-900 dark:text-neutral-50">
-            Personality distribution
+            {t('aiInsights.personality')}
           </h2>
           {Object.keys(a.personality_distribution || {}).length === 0 ? (
-            <p className="text-sm text-neutral-500">No personality breakdown yet — run analyses on leads.</p>
+            <p className="text-sm text-neutral-500">{t('aiInsights.noPersonality')}</p>
           ) : (
             <ul className="space-y-2">
               {Object.entries(a.personality_distribution).map(([k, v]) => (
@@ -164,11 +163,11 @@ export function ModernAIInsights() {
 
         <div className="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
           <h2 className="mb-4 text-lg font-semibold text-neutral-900 dark:text-neutral-50">
-            High-priority leads
+            {t('aiInsights.highPriority')}
           </h2>
           {highPriority.length === 0 ? (
             <p className="text-sm text-neutral-500">
-              No leads match the priority threshold yet.
+              {t('aiInsights.noHighPriority')}
             </p>
           ) : (
             <ul className="space-y-3">
@@ -184,7 +183,7 @@ export function ModernAIInsights() {
                     <div className="mt-1 flex flex-wrap gap-2 text-xs text-neutral-500">
                       {row.company ? <span>{row.company}</span> : null}
                       <span>
-                        Priority{' '}
+                        {t('aiInsights.priority')}{' '}
                         {typeof row.priority_score === 'number'
                           ? row.priority_score.toFixed(0)
                           : row.priority_score}

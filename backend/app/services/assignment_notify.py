@@ -70,6 +70,9 @@ def schedule_assignment_mention(
 
     async def _send() -> None:
         try:
+            from app.core.user_language import get_user_language
+
+            assignee_lang = get_user_language(db, int(assignee.id))
             sent = await email_sender.send_assignment_mention(
                 to_email=assignee.email,
                 recipient_name=_display_name(assignee),
@@ -78,6 +81,7 @@ def schedule_assignment_mention(
                 entity_title=entity_title or f"Untitled {entity}",
                 entity_url=entity_url,
                 organization_name=organization_name,
+                language=assignee_lang,
             )
             if not sent:
                 logger.warning(

@@ -5,6 +5,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '@/services/axios';
 import tasksAPI from '@/services/tasks';
 import { useToast } from '@/hooks/use-toast';
@@ -50,16 +51,17 @@ function TasksSearchField({
   isFetching?: boolean;
   onDebouncedChange: (value: string) => void;
 }) {
+  const { t } = useTranslation('tasks');
   const [value, setValue] = useState('');
   const [debounced, setDebounced] = useState('');
 
   React.useEffect(() => {
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       const next = value.trim();
       setDebounced(next);
       onDebouncedChange(next);
     }, 300);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(timer);
   }, [value, onDebouncedChange]);
 
   return (
@@ -67,7 +69,7 @@ function TasksSearchField({
       <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400" />
       <input
         type="text"
-        placeholder="Search tasks..."
+        placeholder={t('searchPlaceholder')}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         className="min-h-[44px] w-full rounded-lg border border-neutral-200 bg-white py-2.5 pl-10 pr-10 text-base dark:border-neutral-700 dark:bg-neutral-800"
@@ -80,6 +82,7 @@ function TasksSearchField({
 }
 
 function TaskActionsMenu({ taskId }: { taskId: number }) {
+  const { t } = useTranslation('tasks');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -91,10 +94,10 @@ function TaskActionsMenu({ taskId }: { taskId: number }) {
       queryClient.removeQueries({ queryKey: ['task-details', id] });
       queryClient.removeQueries({ queryKey: ['task-attachments', id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast({ title: 'Task deleted' });
+      toast({ title: t('deleted') });
     },
     onError: () => {
-      toast({ title: 'Could not delete task', variant: 'destructive' });
+      toast({ title: t('deleteFailed'), variant: 'destructive' });
     },
   });
 
@@ -104,7 +107,7 @@ function TaskActionsMenu({ taskId }: { taskId: number }) {
         <button
           type="button"
           className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700"
-          aria-label="Task actions"
+          aria-label={t('taskActions')}
           onClick={(e) => e.stopPropagation()}
         >
           <MoreVertical className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
@@ -116,26 +119,26 @@ function TaskActionsMenu({ taskId }: { taskId: number }) {
           onClick={() => navigate(`/tasks/${taskId}`)}
         >
           <Eye className="mr-2 h-4 w-4" />
-          View / edit
+          {t('viewEdit')}
         </DropdownMenuItem>
         <DropdownMenuItem
           className="min-h-[44px] cursor-pointer"
           onClick={() => navigate(`/tasks/${taskId}`)}
         >
           <Pencil className="mr-2 h-4 w-4" />
-          Open detail
+          {t('openDetail')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="min-h-[44px] cursor-pointer text-red-600 focus:text-red-600"
           onClick={() => {
-            if (window.confirm('Delete this task?')) {
+            if (window.confirm(t('deleteConfirm'))) {
               deleteMutation.mutate(taskId);
             }
           }}
         >
           <Trash2 className="mr-2 h-4 w-4" />
-          Delete
+          {t('common:delete')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -143,6 +146,7 @@ function TaskActionsMenu({ taskId }: { taskId: number }) {
 }
 
 export function ModernTasks() {
+  const { t } = useTranslation('tasks');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -173,10 +177,10 @@ export function ModernTasks() {
   }, [body]);
 
   const statuses = [
-    { id: 'PENDING', name: 'To Do', dot: 'bg-blue-500' },
-    { id: 'IN_PROGRESS', name: 'In Progress', dot: 'bg-yellow-500' },
-    { id: 'COMPLETED', name: 'Completed', dot: 'bg-green-500' },
-    { id: 'CANCELLED', name: 'Cancelled', dot: 'bg-gray-500' },
+    { id: 'PENDING', name: t('statusLabels.pending'), dot: 'bg-blue-500' },
+    { id: 'IN_PROGRESS', name: t('statusLabels.inProgress'), dot: 'bg-yellow-500' },
+    { id: 'COMPLETED', name: t('statusLabels.completed'), dot: 'bg-green-500' },
+    { id: 'CANCELLED', name: t('statusLabels.cancelled'), dot: 'bg-gray-500' },
   ];
 
   const tasksByStatus = useMemo(
@@ -185,7 +189,8 @@ export function ModernTasks() {
         ...status,
         tasks: tasks.filter((task) => task.status === status.id),
       })),
-    [tasks],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- statuses is derived from t
+    [tasks, t],
   );
 
   const updateStatusMutation = useMutation({
@@ -196,7 +201,7 @@ export function ModernTasks() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
     onError: () => {
-      toast({ title: 'Could not update task status', variant: 'destructive' });
+      toast({ title: t('statusUpdateFailed'), variant: 'destructive' });
     },
   });
 
@@ -205,10 +210,13 @@ export function ModernTasks() {
     const taskId = Number(result.draggableId);
     const destinationStatus = result.destination.droppableId;
     if (!taskId || !destinationStatus) return;
-    const draggedTask = tasks.find((t) => t.id === taskId);
+    const draggedTask = tasks.find((x) => x.id === taskId);
     if (!draggedTask || draggedTask.status === destinationStatus) return;
     updateStatusMutation.mutate({ id: taskId, status: destinationStatus });
   };
+
+  const priorityLabel = (priority: string) =>
+    t(`priorities.${(priority || '').toLowerCase()}`, { defaultValue: priority });
 
   const getPriorityColor = (priority: string) => {
     const p = (priority || '').toUpperCase();
@@ -230,7 +238,7 @@ export function ModernTasks() {
       <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-4 dark:bg-neutral-900">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-          <p className="text-neutral-600 dark:text-neutral-400">Loading tasks...</p>
+          <p className="text-neutral-600 dark:text-neutral-400">{t('loading')}</p>
         </div>
       </div>
     );
@@ -242,10 +250,10 @@ export function ModernTasks() {
         <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="mb-2 text-2xl font-bold text-neutral-900 dark:text-neutral-50 md:text-3xl">
-              Tasks
+              {t('title')}
             </h1>
             <p className="text-sm text-neutral-600 dark:text-neutral-400 md:text-base">
-              Manage and track your tasks • {tasks.length} total tasks
+              {t('pageSubtitle', { count: tasks.length })}
             </p>
           </div>
           <button
@@ -254,7 +262,7 @@ export function ModernTasks() {
             className="flex min-h-[44px] w-full items-center justify-center space-x-2 rounded-lg bg-primary-600 px-4 py-2.5 font-medium text-white shadow-sm transition-colors hover:bg-primary-700 sm:w-auto"
           >
             <Plus className="h-5 w-5" />
-            <span>New Task</span>
+            <span>{t('newTask')}</span>
           </button>
         </div>
 
@@ -266,7 +274,7 @@ export function ModernTasks() {
               className="flex min-h-[44px] items-center justify-center space-x-2 rounded-lg border border-neutral-200 bg-white px-4 py-2.5 dark:border-neutral-700 dark:bg-neutral-800"
             >
               <Filter className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
-              <span className="text-neutral-700 dark:text-neutral-300">Filters</span>
+              <span className="text-neutral-700 dark:text-neutral-300">{t('filters')}</span>
             </button>
           </div>
 
@@ -281,7 +289,7 @@ export function ModernTasks() {
               }`}
             >
               <LayoutGrid className="h-4 w-4" />
-              <span className="text-sm font-medium">Board</span>
+              <span className="text-sm font-medium">{t('board')}</span>
             </button>
             <button
               type="button"
@@ -293,7 +301,7 @@ export function ModernTasks() {
               }`}
             >
               <List className="h-4 w-4" />
-              <span className="text-sm font-medium">List</span>
+              <span className="text-sm font-medium">{t('list')}</span>
             </button>
           </div>
         </div>
@@ -344,11 +352,11 @@ export function ModernTasks() {
                                 {task.description}
                               </p>
                             )}
-                            <p className="mb-3 text-[11px] text-neutral-400">Click title or description to edit</p>
+                            <p className="mb-3 text-[11px] text-neutral-400">{t('clickToEdit')}</p>
 
                             <div className="flex items-center justify-between">
                               <span className={`rounded px-2 py-0.5 text-xs font-medium ${getPriorityColor(task.priority)}`}>
-                                {task.priority}
+                                {priorityLabel(task.priority)}
                               </span>
                               {task.due_date && (
                                 <div className="flex items-center text-xs text-neutral-600 dark:text-neutral-400">
@@ -366,7 +374,7 @@ export function ModernTasks() {
                 )}
               </Droppable>
                 {status.tasks.length === 0 && (
-                  <div className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">No tasks</div>
+                  <div className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">{t('noTasksColumn')}</div>
                 )}
             </div>
           ))}
@@ -380,22 +388,22 @@ export function ModernTasks() {
             <thead className="border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-700/50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                  Task
+                  {t('columnTask')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                  Status
+                  {t('columnStatus')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                  Priority
+                  {t('priority')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                  Due Date
+                  {t('dueDate')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                  Assigned To
+                  {t('assignedTo')}
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                  Actions
+                  {t('common:actions')}
                 </th>
               </tr>
             </thead>
@@ -423,14 +431,14 @@ export function ModernTasks() {
                   </td>
                   <td className="px-4 py-4">
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${getPriorityColor(task.priority)}`}>
-                      {task.priority}
+                      {priorityLabel(task.priority)}
                     </span>
                   </td>
                   <td className="px-4 py-4 text-sm text-neutral-900 dark:text-neutral-50">
                     {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
                   </td>
                   <td className="px-4 py-4 text-sm text-neutral-900 dark:text-neutral-50">
-                    {task.assigned_to ? `${task.assigned_to.first_name} ${task.assigned_to.last_name}` : 'Unassigned'}
+                    {task.assigned_to ? `${task.assigned_to.first_name} ${task.assigned_to.last_name}` : t('unassigned')}
                   </td>
                   <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                     <TaskActionsMenu taskId={task.id} />
@@ -441,7 +449,7 @@ export function ModernTasks() {
           </table>
           {tasks.length === 0 && (
             <div className="py-12 text-center text-neutral-500 dark:text-neutral-400">
-              No tasks found. Click &quot;New Task&quot; to create your first task.
+              {t('emptyList')}
             </div>
           )}
         </div>
