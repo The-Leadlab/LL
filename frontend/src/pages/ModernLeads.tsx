@@ -237,6 +237,45 @@ export function LeadsPaginationBar({
   );
 }
 
+/** Isolated search input so typing does not re-render the full leads table. */
+function LeadsSearchField({
+  initialValue = '',
+  isFetching = false,
+  onDebouncedChange,
+}: {
+  initialValue?: string;
+  isFetching?: boolean;
+  onDebouncedChange: (value: string) => void;
+}) {
+  const [value, setValue] = useState(initialValue);
+  const [debounced, setDebounced] = useState(initialValue.trim());
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const next = value.trim();
+      setDebounced(next);
+      onDebouncedChange(next);
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [value, onDebouncedChange]);
+
+  return (
+    <div className="relative flex-1">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+      <input
+        type="text"
+        placeholder="Search leads by name, company, email..."
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+      />
+      {(isFetching || value.trim() !== debounced) && (
+        <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary-600" />
+      )}
+    </div>
+  );
+}
+
 export function ModernLeads() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -245,8 +284,7 @@ export function ModernLeads() {
   const { user } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState(() => (searchParams.get('q') || '').trim());
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [selectedLeads, setSelectedLeads] = useState<number[]>([]);
@@ -295,10 +333,9 @@ export function ModernLeads() {
   const [filterSector, setFilterSector] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
-    return () => window.clearTimeout(t);
-  }, [searchQuery]);
+  const handleDebouncedSearch = React.useCallback((value: string) => {
+    setDebouncedSearch(value);
+  }, []);
 
   useEffect(() => {
     setPage(0);
@@ -805,19 +842,11 @@ export function ModernLeads() {
         <div className="flex flex-col gap-3 mt-4 lg:flex-row lg:items-center lg:justify-between">
           {/* Search & Filter */}
           <div className="flex items-center space-x-3 flex-1 max-w-2xl">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-              <input
-                type="text"
-                placeholder="Search leads by name, company, email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-              {(isFetchingLeads || searchQuery.trim() !== debouncedSearch) && (
-                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary-600" />
-              )}
-            </div>
+            <LeadsSearchField
+              initialValue={debouncedSearch}
+              isFetching={isFetchingLeads}
+              onDebouncedChange={handleDebouncedSearch}
+            />
             <button
               type="button"
               onClick={() => setIsFiltersOpen(true)}

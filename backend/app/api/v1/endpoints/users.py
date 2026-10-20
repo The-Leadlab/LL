@@ -433,6 +433,43 @@ def get_assignable_users(
     )
 
 
+@router.get("/search-platform", response_model=UserResponse)
+@router.get("/search-platform/", response_model=UserResponse)
+def search_platform_user(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: UserModel = Depends(deps.get_current_admin_user),
+    email: str = Query(..., min_length=3, max_length=320),
+) -> Any:
+    """
+    Admin-only: find an active platform user by exact email so they can be
+    moved into the caller's organization (Add Existing).
+    """
+    needle = (email or "").strip().lower()
+    if "@" not in needle:
+        raise HTTPException(status_code=400, detail="Enter a valid email address")
+
+    own_org = getattr(current_user, "organization_id", None)
+    if not own_org:
+        raise HTTPException(status_code=422, detail="Current user has no organization")
+
+    found = (
+        db.query(UserModel)
+        .filter(func.lower(UserModel.email) == needle)
+        .first()
+    )
+    if not found or not found.is_active:
+        raise HTTPException(status_code=404, detail="No active user found with that email")
+
+    if int(found.organization_id or 0) == int(own_org):
+        raise HTTPException(
+            status_code=400,
+            detail="That user is already in your organization",
+        )
+
+    return _to_user_response(found, is_self=False)
+
+
 @router.get("/organization-users", response_model=List[UserResponse])
 def get_organization_users(
     current_user: UserModel = Depends(deps.get_current_user),

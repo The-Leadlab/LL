@@ -82,8 +82,9 @@ const TeamManagement: React.FC = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [selectedExistingUserId, setSelectedExistingUserId] = useState<string>('');
-  const [existingUserSearch, setExistingUserSearch] = useState('');
+  const [existingUserEmail, setExistingUserEmail] = useState('');
+  const [foundExistingUser, setFoundExistingUser] = useState<User | null>(null);
+  const [isSearchingExisting, setIsSearchingExisting] = useState(false);
 
   const getErrorMessage = (error: any, fallback: string) => {
     const detail = error?.response?.data?.detail;
@@ -137,49 +138,22 @@ const TeamManagement: React.FC = () => {
   const { data: invitations = [], isLoading: isLoadingInvitations } = useQuery({
     queryKey: ['team-invitations'],
     queryFn: async () => {
-      const response = await api.teamInvitations.getInvitations();
-      return response.data;
+      // teamInvitations service already returns unwrapped response.data
+      const data = await api.teamInvitations.getInvitations();
+      return Array.isArray(data) ? data : [];
     },
   });
 
   const { data: invitationStats } = useQuery({
     queryKey: ['invitation-stats'],
     queryFn: async () => {
-      const response = await api.teamInvitations.getStats();
-      return response.data;
-    },
-  });
-
-  const { data: allUsersResponse } = useQuery({
-    queryKey: ['all-users-for-team-management'],
-    queryFn: async () => {
-      const response = await api.users.list();
-      return response.data?.items || [];
+      // teamInvitations service already returns unwrapped response.data
+      return api.teamInvitations.getStats();
     },
   });
 
   const currentOrgId = user?.organization_id ? Number(user.organization_id) : null;
-  const addableUsers = (allUsersResponse || []).filter((candidate: User) => {
-    if (!currentOrgId) return false;
-    if (!candidate.is_active) return false;
-    return Number(candidate.organization_id) !== currentOrgId;
-  });
-  const displayedTeamMembers = teamMembers.length
-    ? teamMembers
-    : (allUsersResponse || []).filter((candidate: User) => {
-        if (!currentOrgId) return false;
-        if (!candidate.is_active) return false;
-        return Number(candidate.organization_id) === currentOrgId;
-      });
-  const normalizedExistingUserSearch = existingUserSearch.trim().toLowerCase();
-  const filteredAddableUsers = addableUsers.filter((candidate: User) => {
-    if (!normalizedExistingUserSearch) return true;
-    const fullName = `${candidate.first_name || ''} ${candidate.last_name || ''}`.trim().toLowerCase();
-    return (
-      fullName.includes(normalizedExistingUserSearch) ||
-      candidate.email.toLowerCase().includes(normalizedExistingUserSearch)
-    );
-  });
+  const displayedTeamMembers = teamMembers;
 
   // Mutations
   const inviteMutation = useMutation({
@@ -231,14 +205,39 @@ const TeamManagement: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team-members'] });
-      queryClient.invalidateQueries({ queryKey: ['all-users-for-team-management'] });
-      setSelectedExistingUserId('');
+      queryClient.invalidateQueries({ queryKey: ['assignable-users'] });
+      setExistingUserEmail('');
+      setFoundExistingUser(null);
       toast.success('Existing user added to your organization');
     },
     onError: (error: any) => {
       toast.error(getErrorMessage(error, 'Could not add existing user'));
     },
   });
+
+  const searchExistingUser = async () => {
+    const email = existingUserEmail.trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      toast.error('Enter a valid email address');
+      return;
+    }
+    setIsSearchingExisting(true);
+    setFoundExistingUser(null);
+    try {
+      const response = await api.users.searchPlatform(email);
+      const candidate = (response as { data?: User })?.data ?? (response as unknown as User);
+      if (!candidate?.id) {
+        toast.error('No platform user found with that email');
+        return;
+      }
+      setFoundExistingUser(candidate);
+      toast.success(`Found ${candidate.first_name || ''} ${candidate.last_name || ''}`.trim() || candidate.email);
+    } catch (error: any) {
+      toast.error(getErrorMessage(error, 'No platform user found with that email'));
+    } finally {
+      setIsSearchingExisting(false);
+    }
+  };
 
   // Handlers
   const onSubmitInvite = async (data: InviteFormData) => {
@@ -596,44 +595,55 @@ const TeamManagement: React.FC = () => {
             <div className="mb-6 rounded-lg border p-4 bg-gray-50">
               <h4 className="text-sm font-semibold text-gray-900 mb-2">Add Existing Platform User</h4>
               <p className="text-xs text-gray-600 mb-3">
-                Move an existing active user from another organization into your organization/team.
+                Look up an existing LeadLab account by email and move them into your organization.
               </p>
               <div className="flex flex-col md:flex-row gap-3">
                 <Input
-                  placeholder="Search by name or email..."
-                  value={existingUserSearch}
-                  onChange={(e) => setExistingUserSearch(e.target.value)}
-                  className="md:w-[280px] bg-white"
+                  type="email"
+                  placeholder="colleague@company.com"
+                  value={existingUserEmail}
+                  onChange={(e) => {
+                    setExistingUserEmail(e.target.value);
+                    setFoundExistingUser(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void searchExistingUser();
+                    }
+                  }}
+                  className="md:w-[320px] bg-white"
                 />
-                <Select value={selectedExistingUserId} onValueChange={setSelectedExistingUserId}>
-                  <SelectTrigger className="md:w-[420px] bg-white">
-                    <SelectValue placeholder="Select existing user..." />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72 overflow-y-auto">
-                    {filteredAddableUsers.map((candidate: User) => (
-                      <SelectItem key={candidate.id} value={String(candidate.id)}>
-                        {candidate.first_name} {candidate.last_name} - {candidate.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void searchExistingUser()}
+                  disabled={isSearchingExisting || !existingUserEmail.trim()}
+                >
+                  {isSearchingExisting ? 'Searching...' : 'Find User'}
+                </Button>
                 <Button
                   onClick={() => {
-                    if (!selectedExistingUserId) return;
-                    const selectedCandidate = addableUsers.find(
-                      (candidate: User) => String(candidate.id) === selectedExistingUserId
-                    );
-                    if (!selectedCandidate) {
-                      toast.error('Selected user not found');
+                    if (!foundExistingUser) {
+                      toast.error('Find a user by email first');
                       return;
                     }
-                    addExistingUserMutation.mutate(selectedCandidate);
+                    addExistingUserMutation.mutate(foundExistingUser);
                   }}
-                  disabled={!selectedExistingUserId || addExistingUserMutation.isPending}
+                  disabled={!foundExistingUser || addExistingUserMutation.isPending}
                 >
-                  {addExistingUserMutation.isPending ? 'Adding...' : 'Add Existing User'}
+                  {addExistingUserMutation.isPending ? 'Adding...' : 'Add to Team'}
                 </Button>
               </div>
+              {foundExistingUser && (
+                <p className="mt-3 text-sm text-gray-700">
+                  Ready to add:{' '}
+                  <span className="font-medium">
+                    {foundExistingUser.first_name} {foundExistingUser.last_name}
+                  </span>{' '}
+                  ({foundExistingUser.email})
+                </p>
+              )}
             </div>
 
             {isLoadingMembers ? (

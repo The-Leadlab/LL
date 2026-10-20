@@ -22,6 +22,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Badge } from '@/components/ui/Badge';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import api from '@/services/api';
+import { useAuthStore } from '@/store/auth';
 
 // Types
 interface TeamInvitation {
@@ -34,11 +35,12 @@ interface TeamInvitation {
   invited_by_name: string;
   organization_name: string;
   message?: string;
-  created_at: string;
+  created_at?: string;
   expires_at: string;
+  existing_user?: boolean;
 }
 
-// Form schema
+// Form schema (new accounts only)
 const acceptInvitationSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string(),
@@ -51,14 +53,23 @@ const acceptInvitationSchema = z.object({
 
 type AcceptInvitationFormData = z.infer<typeof acceptInvitationSchema>;
 
+function invitationErrorDetail(error: any): string {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === 'string') return detail;
+  if (detail && typeof detail === 'object' && typeof detail.message === 'string') {
+    return detail.message;
+  }
+  return 'Failed to accept invitation';
+}
+
 const AcceptInvitation: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuthStore();
   const [invitationData, setInvitationData] = useState<TeamInvitation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
 
-  // Form setup
   const form = useForm<AcceptInvitationFormData>({
     resolver: zodResolver(acceptInvitationSchema),
     defaultValues: {
@@ -69,7 +80,6 @@ const AcceptInvitation: React.FC = () => {
     },
   });
 
-  // Load invitation data
   useEffect(() => {
     const loadInvitation = async () => {
       if (!token) {
@@ -79,15 +89,15 @@ const AcceptInvitation: React.FC = () => {
       }
 
       try {
-        const response = await api.teamInvitations.getInvitationByToken(token);
-        setInvitationData(response.data);
+        // teamInvitations service already returns unwrapped response.data
+        const invitation = await api.teamInvitations.getInvitationByToken(token);
+        setInvitationData(invitation);
         
-        // Pre-fill form with invitation data
-        if (response.data.first_name) {
-          form.setValue('first_name', response.data.first_name);
+        if (invitation.first_name) {
+          form.setValue('first_name', invitation.first_name);
         }
-        if (response.data.last_name) {
-          form.setValue('last_name', response.data.last_name);
+        if (invitation.last_name) {
+          form.setValue('last_name', invitation.last_name);
         }
       } catch (error: any) {
         toast.error(error.response?.data?.detail || 'Failed to load invitation');
@@ -100,13 +110,38 @@ const AcceptInvitation: React.FC = () => {
     loadInvitation();
   }, [token, navigate, form]);
 
-  // Handle form submission
+  const signedInAsInvitee =
+    isAuthenticated &&
+    !!user?.email &&
+    !!invitationData?.email &&
+    user.email.trim().toLowerCase() === invitationData.email.trim().toLowerCase();
+
+  const joinExistingAccount = async () => {
+    if (!token || !invitationData) return;
+    setIsAccepting(true);
+    try {
+      await api.teamInvitations.acceptInvitation(token, {});
+      toast.success('You joined the team. Welcome!');
+      navigate('/dashboard');
+    } catch (error: any) {
+      const detail = error?.response?.data?.detail;
+      if (error?.response?.status === 409 || detail?.code === 'existing_user') {
+        toast.error(detail?.message || 'Sign in with your existing account to join');
+        navigate('/signin', { state: { from: { pathname: `/invite/${token}` } } });
+        return;
+      }
+      toast.error(invitationErrorDetail(error));
+    } finally {
+      setIsAccepting(false);
+    }
+  };
+
   const onSubmit = async (data: AcceptInvitationFormData) => {
     if (!token || !invitationData) return;
 
     setIsAccepting(true);
     try {
-      const response = await api.teamInvitations.acceptInvitation(token, {
+      await api.teamInvitations.acceptInvitation(token, {
         password: data.password,
         first_name: data.first_name,
         last_name: data.last_name,
@@ -115,13 +150,18 @@ const AcceptInvitation: React.FC = () => {
       toast.success('Invitation accepted. You can now sign in.');
       navigate('/signin');
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to accept invitation');
+      const detail = error?.response?.data?.detail;
+      if (error?.response?.status === 409 || detail?.code === 'existing_user') {
+        toast.error(detail?.message || 'Sign in with your existing account to join');
+        navigate('/signin', { state: { from: { pathname: `/invite/${token}` } } });
+        return;
+      }
+      toast.error(invitationErrorDetail(error));
     } finally {
       setIsAccepting(false);
     }
   };
 
-  // Helper functions
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'admin':
@@ -221,11 +261,11 @@ const AcceptInvitation: React.FC = () => {
   }
 
   const invitation = invitationData;
+  const isExistingUser = Boolean(invitation.existing_user);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Header */}
         <div className="text-center">
           <div className="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
             <Users className="h-6 w-6 text-blue-600" />
@@ -238,7 +278,6 @@ const AcceptInvitation: React.FC = () => {
           </p>
         </div>
 
-        {/* Invitation Details */}
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Invitation Details</CardTitle>
@@ -290,122 +329,188 @@ const AcceptInvitation: React.FC = () => {
               </div>
             )}
 
-            <div className="text-xs text-gray-500">
-              Invited by {invitation.invited_by_name} on {formatDate(invitation.created_at)}
-            </div>
+            {invitation.created_at && (
+              <div className="text-xs text-gray-500">
+                Invited by {invitation.invited_by_name} on {formatDate(invitation.created_at)}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Account Creation Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Create Your Account</CardTitle>
-            <CardDescription>
-              Set up your password to complete the registration
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+        {isExistingUser ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Join with Existing Account</CardTitle>
+              <CardDescription>
+                An account already exists for {invitation.email}. Sign in with that account to join {invitation.organization_name}.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {signedInAsInvitee ? (
+                <>
+                  <Alert>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      You are signed in as {user?.email}. Click below to join the team.
+                    </AlertDescription>
+                  </Alert>
+                  <Button
+                    className="w-full"
+                    disabled={isAccepting}
+                    onClick={() => void joinExistingAccount()}
+                  >
+                    {isAccepting ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Joining...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Join {invitation.organization_name}
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {isAuthenticated && user?.email && (
+                    <Alert>
+                      <AlertDescription>
+                        You are signed in as {user.email}, but this invite is for {invitation.email}.
+                        Sign in with the invited email to continue.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  <Button
+                    className="w-full"
+                    onClick={() =>
+                      navigate('/signin', {
+                        state: { from: { pathname: `/invite/${token}` } },
+                      })
+                    }
+                  >
+                    Sign in to join
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Create Your Account</CardTitle>
+              <CardDescription>
+                Set up your password to complete the registration
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="first_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="John" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="last_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <FormField
                     control={form.control}
-                    name="first_name"
+                    name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First Name</FormLabel>
+                        <FormLabel>Password *</FormLabel>
                         <FormControl>
-                          <Input placeholder="John" {...field} />
+                          <PasswordInput 
+                            placeholder="Enter your password"
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
-                    name="last_name"
+                    name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last Name</FormLabel>
+                        <FormLabel>Confirm Password *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Doe" {...field} />
+                          <PasswordInput 
+                            placeholder="Confirm your password"
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password *</FormLabel>
-                      <FormControl>
-                        <PasswordInput 
-                          placeholder="Enter your password"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <Alert>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      By accepting this invitation, you agree to join {invitation.organization_name} 
+                      and will have {invitation.role} access to the platform.
+                    </AlertDescription>
+                  </Alert>
 
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm Password *</FormLabel>
-                      <FormControl>
-                        <PasswordInput 
-                          placeholder="Confirm your password"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Alert>
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    By accepting this invitation, you agree to join {invitation.organization_name} 
-                    and will have {invitation.role} access to the platform.
-                  </AlertDescription>
-                </Alert>
-
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  disabled={isAccepting}
-                >
-                  {isAccepting ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Accept Invitation & Create Account
-                    </>
-                  )}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={isAccepting}
+                  >
+                    {isAccepting ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Creating Account...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Accept Invitation & Create Account
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="text-center">
           <p className="text-xs text-gray-500">
             Already have an account?{' '}
             <button
-              onClick={() => navigate('/signin')}
+              onClick={() =>
+                navigate('/signin', {
+                  state: { from: { pathname: `/invite/${token}` } },
+                })
+              }
               className="text-blue-600 hover:text-blue-500"
             >
               Sign in here

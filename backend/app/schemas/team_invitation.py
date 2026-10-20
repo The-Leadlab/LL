@@ -22,7 +22,8 @@ class TeamInvitationUpdate(BaseModel):
 
 # Schema for accepting invitations
 class TeamInvitationAccept(BaseModel):
-    password: str
+    # Required for new accounts; omit when joining with an existing authenticated account
+    password: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
 
@@ -61,6 +62,8 @@ class TeamInvitationToken(BaseModel):
     status: str
     expires_at: datetime
     message: Optional[str] = None
+    # True when this email already has a LeadLab account (join vs create)
+    existing_user: bool = False
 
     class Config:
         from_attributes = True 

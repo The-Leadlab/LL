@@ -15,6 +15,7 @@ export interface TeamInvitation {
   message?: string;
   created_at: string;
   updated_at: string;
+  existing_user?: boolean;
 }
 
 export interface InvitationCreateInput {
@@ -26,7 +27,7 @@ export interface InvitationCreateInput {
 }
 
 export interface InvitationAcceptInput {
-  password: string;
+  password?: string;
   first_name?: string;
   last_name?: string;
 }

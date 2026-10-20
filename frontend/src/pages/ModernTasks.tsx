@@ -2,7 +2,7 @@
  * Modern Tasks Page — list + board with working row actions.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '@/services/axios';
@@ -108,11 +108,17 @@ export function ModernTasks() {
   const { toast } = useToast();
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => window.clearTimeout(t);
+  }, [searchQuery]);
 
   const { data: tasksResponse, isLoading } = useQuery({
-    queryKey: ['tasks', searchQuery],
+    queryKey: ['tasks', debouncedSearch],
     queryFn: async () => {
-      const params = searchQuery ? { search: searchQuery } : {};
+      const params = debouncedSearch ? { search: debouncedSearch } : {};
       return api.get('/tasks/', { params });
     },
   });

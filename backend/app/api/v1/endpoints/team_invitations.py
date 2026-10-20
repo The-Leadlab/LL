@@ -1,5 +1,7 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -19,11 +21,46 @@ from app.schemas.team_invitation import (
 from app.schemas.user import UserCreate
 from app.core.email import email_sender
 from app.core.config import settings
+from app.core.workspace import record_team_membership
+from app import schemas
 import logging
+
+_optional_oauth2 = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/auth/login",
+    auto_error=False,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(redirect_slashes=False)
+
+
+def _optional_user_from_request(
+    db: Session,
+    token: Optional[str],
+) -> Optional[UserModel]:
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        token_data = schemas.TokenPayload(**payload)
+        if token_data.sub is None:
+            return None
+        return crud_user.user.get(db, id=int(token_data.sub))
+    except (JWTError, ValueError, TypeError):
+        return None
+
+
+def _apply_invitation_role(user: UserModel, role: str) -> None:
+    """Map invitation role onto the user record (admin vs member)."""
+    if role == "admin":
+        user.is_admin = True
+        if hasattr(user, "role"):
+            user.role = "admin"
+    elif role in ("manager", "member", "viewer") and hasattr(user, "role"):
+        # Keep non-admin invitees as standard users; org access is via organization_id
+        if not user.is_admin:
+            user.role = "user"
 
 
 async def _send_invitation_email_or_raise(
@@ -210,6 +247,7 @@ def get_invitation_by_token(
         
         org = db.query(Organization).filter(Organization.id == invitation.organization_id).first()
         org_name = org.name if org else "Unknown"
+        existing_user = crud_user.user.get_by_email(db, email=invitation.email) is not None
         
         return TeamInvitationToken(
             id=invitation.id,
@@ -221,7 +259,8 @@ def get_invitation_by_token(
             invited_by_name=inviter_name,
             status=invitation.status,
             expires_at=invitation.expires_at,
-            message=invitation.message
+            message=invitation.message,
+            existing_user=existing_user,
         )
         
     except HTTPException:
@@ -236,10 +275,15 @@ async def accept_team_invitation(
     db: Session = Depends(deps.get_db),
     background_tasks: BackgroundTasks,
     token: str,
-    accept_data: TeamInvitationAccept
+    accept_data: TeamInvitationAccept,
+    bearer: Optional[str] = Depends(_optional_oauth2),
 ) -> Any:
     """
-    Accept a team invitation and create user account.
+    Accept a team invitation.
+
+    New emails: create an account (password required).
+    Existing emails: caller must be authenticated as that email; we move them
+    into the inviting organization (no duplicate account).
     """
     try:
         invitation = team_invitation.get_by_token(db=db, token=token)
@@ -265,14 +309,65 @@ async def accept_team_invitation(
                 detail=f"Invitation is {invitation.status} and cannot be accepted"
             )
         
-        # Check if user already exists
         existing_user = crud_user.user.get_by_email(db, email=invitation.email)
         if existing_user:
+            current_user = _optional_user_from_request(db, bearer)
+            invite_email = (invitation.email or "").strip().lower()
+            if not current_user:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "code": "existing_user",
+                        "message": (
+                            "An account with this email already exists. "
+                            "Sign in with that account to join the team."
+                        ),
+                        "email": invitation.email,
+                    },
+                )
+            if (current_user.email or "").strip().lower() != invite_email:
+                raise HTTPException(
+                    status_code=403,
+                    detail=(
+                        "You are signed in as a different user. "
+                        f"Sign in as {invitation.email} to accept this invitation."
+                    ),
+                )
+            if int(existing_user.organization_id or 0) == int(invitation.organization_id):
+                team_invitation.accept_invitation(db=db, invitation=invitation)
+                return {
+                    "message": "You are already a member of this organization",
+                    "user_id": existing_user.id,
+                }
+
+            existing_user.organization_id = invitation.organization_id
+            if accept_data.first_name:
+                existing_user.first_name = accept_data.first_name
+            if accept_data.last_name:
+                existing_user.last_name = accept_data.last_name
+            _apply_invitation_role(existing_user, invitation.role or "member")
+            existing_user.is_active = True
+            db.add(existing_user)
+            db.commit()
+            db.refresh(existing_user)
+            record_team_membership(
+                db,
+                user=existing_user,
+                organization_id=int(invitation.organization_id),
+                invited_by_id=int(invitation.invited_by_id) if invitation.invited_by_id else None,
+            )
+            team_invitation.accept_invitation(db=db, invitation=invitation)
+            return {
+                "message": "Joined organization successfully",
+                "user_id": existing_user.id,
+            }
+
+        if not accept_data.password or len(accept_data.password) < 8:
             raise HTTPException(
                 status_code=400,
-                detail="User with this email already exists"
+                detail="Password must be at least 8 characters",
             )
-        
+
         # Create new user
         user_data = UserCreate(
             email=invitation.email,
@@ -285,6 +380,12 @@ async def accept_team_invitation(
         )
         
         user = crud_user.user.create(db, obj_in=user_data)
+        record_team_membership(
+            db,
+            user=user,
+            organization_id=int(invitation.organization_id),
+            invited_by_id=int(invitation.invited_by_id) if invitation.invited_by_id else None,
+        )
         
         # Mark invitation as accepted
         team_invitation.accept_invitation(db=db, invitation=invitation)

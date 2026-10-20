@@ -302,6 +302,10 @@ export const usersAPI = {
       throw error;
     }
   },
+
+  searchPlatform: async (email: string): Promise<AxiosResponse<User>> => {
+    return api.get('/users/search-platform', { params: { email } });
+  },
 };
 
 export const informationRequestsAPI = {
@@ -629,7 +633,10 @@ export default {
     },
     getOrganizationUsers() {
       return usersAPI.getOrganizationUsers();
-    }
+    },
+    searchPlatform(email: string) {
+      return usersAPI.searchPlatform(email);
+    },
   },
   leads: {
     create(data: LeadCreateInput) {
