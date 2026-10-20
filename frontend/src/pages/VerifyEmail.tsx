@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { PublicHeader } from '../components/layout/PublicHeader'
+import { PublicAuthShell, publicAuthCtaClassName } from '../components/layout/PublicAuthShell'
 import { verifyEmail } from '../services/auth'
 
 export function VerifyEmail() {
@@ -29,20 +29,21 @@ export function VerifyEmail() {
   }, [token])
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <PublicHeader />
-      <main className="flex flex-1 items-center justify-center bg-slate-50 px-4 py-12">
-        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-2xl font-bold text-slate-900">Email verification</h1>
-          <p className={`mt-4 text-sm ${status === 'error' ? 'text-red-600' : 'text-slate-600'}`}>{message}</p>
-          <Link
-            to="/signin"
-            className="mt-6 inline-flex rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-          >
-            Go to sign in
-          </Link>
-        </div>
-      </main>
-    </div>
+    <PublicAuthShell>
+      <div className="text-center">
+        <img
+          src="/images/leadlab-logo.png"
+          alt="LeadLab"
+          className="mx-auto mb-4 h-12 w-auto"
+        />
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Email verification</h1>
+        <p className={`mt-4 text-sm ${status === 'error' ? 'text-red-600' : 'text-slate-600'}`}>
+          {message}
+        </p>
+        <Link to="/signin" className={`mt-6 inline-flex ${publicAuthCtaClassName}`}>
+          Go to sign in
+        </Link>
+      </div>
+    </PublicAuthShell>
   )
 }

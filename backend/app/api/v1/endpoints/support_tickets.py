@@ -28,6 +28,7 @@ from app.api import deps
 from app.core.config import settings
 from app.core.email import email_sender
 from app.core.support_ticket_schema import ensure_support_tickets_schema
+from app.services.system_email_layout import info_card, muted, p, render_system_email
 from app.models.support_ticket import SupportTicket
 from app.models.support_ticket_attachment import SupportTicketAttachment
 from app.models.user import User as UserModel
@@ -205,26 +206,32 @@ def _ticket_email_html(snapshot: dict) -> str:
             f"<ul>{skip_bits}</ul>"
         )
     if not parts:
-        parts.append("<p><em>No attachments</em></p>")
+        parts.append("<p style='margin:0;font-size:14px;color:#64748b;'><em>No attachments</em></p>")
     files_html = "".join(parts)
-    return f"""
-    <h2>New issue report #{snapshot['id']}</h2>
-    <p><strong>Project:</strong> {html.escape(snapshot['project_name'])}</p>
-    <p><strong>Subject:</strong> {html.escape(snapshot['subject'])}</p>
-    <p><strong>Priority:</strong> {html.escape(snapshot['priority'])}</p>
-    <p><strong>From:</strong> {html.escape(snapshot['reporter_name'])}
-       (&lt;{html.escape(snapshot['reporter_email'])}&gt;)</p>
-    <p><strong>Description:</strong></p>
-    <p>{html.escape(snapshot['description']).replace(chr(10), '<br/>')}</p>
-    {files_html}
-    <p style="margin-top:16px;">
-      <strong>Reply to this email</strong> to write back to the reporter
-      ({html.escape(snapshot.get('reporter_email') or '')}).
-    </p>
-    <p style="color:#64748b;font-size:12px;">
-      You can also open Admin → Issue reports in LeadLab to update status or re-download files.
-    </p>
-    """
+    body = (
+        info_card(
+            f"<p style='margin:0 0 8px 0;font-size:14px;color:#334155;'><strong>Project:</strong> {html.escape(snapshot['project_name'])}</p>"
+            f"<p style='margin:0 0 8px 0;font-size:14px;color:#334155;'><strong>Subject:</strong> {html.escape(snapshot['subject'])}</p>"
+            f"<p style='margin:0 0 8px 0;font-size:14px;color:#334155;'><strong>Priority:</strong> {html.escape(snapshot['priority'])}</p>"
+            f"<p style='margin:0;font-size:14px;color:#334155;'><strong>From:</strong> {html.escape(snapshot['reporter_name'])} "
+            f"(&lt;{html.escape(snapshot['reporter_email'])}&gt;)</p>"
+        )
+        + p("<strong>Description</strong>")
+        + p(html.escape(snapshot["description"]).replace(chr(10), "<br/>"))
+        + files_html
+        + muted(
+            f"<strong>Reply to this email</strong> to write back to the reporter "
+            f"({html.escape(snapshot.get('reporter_email') or '')})."
+        )
+        + muted("Or open Admin → Issue reports in LeadLab to update status or re-download files.")
+    )
+    html_doc, _ = render_system_email(
+        title=f"New issue report #{snapshot['id']}",
+        preheader=f"{snapshot['project_name']}: {snapshot['subject']}",
+        body_html=body,
+        footer_note="Internal ops notification — reply goes to the reporter.",
+    )
+    return html_doc
 
 
 async def _notify_dev_admins(snapshot: dict) -> None:
@@ -255,27 +262,34 @@ def _status_update_email_html(snapshot: dict) -> str:
     status_label = STATUS_LABELS.get(snapshot["status"], snapshot["status"])
     previous = snapshot.get("previous_status")
     previous_label = STATUS_LABELS.get(previous, previous) if previous else None
-    change_line = (
-        f"<p>Status updated from <strong>{html.escape(previous_label)}</strong> "
-        f"to <strong>{html.escape(status_label)}</strong>.</p>"
-        if previous_label and previous != snapshot["status"]
-        else f"<p>Current status: <strong>{html.escape(status_label)}</strong>.</p>"
+    if previous_label and previous != snapshot["status"]:
+        change_html = p(
+            f"Status updated from <strong>{html.escape(previous_label)}</strong> "
+            f"to <strong>{html.escape(status_label)}</strong>."
+        )
+    else:
+        change_html = p(f"Current status: <strong>{html.escape(status_label)}</strong>.")
+    body = (
+        change_html
+        + info_card(
+            f"<p style='margin:0 0 8px 0;font-size:14px;color:#334155;'><strong>Project:</strong> {html.escape(snapshot['project_name'])}</p>"
+            f"<p style='margin:0;font-size:14px;color:#334155;'><strong>Subject:</strong> {html.escape(snapshot['subject'])}</p>"
+        )
+        + p("<strong>Your description</strong>")
+        + p(html.escape(snapshot["description"]).replace(chr(10), "<br/>"))
+        + muted(
+            "Reply to this email to send more details — your reply goes straight to the LeadLab team."
+        )
+        + muted(
+            f"Keep the subject line (including report #{snapshot['id']}) so we can match your reply."
+        )
     )
-    return f"""
-    <h2>Update on your LeadLab report #{snapshot['id']}</h2>
-    {change_line}
-    <p><strong>Project:</strong> {html.escape(snapshot['project_name'])}</p>
-    <p><strong>Subject:</strong> {html.escape(snapshot['subject'])}</p>
-    <p><strong>Your description:</strong></p>
-    <p>{html.escape(snapshot['description']).replace(chr(10), '<br/>')}</p>
-    <p style="margin-top:20px;">
-      You can reply to this email to send more details or ask a question —
-      your reply goes straight to the LeadLab team.
-    </p>
-    <p style="color:#64748b;font-size:12px;">
-      Keep the subject line (including report #{snapshot['id']}) so we can match your reply.
-    </p>
-    """
+    html_doc, _ = render_system_email(
+        title=f"Update on report #{snapshot['id']}",
+        preheader=f"Status: {status_label} — {snapshot['subject']}",
+        body_html=body,
+    )
+    return html_doc
 
 
 async def _notify_reporter_status_change(snapshot: dict) -> None:

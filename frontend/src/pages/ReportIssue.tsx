@@ -4,6 +4,7 @@ import { Paperclip, Ticket, X } from 'lucide-react'
 import { getApiOrigin } from '@/lib/apiOrigin'
 import { useAuthStore } from '@/store/auth'
 import { MarketingNav } from '@/components/marketing/MarketingNav'
+import { publicAuthCtaClassName } from '@/components/layout/PublicAuthShell'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 
@@ -146,14 +147,14 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
     <div className={embedded ? 'max-w-2xl mx-auto p-4 sm:p-6' : 'max-w-2xl mx-auto'}>
       <div className="flex items-center gap-3 mb-2">
         <Ticket className="w-7 h-7 text-blue-600" />
-        <h1 className="text-2xl font-bold text-gray-900">Report an issue</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Report an issue</h1>
       </div>
       <p className="text-sm text-gray-500 mb-6">
         Anyone with this link can send a report — no login required. Attach screenshots, images, or
         short videos. Ali at LeadLab is notified by email as soon as you submit.
       </p>
 
-      <form onSubmit={onSubmit} className="space-y-4 bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+      <form onSubmit={onSubmit} className="space-y-4 bg-white rounded-2xl border border-blue-100 p-6 shadow-xl">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Your name</label>
@@ -265,9 +266,9 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
+          <button type="submit" disabled={isSubmitting} className={`${publicAuthCtaClassName} w-auto min-w-[160px]`}>
             {isSubmitting ? 'Submitting…' : 'Submit report'}
-          </Button>
+          </button>
         </div>
       </form>
     </div>
@@ -276,7 +277,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
   if (embedded) return formCard
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <MarketingNav />
       <main className="flex-1 pt-24 pb-16 px-4">{formCard}</main>
     </div>

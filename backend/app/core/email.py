@@ -10,6 +10,13 @@ import asyncio
 from email.mime.base import MIMEBase
 from email import encoders
 import aiosmtplib
+from app.services.system_email_layout import (
+    badge,
+    info_card,
+    muted,
+    p,
+    render_system_email,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -268,181 +275,77 @@ class EmailSender:
 
     async def send_welcome_email(self, to_email: str, first_name: str, login_link: str) -> bool:
         """Send welcome email to new users"""
-        subject = "Welcome to LeadLab! 🚀"
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Welcome to LeadLab</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
-                .btn {{ display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-                .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 12px; }}
-                .logo {{ font-size: 24px; font-weight: bold; }}
-                .features {{ background: white; padding: 20px; border-radius: 5px; margin: 20px 0; }}
-                .feature {{ margin: 10px 0; padding: 10px 0; border-bottom: 1px solid #eee; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <div class="logo">🚀 LeadLab</div>
-                    <h1>Welcome to LeadLab!</h1>
-                </div>
-                <div class="content">
-                    <p>Hi {first_name}!</p>
-                    <p>Welcome to LeadLab! 🎉 We're thrilled to have you join our community of lead generation experts.</p>
-                    
-                    <div class="features">
-                        <h3>🌟 What you can do with LeadLab:</h3>
-                        <div class="feature">📈 <strong>Generate Quality Leads:</strong> Find and connect with potential customers</div>
-                        <div class="feature">📊 <strong>Advanced Analytics:</strong> Track your lead generation performance</div>
-                        <div class="feature">💼 <strong>CRM Integration:</strong> Seamlessly manage your customer relationships</div>
-                        <div class="feature">📧 <strong>Email Campaigns:</strong> Create professional outreach campaigns</div>
-                        <div class="feature">🎯 <strong>Lead Scoring:</strong> Prioritize your best prospects</div>
-                    </div>
-                    
-                    <p>Ready to get started? Click the button below to log in to your account:</p>
-                    <div style="text-align: center;">
-                        <a href="{login_link}" class="btn">Access Your Dashboard</a>
-                    </div>
-                    
-                    <p>If you have any questions or need assistance, our support team is here to help at info@the-leadlab.com</p>
-                    
-                    <p>Thank you for choosing LeadLab. Let's start generating amazing leads together!</p>
-                </div>
-                <div class="footer">
-                    <p>© 2024 LeadLab. All rights reserved.<br>
-                    This email was sent from an automated system. Please do not reply to this email.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        text_content = f"""
-Welcome to LeadLab! - {first_name}
+        subject = "Welcome to LeadLab"
+        body = (
+            p(f"Hi {first_name},")
+            + p(
+                "Welcome to LeadLab. We're glad you're here — your workspace is ready "
+                "for lead generation, CRM, and team collaboration."
+            )
+            + info_card(
+                "<p style='margin:0 0 8px 0;font-size:14px;font-weight:600;color:#0f172a;'>What you can do</p>"
+                "<p style='margin:0 0 6px 0;font-size:14px;line-height:1.5;color:#334155;'>Generate and qualify leads</p>"
+                "<p style='margin:0 0 6px 0;font-size:14px;line-height:1.5;color:#334155;'>Track performance with analytics</p>"
+                "<p style='margin:0 0 6px 0;font-size:14px;line-height:1.5;color:#334155;'>Run outreach campaigns</p>"
+                "<p style='margin:0;font-size:14px;line-height:1.5;color:#334155;'>Collaborate with your team</p>"
+            )
+            + p("Ready to get started? Open your dashboard below.")
+        )
+        html_content, _ = render_system_email(
+            title="Welcome to LeadLab",
+            preheader=f"Hi {first_name}, your LeadLab account is ready.",
+            body_html=body,
+            cta_label="Open dashboard",
+            cta_url=login_link,
+        )
+        text_content = f"""Welcome to LeadLab
 
-Hi {first_name}!
+Hi {first_name},
 
-Welcome to LeadLab! We're thrilled to have you join our community of lead generation experts.
+Welcome to LeadLab. Your workspace is ready.
 
-What you can do with LeadLab:
-• Generate Quality Leads: Find and connect with potential customers
-• Advanced Analytics: Track your lead generation performance  
-• CRM Integration: Seamlessly manage your customer relationships
-• Email Campaigns: Create professional outreach campaigns
-• Lead Scoring: Prioritize your best prospects
-
-Ready to get started? Log in to your account here:
+Open your dashboard:
 {login_link}
 
-If you have any questions or need assistance, our support team is here to help at info@the-leadlab.com
+Questions? info@the-leadlab.com
 
-Thank you for choosing LeadLab. Let's start generating amazing leads together!
-
-Best regards,
-The LeadLab Team
-
-© 2024 LeadLab. All rights reserved.
-This email was sent from an automated system. Please do not reply to this email.
-        """
+— The LeadLab Team
+"""
         return await self.send_email(to_email, subject, html_content, text_content)
 
     async def send_email_verification(self, to_email: str, first_name: str, verification_link: str) -> bool:
         """Send email verification email"""
-        subject = "Please Verify Your Email - LeadLab"
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Verify Your Email</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
-                .btn {{ display: inline-block; background: #28a745; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-                .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 12px; }}
-                .logo {{ font-size: 24px; font-weight: bold; }}
-                .warning {{ background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <div class="logo">🚀 LeadLab</div>
-                    <h1>Verify Your Email</h1>
-                </div>
-                <div class="content">
-                    <p>Hi {first_name}!</p>
-                    <p>Thank you for signing up for LeadLab! To complete your registration and secure your account, please verify your email address.</p>
-                    
-                    <div style="text-align: center;">
-                        <a href="{verification_link}" class="btn">Verify Email Address</a>
-                    </div>
-                    
-                    <div class="warning">
-                        <p><strong>⚠️ Important:</strong> This verification link will expire in 24 hours for security reasons.</p>
-                    </div>
-                    
-                    <p>Once verified, you'll have full access to all LeadLab features including:</p>
-                    <ul>
-                        <li>Lead generation tools</li>
-                        <li>Advanced analytics dashboard</li>
-                        <li>CRM integration</li>
-                        <li>Email campaign management</li>
-                    </ul>
-                    
-                    <p>If you didn't create an account with LeadLab, you can safely ignore this email.</p>
-                    
-                    <p>Having trouble? Contact our support team at info@the-leadlab.com</p>
-                </div>
-                <div class="footer">
-                    <p>© 2024 LeadLab. All rights reserved.<br>
-                    This email was sent from an automated system. Please do not reply to this email.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        text_content = f"""
-Verify Your Email - LeadLab
+        subject = "Verify your email — LeadLab"
+        body = (
+            p(f"Hi {first_name},")
+            + p(
+                "Thanks for signing up. Confirm your email address to finish setup "
+                "and unlock full access to LeadLab."
+            )
+            + muted("This link expires in <strong style='color:#0f172a;'>24 hours</strong>.")
+            + muted("If you did not create a LeadLab account, you can ignore this email.")
+        )
+        html_content, _ = render_system_email(
+            title="Verify your email",
+            preheader="Confirm your email to finish LeadLab signup.",
+            body_html=body,
+            cta_label="Verify email address",
+            cta_url=verification_link,
+        )
+        text_content = f"""Verify your email — LeadLab
 
-Hi {first_name}!
+Hi {first_name},
 
-Thank you for signing up for LeadLab! To complete your registration and secure your account, please verify your email address.
-
-Click the link below to verify your email:
+Confirm your email address:
 {verification_link}
 
-⚠️ Important: This verification link will expire in 24 hours for security reasons.
+This link expires in 24 hours.
 
-Once verified, you'll have full access to all LeadLab features including:
-• Lead generation tools
-• Advanced analytics dashboard  
-• CRM integration
-• Email campaign management
+If you did not create a LeadLab account, ignore this email.
 
-If you didn't create an account with LeadLab, you can safely ignore this email.
-
-Having trouble? Contact our support team at info@the-leadlab.com
-
-Best regards,
-The LeadLab Team
-
-© 2024 LeadLab. All rights reserved.
-This email was sent from an automated system. Please do not reply to this email.
-        """
+— The LeadLab Team
+"""
         return await self.send_email(to_email, subject, html_content, text_content)
-
-
 
     async def send_token_purchase_confirmation(
         self,
@@ -452,112 +355,55 @@ This email was sent from an automated system. Please do not reply to this email.
         token_amount: float
     ) -> bool:
         """Send confirmation email for token purchases"""
-        subject = "Token Purchase Confirmation - LeadLab"
-        html_content = f"""
-        <html>
-            <body>
-                <h2>Token Purchase Confirmation</h2>
-                <p>Dear {username},</p>
-                <p>Thank you for your token purchase. Here are your transaction details:</p>
-                <ul>
-                    <li>Amount Paid: ${amount:.2f}</li>
-                    <li>Tokens Received: {token_amount:.2f}</li>
-                </ul>
-                <p>Your tokens have been added to your account balance and are ready to use.</p>
-                <p>Best regards,<br>The LeadLab Team</p>
-            </body>
-        </html>
-        """
-        text_content = f"""
-        Token Purchase Confirmation
+        subject = "Token purchase confirmation — LeadLab"
+        body = (
+            p(f"Hi {username},")
+            + p("Thank you for your purchase. Your tokens are available in your account.")
+            + info_card(
+                f"<p style='margin:0 0 8px 0;font-size:14px;color:#64748b;'>Amount paid</p>"
+                f"<p style='margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;'>${amount:.2f}</p>"
+                f"<p style='margin:0 0 8px 0;font-size:14px;color:#64748b;'>Tokens received</p>"
+                f"<p style='margin:0;font-size:20px;font-weight:700;color:#0f172a;'>{token_amount:.2f}</p>"
+            )
+        )
+        html_content, _ = render_system_email(
+            title="Token purchase confirmed",
+            preheader=f"You received {token_amount:.2f} tokens.",
+            body_html=body,
+        )
+        text_content = f"""Token purchase confirmation — LeadLab
 
-        Dear {username},
+Hi {username},
 
-        Thank you for your token purchase. Here are your transaction details:
+Amount paid: ${amount:.2f}
+Tokens received: {token_amount:.2f}
 
-        Amount Paid: ${amount:.2f}
-        Tokens Received: {token_amount:.2f}
+Your tokens have been added to your account balance.
 
-        Your tokens have been added to your account balance and are ready to use.
-
-        Best regards,
-        The LeadLab Team
-        """
+— The LeadLab Team
+"""
         return await self.send_email(to_email, subject, html_content, text_content)
 
     async def send_password_reset(self, to_email: str, reset_link: str) -> bool:
         """Send password reset email"""
         subject = "Reset your LeadLab password"
-        logo_url = "https://the-leadlab.com/images/leadlab-logo.png"
-        # Brand: blue-600 → indigo-600 (matches marketing / auth UI)
-        html_content = f"""
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta name="color-scheme" content="light">
-            <title>Reset your LeadLab password</title>
-        </head>
-        <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#0f172a;">
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f1f5f9;padding:32px 12px;">
-              <tr>
-                <td align="center">
-                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #dbeafe;box-shadow:0 10px 30px rgba(37,99,235,0.08);">
-                    <tr>
-                      <td style="background:linear-gradient(135deg,#2563eb 0%,#4f46e5 100%);padding:28px 32px;text-align:center;">
-                        <img src="{logo_url}" alt="LeadLab" width="160" style="display:block;margin:0 auto 12px auto;max-width:160px;height:auto;border:0;" />
-                        <h1 style="margin:0;font-size:22px;line-height:1.3;font-weight:700;color:#ffffff;letter-spacing:-0.02em;">Reset your password</h1>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:32px 28px 8px 28px;">
-                        <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;color:#334155;">Hello,</p>
-                        <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;color:#334155;">
-                          We received a request to reset the password for your LeadLab account. Click the button below to choose a new one.
-                        </p>
-                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:28px auto;">
-                          <tr>
-                            <td align="center" style="border-radius:12px;background:linear-gradient(135deg,#2563eb 0%,#4f46e5 100%);">
-                              <a href="{reset_link}" style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:12px;">
-                                Reset Password
-                              </a>
-                            </td>
-                          </tr>
-                        </table>
-                        <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#64748b;">
-                          This link expires in <strong style="color:#0f172a;">1 hour</strong> for your security.
-                        </p>
-                        <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#64748b;">
-                          If you didn’t request a password reset, you can ignore this email — your account stays secure.
-                        </p>
-                        <p style="margin:24px 0 0 0;font-size:13px;line-height:1.5;color:#94a3b8;word-break:break-all;">
-                          Button not working? Paste this link into your browser:<br />
-                          <a href="{reset_link}" style="color:#2563eb;text-decoration:underline;">{reset_link}</a>
-                        </p>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:24px 28px 28px 28px;border-top:1px solid #e2e8f0;">
-                        <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;text-align:center;">
-                          Need help? Contact
-                          <a href="mailto:info@the-leadlab.com" style="color:#2563eb;text-decoration:none;font-weight:600;">info@the-leadlab.com</a>
-                        </p>
-                        <p style="margin:12px 0 0 0;font-size:12px;line-height:1.5;color:#94a3b8;text-align:center;">
-                          © 2026 LeadLab · the-leadlab.com<br />
-                          This is an automated message — please do not reply.
-                        </p>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-        </body>
-        </html>
-        """
-        text_content = f"""
-Reset your LeadLab password
+        body = (
+            p("Hello,")
+            + p(
+                "We received a request to reset the password for your LeadLab account. "
+                "Click the button below to choose a new one."
+            )
+            + muted("This link expires in <strong style='color:#0f172a;'>1 hour</strong> for your security.")
+            + muted("If you did not request a password reset, you can ignore this email — your account stays secure.")
+        )
+        html_content, _ = render_system_email(
+            title="Reset your password",
+            preheader="Reset your LeadLab password. This link expires in 1 hour.",
+            body_html=body,
+            cta_label="Reset password",
+            cta_url=reset_link,
+        )
+        text_content = f"""Reset your LeadLab password
 
 Hello,
 
@@ -571,9 +417,7 @@ This link expires in 1 hour for your security.
 If you didn't request a password reset, you can ignore this email — your account stays secure.
 
 Need help? Contact info@the-leadlab.com
-
-© 2026 LeadLab · the-leadlab.com
-        """
+"""
         return await self.send_email(to_email, subject, html_content, text_content)
 
     async def send_assignment_mention(
@@ -593,33 +437,21 @@ Need help? Contact info@the-leadlab.com
         subject = f"You were mentioned on a {entity_label} in LeadLab"
         org_bit = f" at {organization_name}" if organization_name else ""
         safe_title = entity_title or f"Untitled {entity_label}"
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="utf-8"><title>Mentioned on a {entity_label}</title></head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0;">
-          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%); color: white; padding: 28px; border-radius: 10px 10px 0 0; text-align: center;">
-              <div style="font-size: 22px; font-weight: bold;">LeadLab</div>
-              <p style="margin: 8px 0 0; opacity: 0.9;">You were mentioned</p>
-            </div>
-            <div style="background: #f8fafc; padding: 28px; border-radius: 0 0 10px 10px;">
-              <p>Hi {recipient_name or 'there'},</p>
-              <p><strong>{mentioner_name}</strong> mentioned you on a {entity_label}{org_bit}:</p>
-              <div style="background: white; border-left: 4px solid #0f766e; padding: 16px 18px; margin: 20px 0; border-radius: 6px;">
-                <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b;">{entity_label}</div>
-                <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">{safe_title}</div>
-              </div>
-              <p style="text-align: center;">
-                <a href="{entity_url}" style="display: inline-block; background: #0f766e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Open in LeadLab</a>
-              </p>
-              <p style="color: #64748b; font-size: 13px; margin-top: 24px;">If the button does not work, copy this link:<br/>{entity_url}</p>
-            </div>
-            <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">© 2026 LeadLab · the-leadlab.com</p>
-          </div>
-        </body>
-        </html>
-        """
+        body = (
+            p(f"Hi {recipient_name or 'there'},")
+            + p(f"<strong>{mentioner_name}</strong> mentioned you on a {entity_label}{org_bit}:")
+            + info_card(
+                f"<p style='margin:0 0 4px 0;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:#64748b;'>{entity_label}</p>"
+                f"<p style='margin:0;font-size:18px;font-weight:600;color:#0f172a;'>{safe_title}</p>"
+            )
+        )
+        html_content, _ = render_system_email(
+            title="You were mentioned",
+            preheader=f"{mentioner_name} mentioned you on a {entity_label}",
+            body_html=body,
+            cta_label="Open in LeadLab",
+            cta_url=entity_url,
+        )
         text_content = (
             f"Hi {recipient_name or 'there'},\n\n"
             f"{mentioner_name} mentioned you on a {entity_label}{org_bit}: {safe_title}\n\n"
@@ -638,117 +470,77 @@ Need help? Contact info@the-leadlab.com
         message: str = None
     ) -> bool:
         """Send team invitation email"""
-        subject = f"Sign up invitation: join {organization_name} on LeadLab"
-        
-        # Role display mapping
+        subject = f"You're invited to join {organization_name} on LeadLab"
+
         role_display = {
             "admin": "Administrator",
-            "member": "Team Member", 
-            "viewer": "Viewer"
+            "member": "Team Member",
+            "viewer": "Viewer",
         }
         role_text = role_display.get(role, role.title())
-        
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Team Invitation</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
-                .btn {{ display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: bold; }}
-                .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 12px; }}
-                .logo {{ font-size: 24px; font-weight: bold; }}
-                .logo img {{ max-height: 40px; width: auto; }}
-                .invitation-box {{ background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0; }}
-                .role-badge {{ background: #667eea; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; }}
-                .message-box {{ background: #e8f4f8; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 3px solid #667eea; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <div class="logo">
-                        <img src="https://the-leadlab.com/leadlab-logo.png" alt="LeadLab" />
-                    </div>
-                    <h1>Team Invitation</h1>
-                </div>
-                <div class="content">
-                    <div class="invitation-box">
-                        <h2>🎉 You're Invited!</h2>
-                        <p><strong>{inviter_name}</strong> has invited you to join <strong>{organization_name}</strong> on LeadLab.</p>
-                        <p>Your role: <span class="role-badge">{role_text}</span></p>
-                    </div>
-                    
-                    {f'<div class="message-box"><strong>Personal message from {inviter_name}:</strong><br>"{message}"</div>' if message else ''}
-                    
-                    <p>LeadLab helps teams manage leads, track opportunities, and grow their business together. As a {role_text.lower()}, you'll be able to:</p>
-                    <ul>
-                        {"<li>Manage team members and settings</li>" if role == "admin" else ""}
-                        <li>Access lead management tools</li>
-                        <li>View analytics and reports</li>
-                        <li>Collaborate with your team</li>
-                        {"<li>Create and manage campaigns</li>" if role in ["admin", "member"] else ""}
-                    </ul>
-                    
-                    <div style="text-align: center;">
-                        <a href="{invitation_link}" class="btn">Sign up and join team</a>
-                    </div>
-                    
-                    <p><strong>⏰ Important:</strong> This invitation will expire in 72 hours.</p>
-                    
-                    <p>Don't have a LeadLab account yet? No problem. This invitation link opens signup so you can create your account and join the team.</p>
-                    
-                    <p>Questions? Contact our support team at info@the-leadlab.com</p>
-                </div>
-                <div class="footer">
-                    <p>© 2024 LeadLab. All rights reserved.<br>
-                    You received this email because {inviter_name} invited you to join {organization_name}.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        
-        text_content = f"""
-Team Invitation - LeadLab
 
-🎉 You're Invited!
+        perks = [
+            "Access lead management tools",
+            "View analytics and reports",
+            "Collaborate with your team",
+        ]
+        if role == "admin":
+            perks.insert(0, "Manage team members and settings")
+        if role in ("admin", "member"):
+            perks.append("Create and manage campaigns")
+        perks_html = "".join(
+            f"<p style='margin:0 0 6px 0;font-size:14px;line-height:1.5;color:#334155;'>{item}</p>"
+            for item in perks
+        )
 
-{inviter_name} has invited you to join {organization_name} on LeadLab.
+        message_html = ""
+        if message:
+            message_html = info_card(
+                f"<p style='margin:0 0 6px 0;font-size:13px;font-weight:600;color:#0f172a;'>"
+                f"Message from {inviter_name}</p>"
+                f"<p style='margin:0;font-size:14px;line-height:1.6;color:#334155;font-style:italic;'>"
+                f"“{message}”</p>"
+            )
+
+        body = (
+            p(f"<strong>{inviter_name}</strong> invited you to join <strong>{organization_name}</strong> on LeadLab.")
+            + p(f"Your role: {badge(role_text)}")
+            + message_html
+            + info_card(
+                "<p style='margin:0 0 8px 0;font-size:14px;font-weight:600;color:#0f172a;'>"
+                f"As a {role_text.lower()}, you can</p>"
+                + perks_html
+            )
+            + muted("This invitation expires in <strong style='color:#0f172a;'>72 hours</strong>.")
+            + muted(
+                "No account yet? This link opens signup so you can create one and join the team."
+            )
+        )
+        html_content, _ = render_system_email(
+            title=f"Join {organization_name}",
+            preheader=f"{inviter_name} invited you to {organization_name} on LeadLab.",
+            body_html=body,
+            cta_label="Accept invitation",
+            cta_url=invitation_link,
+            footer_note=f"You received this because {inviter_name} invited you to {organization_name}.",
+        )
+        text_content = f"""You're invited to join {organization_name} on LeadLab
+
+{inviter_name} invited you to join {organization_name} on LeadLab.
 
 Your role: {role_text}
 
-{f'Personal message from {inviter_name}: "{message}"' if message else ''}
+{f'Message from {inviter_name}: "{message}"' if message else ''}
 
-LeadLab helps teams manage leads, track opportunities, and grow their business together. As a {role_text.lower()}, you'll be able to:
-
-{'• Manage team members and settings' if role == "admin" else ''}
-• Access lead management tools
-• View analytics and reports  
-• Collaborate with your team
-{'• Create and manage campaigns' if role in ["admin", "member"] else ''}
-
-To sign up and join this team, click the link below:
+Accept invitation:
 {invitation_link}
 
-⏰ Important: This invitation will expire in 72 hours.
+This invitation expires in 72 hours.
 
-Don't have a LeadLab account yet? No problem. This invitation link opens signup so you can create one and join the team.
+Questions? info@the-leadlab.com
 
-Questions? Contact our support team at info@the-leadlab.com
-
-Best regards,
-The LeadLab Team
-
-© 2024 LeadLab. All rights reserved.
-You received this email because {inviter_name} invited you to join {organization_name}.
-        """
-        
+— The LeadLab Team
+"""
         return await self.send_email(to_email, subject, html_content, text_content)
 
 class InvoiceEmailSender:

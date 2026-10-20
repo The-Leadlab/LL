@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
 import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { PublicHeader } from '../components/layout/PublicHeader'
+import { PublicAuthShell, publicAuthCtaClassName } from '../components/layout/PublicAuthShell'
 import { motion } from 'framer-motion'
 import authService from '../services/auth'
 import { getApiErrorMessage } from '@/lib/apiError'
@@ -81,31 +81,31 @@ export function SignIn() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      <PublicHeader />
-      
-      <div className="flex min-h-full flex-1 flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="sm:mx-auto sm:w-full sm:max-w-md"
-        >
-          <h2 className="mt-6 text-center text-3xl font-extrabold leading-9 tracking-tight text-gray-900">
-            Welcome Back
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to access your account
-          </p>
-        </motion.div>
+    <PublicAuthShell maxWidthClassName="max-w-[480px]">
+      <motion.div
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="mb-8 text-center"
+      >
+        <img
+          src="/images/leadlab-logo.png"
+          alt="LeadLab"
+          className="mx-auto mb-4 h-12 w-auto"
+        />
+        <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+          Welcome back
+        </h2>
+        <p className="mt-2 text-sm text-gray-600">
+          Sign in to access your account
+        </p>
+      </motion.div>
 
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mt-8 sm:mx-auto sm:w-full sm:max-w-[480px]"
-        >
-          <div className="bg-white px-6 py-12 shadow-lg sm:rounded-xl sm:px-12 border border-gray-100">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.05 }}
+      >
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -118,7 +118,7 @@ export function SignIn() {
                       setLoginType(loginType === 'email' ? 'username' : 'email')
                       setFormData({ ...formData, email: '', username: '' })
                     }}
-                    className="text-xs text-indigo-600 hover:text-indigo-500 transition-colors"
+                    className="text-xs text-blue-600 hover:text-blue-500 transition-colors"
                   >
                     Use {loginType === 'email' ? 'username' : 'email'} instead
                   </button>
@@ -137,7 +137,7 @@ export function SignIn() {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="you@example.com"
-                      className="block w-full rounded-md border-0 py-2 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 transition-all duration-200"
+                      className="block w-full rounded-xl border-0 py-2.5 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 transition-all duration-200"
                     />
                   ) : (
                     <input
@@ -149,7 +149,7 @@ export function SignIn() {
                       value={formData.username}
                       onChange={handleChange}
                       placeholder="username"
-                      className="block w-full rounded-md border-0 py-2 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 transition-all duration-200"
+                      className="block w-full rounded-xl border-0 py-2.5 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 transition-all duration-200"
                     />
                   )}
                 </div>
@@ -172,7 +172,7 @@ export function SignIn() {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="••••••••"
-                    className="block w-full rounded-md border-0 py-2 pl-10 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 transition-all duration-200"
+                    className="block w-full rounded-xl border-0 py-2.5 pl-10 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 transition-all duration-200"
                   />
                   <button
                     type="button"
@@ -196,7 +196,7 @@ export function SignIn() {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={() => setRememberMe(!rememberMe)}
-                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                   />
                   <label htmlFor="remember-me" className="ml-3 block text-sm leading-6 text-gray-700 cursor-pointer">
                     Remember me
@@ -205,7 +205,7 @@ export function SignIn() {
                 </div>
 
                 <div className="text-sm leading-6">
-                  <Link to="/forgot-password" className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors">
+                  <Link to="/forgot-password" className="font-semibold text-blue-600 hover:text-blue-500 transition-colors">
                     Forgot password?
                   </Link>
                 </div>
@@ -215,14 +215,10 @@ export function SignIn() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="group relative flex w-full justify-center items-center rounded-md bg-indigo-600 px-3 py-2.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ease-in-out"
+                  className={`group relative ${publicAuthCtaClassName}`}
                 >
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                    <LogIn className="h-5 w-5 text-indigo-300 group-hover:text-indigo-200 transition-colors" aria-hidden="true" />
-                  </span>
-                  <span className="ml-2">
-                    {isLoading ? 'Signing in...' : 'Sign in'}
-                  </span>
+                  <LogIn className="mr-2 h-5 w-5 text-blue-100" aria-hidden="true" />
+                  {isLoading ? 'Signing in...' : 'Sign in'}
                 </button>
               </div>
             </form>
@@ -249,25 +245,23 @@ export function SignIn() {
 
               <div className="text-center text-sm text-gray-500">
                 Don't have an account?{' '}
-                <Link to="/signup" className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500 transition-colors">
+                <Link to="/signup" className="font-semibold leading-6 text-blue-600 hover:text-blue-500 transition-colors">
                   Sign up now
                 </Link>
               </div>
             </div>
-          </div>
-          
+
           <div className="mt-6 text-center text-xs text-gray-500">
             By signing in, you agree to our{' '}
-            <Link to="/terms" className="text-indigo-600 hover:text-indigo-500 transition-colors">
+            <Link to="/legal" className="text-blue-600 hover:text-blue-500 transition-colors">
               Terms of Service
             </Link>{' '}
             and{' '}
-            <Link to="/privacy" className="text-indigo-600 hover:text-indigo-500 transition-colors">
+            <Link to="/legal" className="text-blue-600 hover:text-blue-500 transition-colors">
               Privacy Policy
             </Link>
           </div>
-        </motion.div>
-      </div>
-    </div>
+      </motion.div>
+    </PublicAuthShell>
   )
 }

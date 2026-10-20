@@ -7,6 +7,7 @@ from app import models
 from app.api import deps
 from app.core.security import check_permission
 from app.core.email import InvoiceEmailSender
+from app.services.system_email_layout import info_card, muted, p, render_system_email
 
 # Initialize invoice email sender
 invoice_email_sender = InvoiceEmailSender()
@@ -52,71 +53,39 @@ async def send_invoice_email(
         # Create email subject
         subject = f"Invoice {request.invoice_number} from {request.company_name}"
         
-        # Create email content
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <title>Invoice {request.invoice_number}</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-                .header {{ background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }}
-                .company-logo {{ display: flex; align-items: center; margin-bottom: 15px; }}
-                .logo-icon {{ background-color: #3b82f6; color: white; padding: 10px; border-radius: 8px; margin-right: 15px; }}
-                .company-info {{ }}
-                .company-name {{ font-size: 24px; font-weight: bold; color: #3b82f6; margin: 0; }}
-                .company-tagline {{ font-size: 14px; color: #6b7280; margin: 0; }}
-                .content {{ margin: 20px 0; }}
-                .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 14px; color: #6b7280; }}
-                .btn {{ display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <div class="company-logo">
-                    <div class="logo-icon">🏢</div>
-                    <div class="company-info">
-                        <h1 class="company-name">{request.company_name}</h1>
-                        <p class="company-tagline">CRM & Lead Management</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="content">
-                <h2>Dear {request.client_name},</h2>
-                
-                <p>We hope this email finds you well. Please find attached your invoice for our services.</p>
-                
-                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                    <strong>Invoice Details:</strong><br>
-                    Invoice Number: <strong>{request.invoice_number}</strong><br>
-                    Amount: <strong>{request.invoice_data.get('currency_symbol', '₺')}{request.invoice_data.get('total', 0):.2f}</strong><br>
-                    Due Date: <strong>{request.invoice_data.get('due_date', 'N/A')}</strong>
-                </div>
-                
-                {f"<p><strong>Message:</strong><br>{request.message}</p>" if request.message else ""}
-                
-                <p>If you have any questions about this invoice, please don't hesitate to contact us.</p>
-                
-                <p>Thank you for your business!</p>
-            </div>
-            
-            <div class="footer">
-                <p>
-                    <strong>{request.company_name}</strong><br>
-                    Küçükbakkalköy Mah. Selvili Sk. No: 4<br>
-                    İç Kapı No: 20<br>
-                    Ataşehir/İstanbul<br>
-                    <br>
-                    Email: billing@leadlab.com<br>
-                    Phone: +90 (216) 555-0123<br>
-                    Website: www.leadlab.com
-                </p>
-            </div>
-        </body>
-        </html>
-        """
+        currency = request.invoice_data.get("currency_symbol", "₺")
+        total = request.invoice_data.get("total", 0)
+        due_date = request.invoice_data.get("due_date", "N/A")
+        message_html = (
+            p(f"<strong>Message</strong><br/>{request.message}") if request.message else ""
+        )
+        body = (
+            p(f"Dear {request.client_name},")
+            + p(
+                f"Please find attached invoice <strong>{request.invoice_number}</strong> "
+                f"from <strong>{request.company_name}</strong>."
+            )
+            + info_card(
+                f"<p style='margin:0 0 8px 0;font-size:14px;color:#64748b;'>Invoice number</p>"
+                f"<p style='margin:0 0 16px 0;font-size:18px;font-weight:700;color:#0f172a;'>{request.invoice_number}</p>"
+                f"<p style='margin:0 0 8px 0;font-size:14px;color:#64748b;'>Amount</p>"
+                f"<p style='margin:0 0 16px 0;font-size:18px;font-weight:700;color:#0f172a;'>{currency}{total:.2f}</p>"
+                f"<p style='margin:0 0 8px 0;font-size:14px;color:#64748b;'>Due date</p>"
+                f"<p style='margin:0;font-size:16px;font-weight:600;color:#0f172a;'>{due_date}</p>"
+            )
+            + message_html
+            + p("If you have questions about this invoice, reply to this email or contact billing.")
+            + muted(
+                f"{request.company_name} · Elite Park Plaza Floor 5, Ümraniye, Istanbul<br/>"
+                "billing@the-leadlab.com · the-leadlab.com"
+            )
+        )
+        html_content, _ = render_system_email(
+            title=f"Invoice {request.invoice_number}",
+            preheader=f"Invoice {request.invoice_number} from {request.company_name}",
+            body_html=body,
+            footer_note="Invoice attached as PDF.",
+        )
         
         # Send email in background
         background_tasks.add_task(

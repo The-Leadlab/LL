@@ -15,12 +15,12 @@ import {
   Building
 } from 'lucide-react';
 
-import { Button } from '@/components/ui/Button';
 import { Input, PasswordInput } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/Form';
 import { Badge } from '@/components/ui/Badge';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
+import { PublicAuthShell, publicAuthCtaClassName } from '@/components/layout/PublicAuthShell';
 import api from '@/services/api';
 import { useAuthStore } from '@/store/auth';
 
@@ -213,50 +213,46 @@ const AcceptInvitation: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
+      <PublicAuthShell withCard={false}>
+        <div className="flex items-center justify-center space-x-2 py-16">
+          <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
           <span className="text-gray-600">Loading invitation...</span>
         </div>
-      </div>
+      </PublicAuthShell>
     );
   }
 
   if (!invitationData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Invalid Invitation</h2>
-            <p className="text-gray-600 mb-4">
-              This invitation link is invalid or has already been used.
-            </p>
-            <Button onClick={() => navigate('/signin')} className="w-full">
-              Go to Login
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <PublicAuthShell>
+        <div className="text-center">
+          <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Invalid invitation</h2>
+          <p className="text-gray-600 mb-6">
+            This invitation link is invalid or has already been used.
+          </p>
+          <button type="button" onClick={() => navigate('/signin')} className={publicAuthCtaClassName}>
+            Go to sign in
+          </button>
+        </div>
+      </PublicAuthShell>
     );
   }
 
   if (new Date(invitationData.expires_at).getTime() < Date.now()) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Invitation Expired</h2>
-            <p className="text-gray-600 mb-4">
-              This invitation has expired. Please contact your team administrator for a new invitation.
-            </p>
-            <Button onClick={() => navigate('/signin')} className="w-full">
-              Go to Login
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <PublicAuthShell>
+        <div className="text-center">
+          <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Invitation expired</h2>
+          <p className="text-gray-600 mb-6">
+            This invitation has expired. Please contact your team administrator for a new invitation.
+          </p>
+          <button type="button" onClick={() => navigate('/signin')} className={publicAuthCtaClassName}>
+            Go to sign in
+          </button>
+        </div>
+      </PublicAuthShell>
     );
   }
 
@@ -264,23 +260,28 @@ const AcceptInvitation: React.FC = () => {
   const isExistingUser = Boolean(invitation.existing_user);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <PublicAuthShell maxWidthClassName="max-w-md" withCard={false}>
+      <div className="w-full space-y-6">
         <div className="text-center">
+          <img
+            src="/images/leadlab-logo.png"
+            alt="LeadLab"
+            className="mx-auto mb-4 h-12 w-auto"
+          />
           <div className="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
             <Users className="h-6 w-6 text-blue-600" />
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Join the Team
+          <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
+            Join the team
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             You've been invited to join {invitation.organization_name}
           </p>
         </div>
 
-        <Card>
+        <Card className="border-blue-100 shadow-xl rounded-2xl overflow-hidden">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Invitation Details</CardTitle>
+            <CardTitle className="text-lg">Invitation details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center space-x-3">
@@ -338,9 +339,9 @@ const AcceptInvitation: React.FC = () => {
         </Card>
 
         {isExistingUser ? (
-          <Card>
+          <Card className="border-blue-100 shadow-xl rounded-2xl overflow-hidden">
             <CardHeader>
-              <CardTitle>Join with Existing Account</CardTitle>
+              <CardTitle>Join with existing account</CardTitle>
               <CardDescription>
                 An account already exists for {invitation.email}. Sign in with that account to join {invitation.organization_name}.
               </CardDescription>
@@ -354,8 +355,9 @@ const AcceptInvitation: React.FC = () => {
                       You are signed in as {user?.email}. Click below to join the team.
                     </AlertDescription>
                   </Alert>
-                  <Button
-                    className="w-full"
+                  <button
+                    type="button"
+                    className={publicAuthCtaClassName}
                     disabled={isAccepting}
                     onClick={() => void joinExistingAccount()}
                   >
@@ -370,7 +372,7 @@ const AcceptInvitation: React.FC = () => {
                         Join {invitation.organization_name}
                       </>
                     )}
-                  </Button>
+                  </button>
                 </>
               ) : (
                 <>
@@ -382,8 +384,9 @@ const AcceptInvitation: React.FC = () => {
                       </AlertDescription>
                     </Alert>
                   )}
-                  <Button
-                    className="w-full"
+                  <button
+                    type="button"
+                    className={publicAuthCtaClassName}
                     onClick={() =>
                       navigate('/signin', {
                         state: { from: { pathname: `/invite/${token}` } },
@@ -391,15 +394,15 @@ const AcceptInvitation: React.FC = () => {
                     }
                   >
                     Sign in to join
-                  </Button>
+                  </button>
                 </>
               )}
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="border-blue-100 shadow-xl rounded-2xl overflow-hidden">
             <CardHeader>
-              <CardTitle>Create Your Account</CardTitle>
+              <CardTitle>Create your account</CardTitle>
               <CardDescription>
                 Set up your password to complete the registration
               </CardDescription>
@@ -479,23 +482,23 @@ const AcceptInvitation: React.FC = () => {
                     </AlertDescription>
                   </Alert>
 
-                  <Button 
-                    type="submit" 
-                    className="w-full"
+                  <button
+                    type="submit"
+                    className={publicAuthCtaClassName}
                     disabled={isAccepting}
                   >
                     {isAccepting ? (
                       <>
                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Creating Account...
+                        Creating account...
                       </>
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Accept Invitation & Create Account
+                        Accept invitation & create account
                       </>
                     )}
-                  </Button>
+                  </button>
                 </form>
               </Form>
             </CardContent>
@@ -506,19 +509,20 @@ const AcceptInvitation: React.FC = () => {
           <p className="text-xs text-gray-500">
             Already have an account?{' '}
             <button
+              type="button"
               onClick={() =>
                 navigate('/signin', {
                   state: { from: { pathname: `/invite/${token}` } },
                 })
               }
-              className="text-blue-600 hover:text-blue-500"
+              className="text-blue-600 hover:text-blue-500 font-medium"
             >
               Sign in here
             </button>
           </p>
         </div>
       </div>
-    </div>
+    </PublicAuthShell>
   );
 };
 

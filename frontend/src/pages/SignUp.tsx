@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-import { PublicHeader } from '../components/layout/PublicHeader'
+import { PublicAuthShell, publicAuthCtaClassName } from '../components/layout/PublicAuthShell'
 import api from '../services/axios'
 import { motion } from 'framer-motion'
 import { Mail, User, Briefcase, Lock, Building, Eye, EyeOff } from 'lucide-react'
@@ -94,23 +94,24 @@ export function SignUp() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <PublicHeader />
-      <main className="flex-1 flex items-center justify-center bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+    <PublicAuthShell maxWidthClassName="max-w-lg">
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-lg mx-auto"
+          transition={{ duration: 0.4 }}
         >
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
               className="text-center mb-8"
             >
-              <h1 className="text-3xl font-extrabold text-gray-900">Create Your Account</h1>
+              <img
+                src="/images/leadlab-logo.png"
+                alt="LeadLab"
+                className="mx-auto mb-4 h-12 w-auto"
+              />
+              <h1 className="text-3xl font-bold tracking-tight text-gray-900">Create your account</h1>
               <p className="text-gray-600 mt-3">
                 Join LeadLab and start managing your leads effectively
               </p>
@@ -148,7 +149,7 @@ export function SignUp() {
                       value={formData.first_name}
                       onChange={handleChange}
                       placeholder="John"
-                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                   </div>
@@ -171,7 +172,7 @@ export function SignUp() {
                       value={formData.last_name}
                       onChange={handleChange}
                       placeholder="Doe"
-                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                   </div>
@@ -194,7 +195,7 @@ export function SignUp() {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="you@example.com"
-                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                   </div>
@@ -217,7 +218,7 @@ export function SignUp() {
                       value={formData.company}
                       onChange={handleChange}
                       placeholder="Your Company"
-                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                   </div>
@@ -240,7 +241,7 @@ export function SignUp() {
                       value={formData.job_title}
                       onChange={handleChange}
                       placeholder="Marketing Manager"
-                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                   </div>
@@ -255,7 +256,7 @@ export function SignUp() {
                     name="birth_date"
                     value={birthDate}
                     onChange={(e) => setBirthDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     required
                   />
                   <p className="mt-1 text-xs text-gray-500">
@@ -280,7 +281,7 @@ export function SignUp() {
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                      className="w-full pl-10 pr-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                     <button
@@ -311,7 +312,7 @@ export function SignUp() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                      className="w-full pl-10 pr-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                     <button
@@ -339,7 +340,7 @@ export function SignUp() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  className={publicAuthCtaClassName}
                 >
                   {isLoading ? (
                     <div className="flex items-center">
@@ -368,7 +369,7 @@ export function SignUp() {
               <div className="mt-6 text-center">
                 <Link
                   to="/signin"
-                  className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
                 >
                   Sign in to your account
                 </Link>
@@ -376,18 +377,16 @@ export function SignUp() {
             </div>
             
             <div className="mt-6 text-center text-xs text-gray-500">
-              By signing in, you agree to our{' '}
-              <Link to="/legal" className="text-indigo-600 hover:text-indigo-500 transition-colors">
+              By signing up, you agree to our{' '}
+              <Link to="/legal" className="text-blue-600 hover:text-blue-500 transition-colors">
                 Terms of Service
               </Link>{' '}
               and{' '}
-              <Link to="/legal" className="text-indigo-600 hover:text-indigo-500 transition-colors">
+              <Link to="/legal" className="text-blue-600 hover:text-blue-500 transition-colors">
                 Privacy Policy
               </Link>
             </div>
-          </div>
         </motion.div>
-      </main>
-    </div>
+    </PublicAuthShell>
   )
 }

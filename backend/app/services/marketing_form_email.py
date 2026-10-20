@@ -2,6 +2,8 @@
 from html import escape
 from typing import Any, Dict, List, Tuple
 
+from app.services.system_email_layout import info_card, p, render_system_email
+
 
 def _esc(value: Any) -> str:
     if value is None:
@@ -12,7 +14,11 @@ def _esc(value: Any) -> str:
 
 
 def _row(label: str, value: Any) -> str:
-    return f"<tr><td style='padding:6px 12px 6px 0;font-weight:600;vertical-align:top;'>{escape(label)}</td><td style='padding:6px 0;'>{_esc(value)}</td></tr>"
+    return (
+        f"<tr><td style='padding:6px 12px 6px 0;font-weight:600;vertical-align:top;"
+        f"color:#0f172a;'>{escape(label)}</td>"
+        f"<td style='padding:6px 0;color:#334155;'>{_esc(value)}</td></tr>"
+    )
 
 
 def build_data_request_email(body: Any, payload: Dict[str, Any]) -> Tuple[str, str]:
@@ -47,17 +53,28 @@ def build_data_request_email(body: Any, payload: Dict[str, Any]) -> Tuple[str, s
             continue
         rows.append(_row(key.replace("_", " ").title(), value))
 
-    table = "<table style='border-collapse:collapse;font-family:sans-serif;font-size:14px;'>" + "".join(rows) + "</table>"
+    table = (
+        "<table style='border-collapse:collapse;font-size:14px;width:100%;'>"
+        + "".join(rows)
+        + "</table>"
+    )
 
-    html = f"""
-    <h2 style="font-family:sans-serif;">New Data Request Form submission</h2>
-    <p style="font-family:sans-serif;"><strong>Name:</strong> {_esc(body.full_name)}<br/>
-    <strong>Email:</strong> {_esc(body.email)}<br/>
-    <strong>Company:</strong> {_esc(body.company)}<br/>
-    <strong>Phone:</strong> {_esc(body.phone)}</p>
-    <h3 style="font-family:sans-serif;">Questionnaire answers</h3>
-    {table}
-    """
+    body_html = (
+        info_card(
+            f"<p style='margin:0 0 6px 0;font-size:14px;color:#334155;'><strong>Name:</strong> {_esc(body.full_name)}</p>"
+            f"<p style='margin:0 0 6px 0;font-size:14px;color:#334155;'><strong>Email:</strong> {_esc(body.email)}</p>"
+            f"<p style='margin:0 0 6px 0;font-size:14px;color:#334155;'><strong>Company:</strong> {_esc(body.company)}</p>"
+            f"<p style='margin:0;font-size:14px;color:#334155;'><strong>Phone:</strong> {_esc(body.phone)}</p>"
+        )
+        + p("<strong>Questionnaire answers</strong>")
+        + table
+    )
+    html, _ = render_system_email(
+        title="New data request submission",
+        preheader=f"Data request from {_esc(body.full_name)}",
+        body_html=body_html,
+        footer_note="Internal ops notification from marketing forms.",
+    )
     text_lines = [
         "New Data Request Form submission",
         f"Name: {body.full_name}",
@@ -78,16 +95,24 @@ def build_generic_email(body: Any, payload: Dict[str, Any]) -> Tuple[str, str]:
     import json
 
     payload_pretty = json.dumps(payload or {}, ensure_ascii=False, indent=2, default=str)
-    html = f"""
-    <h2>New marketing form submission</h2>
-    <p><strong>Form type:</strong> {escape(body.form_type)}</p>
-    <p><strong>Name:</strong> {escape(body.full_name)}</p>
-    <p><strong>Email:</strong> {escape(body.email)}</p>
-    <p><strong>Company:</strong> {escape(body.company or '-')}</p>
-    <p><strong>Phone:</strong> {escape(body.phone or '-')}</p>
-    <h3>Payload</h3>
-    <pre>{escape(payload_pretty)}</pre>
-    """
+    body_html = (
+        info_card(
+            f"<p style='margin:0 0 6px 0;font-size:14px;color:#334155;'><strong>Form type:</strong> {escape(body.form_type)}</p>"
+            f"<p style='margin:0 0 6px 0;font-size:14px;color:#334155;'><strong>Name:</strong> {escape(body.full_name)}</p>"
+            f"<p style='margin:0 0 6px 0;font-size:14px;color:#334155;'><strong>Email:</strong> {escape(body.email)}</p>"
+            f"<p style='margin:0 0 6px 0;font-size:14px;color:#334155;'><strong>Company:</strong> {escape(body.company or '-')}</p>"
+            f"<p style='margin:0;font-size:14px;color:#334155;'><strong>Phone:</strong> {escape(body.phone or '-')}</p>"
+        )
+        + p("<strong>Payload</strong>")
+        + f"<pre style='font-size:12px;line-height:1.5;color:#334155;white-space:pre-wrap;word-break:break-word;"
+        f"background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;'>{escape(payload_pretty)}</pre>"
+    )
+    html, _ = render_system_email(
+        title="New marketing form submission",
+        preheader=f"{body.form_type} from {body.full_name}",
+        body_html=body_html,
+        footer_note="Internal ops notification from marketing forms.",
+    )
     text = (
         f"New marketing form submission\n"
         f"Form type: {body.form_type}\n"

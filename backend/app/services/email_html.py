@@ -13,7 +13,7 @@ OUTBOUND_HTML_WRAPPER_START = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style type="text/css">
 img { max-width: 100%; height: auto; }
-a { color: #0b57d0; }
+a { color: #2563eb; }
 </style>
 </head>
 <body style="margin:0;padding:0;background:#ffffff;">
@@ -31,8 +31,8 @@ OUTBOUND_HTML_WRAPPER_END = """
 # Postal address already published on the-leadlab.com legal page.
 MARKETING_FOOTER = """<p style="margin:24px 0 0;font-family:Georgia,'Times New Roman',Times,serif;font-size:12px;line-height:1.5;color:#666666;">
 Lead Lab, Elite Park Plaza Floor 5, Umraniye, Istanbul.
-<a href="https://www.the-leadlab.com/legal?policy=privacy" style="color:#0b57d0;">Privacy</a>
-· <a href="mailto:info@the-leadlab.com?subject=Unsubscribe" style="color:#0b57d0;">Unsubscribe</a>
+<a href="https://www.the-leadlab.com/legal?policy=privacy" style="color:#2563eb;">Privacy</a>
+· <a href="mailto:info@the-leadlab.com?subject=Unsubscribe" style="color:#2563eb;">Unsubscribe</a>
 </p>
 """
 
