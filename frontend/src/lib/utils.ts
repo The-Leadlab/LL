@@ -1,13 +1,25 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import i18n from '@/i18n'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** Locale for Intl helpers — avoid importing i18n here (circular boot crash). */
 function appLocale(): string {
-  return i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-US'
+  try {
+    const stored =
+      typeof localStorage !== 'undefined'
+        ? localStorage.getItem('leadlab_language')
+        : null
+    if (stored?.startsWith('fr')) return 'fr-FR'
+    if (typeof document !== 'undefined' && document.documentElement.lang?.startsWith('fr')) {
+      return 'fr-FR'
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'en-US'
 }
 
 export function formatCurrency(amount: number | string, currency: string = 'USD'): string {

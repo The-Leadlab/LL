@@ -1,7 +1,5 @@
 import i18n from './index'
 import { isAppLanguage, type AppLanguage } from './types'
-import api from '@/lib/axios'
-import { updateUserSettings } from '@/services/settings'
 
 export type SetAppLanguageOptions = {
   /** Persist to user_settings when authenticated. Default true. */
@@ -10,6 +8,8 @@ export type SetAppLanguageOptions = {
 
 /**
  * Apply UI language: i18n, document.lang, axios Accept-Language, optional settings sync.
+ * Axios/settings are loaded lazily to avoid circular imports at boot
+ * (utils/LanguageSwitcher → setAppLanguage → axios → auth → …).
  */
 export async function setAppLanguage(
   lang: AppLanguage,
@@ -22,13 +22,19 @@ export async function setAppLanguage(
   document.documentElement.lang = lang
   localStorage.setItem('leadlab_language', lang)
 
-  api.defaults.headers.common['Accept-Language'] = lang
+  try {
+    const { default: api } = await import('@/lib/axios')
+    api.defaults.headers.common['Accept-Language'] = lang
+  } catch {
+    /* interceptor still reads localStorage */
+  }
 
   if (syncSettings) {
     const token =
       localStorage.getItem('token') || sessionStorage.getItem('token')
     if (token) {
       try {
+        const { updateUserSettings } = await import('@/services/settings')
         await updateUserSettings({ language: lang })
       } catch {
         // Non-fatal: local preference still applied
@@ -37,10 +43,15 @@ export async function setAppLanguage(
   }
 }
 
-/** Apply Accept-Language from current i18n language (call once at boot). */
-export function applyAcceptLanguageHeader(): void {
+/** Apply Accept-Language from current i18n language (safe after app mount). */
+export async function applyAcceptLanguageHeader(): Promise<void> {
   const lang = i18n.language?.startsWith('fr') ? 'fr' : 'en'
-  api.defaults.headers.common['Accept-Language'] = lang
+  try {
+    const { default: api } = await import('@/lib/axios')
+    api.defaults.headers.common['Accept-Language'] = lang
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Hydrate language from user settings after login. */
