@@ -76,6 +76,9 @@ const inviteSchema = z.object({
 
 type InviteFormData = z.infer<typeof inviteSchema>;
 
+const EMPTY_TEAM_MEMBERS: User[] = [];
+const EMPTY_INVITATIONS: TeamInvitation[] = [];
+
 const TeamManagement: React.FC = () => {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'members' | 'invitations'>('members');
@@ -118,38 +121,44 @@ const TeamManagement: React.FC = () => {
     },
   });
 
-  // Queries
-  const { data: teamMembers = [], isLoading: isLoadingMembers, error: teamMembersError } = useQuery({
+  // Queries — no polling / focus refetch (avoids burst work when returning to the tab)
+  const { data: teamMembersData, isLoading: isLoadingMembers, error: teamMembersError } = useQuery({
     queryKey: ['team-members'],
     queryFn: async () => {
-      console.log('Fetching organization users...');
       try {
         const response = await api.users.getOrganizationUsers();
-        if (Array.isArray(response)) return response;
+        if (Array.isArray(response)) return response as User[];
         const wrapped = response as { data?: unknown };
-        return Array.isArray(wrapped?.data) ? wrapped.data : [];
+        return Array.isArray(wrapped?.data) ? (wrapped.data as User[]) : [];
       } catch (error) {
         console.error('Error fetching organization users:', error);
         throw error;
       }
     },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
+  const teamMembers = teamMembersData ?? EMPTY_TEAM_MEMBERS;
 
-  const { data: invitations = [], isLoading: isLoadingInvitations } = useQuery({
+  const { data: invitationsData, isLoading: isLoadingInvitations } = useQuery({
     queryKey: ['team-invitations'],
     queryFn: async () => {
-      // teamInvitations service already returns unwrapped response.data
       const data = await api.teamInvitations.getInvitations();
       return Array.isArray(data) ? data : [];
     },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
+  const invitations = invitationsData ?? EMPTY_INVITATIONS;
 
   const { data: invitationStats } = useQuery({
     queryKey: ['invitation-stats'],
-    queryFn: async () => {
-      // teamInvitations service already returns unwrapped response.data
-      return api.teamInvitations.getStats();
-    },
+    queryFn: async () => api.teamInvitations.getStats(),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const currentOrgId = user?.organization_id ? Number(user.organization_id) : null;

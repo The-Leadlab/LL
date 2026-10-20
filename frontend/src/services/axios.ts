@@ -34,8 +34,12 @@ function getStoredAccessToken(): string | null {
 // Variable to check whether to redirect
 let isRefreshingToken = false;
 let redirectToLogin = false;
-// Array to store pending requests
-let pendingRequests: Array<() => void> = [];
+type PendingRequest = {
+  resolve: (value: unknown) => void;
+  reject: (reason?: unknown) => void;
+  config: any;
+};
+let pendingRequests: PendingRequest[] = [];
 
 // Non-critical endpoints (don't logout on 401)
 const nonCriticalEndpoints = [
@@ -106,17 +110,16 @@ api.interceptors.response.use(
       isRetry: originalRequest?._retry
     });
 
-    // Specific handling for leads/{id} endpoints with 401 errors
-    if (error.response?.status === 401 && 
-        originalRequest?.url && 
-        originalRequest.url.match(/\/leads\/\d+$/)) {
-      
-      console.warn(`Authentication error on lead detail: ${originalRequest.url}, retrying with fresh token`);
-      
-      // Try to get a fresh token from localStorage (might have been updated)
+    // leads/{id} 401: one retry with storage token only (must set _retry or this OOM-loops)
+    if (
+      error.response?.status === 401 &&
+      originalRequest?.url &&
+      !originalRequest._retry &&
+      originalRequest.url.match(/\/leads\/\d+$/)
+    ) {
       const token = getStoredAccessToken();
       if (token) {
-        console.log('Retrying with fresh token from storage');
+        originalRequest._retry = true;
         originalRequest.headers['Authorization'] = `Bearer ${token}`;
         return api(originalRequest);
       }
@@ -230,11 +233,8 @@ api.interceptors.response.use(
 
       // If token refresh is already in progress
       if (isRefreshingToken) {
-        return new Promise((resolve) => {
-          // Add current request to the pending queue
-          pendingRequests.push(() => {
-            resolve(api(originalRequest));
-          });
+        return new Promise((resolve, reject) => {
+          pendingRequests.push({ resolve, reject, config: originalRequest });
         });
       }
 
@@ -251,6 +251,10 @@ api.interceptors.response.use(
         // If no refresh token, redirect to login
         if (!refreshToken) {
           console.log('No refresh token found');
+          const waiters = pendingRequests;
+          pendingRequests = [];
+          waiters.forEach(({ reject }) => reject(error));
+          isRefreshingToken = false;
           if (!redirectToLogin) {
             redirectToLogin = true;
             useAuthStore.getState().logout();
@@ -282,11 +286,14 @@ api.interceptors.response.use(
           api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
           originalRequest.headers['Authorization'] = `Bearer ${response.data.access_token}`;
 
-          // Retry all pending requests with new token
-          pendingRequests.forEach(callback => callback());
+          const waiters = pendingRequests;
           pendingRequests = [];
-          
-          // Retry original request
+          waiters.forEach(({ resolve, config }) => {
+            config.headers = config.headers || {};
+            config.headers['Authorization'] = `Bearer ${response.data.access_token}`;
+            resolve(api(config));
+          });
+
           console.log('Retrying original request...');
           isRefreshingToken = false;
           redirectToLogin = false;
@@ -297,13 +304,16 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
 
-        // Redirect to login
+        const waiters = pendingRequests;
+        pendingRequests = [];
+        waiters.forEach(({ reject }) => reject(refreshError));
+
         if (!redirectToLogin) {
           redirectToLogin = true;
           useAuthStore.getState().logout();
           window.location.href = '/signin';
         }
-        
+
         isRefreshingToken = false;
         return Promise.reject(refreshError);
       }

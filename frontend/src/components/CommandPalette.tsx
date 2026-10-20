@@ -50,6 +50,9 @@ interface CommandPaletteProps {
   onClose: () => void;
 }
 
+/** Stable empty list — never use `data = []` in a useEffect dep (new [] each render → OOM loop). */
+const EMPTY_LEAD_HITS: unknown[] = [];
+
 export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -59,7 +62,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const searchTerm = debouncedQuery.trim();
   const canSearchLeads = open && shouldSearchLeads(query);
-  const { data: leadHits = [], isFetching: isSearchingLeads } = useQuery({
+  const { data: leadHitsData, isFetching: isSearchingLeads } = useQuery({
     queryKey: ['command-palette-leads', searchTerm],
     queryFn: async ({ signal }) => {
       const res = await api.get('/leads', {
@@ -70,12 +73,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       if (Array.isArray(d?.results)) return d.results;
       if (Array.isArray(d?.items)) return d.items;
       if (Array.isArray(d)) return d;
-      return [];
+      return EMPTY_LEAD_HITS;
     },
     enabled: open && shouldSearchLeads(searchTerm),
     staleTime: 15_000,
     placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
   });
+  const leadHits = leadHitsData ?? EMPTY_LEAD_HITS;
 
   // All available commands
   const commands: CommandItem[] = [
@@ -262,12 +267,13 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       : []),
   ];
 
-  // Filter commands based on query
+  // Filter commands based on query — skip work while closed to avoid idle re-render churn
   useEffect(() => {
+    if (!open) return;
+
     const query_lower = query.toLowerCase().trim();
 
     if (!query_lower) {
-      // Show all commands when no query
       setFilteredCommands(commands);
       setSelectedIndex(0);
       return;
@@ -279,7 +285,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       cmd.shortcut?.toLowerCase().includes(query_lower)
     );
 
-    const leadCommands: CommandItem[] = (Array.isArray(leadHits) ? leadHits : []).map((lead: any) => ({
+    const leadCommands: CommandItem[] = (Array.isArray(leadHits) ? leadHits : EMPTY_LEAD_HITS).map((lead: any) => ({
       id: `lead-${lead.id}`,
       title: [lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.email || `Lead #${lead.id}`,
       subtitle: [lead.company, lead.email].filter(Boolean).join(' · ') || 'Lead',
@@ -290,7 +296,9 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
     setFilteredCommands([...leadCommands, ...filtered]);
     setSelectedIndex(0);
-  }, [query, leadHits, navigate]);
+    // commands is derived from navigate/featureFlags each render; intentionally omit to avoid loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stable filter inputs only
+  }, [open, query, leadHits, navigate]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {

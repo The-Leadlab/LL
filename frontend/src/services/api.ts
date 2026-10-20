@@ -219,29 +219,8 @@ export interface TagsResponse {
   total: number;
 }
 
-// Interceptor to add token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Interceptor to handle errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      const isLoginRequest = error.config?.url?.includes('/auth/login');
-      if (!isLoginRequest) {
-        localStorage.removeItem('token');
-        window.location.href = '/signin';
-      }
-    }
-    return Promise.reject(error);
-  }
-);
+// Auth/token handling lives solely in `@/lib/axios` interceptors.
+// Do not register a second 401→logout interceptor here — it races refresh and can storm redirects.
 
 export const usersAPI = {
   getAll: async (): Promise<AxiosResponse<UserResponse>> => {

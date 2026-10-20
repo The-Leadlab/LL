@@ -5,6 +5,7 @@ export const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
       // Prefer cached data on navigation so pages don't flash full-screen loaders (B19/B41)
       staleTime: 60_000,
       gcTime: 10 * 60_000,

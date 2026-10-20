@@ -62,8 +62,12 @@ function storeRefreshedTokens(accessToken: string, refreshToken?: string | null)
 // Yönlendirme yapıp yapılmayacağını kontrol eden değişken
 let isRefreshingToken = false;
 let redirectToLogin = false;
-// Bekleyen istekleri depolayacak array
-let pendingRequests: Array<() => void> = [];
+type PendingRequest = {
+  resolve: (value: unknown) => void;
+  reject: (reason?: unknown) => void;
+  config: any;
+};
+let pendingRequests: PendingRequest[] = [];
 
 // Kritik olmayan endpointler (401 olduğunda logout olmayalım)
 const nonCriticalEndpoints = [
@@ -142,17 +146,16 @@ api.interceptors.response.use(
       });
     }
 
-    // Specific handling for leads/{id} endpoints with 401 errors
-    if (error.response?.status === 401 && 
-        originalRequest?.url && 
-        originalRequest.url.match(/\/leads\/\d+$/)) {
-      
-      console.warn(`Authentication error on lead detail: ${originalRequest.url}, retrying with fresh token`);
-      
-      // Try to get a fresh token from localStorage (might have been updated)
+    // leads/{id} 401: one retry with storage token only (must set _retry or this OOM-loops)
+    if (
+      error.response?.status === 401 &&
+      originalRequest?.url &&
+      !originalRequest._retry &&
+      originalRequest.url.match(/\/leads\/\d+$/)
+    ) {
       const token = getStoredAccessToken();
       if (token) {
-        console.log('Retrying with fresh token from storage');
+        originalRequest._retry = true;
         originalRequest.headers['Authorization'] = `Bearer ${token}`;
         return api(originalRequest);
       }
@@ -271,11 +274,8 @@ api.interceptors.response.use(
 
       // Eğer oturum yenileme işlemi zaten devam ediyorsa
       if (isRefreshingToken) {
-        return new Promise((resolve) => {
-          // Mevcut isteği bekletme kuyruğuna ekle
-          pendingRequests.push(() => {
-            resolve(api(originalRequest));
-          });
+        return new Promise((resolve, reject) => {
+          pendingRequests.push({ resolve, reject, config: originalRequest });
         });
       }
 
@@ -292,6 +292,10 @@ api.interceptors.response.use(
         // Refresh token yoksa, login'e yönlendir
         if (!refreshToken) {
           console.log('No refresh token found');
+          const waiters = pendingRequests;
+          pendingRequests = [];
+          waiters.forEach(({ reject }) => reject(error));
+          isRefreshingToken = false;
           if (!redirectToLogin) {
             redirectToLogin = true;
             useAuthStore.getState().logout();
@@ -321,11 +325,14 @@ api.interceptors.response.use(
           api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
           originalRequest.headers['Authorization'] = `Bearer ${response.data.access_token}`;
 
-          // Bekletme kuyruğundaki tüm istekleri yeni token ile yeniden yap
-          pendingRequests.forEach(callback => callback());
+          const waiters = pendingRequests;
           pendingRequests = [];
-          
-          // Retry original request
+          waiters.forEach(({ resolve, config }) => {
+            config.headers = config.headers || {};
+            config.headers['Authorization'] = `Bearer ${response.data.access_token}`;
+            resolve(api(config));
+          });
+
           console.log('Retrying original request...');
           isRefreshingToken = false;
           redirectToLogin = false;
@@ -335,14 +342,17 @@ api.interceptors.response.use(
         }
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
-        
-        // Login'e yönlendir
+
+        const waiters = pendingRequests;
+        pendingRequests = [];
+        waiters.forEach(({ reject }) => reject(refreshError));
+
         if (!redirectToLogin) {
           redirectToLogin = true;
           useAuthStore.getState().logout();
           window.location.href = '/signin';
         }
-        
+
         isRefreshingToken = false;
         return Promise.reject(refreshError);
       }
