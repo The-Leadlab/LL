@@ -533,6 +533,58 @@ Need help? Contact info@the-leadlab.com
         """
         return await self.send_email(to_email, subject, html_content, text_content)
 
+    async def send_assignment_mention(
+        self,
+        to_email: str,
+        recipient_name: str,
+        mentioner_name: str,
+        entity_type: str,
+        entity_title: str,
+        entity_url: str,
+        organization_name: Optional[str] = None,
+    ) -> bool:
+        """Notify a teammate they were assigned / mentioned on a task or lead."""
+        entity_label = (entity_type or "item").strip().lower()
+        if entity_label not in {"task", "lead", "deal"}:
+            entity_label = "item"
+        subject = f"You were mentioned on a {entity_label} in LeadLab"
+        org_bit = f" at {organization_name}" if organization_name else ""
+        safe_title = entity_title or f"Untitled {entity_label}"
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"><title>Mentioned on a {entity_label}</title></head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%); color: white; padding: 28px; border-radius: 10px 10px 0 0; text-align: center;">
+              <div style="font-size: 22px; font-weight: bold;">LeadLab</div>
+              <p style="margin: 8px 0 0; opacity: 0.9;">You were mentioned</p>
+            </div>
+            <div style="background: #f8fafc; padding: 28px; border-radius: 0 0 10px 10px;">
+              <p>Hi {recipient_name or 'there'},</p>
+              <p><strong>{mentioner_name}</strong> mentioned you on a {entity_label}{org_bit}:</p>
+              <div style="background: white; border-left: 4px solid #0f766e; padding: 16px 18px; margin: 20px 0; border-radius: 6px;">
+                <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b;">{entity_label}</div>
+                <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">{safe_title}</div>
+              </div>
+              <p style="text-align: center;">
+                <a href="{entity_url}" style="display: inline-block; background: #0f766e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Open in LeadLab</a>
+              </p>
+              <p style="color: #64748b; font-size: 13px; margin-top: 24px;">If the button does not work, copy this link:<br/>{entity_url}</p>
+            </div>
+            <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">© 2026 LeadLab · the-leadlab.com</p>
+          </div>
+        </body>
+        </html>
+        """
+        text_content = (
+            f"Hi {recipient_name or 'there'},\n\n"
+            f"{mentioner_name} mentioned you on a {entity_label}{org_bit}: {safe_title}\n\n"
+            f"Open it here: {entity_url}\n\n"
+            f"— LeadLab"
+        )
+        return await self.send_email(to_email, subject, html_content, text_content)
+
     async def send_team_invitation(
         self,
         to_email: str,

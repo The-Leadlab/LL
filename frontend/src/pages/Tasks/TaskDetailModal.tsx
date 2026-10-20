@@ -18,6 +18,7 @@ import { useAuthStore } from '@/store/auth';
 import {
   displayAssigneeLabel,
   displayUserInitials,
+  displayUserName,
   extractUserList,
   filterAssigneeUsers,
   normalizeAssigneeUsers,
@@ -321,6 +322,7 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <label htmlFor="assigned_to" className="text-sm font-medium">Assigned To</label>
+                    <p className="text-xs text-gray-500 -mt-1">Selecting a teammate emails them that you mentioned them on this task.</p>
                     <Popover open={userPopoverOpen} onOpenChange={setUserPopoverOpen}>
                       <PopoverTrigger asChild>
                         <Button
@@ -505,32 +507,41 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                   <div className="space-y-4">
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">Assigned To</h4>
-                      {currentTask.assigned_to ? (
-                        <div className="mt-1 flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                            {(currentTask.assigned_to.first_name?.[0] || '')}
-                            {(currentTask.assigned_to.last_name?.[0] || '')}
+                      <button
+                        type="button"
+                        onClick={handleEdit}
+                        className="mt-1 w-full text-left rounded-md hover:bg-gray-50 p-1 -ml-1 transition-colors"
+                        title="Click to assign a teammate"
+                      >
+                        {currentTask.assigned_to ? (
+                          <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                              {(currentTask.assigned_to.first_name?.[0] || '')}
+                              {(currentTask.assigned_to.last_name?.[0] || '')}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {currentTask.assigned_to.first_name} {currentTask.assigned_to.last_name}
+                              </p>
+                              {currentTask.assigned_to.job_title && (
+                                <p className="text-xs text-gray-500">{currentTask.assigned_to.job_title}</p>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {currentTask.assigned_to.first_name} {currentTask.assigned_to.last_name}
-                            </p>
-                            {currentTask.assigned_to.job_title && (
-                              <p className="text-xs text-gray-500">{currentTask.assigned_to.job_title}</p>
-                            )}
-                          </div>
-                        </div>
-                      ) : currentTask.assigned_to_id ? (
-                        <p className="mt-1 text-sm text-gray-900">
-                          {usersData?.find((u) => Number(u.id) === Number(currentTask.assigned_to_id))
-                            ? displayUserName(
-                                usersData.find((u) => Number(u.id) === Number(currentTask.assigned_to_id))!,
-                              )
-                            : `User #${currentTask.assigned_to_id}`}
-                        </p>
-                      ) : (
-                        <p className="mt-1 text-sm text-gray-500">Not assigned</p>
-                      )}
+                        ) : currentTask.assigned_to_id ? (
+                          <p className="text-sm text-gray-900">
+                            {usersData?.find((u) => Number(u.id) === Number(currentTask.assigned_to_id))
+                              ? displayUserName(
+                                  usersData.find((u) => Number(u.id) === Number(currentTask.assigned_to_id))!,
+                                )
+                              : `User #${currentTask.assigned_to_id}`}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-blue-600 underline-offset-2 hover:underline">
+                            Select user to assign…
+                          </p>
+                        )}
+                      </button>
                     </div>
 
                     <div>

@@ -7,11 +7,20 @@ from app.models.task import Task
 from app.schemas.task import TaskCreate, TaskUpdate
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
-    def get(self, db: Session, task_id: int) -> Optional[Task]:
+    def get(
+        self,
+        db: Session,
+        id: Optional[int] = None,
+        task_id: Optional[int] = None,
+    ) -> Optional[Task]:
+        # Accept both `id=` (CRUDBase / attachment routes) and `task_id=` (legacy callers).
+        tid = id if id is not None else task_id
+        if tid is None:
+            return None
         return (
             db.query(Task)
             .options(joinedload(Task.assigned_to), joinedload(Task.lead))
-            .filter(Task.id == task_id)
+            .filter(Task.id == tid)
             .first()
         )
 

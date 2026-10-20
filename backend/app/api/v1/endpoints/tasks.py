@@ -1,5 +1,5 @@
 from typing import List, Optional, Any
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, BackgroundTasks
 from fastapi.responses import Response
 from sqlalchemy.orm import Session, defer
 from app.api import deps
@@ -9,6 +9,7 @@ from app.models.task import TaskStatus, TaskPriority
 from app.models.task_attachment import TaskAttachment
 from app.schemas.task import Task, TaskCreate, TaskUpdate, TaskList
 from app.core.task_attachment_schema import ensure_task_attachments_schema
+from app.services.assignment_notify import schedule_assignment_mention
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -74,6 +75,7 @@ def get_tasks(
 def create_task(
     *,
     db: Session = Depends(deps.get_db),
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(deps.get_current_user),
     task_in: TaskCreate,
 ) -> Any:
@@ -92,6 +94,19 @@ def create_task(
     
     # Create the task
     task = crud_task.task.create(db, obj_in=task_in)
+
+    if task.assigned_to_id and int(task.assigned_to_id) != int(current_user.id):
+        org_name = getattr(getattr(current_user, "organization", None), "name", None)
+        schedule_assignment_mention(
+            background_tasks,
+            db=db,
+            assignee_id=task.assigned_to_id,
+            mentioner=current_user,
+            entity_type="task",
+            entity_id=task.id,
+            entity_title=task.title,
+            organization_name=org_name,
+        )
     
     # Log activity for task creation
     try:
@@ -152,6 +167,7 @@ def get_task(
 def update_task(
     *,
     db: Session = Depends(deps.get_db),
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(deps.get_current_user),
     task_id: int,
     task_in: TaskUpdate,
@@ -166,6 +182,14 @@ def update_task(
     # Check if the user has permission to update this task
     if not current_user.is_admin and task.organization_id != current_user.organization_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    previous_assignee_id = task.assigned_to_id
+    update_fields = task_in.model_dump(exclude_unset=True) if hasattr(task_in, "model_dump") else task_in.dict(exclude_unset=True)
+    new_assignee_id = update_fields.get("assigned_to_id", previous_assignee_id)
+    if "assigned_to_id" in update_fields and new_assignee_id:
+        assignee = crud_user.user.get(db, id=new_assignee_id)
+        if not assignee or int(assignee.organization_id) != int(current_user.organization_id):
+            raise HTTPException(status_code=400, detail="Assignee must be a member of your organization")
     
     # Check if task is being completed
     task_completed = False
@@ -174,6 +198,23 @@ def update_task(
     
     # Update the task
     task = crud_task.task.update(db, db_obj=task, obj_in=task_in)
+
+    if (
+        new_assignee_id
+        and new_assignee_id != previous_assignee_id
+        and int(new_assignee_id) != int(current_user.id)
+    ):
+        org_name = getattr(getattr(current_user, "organization", None), "name", None)
+        schedule_assignment_mention(
+            background_tasks,
+            db=db,
+            assignee_id=new_assignee_id,
+            mentioner=current_user,
+            entity_type="task",
+            entity_id=task.id,
+            entity_title=task.title,
+            organization_name=org_name,
+        )
     
     # Log activity for task update
     try:

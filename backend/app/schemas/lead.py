@@ -96,6 +96,7 @@ class LeadCreate(LeadBase):
 # Lead Update Schema
 class LeadUpdate(LeadBase):
     client_id: Optional[int] = None
+    user_id: Optional[int] = None  # Reassign / tag an org teammate as owner
 
     model_config = ConfigDict(from_attributes=True)
 

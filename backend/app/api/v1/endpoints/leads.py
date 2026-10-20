@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 import csv
 import io
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app import crud, models, schemas
@@ -631,6 +631,7 @@ def read_lead(
 def update_lead(
     *,
     db: Session = Depends(deps.get_db),
+    background_tasks: BackgroundTasks,
     lead_id: int,
     lead_in: schemas.LeadUpdate,
     current_user: models.User = Depends(deps.get_current_active_user),
@@ -649,6 +650,7 @@ def update_lead(
         logger.warning(f"Permission denied: User {current_user.id} attempted to update lead {lead_id} from organization {lead.organization_id}, but belongs to organization {current_user.organization_id}")
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
+    previous_owner_id = lead.user_id
     update_data = lead_in.model_dump(exclude_unset=True)
     if "client_id" in update_data:
         from app.crud.crud_client import client as crud_client
@@ -666,7 +668,38 @@ def update_lead(
                 raise HTTPException(status_code=400, detail="Invalid or archived client")
             update_data["client_id"] = client_obj.id
 
+    if "user_id" in update_data and update_data["user_id"] is not None:
+        from app.crud import crud_user
+        owner = crud_user.user.get(db, id=update_data["user_id"])
+        if not owner or int(owner.organization_id) != int(current_user.organization_id):
+            raise HTTPException(
+                status_code=400,
+                detail="Assignee must be a member of your organization",
+            )
+
     lead = crud.lead.update(db=db, db_obj=lead, obj_in=update_data)
+
+    new_owner_id = getattr(lead, "user_id", None)
+    if (
+        "user_id" in update_data
+        and new_owner_id
+        and new_owner_id != previous_owner_id
+        and int(new_owner_id) != int(current_user.id)
+    ):
+        from app.services.assignment_notify import schedule_assignment_mention
+        org_name = getattr(getattr(current_user, "organization", None), "name", None)
+        title = f"{(lead.first_name or '').strip()} {(lead.last_name or '').strip()}".strip() or f"Lead #{lead.id}"
+        schedule_assignment_mention(
+            background_tasks,
+            db=db,
+            assignee_id=new_owner_id,
+            mentioner=current_user,
+            entity_type="lead",
+            entity_id=lead.id,
+            entity_title=title,
+            organization_name=org_name,
+        )
+
     logger.info(f"Lead {lead_id} successfully updated by user {current_user.id}")
     return lead
 

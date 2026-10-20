@@ -10,6 +10,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
 import { api } from '@/lib/axios';
 import { clientsAPI } from '@/services/api/clients';
+import usersAPI from '@/services/api/users';
+import { useAuthStore } from '@/store/auth';
+import {
+  displayAssigneeLabel,
+  extractUserList,
+  normalizeAssigneeUsers,
+} from '@/utils/assigneeUsers';
 
 interface LeadEditFormProps {
   lead: {
@@ -30,6 +37,7 @@ interface LeadEditFormProps {
     client_comments?: string | null;
     client_id?: number | null;
     client_name?: string | null;
+    user_id?: number | null;
   };
   onSuccess: () => void;
   onCancel: () => void;
@@ -50,6 +58,7 @@ type FormValues = {
   sector: string;
   client_comments: string;
   client_id: string;
+  user_id: string;
 };
 
 function Field({
@@ -69,6 +78,7 @@ function Field({
 
 export const LeadEditForm: React.FC<LeadEditFormProps> = ({ lead, onSuccess, onCancel }) => {
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const initials = `${lead.first_name?.[0] || ''}${lead.last_name?.[0] || ''}`;
 
@@ -77,6 +87,15 @@ export const LeadEditForm: React.FC<LeadEditFormProps> = ({ lead, onSuccess, onC
     queryFn: () => clientsAPI.list(false),
   });
   const clients = clientsData?.items ?? [];
+
+  const { data: assignableUsers = [] } = useQuery({
+    queryKey: ['assignable-users', currentUser?.organization_id],
+    queryFn: async () => {
+      const response = await usersAPI.getAssignable();
+      return normalizeAssigneeUsers(extractUserList(response), currentUser);
+    },
+    enabled: !!currentUser?.organization_id,
+  });
 
   const { register, handleSubmit, control, watch } = useForm<FormValues>({
     defaultValues: {
@@ -94,6 +113,7 @@ export const LeadEditForm: React.FC<LeadEditFormProps> = ({ lead, onSuccess, onC
       sector: lead.sector || '',
       client_comments: lead.client_comments || '',
       client_id: lead.client_id != null ? String(lead.client_id) : '',
+      user_id: lead.user_id != null ? String(lead.user_id) : (currentUser?.id != null ? String(currentUser.id) : ''),
     },
   });
 
@@ -122,6 +142,9 @@ export const LeadEditForm: React.FC<LeadEditFormProps> = ({ lead, onSuccess, onC
       };
       if (data.client_id) {
         updateData.client_id = Number(data.client_id);
+      }
+      if (data.user_id) {
+        updateData.user_id = Number(data.user_id);
       }
 
       await api.put(`/leads/${lead.id}`, updateData);
@@ -215,6 +238,31 @@ export const LeadEditForm: React.FC<LeadEditFormProps> = ({ lead, onSuccess, onC
               Will move from {lead.client_name || 'the current client'} to {selectedClient.name}.
             </p>
           )}
+        </section>
+
+        <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-1 text-base font-semibold text-neutral-900">Assigned to</h2>
+          <p className="mb-4 text-sm text-neutral-500">
+            Tag a teammate — they get an email that you mentioned them on this lead.
+          </p>
+          <Controller
+            name="user_id"
+            control={control}
+            render={({ field }) => (
+              <Select value={field.value || undefined} onValueChange={field.onChange}>
+                <SelectTrigger className="h-11 max-w-md bg-white">
+                  <SelectValue placeholder="Select teammate..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignableUsers.map((u) => (
+                    <SelectItem key={u.id} value={String(u.id)}>
+                      {displayAssigneeLabel(u, currentUser)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </section>
 
         <div className="grid gap-4 lg:grid-cols-3">
