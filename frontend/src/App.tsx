@@ -3,7 +3,6 @@ import { RouterProvider } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { Toaster as ShadcnToaster } from '@/components/ui/Toaster';
-import { useAuthStore } from './store/auth';
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { theme } from "./theme";
@@ -12,8 +11,6 @@ import { DarkModeProvider } from './components/ThemeProvider';
 import { queryClient } from './lib/queryClient';
 
 function App() {
-  const { isAuthenticated } = useAuthStore();
-
   return (
     <DarkModeProvider>
       <QueryClientProvider client={queryClient}>

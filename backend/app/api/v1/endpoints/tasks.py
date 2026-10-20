@@ -55,19 +55,27 @@ def get_tasks(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
     skip: int = 0,
-    limit: int = 100
+    limit: int = 100,
+    search: Optional[str] = None,
 ) -> TaskList:
     """
     Retrieve tasks for current user's organization.
     """
     logger.info(f"User {current_user.id} requesting tasks for org {current_user.organization_id}")
+    org_id = current_user.organization_id
+    search_term = (search or "").strip() or None
     tasks = crud_task.task.get_multi(
         db,
         skip=skip,
         limit=limit,
-        organization_id=current_user.organization_id
+        organization_id=org_id,
+        search=search_term,
     )
-    total = len(tasks)
+    total = crud_task.task.count_multi(
+        db,
+        organization_id=org_id,
+        search=search_term,
+    )
     return TaskList(items=tasks, total=total)
 
 @router.post("", response_model=Task)

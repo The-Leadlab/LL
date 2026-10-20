@@ -331,6 +331,10 @@ export function ModernLeads() {
   const [filterStageId, setFilterStageId] = useState<number | null>(null);
   const [filterSource, setFilterSource] = useState('');
   const [filterSector, setFilterSector] = useState('');
+  // Draft filters — only committed on Apply so typing does not refetch
+  const [draftFilterStageId, setDraftFilterStageId] = useState<number | null>(null);
+  const [draftFilterSource, setDraftFilterSource] = useState('');
+  const [draftFilterSector, setDraftFilterSector] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   const handleDebouncedSearch = React.useCallback((value: string) => {
@@ -410,7 +414,8 @@ export function ModernLeads() {
   }, [selectedClientId]);
 
   // Fetch leads from backend (paginated; debounced search avoids remounting the page each keystroke)
-  const effectivePageSize = groupBy === 'none' ? pageSize : Math.max(pageSize, 100);
+  // Cap grouped fetches so we don't pull 100+ heavy rows on every filter change
+  const effectivePageSize = groupBy === 'none' ? pageSize : 50;
   const { data: leadsPage, isLoading: isLoadingLeads, isFetching: isFetchingLeads } = useQuery({
     queryKey: [
       'leads',
@@ -849,7 +854,12 @@ export function ModernLeads() {
             />
             <button
               type="button"
-              onClick={() => setIsFiltersOpen(true)}
+              onClick={() => {
+                setDraftFilterStageId(filterStageId);
+                setDraftFilterSource(filterSource);
+                setDraftFilterSector(filterSector);
+                setIsFiltersOpen(true);
+              }}
               className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
             >
               <Filter className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
@@ -1224,9 +1234,9 @@ export function ModernLeads() {
               <Label htmlFor="filter-stage">Pipeline stage</Label>
               <select
                 id="filter-stage"
-                value={filterStageId ?? ''}
+                value={draftFilterStageId ?? ''}
                 onChange={(e) =>
-                  setFilterStageId(e.target.value ? Number(e.target.value) : null)
+                  setDraftFilterStageId(e.target.value ? Number(e.target.value) : null)
                 }
                 className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800"
               >
@@ -1243,8 +1253,8 @@ export function ModernLeads() {
               <Input
                 id="filter-source"
                 placeholder="e.g. inbound, referral, cold"
-                value={filterSource}
-                onChange={(e) => setFilterSource(e.target.value)}
+                value={draftFilterSource}
+                onChange={(e) => setDraftFilterSource(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -1252,8 +1262,8 @@ export function ModernLeads() {
               <Input
                 id="filter-sector"
                 placeholder="e.g. finance, tech"
-                value={filterSector}
-                onChange={(e) => setFilterSector(e.target.value)}
+                value={draftFilterSector}
+                onChange={(e) => setDraftFilterSector(e.target.value)}
               />
             </div>
           </div>
@@ -1262,6 +1272,9 @@ export function ModernLeads() {
               type="button"
               variant="outline"
               onClick={() => {
+                setDraftFilterStageId(null);
+                setDraftFilterSource('');
+                setDraftFilterSector('');
                 setFilterStageId(null);
                 setFilterSource('');
                 setFilterSector('');
@@ -1269,7 +1282,15 @@ export function ModernLeads() {
             >
               Clear
             </Button>
-            <Button type="button" onClick={() => setIsFiltersOpen(false)}>
+            <Button
+              type="button"
+              onClick={() => {
+                setFilterStageId(draftFilterStageId);
+                setFilterSource(draftFilterSource);
+                setFilterSector(draftFilterSector);
+                setIsFiltersOpen(false);
+              }}
+            >
               Apply
             </Button>
           </DialogFooter>

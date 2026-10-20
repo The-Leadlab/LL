@@ -87,6 +87,7 @@ export function ModernDashboard() {
     queryKey: ['leadStats'],
     queryFn: leadsAPI.getLeadStats,
     retry: 1,
+    staleTime: 60_000,
   });
 
   // Fetch dashboard stats
@@ -99,6 +100,7 @@ export function ModernDashboard() {
     queryKey: ['dashboardStats'],
     queryFn: () => api.get('/dashboard/stats'),
     retry: 1,
+    staleTime: 60_000,
   });
 
   const leadStats: LeadStats = leadStatsData ?? {

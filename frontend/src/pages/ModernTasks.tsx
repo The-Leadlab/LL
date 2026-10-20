@@ -2,8 +2,8 @@
  * Modern Tasks Page — list + board with working row actions.
  */
 
-import React, { useEffect, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '@/services/axios';
 import tasksAPI from '@/services/tasks';
@@ -40,6 +40,43 @@ interface Task {
   assigned_to?: { first_name?: string; last_name?: string };
   lead?: unknown;
   created_at: string;
+}
+
+/** Keeps keystrokes local so the kanban board is not re-rendered on every character. */
+function TasksSearchField({
+  isFetching = false,
+  onDebouncedChange,
+}: {
+  isFetching?: boolean;
+  onDebouncedChange: (value: string) => void;
+}) {
+  const [value, setValue] = useState('');
+  const [debounced, setDebounced] = useState('');
+
+  React.useEffect(() => {
+    const t = window.setTimeout(() => {
+      const next = value.trim();
+      setDebounced(next);
+      onDebouncedChange(next);
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [value, onDebouncedChange]);
+
+  return (
+    <div className="relative flex-1">
+      <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400" />
+      <input
+        type="text"
+        placeholder="Search tasks..."
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="min-h-[44px] w-full rounded-lg border border-neutral-200 bg-white py-2.5 pl-10 pr-10 text-base dark:border-neutral-700 dark:bg-neutral-800"
+      />
+      {(isFetching || value.trim() !== debounced) && (
+        <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary-600" />
+      )}
+    </div>
+  );
 }
 
 function TaskActionsMenu({ taskId }: { taskId: number }) {
@@ -107,28 +144,30 @@ export function ModernTasks() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
-  const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const handleDebouncedSearch = useCallback((value: string) => {
+    setDebouncedSearch(value);
+  }, []);
 
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
-    return () => window.clearTimeout(t);
-  }, [searchQuery]);
-
-  const { data: tasksResponse, isLoading } = useQuery({
+  const { data: tasksResponse, isLoading, isFetching } = useQuery({
     queryKey: ['tasks', debouncedSearch],
     queryFn: async () => {
       const params = debouncedSearch ? { search: debouncedSearch } : {};
       return api.get('/tasks/', { params });
     },
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
   });
 
   const body = tasksResponse?.data;
-  const tasks: Task[] = Array.isArray(body?.items)
-    ? body.items
-    : Array.isArray(body)
-      ? body
-      : [];
+  const tasks: Task[] = useMemo(() => {
+    const list = Array.isArray(body?.items)
+      ? body.items
+      : Array.isArray(body)
+        ? body
+        : [];
+    return list as Task[];
+  }, [body]);
 
   const statuses = [
     { id: 'PENDING', name: 'To Do', dot: 'bg-blue-500' },
@@ -137,10 +176,14 @@ export function ModernTasks() {
     { id: 'CANCELLED', name: 'Cancelled', dot: 'bg-gray-500' },
   ];
 
-  const tasksByStatus = statuses.map((status) => ({
-    ...status,
-    tasks: tasks.filter((task) => task.status === status.id),
-  }));
+  const tasksByStatus = useMemo(
+    () =>
+      statuses.map((status) => ({
+        ...status,
+        tasks: tasks.filter((task) => task.status === status.id),
+      })),
+    [tasks],
+  );
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
@@ -179,7 +222,7 @@ export function ModernTasks() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !tasksResponse) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-4 dark:bg-neutral-900">
         <div className="flex flex-col items-center space-y-4">
@@ -214,16 +257,7 @@ export function ModernTasks() {
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex max-w-2xl flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400" />
-              <input
-                type="text"
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="min-h-[44px] w-full rounded-lg border border-neutral-200 bg-white py-2.5 pl-10 pr-4 text-base dark:border-neutral-700 dark:bg-neutral-800"
-              />
-            </div>
+            <TasksSearchField isFetching={isFetching} onDebouncedChange={handleDebouncedSearch} />
             <button
               type="button"
               className="flex min-h-[44px] items-center justify-center space-x-2 rounded-lg border border-neutral-200 bg-white px-4 py-2.5 dark:border-neutral-700 dark:bg-neutral-800"

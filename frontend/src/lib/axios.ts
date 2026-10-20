@@ -134,11 +134,13 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    console.log('Response error:', {
-      status: error.response?.status,
-      url: originalRequest?.url,
-      isRetry: originalRequest?._retry
-    });
+    if (import.meta.env.DEV) {
+      console.log('Response error:', {
+        status: error.response?.status,
+        url: originalRequest?.url,
+        isRetry: originalRequest?._retry
+      });
+    }
 
     // Specific handling for leads/{id} endpoints with 401 errors
     if (error.response?.status === 401 && 

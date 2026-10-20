@@ -31,14 +31,49 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         skip: int = 0,
         limit: int = 100,
         organization_id: Optional[int] = None,
-        user_id: Optional[int] = None
+        user_id: Optional[int] = None,
+        search: Optional[str] = None,
     ) -> List[Task]:
-        query = db.query(Task).options(joinedload(Task.assigned_to), joinedload(Task.lead))
+        # List views only need assignee; full lead is loaded on task detail.
+        query = db.query(Task).options(joinedload(Task.assigned_to))
         if organization_id:
             query = query.filter(Task.organization_id == organization_id)
         if user_id:
             query = query.filter(Task.assigned_to_id == user_id)
-        return query.offset(skip).limit(limit).all()
+        if search:
+            needle = f"%{search.strip()}%"
+            query = query.filter(
+                or_(
+                    Task.title.ilike(needle),
+                    Task.description.ilike(needle),
+                )
+            )
+        return query.order_by(desc(Task.created_at)).offset(skip).limit(limit).all()
+
+    def count_multi(
+        self,
+        db: Session,
+        *,
+        organization_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        search: Optional[str] = None,
+    ) -> int:
+        from sqlalchemy import func as sa_func
+
+        query = db.query(sa_func.count(Task.id))
+        if organization_id:
+            query = query.filter(Task.organization_id == organization_id)
+        if user_id:
+            query = query.filter(Task.assigned_to_id == user_id)
+        if search:
+            needle = f"%{search.strip()}%"
+            query = query.filter(
+                or_(
+                    Task.title.ilike(needle),
+                    Task.description.ilike(needle),
+                )
+            )
+        return int(query.scalar() or 0)
 
     def get_by_lead(self, db: Session, *, lead_id: int) -> List[Task]:
         return db.query(Task)\

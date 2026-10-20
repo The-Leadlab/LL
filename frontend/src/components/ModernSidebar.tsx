@@ -171,6 +171,28 @@ const bottomNavigation: NavItem[] = [
   },
 ];
 
+function SidebarQuickSearch({ onSubmit }: { onSubmit: (q: string) => void }) {
+  const [value, setValue] = useState('');
+  return (
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+      <input
+        type="text"
+        placeholder="Quick search..."
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && value.trim()) {
+            onSubmit(value.trim());
+            setValue('');
+          }
+        }}
+        className="w-full pl-9 pr-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+      />
+    </div>
+  );
+}
+
 export function ModernSidebar({
   onNavigate,
   forceExpanded = false,
@@ -180,11 +202,12 @@ export function ModernSidebar({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const collapsedEffective = forceExpanded ? false : collapsed;
-  const [quickSearch, setQuickSearch] = useState('');
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout, avatarRevision } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const avatarRevision = useAuthStore((s) => s.avatarRevision);
   const sidebarAvatarUrl = useCurrentUserAvatar(user?.id, avatarRevision);
   const adminOnlyNavNames = new Set(['Company']);
   const baseNavigation = user?.is_admin
@@ -244,25 +267,15 @@ export function ModernSidebar({
         </button>
       </div>
 
-      {/* Search */}
+      {/* Search — isolated so typing does not re-render the whole nav */}
       {!collapsedEffective && (
         <div className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-            <input
-              type="text"
-              placeholder="Quick search..."
-              value={quickSearch}
-              onChange={(e) => setQuickSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && quickSearch.trim()) {
-                  navigate(`/leads?q=${encodeURIComponent(quickSearch.trim())}`);
-                  onNavigate?.();
-                }
-              }}
-              className="w-full pl-9 pr-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
-          </div>
+          <SidebarQuickSearch
+            onSubmit={(q) => {
+              navigate(`/leads?q=${encodeURIComponent(q)}`);
+              onNavigate?.();
+            }}
+          />
         </div>
       )}
 

@@ -259,6 +259,16 @@ const countryCodes = [
   { value: '+263', label: 'Zimbabwe (+263)', format: '## ### ####' }
 ].sort((a, b) => a.label.localeCompare(b.label));
 
+// Short dial-code list for Select UI (full countryCodes kept for formatting lookups)
+const POPULAR_DIAL_CODES = [
+  '+44', '+353', '+1', '+33', '+49', '+34', '+39', '+31', '+32', '+41',
+  '+27', '+61', '+64', '+91', '+971', '+966', '+974', '+965', '+968',
+  '+234', '+254', '+20', '+65', '+81', '+86', '+852', '+55', '+52', '+90',
+];
+const popularCountryCodes = POPULAR_DIAL_CODES
+  .map((code) => countryCodes.find((cc) => cc.value === code))
+  .filter((cc): cc is (typeof countryCodes)[number] => Boolean(cc));
+
 const sectors = [
   'Technology',
   'Healthcare',
@@ -641,7 +651,7 @@ export function LeadForm() {
                                 <SelectValue placeholder="Code" />
                               </SelectTrigger>
                               <SelectContent className="max-h-[300px] overflow-y-auto">
-                                {countryCodes.map((cc) => (
+                                {popularCountryCodes.map((cc) => (
                                   <SelectItem key={cc.value} value={cc.value}>
                                     {cc.label}
                                   </SelectItem>
@@ -692,7 +702,7 @@ export function LeadForm() {
                                 <SelectValue placeholder="Code" />
                               </SelectTrigger>
                               <SelectContent className="max-h-[300px] overflow-y-auto">
-                                {countryCodes.map((cc) => (
+                                {popularCountryCodes.map((cc) => (
                                   <SelectItem key={cc.value} value={cc.value}>
                                     {cc.label}
                                   </SelectItem>
@@ -1008,7 +1018,7 @@ export const LeadEditForm: React.FC<LeadEditFormProps> = ({ lead, onClose }) => 
                 <SelectValue placeholder="Code" />
               </SelectTrigger>
               <SelectContent>
-                {countryCodes.map((cc) => (
+                {popularCountryCodes.map((cc) => (
                   <SelectItem key={cc.value} value={cc.value}>
                     {cc.label}
                   </SelectItem>
@@ -1036,7 +1046,7 @@ export const LeadEditForm: React.FC<LeadEditFormProps> = ({ lead, onClose }) => 
                 <SelectValue placeholder="Code" />
               </SelectTrigger>
               <SelectContent>
-                {countryCodes.map((cc) => (
+                {popularCountryCodes.map((cc) => (
                   <SelectItem key={cc.value} value={cc.value}>
                     {cc.label}
                   </SelectItem>

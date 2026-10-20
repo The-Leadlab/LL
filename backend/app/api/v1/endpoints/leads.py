@@ -81,73 +81,78 @@ def get_lead_statistics(
 ) -> Any:
     """
     Lead statistics for the dashboard. Scoped to the current user's organization.
+    Uses SQL aggregates — does not load every lead row into memory.
     """
     try:
-        # Build organization filter
-        filters = [
-            models.Lead.is_deleted == False,
-            models.Lead.organization_id == current_user.organization_id,
-        ]
+        org_id = current_user.organization_id
+        base_filter = and_(
+            models.Lead.is_deleted == False,  # noqa: E712
+            models.Lead.organization_id == org_id,
+        )
 
-        leads = (
-            db.query(models.Lead)
-            .options(joinedload(models.Lead.stage))
-            .filter(*filters)
+        total_leads = (
+            db.query(func.count(models.Lead.id)).filter(base_filter).scalar() or 0
+        )
+
+        # Count by stage name in SQL, then bucket in Python (small result set)
+        stage_rows = (
+            db.query(models.LeadStage.name, func.count(models.Lead.id))
+            .outerjoin(models.LeadStage, models.Lead.stage_id == models.LeadStage.id)
+            .filter(base_filter)
+            .group_by(models.LeadStage.name)
             .all()
         )
 
-        total_leads = len(leads)
         cnt_new = cnt_qualified = cnt_contacted = cnt_converted = 0
-
-        for lead in leads:
-            name = lead.stage.name if lead.stage else ""
-            bucket = _lead_stage_bucket(name)
+        for stage_name, count in stage_rows:
+            bucket = _lead_stage_bucket(stage_name or "")
             if bucket == "new":
-                cnt_new += 1
+                cnt_new += int(count)
             elif bucket == "qualified":
-                cnt_qualified += 1
+                cnt_qualified += int(count)
             elif bucket == "contacted":
-                cnt_contacted += 1
+                cnt_contacted += int(count)
             else:
-                cnt_converted += 1
+                cnt_converted += int(count)
 
-        # Hot prospects — heuristics (email + sector/source/title)
-        hot_sectors = [
-            "technology",
-            "finance",
-            "healthcare",
-            "consulting",
-            "software",
-            "it",
-            "medical",
-            "tech",
-            "fintech",
-        ]
-        hot_sources = ["referral", "linkedin", "website", "partner", "recommendation"]
-        hot_prospects_count = 0
+        # Hot prospects — SQL heuristics (email + sector/source/title)
+        hot_sector_like = or_(
+            *[models.Lead.sector.ilike(f"%{s}%") for s in (
+                "technology", "finance", "healthcare", "consulting",
+                "software", "it", "medical", "tech", "fintech",
+            )]
+        )
+        hot_source_like = or_(
+            *[models.Lead.source.ilike(f"%{s}%") for s in (
+                "referral", "linkedin", "website", "partner", "recommendation",
+            )]
+        )
+        hot_prospects_count = (
+            db.query(func.count(models.Lead.id))
+            .filter(
+                base_filter,
+                models.Lead.email.isnot(None),
+                models.Lead.email != "",
+                or_(
+                    hot_sector_like,
+                    hot_source_like,
+                    and_(
+                        models.Lead.job_title.isnot(None),
+                        models.Lead.job_title != "",
+                    ),
+                ),
+            )
+            .scalar()
+            or 0
+        )
 
-        for lead in leads:
-            has_email = bool(lead.email and lead.email.strip())
-            is_hot_sector = False
-            if lead.sector and lead.sector.strip():
-                sector_lower = lead.sector.lower()
-                is_hot_sector = any(hot_sector in sector_lower for hot_sector in hot_sectors)
-            is_hot_source = False
-            if lead.source and lead.source.strip():
-                source_lower = lead.source.lower()
-                is_hot_source = any(hot_source in source_lower for hot_source in hot_sources)
-            has_job_title = bool(lead.job_title and lead.job_title.strip())
-            if has_email and (is_hot_sector or is_hot_source or has_job_title):
-                hot_prospects_count += 1
-
-        # Qualification rate: % of leads in a "Qualified" stage (name contains qualif)
         qualification_rate = (
             (cnt_qualified / total_leads * 100) if total_leads > 0 else 0.0
         )
 
         logger.info(
             "Lead Statistics for org %s: Total=%s new=%s qual=%s contact=%s conv=%s hot=%s",
-            current_user.organization_id,
+            org_id,
             total_leads,
             cnt_new,
             cnt_qualified,

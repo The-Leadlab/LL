@@ -289,18 +289,7 @@ export const usersAPI = {
   },
 
   getOrganizationUsers: async (): Promise<AxiosResponse<User[]>> => {
-    console.log('DEBUG: Calling getOrganizationUsers');
-    const token = localStorage.getItem('token');
-    console.log('DEBUG: Token exists:', !!token);
-    
-    try {
-      const response = await api.get('/users/organization-users');
-      console.log('DEBUG: getOrganizationUsers success:', response.data);
-      return response;
-    } catch (error) {
-      console.error('DEBUG: getOrganizationUsers error:', error);
-      throw error;
-    }
+    return api.get('/users/organization-users');
   },
 
   searchPlatform: async (email: string): Promise<AxiosResponse<User>> => {
