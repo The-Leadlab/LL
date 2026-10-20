@@ -5,7 +5,6 @@ from fastapi import Request
 from sqlalchemy.orm import Session
 
 from app.core.email import normalize_email_language
-from app.models.user_settings import UserSettings
 
 
 def language_from_request(request: Optional[Request]) -> str:
@@ -26,11 +25,17 @@ def get_user_language(
 ) -> str:
     """Prefer user_settings.language, then Accept-Language, then fallback/en."""
     if user_id is not None:
-        settings_row = (
-            db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
-        )
-        if settings_row and settings_row.language:
-            return normalize_email_language(settings_row.language)
+        try:
+            # Lazy import so auth boot does not depend on UserSettings mapper order
+            from app.models.user_settings import UserSettings
+
+            settings_row = (
+                db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
+            )
+            if settings_row and settings_row.language:
+                return normalize_email_language(settings_row.language)
+        except Exception:
+            pass
     if fallback:
         return normalize_email_language(fallback)
     return language_from_request(request)

@@ -15,9 +15,49 @@ from app.schemas.settings import (
     EmailTemplateUpdate,
     EmailTemplateInDBBase,
 )
+from app.schemas.user_settings import UserSettingsUpdate
+from app.crud.crud_user_settings import user_settings as user_settings_crud
+from app.core.email import normalize_email_language
 from app.models.user import User
 
 router = APIRouter(redirect_slashes=False)
+
+
+@router.get("/user")
+def get_user_settings(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """Get current user's preferences (language, theme, notifications)."""
+    row = user_settings_crud.get_or_create(db, user_id=current_user.id)
+    return {
+        "theme_preference": row.theme,
+        "notification_preferences": row.notifications,
+        "dashboard_layout": row.dashboard,
+        "timezone": row.timezone or "UTC",
+        "language": normalize_email_language(row.language or "en"),
+    }
+
+
+@router.put("/user")
+def update_user_settings(
+    settings_data: UserSettingsUpdate,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """Update current user's preferences."""
+    row = user_settings_crud.get_or_create(db, user_id=current_user.id)
+    payload = settings_data.model_dump(exclude_unset=True)
+    if "language" in payload and payload["language"] is not None:
+        payload["language"] = normalize_email_language(payload["language"])
+    updated = user_settings_crud.update_settings(db, db_obj=row, obj_in=payload)
+    return {
+        "theme_preference": updated.theme,
+        "notification_preferences": updated.notifications,
+        "dashboard_layout": updated.dashboard,
+        "timezone": updated.timezone or "UTC",
+        "language": normalize_email_language(updated.language or "en"),
+    }
 
 # Temporary mock data for settings until proper models are implemented
 @router.get("/organization")
