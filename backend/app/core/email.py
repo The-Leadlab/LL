@@ -41,13 +41,15 @@ class EmailSender:
         subject: str,
         html_content: str,
         text_content: str = None,
-        attachments: List[dict] = None
+        attachments: List[dict] = None,
+        reply_to: Optional[str] = None,
     ) -> bool:
         """Send email with SMTP-first strategy (Gmail-friendly)."""
         self.last_error = None
         provider_mode = (settings.EMAIL_PROVIDER or "smtp").lower().strip()
         if provider_mode not in {"smtp", "api", "auto"}:
             provider_mode = "smtp"
+        reply_addr = (reply_to or "").strip() or "info@the-leadlab.com"
 
         if provider_mode == "api":
             return await self._send_via_resend_api(
@@ -56,6 +58,7 @@ class EmailSender:
                 html_content=html_content,
                 text_content=text_content,
                 attachments=attachments,
+                reply_to=reply_addr,
             )
 
         # smtp (default) and auto: try SMTP first, then Resend if configured.
@@ -66,6 +69,7 @@ class EmailSender:
             html_content=html_content,
             text_content=text_content,
             attachments=attachments,
+            reply_to=reply_addr,
         )
         if smtp_sent:
             return True
@@ -76,6 +80,7 @@ class EmailSender:
                 html_content=html_content,
                 text_content=text_content,
                 attachments=attachments,
+                reply_to=reply_addr,
             )
         return False
 
@@ -110,6 +115,7 @@ class EmailSender:
         html_content: str,
         text_content: Optional[str] = None,
         attachments: Optional[List[dict]] = None,
+        reply_to: Optional[str] = None,
     ) -> bool:
         # Check if SMTP is properly configured
         if not self.smtp_user or not self.smtp_password:
@@ -131,6 +137,8 @@ class EmailSender:
             from_email = self.smtp_user or self.from_email
             message["From"] = f"{self.from_name} <{from_email}>"
             message["To"] = to_email
+            if reply_to:
+                message["Reply-To"] = reply_to
 
             body = MIMEMultipart("alternative")
             if text_content:
@@ -173,6 +181,7 @@ class EmailSender:
         html_content: str,
         text_content: Optional[str] = None,
         attachments: Optional[List[dict]] = None,
+        reply_to: Optional[str] = None,
     ) -> bool:
         if not self.resend_api_key:
             self.last_error = "RESEND_API_KEY is not configured"
@@ -191,7 +200,7 @@ class EmailSender:
             "to": [to_email],
             "subject": subject,
             "html": html_content,
-            "reply_to": "info@the-leadlab.com",
+            "reply_to": (reply_to or "").strip() or "info@the-leadlab.com",
         }
         if text_content:
             payload["text"] = text_content

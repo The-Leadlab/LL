@@ -51,6 +51,12 @@ _optional_oauth2 = OAuth2PasswordBearer(
 DEV_ADMIN_EMAILS = frozenset({"ali@the-leadlab.com"})
 ALLOWED_STATUSES = frozenset({"open", "in_progress", "resolved", "closed"})
 ALLOWED_PRIORITIES = frozenset({"low", "normal", "high", "urgent"})
+STATUS_LABELS = {
+    "open": "Open",
+    "in_progress": "In progress",
+    "resolved": "Resolved",
+    "closed": "Closed",
+}
 
 # Screenshots, images, videos, and common docs.
 MAX_REPORT_ATTACHMENT_BYTES = 50 * 1024 * 1024  # 50 MB per file
@@ -211,6 +217,10 @@ def _ticket_email_html(snapshot: dict) -> str:
     <p><strong>Description:</strong></p>
     <p>{html.escape(snapshot['description']).replace(chr(10), '<br/>')}</p>
     {files_html}
+    <p style="margin-top:16px;">
+      <strong>Reply to this email</strong> to write back to the reporter
+      ({html.escape(snapshot.get('reporter_email') or '')}).
+    </p>
     <p style="color:#64748b;font-size:12px;">
       You can also open Admin → Issue reports in LeadLab to update status or re-download files.
     </p>
@@ -224,6 +234,8 @@ async def _notify_dev_admins(snapshot: dict) -> None:
     )
     body = _ticket_email_html(snapshot)
     email_files = snapshot.get("email_attachments") or []
+    # Reply goes back to the person who filed the report.
+    reply_to = (snapshot.get("reporter_email") or "").strip() or "info@the-leadlab.com"
     for to_email in _dev_admin_recipients():
         try:
             await email_sender.send_email(
@@ -231,11 +243,66 @@ async def _notify_dev_admins(snapshot: dict) -> None:
                 subject=subject,
                 html_content=body,
                 attachments=email_files or None,
+                reply_to=reply_to,
             )
         except Exception:
             logger.exception(
                 "Failed to email report %s to %s", snapshot.get("id"), to_email
             )
+
+
+def _status_update_email_html(snapshot: dict) -> str:
+    status_label = STATUS_LABELS.get(snapshot["status"], snapshot["status"])
+    previous = snapshot.get("previous_status")
+    previous_label = STATUS_LABELS.get(previous, previous) if previous else None
+    change_line = (
+        f"<p>Status updated from <strong>{html.escape(previous_label)}</strong> "
+        f"to <strong>{html.escape(status_label)}</strong>.</p>"
+        if previous_label and previous != snapshot["status"]
+        else f"<p>Current status: <strong>{html.escape(status_label)}</strong>.</p>"
+    )
+    return f"""
+    <h2>Update on your LeadLab report #{snapshot['id']}</h2>
+    {change_line}
+    <p><strong>Project:</strong> {html.escape(snapshot['project_name'])}</p>
+    <p><strong>Subject:</strong> {html.escape(snapshot['subject'])}</p>
+    <p><strong>Your description:</strong></p>
+    <p>{html.escape(snapshot['description']).replace(chr(10), '<br/>')}</p>
+    <p style="margin-top:20px;">
+      You can reply to this email to send more details or ask a question —
+      your reply goes straight to the LeadLab team.
+    </p>
+    <p style="color:#64748b;font-size:12px;">
+      Keep the subject line (including report #{snapshot['id']}) so we can match your reply.
+    </p>
+    """
+
+
+async def _notify_reporter_status_change(snapshot: dict) -> None:
+    to_email = (snapshot.get("reporter_email") or "").strip()
+    if not to_email or "@" not in to_email:
+        return
+    status_label = STATUS_LABELS.get(snapshot["status"], snapshot["status"])
+    subject = (
+        f"[LeadLab Report #{snapshot['id']}] "
+        f"Status: {status_label} — {snapshot['project_name']}: {snapshot['subject']}"
+    )
+    body = _status_update_email_html(snapshot)
+    # Replies from the reporter land in Ali's inbox.
+    reply_to = _dev_admin_recipients()[0] if _dev_admin_recipients() else "ali@the-leadlab.com"
+    try:
+        await email_sender.send_email(
+            to_email=to_email,
+            subject=subject,
+            html_content=body,
+            reply_to=reply_to,
+        )
+    except Exception:
+        logger.exception(
+            "Failed to email status update for report %s to %s",
+            snapshot.get("id"),
+            to_email,
+        )
 
 
 def _create_ticket(
@@ -507,6 +574,7 @@ def download_ticket_attachment(
 def update_support_ticket(
     *,
     db: Session = Depends(deps.get_db),
+    background_tasks: BackgroundTasks,
     current_user: UserModel = Depends(deps.get_current_admin_user),
     ticket_id: int,
     ticket_in: SupportTicketUpdate,
@@ -514,10 +582,15 @@ def update_support_ticket(
     ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
+
+    previous_status = ticket.status
+    status_changed = False
     if ticket_in.status is not None:
         status_value = ticket_in.status.strip().lower()
         if status_value not in ALLOWED_STATUSES:
             raise HTTPException(status_code=400, detail="Invalid status")
+        if status_value != previous_status:
+            status_changed = True
         ticket.status = status_value
     if ticket_in.priority is not None:
         priority = ticket_in.priority.strip().lower()
@@ -527,4 +600,20 @@ def update_support_ticket(
     db.add(ticket)
     db.commit()
     db.refresh(ticket)
+
+    if status_changed and ticket.reporter_email:
+        background_tasks.add_task(
+            _notify_reporter_status_change,
+            {
+                "id": ticket.id,
+                "project_name": ticket.project_name,
+                "subject": ticket.subject,
+                "description": ticket.description,
+                "status": ticket.status,
+                "previous_status": previous_status,
+                "reporter_email": ticket.reporter_email,
+                "reporter_name": ticket.reporter_name,
+            },
+        )
+
     return _ticket_to_out(ticket, _list_attachments(db, ticket.id))

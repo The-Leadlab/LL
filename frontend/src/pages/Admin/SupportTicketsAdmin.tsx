@@ -58,7 +58,7 @@ export function SupportTicketsAdmin() {
       return res.data
     },
     onSuccess: () => {
-      toast.success('Report updated')
+      toast.success('Status updated — the reporter was emailed and can reply to you')
       queryClient.invalidateQueries({ queryKey: ['support-tickets'] })
     },
     onError: () => toast.error('Could not update report'),
