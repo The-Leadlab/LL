@@ -31,7 +31,7 @@ interface EventFormData {
 }
 
 const eventTypes = [
-  { value: 'meeting', label: 'Meeting', color: '#3b82f6', bg: 'bg-blue-50', textColor: 'text-blue-600' },
+  { value: 'meeting', label: 'Meeting', color: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-900/30', textColor: 'text-blue-600' },
   { value: 'task', label: 'Task', color: '#10b981', bg: 'bg-emerald-50', textColor: 'text-emerald-600' },
   { value: 'reminder', label: 'Reminder', color: '#f59e0b', bg: 'bg-amber-50', textColor: 'text-amber-600' }
 ];
@@ -156,23 +156,23 @@ export function NewEventPage() {
             onClick={() => navigate('/calendar')} 
             className="p-2"
           >
-            <ChevronLeft className="h-5 w-5 text-gray-500" />
+            <ChevronLeft className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Create New Event</h1>
-            <p className="text-gray-500 mt-1">Schedule a new event in your calendar</p>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Create New Event</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Schedule a new event in your calendar</p>
           </div>
         </div>
 
         {/* Debug bilgilerini göster */}
         {debugInfo && (
-          <div className="mb-4 mx-4 p-4 bg-gray-50 border border-gray-200 rounded-md text-xs font-mono overflow-auto max-h-60">
+          <div className="mb-4 mx-4 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md text-xs font-mono overflow-auto max-h-60">
             <p className="font-bold mb-2">Debug Info:</p>
             <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
           </div>
         )}
 
-        <Card className="border border-gray-200 shadow-sm rounded-xl overflow-hidden mx-4">
+        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl overflow-hidden mx-4">
           <div className={`${typeDetails.bg} px-6 py-4 border-b ${typeDetails.bg.replace('bg', 'border')}`}>
             <div className="flex items-center gap-2">
               <Calendar className={`h-5 w-5 ${typeDetails.textColor}`} />
@@ -184,7 +184,7 @@ export function NewEventPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Event Type Selection */}
               <div className="space-y-3">
-                <Label className="text-sm font-medium text-gray-700">Event Type</Label>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Event Type</Label>
                 <div className="grid grid-cols-3 gap-3">
                   {eventTypes.map(type => (
                     <div
@@ -196,7 +196,7 @@ export function NewEventPage() {
                       }`}
                       onClick={() => setValue('event_type', type.value)}
                     >
-                      <div className={`w-full text-center ${eventType === type.value ? type.textColor : 'text-gray-600'}`}>
+                      <div className={`w-full text-center ${eventType === type.value ? type.textColor : 'text-gray-600 dark:text-gray-400'}`}>
                         {type.label}
                       </div>
                     </div>
@@ -206,13 +206,13 @@ export function NewEventPage() {
 
               {/* Title */}
               <div>
-                <Label htmlFor="title" className="text-sm font-medium text-gray-700 block mb-1">
+                <Label htmlFor="title" className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">
                   Title
                 </Label>
                 <Input
                   id="title"
                   {...register('title', { required: 'Title is required' })}
-                  className="border-gray-200 focus:border-primary"
+                  className="border-gray-200 dark:border-gray-700 focus:border-primary"
                   placeholder="Enter event title"
                 />
                 {errors.title && (
@@ -222,13 +222,13 @@ export function NewEventPage() {
 
               {/* Description */}
               <div>
-                <Label htmlFor="description" className="text-sm font-medium text-gray-700 block mb-1">
+                <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">
                   Description
                 </Label>
                 <Textarea
                   id="description"
                   {...register('description', { required: 'Description is required' })}
-                  className="border-gray-200 focus:border-primary min-h-[100px]"
+                  className="border-gray-200 dark:border-gray-700 focus:border-primary min-h-[100px]"
                   placeholder="Enter event description"
                 />
                 {errors.description && (
@@ -239,16 +239,16 @@ export function NewEventPage() {
               {/* Date and Time */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="start_date" className="text-sm font-medium text-gray-700 block mb-1">
+                  <Label htmlFor="start_date" className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">
                     Start Date/Time
                   </Label>
                   <div className="relative">
-                    <ClockIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                    <ClockIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500" />
                     <Input
                       id="start_date"
                       type="datetime-local"
                       {...register('start_date', { required: 'Start date is required' })}
-                      className="pl-9 border-gray-200 focus:border-primary"
+                      className="pl-9 border-gray-200 dark:border-gray-700 focus:border-primary"
                     />
                   </div>
                   {errors.start_date && (
@@ -257,16 +257,16 @@ export function NewEventPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="end_date" className="text-sm font-medium text-gray-700 block mb-1">
+                  <Label htmlFor="end_date" className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">
                     End Date/Time
                   </Label>
                   <div className="relative">
-                    <ClockIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                    <ClockIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500" />
                     <Input
                       id="end_date"
                       type="datetime-local"
                       {...register('end_date', { required: 'End date is required' })}
-                      className="pl-9 border-gray-200 focus:border-primary"
+                      className="pl-9 border-gray-200 dark:border-gray-700 focus:border-primary"
                     />
                   </div>
                   {errors.end_date && (
@@ -278,16 +278,16 @@ export function NewEventPage() {
               {/* All-day Toggle - Improved version with lighter non-selected background */}
               <div className="mt-2">
                 <div className="flex items-center gap-3">
-                  <Label className="text-sm font-medium text-gray-700">Event Duration</Label>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Event Duration</Label>
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     className={`flex items-center justify-center px-4 py-2 border rounded-lg transition-colors ${
-                      !isAllDay
-                        ? 'bg-blue-50 border-blue-200 text-blue-600 font-medium'
-                        : 'border-gray-200 text-gray-600 hover:bg-gray-50 bg-white'
-                    }`}
+ !isAllDay
+ ? 'bg-blue-50 border-blue-200 text-blue-600 font-medium'
+ : 'border-gray-200 text-gray-600 hover:bg-gray-50 bg-white'
+ }`}
                     onClick={() => setValue('is_all_day', false)}
                   >
                     <Clock className="h-4 w-4 mr-2" />
@@ -296,10 +296,10 @@ export function NewEventPage() {
                   <button
                     type="button"
                     className={`flex items-center justify-center px-4 py-2 border rounded-lg transition-colors ${
-                      isAllDay
-                        ? 'bg-blue-50 border-blue-200 text-blue-600 font-medium'
-                        : 'border-gray-200 text-gray-600 hover:bg-gray-50 bg-white'
-                    }`}
+ isAllDay
+ ? 'bg-blue-50 border-blue-200 text-blue-600 font-medium'
+ : 'border-gray-200 text-gray-600 hover:bg-gray-50 bg-white'
+ }`}
                     onClick={() => setValue('is_all_day', true)}
                   >
                     <CalendarDays className="h-4 w-4 mr-2" />
@@ -310,15 +310,15 @@ export function NewEventPage() {
 
               {/* Location */}
               <div>
-                <Label htmlFor="location" className="text-sm font-medium text-gray-700 block mb-1">
+                <Label htmlFor="location" className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">
                   Location
                 </Label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500" />
                   <Input
                     id="location"
                     {...register('location')}
-                    className="pl-9 border-gray-200 focus:border-primary"
+                    className="pl-9 border-gray-200 dark:border-gray-700 focus:border-primary"
                     placeholder="Enter location (optional)"
                   />
                 </div>
@@ -326,16 +326,16 @@ export function NewEventPage() {
 
               {/* Timezone */}
               <div>
-                <Label htmlFor="timezone" className="text-sm font-medium text-gray-700 block mb-1">
+                <Label htmlFor="timezone" className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">
                   Timezone
                 </Label>
                 <div className="relative">
-                  <Globe className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Globe className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500" />
                   <Select
                     value={watch('timezone')}
                     onValueChange={(value) => setValue('timezone', value)}
                   >
-                    <SelectTrigger className="w-full pl-9 border-gray-200">
+                    <SelectTrigger className="w-full pl-9 border-gray-200 dark:border-gray-700">
                       <SelectValue placeholder="Select timezone" />
                     </SelectTrigger>
                     <SelectContent>
@@ -349,12 +349,12 @@ export function NewEventPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => navigate('/calendar')}
-                  className="border-gray-200 hover:bg-gray-50"
+                  className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60"
                 >
                   Cancel
                 </Button>
@@ -365,7 +365,7 @@ export function NewEventPage() {
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      <div className="animate-spin h-4 w-4 border-2 border-white dark:border-gray-800 border-t-transparent rounded-full" />
                       Creating...
                     </>
                   ) : (

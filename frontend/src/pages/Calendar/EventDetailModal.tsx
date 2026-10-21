@@ -126,7 +126,7 @@ function mergeMeetingLink(description: string, meetingLink?: string): string {
   const clean = description.trim();
   const link = (meetingLink || '').trim();
   if (!link) return clean;
-  return `${MEETING_LINK_PREFIX}${link}${MEETING_LINK_SUFFIX}\n${clean}`.trim();
+  return `${MEETING_LINK_PREFIX} ${link} ${MEETING_LINK_SUFFIX}\n${clean}`.trim();
 }
 
 const eventTypes = [
@@ -134,9 +134,9 @@ const eventTypes = [
     value: 'meeting', 
     icon: Users,
     color: '#6366f1', 
-    bgColor: 'bg-indigo-50', 
-    textColor: 'text-indigo-700',
-    borderColor: 'border-indigo-200',
+    bgColor: 'bg-indigo-50 dark:bg-indigo-900/30', 
+    textColor: 'text-indigo-700 dark:text-indigo-300',
+    borderColor: 'border-indigo-200 dark:border-indigo-800',
     gradient: 'from-indigo-500 to-indigo-600'
   },
   { 
@@ -161,7 +161,7 @@ const eventTypes = [
     value: 'reminder', 
     icon: Bell,
     color: '#ef4444', 
-    bgColor: 'bg-red-50', 
+    bgColor: 'bg-red-50 dark:bg-red-900/30', 
     textColor: 'text-red-700',
     borderColor: 'border-red-200',
     gradient: 'from-red-500 to-red-600'
@@ -170,9 +170,9 @@ const eventTypes = [
     value: 'break', 
     icon: Coffee,
     color: '#8b5cf6', 
-    bgColor: 'bg-purple-50', 
-    textColor: 'text-purple-700',
-    borderColor: 'border-purple-200',
+    bgColor: 'bg-purple-50 dark:bg-purple-900/40', 
+    textColor: 'text-purple-700 dark:text-purple-300',
+    borderColor: 'border-purple-200 dark:border-purple-800',
     gradient: 'from-purple-500 to-purple-600'
   }
 ];
@@ -182,17 +182,17 @@ const eventStatusOptions = [
     value: 'scheduled', 
     icon: Clock,
     color: '#6366f1', 
-    bgColor: 'bg-blue-50', 
-    textColor: 'text-blue-700',
-    borderColor: 'border-blue-200'
+    bgColor: 'bg-blue-50 dark:bg-blue-900/30', 
+    textColor: 'text-blue-700 dark:text-blue-300',
+    borderColor: 'border-blue-200 dark:border-blue-800'
   },
   { 
     value: 'in_progress', 
     icon: Play,
     color: '#8b5cf6', 
-    bgColor: 'bg-purple-50', 
-    textColor: 'text-purple-700',
-    borderColor: 'border-purple-200'
+    bgColor: 'bg-purple-50 dark:bg-purple-900/40', 
+    textColor: 'text-purple-700 dark:text-purple-300',
+    borderColor: 'border-purple-200 dark:border-purple-800'
   },
   { 
     value: 'completed', 
@@ -206,7 +206,7 @@ const eventStatusOptions = [
     value: 'cancelled', 
     icon: XCircle,
     color: '#ef4444', 
-    bgColor: 'bg-red-50', 
+    bgColor: 'bg-red-50 dark:bg-red-900/30', 
     textColor: 'text-red-700',
     borderColor: 'border-red-200'
   }
@@ -428,20 +428,20 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
               <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center mb-6 shadow-lg">
                 <AlertCircle className="h-8 w-8 text-white" />
               </div>
-              <DialogTitle className="text-2xl font-bold mb-3 text-gray-900">{t('deleteEvent')}</DialogTitle>
-              <p className="text-gray-600 text-lg leading-relaxed">
+              <DialogTitle className="text-2xl font-bold mb-3 text-gray-900 dark:text-white">{t('deleteEvent')}</DialogTitle>
+              <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed">
                 {t('detail.confirmDelete')}
               </p>
             </div>
             
-            <div className="border border-gray-200 rounded-xl p-6 mb-8 bg-gradient-to-r from-gray-50 to-gray-100">
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-6 mb-8 bg-gradient-to-r from-gray-50 to-gray-100">
               <div className="flex items-center gap-4">
                 <div className={`p-3 rounded-xl bg-gradient-to-br ${typeDetails.gradient} shadow-lg`}>
                   <TypeIcon className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900 text-lg mb-1">{event.title}</h4>
-                  <p className="text-gray-600">{formatDisplayDate(event.start_date, undefined, dfLocale)}</p>
+                  <h4 className="font-semibold text-gray-900 dark:text-white text-lg mb-1">{event.title}</h4>
+                  <p className="text-gray-600 dark:text-gray-400">{formatDisplayDate(event.start_date, undefined, dfLocale)}</p>
                 </div>
               </div>
             </div>
@@ -450,7 +450,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
               <Button
                 variant="outline"
                 onClick={() => setIsConfirmingDelete(false)}
-                className="px-6 py-3 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium"
+                className="px-6 py-3 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/60 rounded-lg font-medium"
               >
                 {t('page.cancel')}
               </Button>
@@ -499,36 +499,36 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
               {isEditing ? (
                 <div className="space-y-6">
                   <div>
-                    <Label htmlFor="title" className="text-sm font-semibold text-gray-700 block mb-2">{t('page.eventTitle')}</Label>
+                    <Label htmlFor="title" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">{t('page.eventTitle')}</Label>
                     <Input
                       id="title"
                       value={editedEvent.title}
                       onChange={(e) => setEditedEvent({ ...editedEvent, title: e.target.value })}
-                      className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg text-base"
+                      className="border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg text-base"
                       placeholder={t('page.eventTitlePlaceholder')}
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="description" className="text-sm font-semibold text-gray-700 block mb-2">{t('page.description')}</Label>
+                    <Label htmlFor="description" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">{t('page.description')}</Label>
                     <Textarea
                       id="description"
                       value={editedEvent.description || ''}
                       onChange={(e) => setEditedEvent({ ...editedEvent, description: e.target.value })}
-                      className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 min-h-[120px] rounded-lg text-base"
+                      className="border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 min-h-[120px] rounded-lg text-base"
                       placeholder={t('page.descriptionPlaceholder')}
                     />
                   </div>
 
                   {(editedEvent.event_type === 'meeting' || editedEvent.event_type === 'call' || editedEvent.event_type === 'video_call') && (
                     <div>
-                      <Label htmlFor="meeting-link" className="text-sm font-semibold text-gray-700 block mb-2">{t('page.meetingLink')}</Label>
+                      <Label htmlFor="meeting-link" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">{t('page.meetingLink')}</Label>
                       <Input
                         id="meeting-link"
                         type="url"
                         value={meetingLink}
                         onChange={(e) => setMeetingLink(e.target.value)}
-                        className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg text-base"
+                        className="border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg text-base"
                         placeholder="https://meet.google.com/..."
                       />
                     </div>
@@ -536,29 +536,29 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <Label htmlFor="start_date" className="text-sm font-semibold text-gray-700 block mb-2">{t('detail.startDateTime')}</Label>
+                      <Label htmlFor="start_date" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">{t('detail.startDateTime')}</Label>
                       <div className="relative">
-                        <Clock className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
+                        <Clock className="absolute left-4 top-3.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
                         <Input
                           id="start_date"
                           type="datetime-local"
                           value={formatDate(editedEvent.start_date)}
                           onChange={(e) => setEditedEvent({ ...editedEvent, start_date: e.target.value })}
-                          className="pl-12 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg text-base"
+                          className="pl-12 border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg text-base"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <Label htmlFor="end_date" className="text-sm font-semibold text-gray-700 block mb-2">{t('detail.endDateTime')}</Label>
+                      <Label htmlFor="end_date" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">{t('detail.endDateTime')}</Label>
                       <div className="relative">
-                        <Clock3 className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
+                        <Clock3 className="absolute left-4 top-3.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
                         <Input
                           id="end_date"
                           type="datetime-local"
                           value={formatDate(editedEvent.end_date)}
                           onChange={(e) => setEditedEvent({ ...editedEvent, end_date: e.target.value })}
-                          className="pl-12 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg text-base"
+                          className="pl-12 border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg text-base"
                         />
                       </div>
                     </div>
@@ -566,7 +566,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
 
                   {/* Event Type Selection Grid */}
                   <div>
-                    <Label className="text-sm font-semibold text-gray-700 block mb-3">{t('page.eventType')}</Label>
+                    <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-3">{t('page.eventType')}</Label>
                     <div className="grid grid-cols-5 gap-3">
                       {eventTypes.map((type) => {
                         const Icon = type.icon;
@@ -591,12 +591,12 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <Label htmlFor="status" className="text-sm font-semibold text-gray-700 block mb-2">{t('detail.status')}</Label>
+                      <Label htmlFor="status" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">{t('detail.status')}</Label>
                       <Select
                         value={editedEvent.status}
                         onValueChange={(value) => setEditedEvent({ ...editedEvent, status: value as any })}
                       >
-                        <SelectTrigger className="border-gray-300 focus:border-indigo-500 rounded-lg">
+                        <SelectTrigger className="border-gray-300 dark:border-gray-600 focus:border-indigo-500 rounded-lg">
                           <SelectValue placeholder={t('detail.selectStatus')} />
                         </SelectTrigger>
                         <SelectContent>
@@ -618,14 +618,14 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                     </div>
 
                     <div>
-                      <Label htmlFor="location" className="text-sm font-semibold text-gray-700 block mb-2">{t('location')}</Label>
+                      <Label htmlFor="location" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">{t('location')}</Label>
                       <div className="relative">
-                        <MapPin className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
+                        <MapPin className="absolute left-4 top-3.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
                         <Input
                           id="location"
                           value={editedEvent.location || ''}
                           onChange={(e) => setEditedEvent({ ...editedEvent, location: e.target.value })}
-                          className="pl-12 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg text-base"
+                          className="pl-12 border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg text-base"
                           placeholder={t('detail.locationPlaceholder')}
                         />
                       </div>
@@ -635,40 +635,40 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
               ) : (
                 <div className="space-y-6">
                   {/* Event Title Card */}
-                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-4">
                       <div className={`p-4 rounded-xl bg-gradient-to-br ${typeDetails.gradient} shadow-lg`}>
                         <Calendar className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('page.eventTitle')}</span>
-                        <h3 className="text-xl font-bold text-gray-900 mt-1">{event.title}</h3>
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('page.eventTitle')}</span>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-1">{event.title}</h3>
                       </div>
                     </div>
                   </div>
 
                   {/* Date and Time Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-4">
                         <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
                           <Clock className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('page.startTime')}</span>
-                          <p className="font-semibold text-gray-900 mt-1">{formatDisplayDate(event.start_date, undefined, dfLocale)}</p>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('page.startTime')}</span>
+                          <p className="font-semibold text-gray-900 dark:text-white mt-1">{formatDisplayDate(event.start_date, undefined, dfLocale)}</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-4">
                         <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg">
                           <Clock3 className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('page.endTime')}</span>
-                          <p className="font-semibold text-gray-900 mt-1">{formatDisplayDate(event.end_date, undefined, dfLocale)}</p>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('page.endTime')}</span>
+                          <p className="font-semibold text-gray-900 dark:text-white mt-1">{formatDisplayDate(event.end_date, undefined, dfLocale)}</p>
                         </div>
                       </div>
                     </div>
@@ -676,22 +676,22 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
 
                   {/* Description */}
                   {event.description && (
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
                       <div className="flex items-start gap-4">
                         <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg">
                           <AlarmCheck className="h-5 w-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('page.description')}</span>
-                          <p className="text-gray-900 mt-2 leading-relaxed whitespace-pre-wrap">{extractMeetingLink(event.description).cleanDescription}</p>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('page.description')}</span>
+                          <p className="text-gray-900 dark:text-white mt-2 leading-relaxed whitespace-pre-wrap">{extractMeetingLink(event.description).cleanDescription}</p>
                         </div>
                       </div>
                     </div>
                   )}
 
                   {extractMeetingLink(event.description).meetingLink && (
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                      <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('page.meetingLink')}</span>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('page.meetingLink')}</span>
                       <a
                         href={extractMeetingLink(event.description).meetingLink}
                         target="_blank"
@@ -705,25 +705,25 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
 
                   {/* Type and Status Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-4">
                         <div className={`p-3 rounded-xl bg-gradient-to-br ${typeDetails.gradient} shadow-lg`}>
                           <TypeIcon className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('page.eventType')}</span>
-                          <p className="font-semibold text-gray-900 mt-1">{t(`page.types.${typeDetails.value}`)}</p>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('page.eventType')}</span>
+                          <p className="font-semibold text-gray-900 dark:text-white mt-1">{t(`page.types.${typeDetails.value}`)}</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-4">
                         <div className={`p-3 rounded-xl ${statusDetails.bgColor} border ${statusDetails.borderColor}`}>
                           <StatusIcon className={`h-5 w-5 ${statusDetails.textColor}`} />
                         </div>
                         <div>
-                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('detail.status')}</span>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('detail.status')}</span>
                           <p className={`font-semibold mt-1 ${statusDetails.textColor}`}>{t(`page.status.${statusDetails.value}`)}</p>
                         </div>
                       </div>
@@ -732,14 +732,14 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
 
                   {/* Location */}
                   {event.location && (
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
                       <div className="flex items-center gap-4">
                         <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg">
                           <MapPin className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">{t('location')}</span>
-                          <p className="font-semibold text-gray-900 mt-1">{event.location}</p>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('location')}</span>
+                          <p className="font-semibold text-gray-900 dark:text-white mt-1">{event.location}</p>
                         </div>
                       </div>
                     </div>
@@ -755,7 +755,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                   <Button
                     variant="outline"
                     onClick={() => setIsEditing(false)}
-                    className="px-6 py-3 border-gray-300 text-gray-700 hover:bg-white rounded-lg font-medium"
+                    className="px-6 py-3 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-white rounded-lg font-medium"
                   >
                     {t('page.cancel')}
                   </Button>
@@ -780,7 +780,7 @@ export default function EventDetailModal({ event, onClose, onDelete, open }: Eve
                   <Button
                     variant="outline"
                     onClick={() => setIsEditing(true)}
-                    className="px-6 py-3 border-gray-300 text-gray-700 hover:bg-white rounded-lg font-medium flex items-center gap-2"
+                    className="px-6 py-3 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-white rounded-lg font-medium flex items-center gap-2"
                   >
                     <Edit2 className="h-4 w-4" />
                     {t('detail.edit')}
