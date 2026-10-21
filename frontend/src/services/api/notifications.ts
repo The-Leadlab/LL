@@ -5,6 +5,7 @@ export interface Notification {
   title: string;
   message: string;
   link?: string;
+  action_url?: string;
   is_read: boolean;
   created_at: string;
   user_id: number;
@@ -21,6 +22,16 @@ export interface NotificationListResponse {
 }
 
 export const notificationsAPI = {
+  getUnreadCount: async (): Promise<{ count: number }> => {
+    try {
+      const response = await api.get<{ count: number }>('/notifications/unread-count');
+      return response.data ?? { count: 0 };
+    } catch (error: any) {
+      console.error('Error fetching unread count:', error);
+      return { count: 0 };
+    }
+  },
+
   getAll: async (params?: { 
     unread_only?: boolean;
     page?: number;

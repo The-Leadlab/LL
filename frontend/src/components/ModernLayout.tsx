@@ -11,6 +11,7 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { WelcomeTour } from './WelcomeTour';
 import { CommandPalette, useCommandPalette } from './CommandPalette';
 import { useDarkMode } from './ThemeProvider';
+import { NotificationBell } from './Notifications/NotificationBell';
 
 export function ModernLayout() {
   const { t } = useTranslation('common');
@@ -44,6 +45,7 @@ export function ModernLayout() {
           className="h-9 w-auto object-contain dark:brightness-0 dark:invert"
         />
         <div className="ml-auto flex items-center gap-1">
+          <NotificationBell variant="header" />
           <LanguageSwitcher />
           <button
             type="button"
@@ -76,6 +78,7 @@ export function ModernLayout() {
 
       <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto pt-14 md:pt-0">
         <div className="hidden md:flex items-center justify-end gap-2 px-4 pt-3">
+          <NotificationBell variant="header" />
           <LanguageSwitcher />
           <button
             type="button"

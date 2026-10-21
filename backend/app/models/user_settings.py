@@ -47,8 +47,11 @@ class UserSettings(Base):
             "leadAssigned": True,
             "dealUpdated": True,
             "taskDue": True,
+            "taskAssigned": True,
             "meetingReminder": True,
-            "systemUpdates": False
+            "systemUpdates": False,
+            "messages": True,
+            "mentions": True,
         }
         if not self.notification_preferences:
             return default_notifications

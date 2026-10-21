@@ -103,6 +103,22 @@ def create_deal(
 
     # Create the deal
     deal = crud_deal.deal.create(db=db, obj_in=deal_in)
+
+    try:
+        from app.services.notification_service import NotificationService
+
+        if deal.assigned_to_id and int(deal.assigned_to_id) != int(current_user.id):
+            NotificationService.notify_deal_update(
+                db,
+                user_id=deal.assigned_to_id,
+                deal_name=deal.name,
+                deal_id=deal.id,
+                summary="A new deal was assigned to you",
+                actor_id=current_user.id,
+                commit=True,
+            )
+    except Exception as e:
+        print(f"Error creating deal notification: {str(e)}")
     
     # Log activity for deal creation
     try:
@@ -180,8 +196,41 @@ def update_deal(
             detail="Not enough permissions"
         )
     
+    previous_assignee_id = deal.assigned_to_id
+    previous_status = deal.status
+    update_fields = (
+        deal_in.model_dump(exclude_unset=True)
+        if hasattr(deal_in, "model_dump")
+        else deal_in.dict(exclude_unset=True)
+    )
+
     # Update the deal
     deal = crud_deal.deal.update(db=db, db_obj=deal, obj_in=deal_in)
+
+    try:
+        from app.services.notification_service import NotificationService
+
+        summary_parts = []
+        if "status" in update_fields and deal.status != previous_status:
+            summary_parts.append(f"stage → {deal.status}")
+        if (
+            "assigned_to_id" in update_fields
+            and deal.assigned_to_id
+            and deal.assigned_to_id != previous_assignee_id
+        ):
+            summary_parts.append("reassigned to you")
+        if summary_parts and deal.assigned_to_id:
+            NotificationService.notify_deal_update(
+                db,
+                user_id=deal.assigned_to_id,
+                deal_name=deal.name,
+                deal_id=deal.id,
+                summary=", ".join(summary_parts),
+                actor_id=current_user.id,
+                commit=True,
+            )
+    except Exception as e:
+        print(f"Error creating deal update notification: {str(e)}")
     
     # Log activity for deal update
     try:
@@ -190,7 +239,7 @@ def update_deal(
         
         # Determine what was updated
         description = "Deal updated"
-        if "status" in deal_in.dict(exclude_unset=True):
+        if "status" in update_fields:
             description = f"Deal status changed to {deal.status}"
             if deal.status == "Closed_Won":
                 description = "Deal won"

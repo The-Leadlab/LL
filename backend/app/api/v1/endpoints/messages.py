@@ -217,7 +217,41 @@ def send_message(
         sender_id=current_user.id,
         organization_id=current_user.organization_id
     )
-    
+
+    try:
+        from app.services.notification_service import NotificationService
+
+        sender_name = current_user.full_name or current_user.email or "Someone"
+        # Prefer plaintext from request — DB content may be encrypted
+        content = message_data.content or ""
+        NotificationService.notify_new_message(
+            db,
+            receiver.id,
+            sender_name=sender_name,
+            preview=content,
+            actor_id=current_user.id,
+            commit=True,
+        )
+        mentioned = NotificationService.resolve_mention_user_ids(
+            db,
+            organization_id=current_user.organization_id,
+            text=content,
+            exclude_user_id=current_user.id,
+        )
+        mentioned.discard(int(receiver.id))
+        for uid in mentioned:
+            NotificationService.notify_mention(
+                db,
+                uid,
+                actor_name=sender_name,
+                context=content,
+                link="/messages",
+                actor_id=current_user.id,
+                commit=True,
+            )
+    except Exception:
+        pass
+
     return create_message_response(
         new_message, 
         current_user.full_name, 
@@ -277,6 +311,21 @@ async def send_message_with_attachment(
     )
     db.commit()
     updated = db.query(MessageModel).filter(MessageModel.id == new_message.id).first()
+
+    try:
+        from app.services.notification_service import NotificationService
+
+        sender_name = current_user.full_name or current_user.email or "Someone"
+        NotificationService.notify_new_message(
+            db,
+            receiver.id,
+            sender_name=sender_name,
+            preview=file.filename or "Attachment",
+            actor_id=current_user.id,
+            commit=True,
+        )
+    except Exception:
+        pass
 
     return create_message_response(
         updated,

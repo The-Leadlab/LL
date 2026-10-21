@@ -785,6 +785,9 @@
     "notifications": {
       "title": "Notification Preferences",
       "subtitle": "Manage and review your in-app notifications.",
+      "prefsTitle": "What to notify me about",
+      "prefsSaved": "Notification preferences saved",
+      "prefsSaveFailed": "Could not save notification preferences",
       "createTest": "Create test notification",
       "markAllRead": "Mark all read",
       "loading": "Loading notifications...",

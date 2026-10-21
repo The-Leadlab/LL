@@ -696,8 +696,24 @@ def update_lead(
         and int(new_owner_id) != int(current_user.id)
     ):
         from app.services.assignment_notify import schedule_assignment_mention
+        from app.services.notification_service import NotificationService
         org_name = getattr(getattr(current_user, "organization", None), "name", None)
         title = f"{(lead.first_name or '').strip()} {(lead.last_name or '').strip()}".strip() or f"Lead #{lead.id}"
+        actor_name = (
+            getattr(current_user, "full_name", None)
+            or f"{(current_user.first_name or '').strip()} {(current_user.last_name or '').strip()}".strip()
+            or current_user.email
+            or "A teammate"
+        )
+        NotificationService.notify_lead_assignment(
+            db,
+            assigned_user_id=new_owner_id,
+            lead_name=title,
+            lead_id=lead.id,
+            assigned_by_user_name=actor_name,
+            actor_id=current_user.id,
+            commit=True,
+        )
         schedule_assignment_mention(
             background_tasks,
             db=db,

@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Integer, String, Text, DateTime, ForeignKey, Enum
+from sqlalchemy import Boolean, Integer, String, Text, DateTime, ForeignKey, Enum, Index
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.models.base import Base
 from datetime import datetime
@@ -21,9 +21,12 @@ class NotificationPriority(str, enum.Enum):
 
 class Notification(Base):
     __tablename__ = "notifications"
+    __table_args__ = (
+        Index("ix_notifications_user_read_created", "user_id", "is_read", "created_at"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     link: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)

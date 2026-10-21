@@ -16,6 +16,7 @@ class NotificationResponse(BaseModel):
     title: str
     message: str
     link: Optional[str] = None
+    action_url: Optional[str] = None
     is_read: bool
     created_at: datetime
     user_id: int
@@ -28,6 +29,17 @@ class NotificationResponse(BaseModel):
 class NotificationListResponse(BaseModel):
     items: List[NotificationResponse]
     total: int
+
+@router.get("/unread-count")
+async def get_unread_count(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """Lightweight badge count for the header bell."""
+    from app.services.notification_service import NotificationService
+
+    return {"count": NotificationService.unread_count(db, current_user.id)}
+
 
 @router.get("", response_model=List[NotificationResponse])
 async def get_notifications(

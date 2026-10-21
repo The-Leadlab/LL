@@ -156,6 +156,26 @@ async def create_team_invitation(
             get_user_language(db, current_user.id),
         )
 
+        # In-app notify if invitee already has an account
+        try:
+            from app.services.notification_service import NotificationService
+
+            invitee = (
+                db.query(UserModel)
+                .filter(UserModel.email == invitation.email)
+                .first()
+            )
+            if invitee and int(invitee.id) != int(current_user.id):
+                NotificationService.notify_team_invitation(
+                    db,
+                    invited_user_id=invitee.id,
+                    organization_name=organization.name,
+                    invited_by_name=inviter_name or current_user.email,
+                    actor_id=current_user.id,
+                )
+        except Exception as notify_err:
+            logger.debug("In-app invite notification skipped: %s", notify_err)
+
         return invitation
         
     except ValueError as e:

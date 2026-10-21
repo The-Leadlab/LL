@@ -127,6 +127,8 @@ async def startup_sequence_guard() -> None:
                 "ALTER TABLE leads ADD COLUMN IF NOT EXISTS outreach_meta JSONB",
                 # Empty JSON strings (\"\") break LeadListResponse; coerce to NULL on boot.
                 "UPDATE leads SET outreach_meta = NULL WHERE outreach_meta IS NOT NULL AND jsonb_typeof(outreach_meta) = 'string'",
+                # Bell badge / list performance
+                "CREATE INDEX IF NOT EXISTS ix_notifications_user_read_created ON notifications (user_id, is_read, created_at)",
             ]
             for stmt in alter_stmts:
                 try:

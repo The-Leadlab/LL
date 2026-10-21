@@ -17,8 +17,11 @@ class NotificationPreferences(BaseModel):
     leadAssigned: bool = Field(True, description="Lead assignment notifications")
     dealUpdated: bool = Field(True, description="Deal update notifications")
     taskDue: bool = Field(True, description="Task due notifications")
+    taskAssigned: bool = Field(True, description="Task assignment notifications")
     meetingReminder: bool = Field(True, description="Meeting reminder notifications")
     systemUpdates: bool = Field(False, description="System update notifications")
+    messages: bool = Field(True, description="Direct message notifications")
+    mentions: bool = Field(True, description="@mention notifications")
 
 
 class DashboardWidget(BaseModel):

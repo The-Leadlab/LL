@@ -30,7 +30,7 @@ import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { applyLanguageFromSettings } from '@/i18n/setAppLanguage';
-import { getUserSettings } from '@/services/settings';
+import { getUserSettings, updateUserSettings } from '@/services/settings';
 import { updateProfile, uploadAvatar, changePassword } from '@/services/users';
 import { useAuthStore } from '@/store/auth';
 import { requestProductTour } from '@/lib/productTour';
@@ -622,8 +622,33 @@ function OrganizationSettings() {
   );
 }
 
+const NOTIFICATION_PREF_KEYS = [
+  'leadAssigned',
+  'dealUpdated',
+  'taskAssigned',
+  'taskDue',
+  'messages',
+  'mentions',
+  'meetingReminder',
+  'systemUpdates',
+] as const;
+
+type NotificationPrefKey = (typeof NOTIFICATION_PREF_KEYS)[number];
+
+const DEFAULT_NOTIFICATION_PREFS: Record<NotificationPrefKey, boolean> = {
+  leadAssigned: true,
+  dealUpdated: true,
+  taskAssigned: true,
+  taskDue: true,
+  messages: true,
+  mentions: true,
+  meetingReminder: true,
+  systemUpdates: false,
+};
+
 function NotificationSettings() {
   const { t } = useTranslation('modules');
+  const { t: tSettings } = useTranslation('settings');
   const queryClient = useQueryClient();
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications'],
@@ -633,14 +658,62 @@ function NotificationSettings() {
     },
   });
 
+  const { data: userSettings } = useQuery({
+    queryKey: ['user-settings'],
+    queryFn: getUserSettings,
+  });
+
+  const [prefs, setPrefs] = useState<Record<NotificationPrefKey, boolean>>(DEFAULT_NOTIFICATION_PREFS);
+
+  useEffect(() => {
+    const saved = userSettings?.notification_preferences;
+    if (!saved) return;
+    setPrefs((prev) => {
+      const next = { ...prev };
+      for (const key of NOTIFICATION_PREF_KEYS) {
+        if (typeof saved[key] === 'boolean') {
+          next[key] = saved[key];
+        }
+      }
+      return next;
+    });
+  }, [userSettings]);
+
+  const savePrefsMutation = useMutation({
+    mutationFn: async (next: Record<NotificationPrefKey, boolean>) =>
+      updateUserSettings({
+        notification_preferences: {
+          ...(userSettings?.notification_preferences || {}),
+          ...next,
+        },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-settings'] });
+      toast.success(t('settingsPage.notifications.prefsSaved'));
+    },
+    onError: () => toast.error(t('settingsPage.notifications.prefsSaveFailed')),
+  });
+
+  const togglePref = (key: NotificationPrefKey) => {
+    const next = { ...prefs, [key]: !prefs[key] };
+    setPrefs(next);
+    savePrefsMutation.mutate(next);
+  };
+
   const createTestMutation = useMutation({
     mutationFn: async () => api.post('/notifications/test'),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+    },
   });
 
   const markAllMutation = useMutation({
     mutationFn: async () => api.put('/notifications/read-all'),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+    },
   });
 
   return (
@@ -651,6 +724,35 @@ function NotificationSettings() {
       <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">{t('settingsPage.notifications.subtitle')}</p>
 
       <div className="space-y-4">
+        <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+            {t('settingsPage.notifications.prefsTitle')}
+          </h3>
+          {NOTIFICATION_PREF_KEYS.map((key) => (
+            <label
+              key={key}
+              className="flex items-center justify-between gap-4 text-sm text-neutral-700 dark:text-neutral-300"
+            >
+              <span>{tSettings(key)}</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={prefs[key]}
+                onClick={() => togglePref(key)}
+                className={`relative h-6 w-11 rounded-full transition-colors ${
+                  prefs[key] ? 'bg-primary-600' : 'bg-neutral-300 dark:bg-neutral-600'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                    prefs[key] ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </label>
+          ))}
+        </div>
+
         <div className="flex items-center gap-2">
           <button
             type="button"

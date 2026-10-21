@@ -785,6 +785,9 @@
     "notifications": {
       "title": "Préférences de notification",
       "subtitle": "Gérez et consultez vos notifications dans l'application.",
+      "prefsTitle": "Me notifier pour",
+      "prefsSaved": "Préférences de notification enregistrées",
+      "prefsSaveFailed": "Impossible d'enregistrer les préférences",
       "createTest": "Créer une notification de test",
       "markAllRead": "Tout marquer comme lu",
       "loading": "Chargement des notifications...",

@@ -104,7 +104,23 @@ def create_task(
     task = crud_task.task.create(db, obj_in=task_in)
 
     if task.assigned_to_id and int(task.assigned_to_id) != int(current_user.id):
+        from app.services.notification_service import NotificationService
         org_name = getattr(getattr(current_user, "organization", None), "name", None)
+        actor_name = (
+            getattr(current_user, "full_name", None)
+            or f"{(current_user.first_name or '').strip()} {(current_user.last_name or '').strip()}".strip()
+            or current_user.email
+            or "A teammate"
+        )
+        NotificationService.notify_task_assignment(
+            db,
+            assigned_user_id=task.assigned_to_id,
+            task_title=task.title,
+            task_id=task.id,
+            assigned_by_user_name=actor_name,
+            actor_id=current_user.id,
+            commit=True,
+        )
         schedule_assignment_mention(
             background_tasks,
             db=db,
@@ -212,7 +228,23 @@ def update_task(
         and new_assignee_id != previous_assignee_id
         and int(new_assignee_id) != int(current_user.id)
     ):
+        from app.services.notification_service import NotificationService
         org_name = getattr(getattr(current_user, "organization", None), "name", None)
+        actor_name = (
+            getattr(current_user, "full_name", None)
+            or f"{(current_user.first_name or '').strip()} {(current_user.last_name or '').strip()}".strip()
+            or current_user.email
+            or "A teammate"
+        )
+        NotificationService.notify_task_assignment(
+            db,
+            assigned_user_id=new_assignee_id,
+            task_title=task.title,
+            task_id=task.id,
+            assigned_by_user_name=actor_name,
+            actor_id=current_user.id,
+            commit=True,
+        )
         schedule_assignment_mention(
             background_tasks,
             db=db,

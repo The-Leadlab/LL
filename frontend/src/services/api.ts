@@ -195,12 +195,16 @@ interface UserSettings {
     fontSize: string;
   };
   notification_preferences?: {
-    email: boolean;
-    push: boolean;
-    leadAssigned: boolean;
-    dealUpdated: boolean;
-    taskDue: boolean;
-    meetingReminder: boolean;
+    email?: boolean;
+    push?: boolean;
+    leadAssigned?: boolean;
+    dealUpdated?: boolean;
+    taskDue?: boolean;
+    taskAssigned?: boolean;
+    meetingReminder?: boolean;
+    systemUpdates?: boolean;
+    messages?: boolean;
+    mentions?: boolean;
   };
 }
 
