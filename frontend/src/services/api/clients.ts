@@ -43,6 +43,20 @@ export const clientsAPI = {
     const response = await api.post(`/clients/${id}/restore`);
     return response.data;
   },
+
+  /** Permanently delete client and soft-delete all its leads. */
+  delete: async (
+    id: number
+  ): Promise<{
+    status: string;
+    message: string;
+    client_id: number;
+    client_name: string;
+    deleted_leads: number;
+  }> => {
+    const response = await api.delete(`/clients/${id}`);
+    return response.data;
+  },
 };
 
 export default clientsAPI;

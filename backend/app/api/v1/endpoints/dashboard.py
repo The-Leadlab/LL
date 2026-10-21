@@ -9,6 +9,7 @@ from app.models.task import Task, TaskStatus
 from app.models.deal import Deal, DealStatus
 from app.models.event import Event
 from app.models.activity import Activity
+from app.crud.crud_lead import active_org_leads_filter
 from datetime import datetime, timedelta
 import logging
 
@@ -141,11 +142,8 @@ async def get_dashboard_stats(
         past_range = "30d"
         future_range = "next90d"
         
-        # Organization bazlı filtreleme için temel koşul (exclude soft-deleted)
-        org_filter = and_(
-            Lead.organization_id == current_user.organization_id,
-            Lead.is_deleted.is_(False),
-        )
+        # Org leads on active (non-archived) clients only — sync with Leads tabs
+        org_filter = active_org_leads_filter(current_user.organization_id)
         tables = _table_names(db)
 
         # LEADS - Total count

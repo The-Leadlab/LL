@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any, Union
 from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import asc, desc, func, exists, and_, or_, update, text
+from sqlalchemy import asc, desc, func, exists, and_, or_, update, text, select
 from fastapi.encoders import jsonable_encoder
 from datetime import datetime
 import logging
@@ -8,6 +8,7 @@ from fastapi import HTTPException
 
 from app.crud.base import CRUDBase
 from app.models.lead import Lead
+from app.models.client import Client
 from app.models.tag import Tag
 from app.models.deal import Deal
 from app.models.task import Task
@@ -15,6 +16,31 @@ from app.models.lead_stage import LeadStage
 from app.models.user import User
 from app.models.associations import lead_tags
 from app.schemas.lead import LeadCreate, LeadUpdate
+
+
+def active_org_leads_filter(organization_id: int):
+    """
+    Non-deleted leads belonging to the org on non-archived clients.
+
+    Dashboard / stats must match the Leads UI, which only shows active clients.
+    Leads left on archived clients are excluded from totals and pipeline charts.
+    """
+    active_client_ids = (
+        select(Client.id)
+        .where(
+            Client.organization_id == organization_id,
+            Client.is_archived.is_(False),
+        )
+        .scalar_subquery()
+    )
+    return and_(
+        Lead.organization_id == organization_id,
+        Lead.is_deleted.is_(False),
+        or_(
+            Lead.client_id.is_(None),
+            Lead.client_id.in_(active_client_ids),
+        ),
+    )
 
 _LEAD_LIST_LOAD = (
     selectinload(Lead.stage),

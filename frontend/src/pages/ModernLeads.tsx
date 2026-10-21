@@ -597,10 +597,17 @@ export function ModernLeads() {
     },
   });
 
+  const invalidateLeadTotals = () => {
+    queryClient.invalidateQueries({ queryKey: ['clients'] });
+    queryClient.invalidateQueries({ queryKey: ['leads'] });
+    queryClient.invalidateQueries({ queryKey: ['leadStats'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+  };
+
   const archiveClientMutation = useMutation({
     mutationFn: (id: number) => clientsAPI.archive(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      invalidateLeadTotals();
       const general = activeClients.find((c) => c.is_default);
       if (general) setSelectedClientId(general.id);
       toast({ title: t('page.clientArchived') });
@@ -617,13 +624,35 @@ export function ModernLeads() {
   const restoreClientMutation = useMutation({
     mutationFn: (id: number) => clientsAPI.restore(id),
     onSuccess: (restored) => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      invalidateLeadTotals();
       setSelectedClientId(restored.id);
       toast({ title: t('page.clientRestored') });
     },
     onError: (error: any) => {
       toast({
         title: t('page.restoreFailed'),
+        description: error?.response?.data?.detail || error?.message || t('common:failed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteClientMutation = useMutation({
+    mutationFn: (id: number) => clientsAPI.delete(id),
+    onSuccess: (result) => {
+      invalidateLeadTotals();
+      if (selectedClientId === result.client_id) {
+        const general = activeClients.find((c) => c.is_default);
+        if (general) setSelectedClientId(general.id);
+      }
+      toast({
+        title: t('page.clientDeleted'),
+        description: t('page.clientDeletedHint', { count: result.deleted_leads }),
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('page.deleteClientFailed'),
         description: error?.response?.data?.detail || error?.message || t('common:failed'),
         variant: 'destructive',
       });
@@ -651,8 +680,7 @@ export function ModernLeads() {
     onSuccess: (res: any) => {
       const payload = res?.data ?? res;
       const msg = payload?.message || t('page.leadsMoved');
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      invalidateLeadTotals();
       setSelectedLeads([]);
       setIsMoveDialogOpen(false);
       toast({ title: t('page.moved'), description: typeof msg === 'string' ? msg : t('page.leadsMoved') });
@@ -1581,6 +1609,27 @@ export function ModernLeads() {
                           >
                             {t('page.archive')}
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 hover:text-red-700 dark:text-red-400"
+                            disabled={deleteClientMutation.isPending}
+                            onClick={() => {
+                              const count = client.lead_count ?? 0;
+                              if (
+                                window.confirm(
+                                  t('page.deleteClientConfirm', {
+                                    name: client.name,
+                                    count,
+                                  })
+                                )
+                              ) {
+                                deleteClientMutation.mutate(client.id);
+                              }
+                            }}
+                          >
+                            {t('page.deleteClient')}
+                          </Button>
                         </>
                       )}
                     </>
@@ -1601,14 +1650,40 @@ export function ModernLeads() {
                   >
                     <span className="flex-1 text-neutral-600 dark:text-neutral-400">
                       {client.name}
+                      {typeof client.lead_count === 'number' && (
+                        <span className="ml-2 text-xs text-neutral-500">
+                          ({client.lead_count})
+                        </span>
+                      )}
                     </span>
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={restoreClientMutation.isPending}
+                      disabled={restoreClientMutation.isPending || deleteClientMutation.isPending}
                       onClick={() => restoreClientMutation.mutate(client.id)}
                     >
                       {t('page.restore')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 hover:text-red-700 dark:text-red-400"
+                      disabled={deleteClientMutation.isPending}
+                      onClick={() => {
+                        const count = client.lead_count ?? 0;
+                        if (
+                          window.confirm(
+                            t('page.deleteClientConfirm', {
+                              name: client.name,
+                              count,
+                            })
+                          )
+                        ) {
+                          deleteClientMutation.mutate(client.id);
+                        }
+                      }}
+                    >
+                      {t('page.deleteClient')}
                     </Button>
                   </div>
                 ))}

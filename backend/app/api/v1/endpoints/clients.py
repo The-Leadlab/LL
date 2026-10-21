@@ -111,3 +111,29 @@ def restore_client(
         db, organization_id=current_user.organization_id
     )
     return _to_schema(updated, counts)
+
+
+@router.delete("/{client_id}")
+def delete_client(
+    client_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Permanently delete a client and soft-delete all of its leads.
+    Use after moving any leads you want to keep. General cannot be deleted.
+    """
+    db_obj = crud_client.get_for_org(
+        db, id=client_id, organization_id=current_user.organization_id
+    )
+    if not db_obj:
+        raise HTTPException(status_code=404, detail="Client not found")
+    result = crud_client.delete_with_leads(db, db_obj=db_obj)
+    return {
+        "status": "success",
+        "message": (
+            f"Deleted client '{result['client_name']}' and "
+            f"{result['deleted_leads']} lead(s)"
+        ),
+        **result,
+    }

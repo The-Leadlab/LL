@@ -213,6 +213,48 @@ class CRUDClient:
         db.refresh(db_obj)
         return db_obj
 
+    def delete_with_leads(self, db: Session, *, db_obj: Client) -> dict:
+        """
+        Soft-delete all leads on this client, then permanently remove the client.
+        General/default client cannot be deleted.
+        """
+        if db_obj.is_default:
+            raise HTTPException(
+                status_code=400,
+                detail="The General client cannot be deleted",
+            )
+        now = datetime.utcnow()
+        client_id = db_obj.id
+        client_name = db_obj.name
+        deleted_leads = (
+            db.query(Lead)
+            .filter(
+                Lead.client_id == client_id,
+                Lead.is_deleted == False,  # noqa: E712
+            )
+            .update(
+                {
+                    Lead.is_deleted: True,
+                    Lead.updated_at: now,
+                    # Detach so the client row can be removed without FK issues
+                    Lead.client_id: None,
+                },
+                synchronize_session=False,
+            )
+        )
+        # Also detach already-soft-deleted leads still pointing at this client
+        db.query(Lead).filter(Lead.client_id == client_id).update(
+            {Lead.client_id: None, Lead.updated_at: now},
+            synchronize_session=False,
+        )
+        db.delete(db_obj)
+        db.commit()
+        return {
+            "client_id": client_id,
+            "client_name": client_name,
+            "deleted_leads": int(deleted_leads or 0),
+        }
+
     def get_by_name(
         self, db: Session, *, organization_id: int, name: str
     ) -> Optional[Client]:

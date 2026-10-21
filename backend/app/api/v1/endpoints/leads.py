@@ -89,10 +89,10 @@ def get_lead_statistics(
     """
     try:
         org_id = current_user.organization_id
-        base_filter = and_(
-            models.Lead.is_deleted == False,  # noqa: E712
-            models.Lead.organization_id == org_id,
-        )
+        # Match Leads UI: exclude soft-deleted leads and leads on archived clients
+        from app.crud.crud_lead import active_org_leads_filter
+
+        base_filter = active_org_leads_filter(org_id)
 
         total_leads = (
             db.query(func.count(models.Lead.id)).filter(base_filter).scalar() or 0
