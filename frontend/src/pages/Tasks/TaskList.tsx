@@ -253,7 +253,7 @@ export function TaskList() {
                                     {task.assigned_to && (
                                       <div className="flex items-center gap-1.5 text-gray-600">
                                         <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
-                                          {task.assigned_to.first_name[0]}{task.assigned_to.last_name[0]}
+                                          {(task.assigned_to.first_name?.[0] || '?')}{(task.assigned_to.last_name?.[0] || '')}
                                         </div>
                                         <span>{task.assigned_to.first_name} {task.assigned_to.last_name}</span>
                                       </div>

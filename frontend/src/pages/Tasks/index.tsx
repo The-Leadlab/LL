@@ -836,7 +836,7 @@ export function TasksPage() {
                               <div className="flex items-center gap-2">
                                 <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center">
                                   <span className="text-xs font-medium text-indigo-600">
-                                    {task.lead.first_name[0]}{task.lead.last_name[0]}
+                                    {(task.lead.first_name?.[0] || '?')}{(task.lead.last_name?.[0] || '')}
                                   </span>
                                 </div>
                                 <span className="text-sm text-gray-700 truncate">

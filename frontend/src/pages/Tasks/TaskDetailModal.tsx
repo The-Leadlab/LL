@@ -574,7 +574,7 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                       {currentTask.lead ? (
                         <div className="mt-1 flex items-center gap-2">
                           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                            {currentTask.lead.first_name[0]}{currentTask.lead.last_name[0]}
+                            {(currentTask.lead.first_name?.[0] || '?')}{(currentTask.lead.last_name?.[0] || '')}
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900">

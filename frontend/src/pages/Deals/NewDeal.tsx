@@ -307,7 +307,7 @@ export const NewDealPage = () => {
                                 {selectedLead ? (
                                   <div className="flex items-center gap-2 w-full">
                                     <div className="bg-primary/10 text-primary rounded-full h-7 w-7 flex items-center justify-center">
-                                      {selectedLead.first_name[0]}{selectedLead.last_name[0]}
+                                      {(selectedLead.first_name?.[0] || '?')}{(selectedLead.last_name?.[0] || '')}
                                     </div>
                                     <div className="flex flex-col">
                                       <span className="font-medium">{selectedLead.first_name} {selectedLead.last_name}</span>
@@ -379,10 +379,10 @@ export const NewDealPage = () => {
                                         onClick={() => handleLeadSelect(lead)}
                                       >
                                         <div className="bg-primary/10 text-primary rounded-full h-8 w-8 flex items-center justify-center shrink-0">
-                                          {lead.first_name[0]}{lead.last_name[0]}
+                                          {(lead.first_name?.[0] || '?')}{(lead.last_name?.[0] || '')}
                                         </div>
                                         <div>
-                                          <div className="font-medium">{lead.first_name} {lead.last_name}</div>
+                                          <div className="font-medium">{lead.first_name || 'Unknown'} {lead.last_name || ''}</div>
                                           {lead.email && <div className="text-xs text-gray-500">{lead.email}</div>}
                                           {lead.company && <div className="text-xs text-gray-500">{lead.company}</div>}
                                         </div>
@@ -584,7 +584,7 @@ export const NewDealPage = () => {
                               {selectedUser ? (
                                 <div className="flex items-center gap-2 w-full">
                                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                                    {selectedUser.first_name[0]}{selectedUser.last_name[0]}
+                                    {(selectedUser.first_name?.[0] || '?')}{(selectedUser.last_name?.[0] || '')}
                                   </div>
                                   <div className="flex flex-col">
                                     <span className="font-medium">
@@ -645,7 +645,7 @@ export const NewDealPage = () => {
                                       onClick={() => handleUserSelect(user)}
                                     >
                                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary shrink-0">
-                                        {user.first_name[0]}{user.last_name[0]}
+                                        {(user.first_name?.[0] || '?')}{(user.last_name?.[0] || '')}
                                       </div>
                                       <div className="flex flex-col">
                                         <span className="font-medium">
