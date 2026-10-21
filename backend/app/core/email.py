@@ -418,6 +418,46 @@ class EmailSender:
         )
         return await self.send_email(to_email, subject, html_content, text_content)
 
+    async def send_notification_alert(
+        self,
+        to_email: str,
+        title: str,
+        message: str,
+        action_url: Optional[str] = None,
+        recipient_name: Optional[str] = None,
+        language: Optional[str] = None,
+    ) -> bool:
+        """Email mirror of an in-app notification."""
+        lang = normalize_email_language(language)
+        recipient = recipient_name or ("there" if lang == "en" else "bonjour")
+        if lang == "fr" and not recipient_name:
+            recipient = "bonjour"
+        subject = title or ("LeadLab notification" if lang == "en" else "Notification LeadLab")
+        greeting = (
+            f"Hi {recipient},"
+            if lang == "en"
+            else f"Bonjour {recipient},"
+        )
+        body = p(greeting) + p(message or "")
+        if action_url:
+            cta_label = "Open in LeadLab" if lang == "en" else "Ouvrir dans LeadLab"
+            html_content, _ = render_system_email(
+                title=subject,
+                preheader=(message or subject)[:120],
+                body_html=body,
+                cta_label=cta_label,
+                cta_url=action_url,
+            )
+            text_content = f"{greeting}\n\n{message or ''}\n\n{action_url}\n"
+        else:
+            html_content, _ = render_system_email(
+                title=subject,
+                preheader=(message or subject)[:120],
+                body_html=body,
+            )
+            text_content = f"{greeting}\n\n{message or ''}\n"
+        return await self.send_email(to_email, subject, html_content, text_content)
+
     async def send_assignment_mention(
         self,
         to_email: str,

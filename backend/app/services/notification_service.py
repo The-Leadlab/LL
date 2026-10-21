@@ -1,8 +1,10 @@
 """In-app notification create helpers with user preference gates."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
+import threading
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Set
 
@@ -13,6 +15,81 @@ from app.models.notification import Notification
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
+
+
+def _schedule_async(coro) -> None:
+    """Fire-and-forget async work from sync request handlers."""
+
+    def _runner() -> None:
+        try:
+            asyncio.run(coro)
+        except Exception:
+            logger.exception("Background notification email failed")
+
+    threading.Thread(target=_runner, daemon=True).start()
+
+
+def _absolute_app_url(path: Optional[str]) -> Optional[str]:
+    if not path:
+        return None
+    if path.startswith("http://") or path.startswith("https://"):
+        return path
+    try:
+        from app.core.config import settings
+
+        base = (settings.FRONTEND_URL or "https://the-leadlab.com").rstrip("/")
+        return f"{base}{path if path.startswith('/') else '/' + path}"
+    except Exception:
+        return path
+
+
+def _maybe_email_notification(
+    db: Session,
+    user_id: int,
+    *,
+    title: str,
+    message: str,
+    link: Optional[str],
+    prefs: Dict[str, Any],
+) -> None:
+    """Send email copy when the user's email notification pref is on."""
+    if not prefs.get("email", True):
+        return
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or not getattr(user, "email", None):
+        return
+    to_email = user.email
+    name = (
+        getattr(user, "full_name", None)
+        or f"{(user.first_name or '').strip()} {(user.last_name or '').strip()}".strip()
+        or None
+    )
+    action_url = _absolute_app_url(link)
+
+    async def _send() -> None:
+        from app.core.email import email_sender
+        from app.core.user_language import get_user_language
+
+        # Fresh session not available here; pass language default from prefs path
+        lang = "en"
+        try:
+            # get_user_language needs a session; best-effort with a new one
+            from app.db.session import SessionLocal
+
+            with SessionLocal() as s:
+                lang = get_user_language(s, int(user_id))
+        except Exception:
+            pass
+        await email_sender.send_notification_alert(
+            to_email=to_email,
+            title=title,
+            message=message,
+            action_url=action_url,
+            recipient_name=name,
+            language=lang,
+        )
+
+    _schedule_async(_send())
 
 # Pref keys stored in UserSettings.notification_preferences
 DEFAULT_PREFS: Dict[str, bool] = {
@@ -102,6 +179,19 @@ class NotificationService:
                 db.rollback()
                 logger.exception("Failed to create notification for user %s", user_id)
                 return None
+
+        try:
+            _maybe_email_notification(
+                db,
+                user_id,
+                title=title,
+                message=message,
+                link=link,
+                prefs=prefs,
+            )
+        except Exception:
+            logger.exception("Failed to queue notification email for user %s", user_id)
+
         return notification
 
     @staticmethod

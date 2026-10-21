@@ -59,6 +59,7 @@ from .outreach_platform import (
 from .workflow import Workflow, WorkflowExecution, WorkflowActionExecution, ApprovalProcess, ApprovalRequest, ApprovalStep, WorkflowTriggerType, WorkflowStatus, WorkflowExecutionStatus, ActionType
 from .conversation import CallRecording, ConversationInsight
 from .forecast import ForecastPeriod, Forecast, ForecastItem, ForecastHistory, ForecastRollup, ForecastComment, ForecastCategory, ForecastPeriodType, ForecastStatus
+from .dashboard import Dashboard, DashboardWidget
 from .data_import import ImportJob, FieldMapping, ImportRecord, ExportJob, CRMConnection, ImportStatus, ImportSource
 from .marketing_form_submission import MarketingFormSubmission
 from .support_ticket import SupportTicket
@@ -158,6 +159,8 @@ __all__ = [
     "ForecastCategory",
     "ForecastPeriodType",
     "ForecastStatus",
+    "Dashboard",
+    "DashboardWidget",
     "ImportJob",
     "FieldMapping",
     "ImportRecord",
