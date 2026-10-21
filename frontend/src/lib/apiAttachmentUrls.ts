@@ -19,6 +19,23 @@ export function taskAttachmentUrl(taskId: number, storedName: string): string {
   return apiV1Url(`/tasks/${taskId}/attachments/${encodeURIComponent(storedName)}`);
 }
 
+export function emailAttachmentUrl(emailId: number, attachmentId: number): string {
+  return apiV1Url(`/email/emails/${emailId}/attachments/${attachmentId}`);
+}
+
+const IMAGE_EXT = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg']);
+
+/** True when MIME or filename indicates a displayable image. */
+export function isImageAttachment(
+  contentType?: string | null,
+  fileName?: string | null
+): boolean {
+  const mime = (contentType || '').toLowerCase();
+  if (mime.startsWith('image/')) return true;
+  const ext = (fileName || '').split('.').pop()?.toLowerCase() || '';
+  return IMAGE_EXT.has(ext);
+}
+
 export async function fetchAttachmentWithAuth(url: string): Promise<Blob> {
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   const res = await fetch(url, {

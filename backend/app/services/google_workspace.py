@@ -36,21 +36,26 @@ SPREADSHEET_ID_QUERY_RE = re.compile(r"[?&]id=([a-zA-Z0-9\-_]+)")
 
 
 def merged_google_oauth_scopes() -> str:
-    """Gmail + Sheets only. Calendar stays on the calendar OAuth endpoint.
+    """Gmail + Sheets + Calendar in one Connect with Gmail consent.
 
-    Asking for calendar here makes Google's consent page too long (Continue sits
-    under the privacy warning) and requests deleting every calendar when the user
-    only wanted to send mail or write Sent back into a sheet.
+    Calendar remains available via its own Connect Google Calendar button for
+    users who only want Agenda. Login Google OAuth uses the same merged set.
     """
     merged: List[str] = []
     for scope_line in [
         settings.GOOGLE_EMAIL_SCOPES,
         settings.GOOGLE_SHEETS_SCOPES,
+        settings.GOOGLE_CALENDAR_SCOPES,
     ]:
         for scope in (scope_line or "").split():
             if scope and scope not in merged:
                 merged.append(scope)
     return " ".join(merged)
+
+
+def scopes_include_calendar(scopes: Optional[str]) -> bool:
+    text = (scopes or "").lower()
+    return "calendar" in text
 
 
 def parse_spreadsheet_id(value: str) -> str:
@@ -254,20 +259,27 @@ DEFAULT_SHEET_COLUMN_MAP = {
     "first": "first_name",
     "given_name": "first_name",
     "prenom": "first_name",
+    "prénom": "first_name",
     "last_name": "last_name",
     "lastname": "last_name",
     "last": "last_name",
     "surname": "last_name",
     "family_name": "last_name",
+    "nom": "last_name",
     "name": "full_name",
     "full_name": "full_name",
     "fullname": "full_name",
     "contact_name": "full_name",
+    "nom_complet": "full_name",
     "company": "company",
     "organisation": "company",
     "organization": "company",
     "org": "company",
     "account": "company",
+    "societe": "company",
+    "société": "company",
+    "entreprise": "company",
+    "firma": "company",
     "job_title": "job_title",
     "jobtitle": "job_title",
     "title": "job_title",
@@ -314,8 +326,14 @@ HEADER_HINT_TOKENS = (
 
 
 def normalize_header_name(header: str) -> str:
+    """Normalize spreadsheet headers for alias matching (BOM, punctuation, accents)."""
+    import unicodedata
+
     raw = (header or "").replace("\ufeff", "").strip().lower()
-    for ch in (" ", "-", ".", "/", "\\"):
+    # Fold accents so "Prénom" / "Société" match prenom / societe aliases
+    raw = unicodedata.normalize("NFKD", raw)
+    raw = "".join(ch for ch in raw if not unicodedata.combining(ch))
+    for ch in (" ", "-", ".", "/", "\\", "(", ")", "[", "]", "{", "}", ":", ";", ",", "'", '"'):
         raw = raw.replace(ch, "_")
     while "__" in raw:
         raw = raw.replace("__", "_")

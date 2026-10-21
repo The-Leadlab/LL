@@ -11,8 +11,9 @@ import json
 from urllib.parse import urlencode
 import requests
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
+from app.models.email_attachment import EmailAttachment
 
 from app import crud, models, schemas
 from app.api import deps
@@ -128,11 +129,26 @@ def init_google_email_oauth(
     current_user: User = Depends(deps.get_current_active_user),
     return_to: Optional[str] = Query(None),
 ):
-    if not settings.GOOGLE_CALENDAR_CLIENT_ID:
-        raise HTTPException(status_code=400, detail="GOOGLE_CALENDAR_CLIENT_ID is not configured")
+    if not settings.GOOGLE_CALENDAR_CLIENT_ID or not settings.GOOGLE_CALENDAR_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Google OAuth is not configured on the API. Set GOOGLE_CALENDAR_CLIENT_ID, "
+                "GOOGLE_CALENDAR_CLIENT_SECRET, and GOOGLE_EMAIL_REDIRECT_URI "
+                "(or GOOGLE_CALENDAR_REDIRECT_URI) on the Render service."
+            ),
+        )
     from app.services.google_workspace import merged_google_oauth_scopes
 
     redirect_uri = _google_oauth_redirect_uri_for_email()
+    if not (redirect_uri or "").startswith("http"):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Google OAuth redirect URI is missing. Set GOOGLE_EMAIL_REDIRECT_URI "
+                "to your API callback, e.g. https://<api-host>/api/v1/email/oauth/google/callback"
+            ),
+        )
     state = _build_oauth_state(
         current_user.id,
         current_user.organization_id,
@@ -284,6 +300,64 @@ def google_email_oauth_callback(
             auto_create_tasks=True,
         )
         db.add(account)
+
+    # When calendar scopes were granted, also upsert CalendarIntegration
+    from app.services.google_workspace import scopes_include_calendar
+    from app.models.calendar_integration import CalendarIntegration
+
+    if scopes_include_calendar(scopes):
+        provider_sub = profile.get("id")
+        calendar_integration = None
+        if provider_sub:
+            calendar_integration = (
+                db.query(CalendarIntegration)
+                .filter(
+                    CalendarIntegration.organization_id == organization_id,
+                    CalendarIntegration.user_id == user_id,
+                    CalendarIntegration.provider == "google",
+                    CalendarIntegration.external_account_id == provider_sub,
+                )
+                .first()
+            )
+        if not calendar_integration:
+            calendar_integration = (
+                db.query(CalendarIntegration)
+                .filter(
+                    CalendarIntegration.organization_id == organization_id,
+                    CalendarIntegration.user_id == user_id,
+                    CalendarIntegration.provider == "google",
+                    CalendarIntegration.provider_account_email == email_addr,
+                )
+                .first()
+            )
+        if calendar_integration:
+            calendar_integration.provider_account_email = email_addr
+            calendar_integration.external_account_id = provider_sub or calendar_integration.external_account_id
+            calendar_integration.access_token = access_token
+            calendar_integration.refresh_token = refresh_token or calendar_integration.refresh_token
+            calendar_integration.token_expires_at = expires_at
+            calendar_integration.scopes = scopes
+            calendar_integration.sync_enabled = True
+            calendar_integration.is_active = True
+            calendar_integration.last_error = None
+            calendar_integration.updated_at = datetime.utcnow()
+        else:
+            db.add(
+                CalendarIntegration(
+                    organization_id=organization_id,
+                    user_id=user_id,
+                    provider="google",
+                    provider_account_email=email_addr,
+                    external_account_id=provider_sub,
+                    access_token=access_token,
+                    refresh_token=refresh_token,
+                    token_expires_at=expires_at,
+                    scopes=scopes,
+                    sync_enabled=True,
+                    sync_direction="two_way",
+                    is_active=True,
+                )
+            )
 
     db.commit()
     db.refresh(account)
@@ -1305,6 +1379,83 @@ def get_email(
         raise HTTPException(status_code=404, detail="Email not found")
     
     return email
+
+
+def _get_email_for_org(db: Session, email_id: int, org_id: int) -> Email:
+    email = db.query(Email).filter(
+        Email.id == email_id,
+        Email.organization_id == org_id,
+    ).first()
+    if not email:
+        raise HTTPException(status_code=404, detail="Email not found")
+    return email
+
+
+@router.get("/emails/{email_id}/attachments")
+def list_email_attachments(
+    email_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """List attachment metadata for an email in the user's organization."""
+    _get_email_for_org(db, email_id, current_user.organization_id)
+    rows = (
+        db.query(EmailAttachment)
+        .filter(EmailAttachment.email_id == email_id)
+        .order_by(EmailAttachment.id.asc())
+        .all()
+    )
+    return [
+        {
+            "id": a.id,
+            "filename": a.filename,
+            "content_type": a.content_type,
+            "size_bytes": int(a.size_bytes or 0),
+            "is_inline": bool(a.is_inline),
+        }
+        for a in rows
+    ]
+
+
+@router.get("/emails/{email_id}/attachments/{attachment_id}")
+def download_email_attachment(
+    email_id: int,
+    attachment_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Stream attachment bytes (inline for images)."""
+    _get_email_for_org(db, email_id, current_user.organization_id)
+    att = (
+        db.query(EmailAttachment)
+        .filter(
+            EmailAttachment.id == attachment_id,
+            EmailAttachment.email_id == email_id,
+        )
+        .first()
+    )
+    if not att:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+
+    media_type = att.content_type or "application/octet-stream"
+    disposition = "inline" if (media_type or "").startswith("image/") else "attachment"
+    headers = {
+        "Content-Disposition": f'{disposition}; filename="{att.filename}"',
+    }
+
+    if att.content:
+        return Response(content=bytes(att.content), media_type=media_type, headers=headers)
+
+    if att.file_path:
+        try:
+            with open(att.file_path, "rb") as f:
+                data = f.read()
+            return Response(content=data, media_type=media_type, headers=headers)
+        except OSError as e:
+            logger.error("Failed to read email attachment file %s: %s", att.file_path, e)
+            raise HTTPException(status_code=404, detail="Attachment file missing on disk")
+
+    raise HTTPException(status_code=404, detail="Attachment content not available")
 
 
 @router.post("/emails/{email_id}/mark-read")

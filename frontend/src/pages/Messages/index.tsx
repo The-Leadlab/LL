@@ -8,7 +8,12 @@ import { Card } from '../../components/ui/Card';
 import { useAuthStore } from '../../store/auth';
 import { onlineActivityService } from '../../services/onlineActivityService';
 import toast from 'react-hot-toast';
-import { messageAttachmentUrl, openAttachmentInNewTab } from '@/lib/apiAttachmentUrls';
+import {
+  isImageAttachment,
+  messageAttachmentUrl,
+  openAttachmentInNewTab,
+} from '@/lib/apiAttachmentUrls';
+import { AttachmentImagePreview } from '@/components/AttachmentImagePreview';
 
 export function MessagesPage() {
   const { t, i18n } = useTranslation('messages');
@@ -362,6 +367,34 @@ export function MessagesPage() {
   };
 
   const parseAttachmentMessage = (content: string) => {
+    // New format: [[ATTACHMENT_V2]]{json}
+    const v2Idx = content.indexOf('[[ATTACHMENT_V2]]');
+    if (v2Idx !== -1) {
+      try {
+        const jsonStr = content.slice(v2Idx + '[[ATTACHMENT_V2]]'.length).trim();
+        const parsed = JSON.parse(jsonStr) as {
+          filename?: string;
+          stored_name?: string;
+          size_bytes?: number;
+          content_type?: string;
+        };
+        if (parsed.stored_name) {
+          const fileName = parsed.filename || parsed.stored_name;
+          const extension = fileName.includes('.')
+            ? fileName.split('.').pop()?.toUpperCase() || 'FILE'
+            : 'FILE';
+          return {
+            fileName,
+            sizeBytes: Number(parsed.size_bytes || 0),
+            storedName: parsed.stored_name,
+            extension,
+            contentType: parsed.content_type,
+          };
+        }
+      } catch {
+        /* fall through to legacy */
+      }
+    }
     const match = content.match(/^\[Attachment:\s*(.+?)\]\s*\((\d+)\s+bytes\)\.\s*Stored as\s+(.+?)\.?$/i);
     if (!match) return null;
     const fileName = match[1];
@@ -373,6 +406,7 @@ export function MessagesPage() {
       sizeBytes,
       storedName,
       extension: extension || 'FILE',
+      contentType: undefined as string | undefined,
     };
   };
 
@@ -726,10 +760,16 @@ export function MessagesPage() {
                                 extension: message.attachment.filename.includes('.')
                                   ? message.attachment.filename.split('.').pop()?.toUpperCase() || 'FILE'
                                   : 'FILE',
+                                contentType: message.attachment.content_type,
                               }
                             : parseAttachmentMessage(message.content);
                           if (attachment) {
                             const attKey = `${message.id}-${attachment.storedName}`;
+                            const attUrl = messageAttachmentUrl(attachment.storedName);
+                            const showImage = isImageAttachment(
+                              attachment.contentType,
+                              attachment.fileName
+                            );
                             return (
                               <div
                                 className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm ${
@@ -738,6 +778,15 @@ export function MessagesPage() {
  : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-bl-md'
  }`}
                               >
+                                {showImage && (
+                                  <div className="mb-2">
+                                    <AttachmentImagePreview
+                                      url={attUrl}
+                                      alt={attachment.fileName}
+                                      variant={isOwnMessage ? 'onPrimary' : 'default'}
+                                    />
+                                  </div>
+                                )}
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <p className="text-sm font-semibold">{attachment.fileName}</p>
@@ -751,9 +800,7 @@ export function MessagesPage() {
                                     onClick={async () => {
                                       try {
                                         setOpeningAttachmentKey(attKey);
-                                        await openAttachmentInNewTab(
-                                          messageAttachmentUrl(attachment.storedName)
-                                        );
+                                        await openAttachmentInNewTab(attUrl);
                                       } catch (err: unknown) {
                                         console.error(err);
                                         const msg =

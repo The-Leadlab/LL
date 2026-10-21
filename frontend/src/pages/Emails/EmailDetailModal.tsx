@@ -1,11 +1,18 @@
-import React from 'react';
-import { X, Reply, ReplyAll, Forward, Trash2, Archive, Star, Paperclip, Clock } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Reply, ReplyAll, Forward, Trash2, Archive, Star, Paperclip, Clock, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/Dialog';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { emailAPI, type EmailAttachment } from '../../services/emailAPI';
+import { AttachmentImagePreview } from '../../components/AttachmentImagePreview';
+import {
+  emailAttachmentUrl,
+  isImageAttachment,
+  openAttachmentInNewTab,
+} from '../../lib/apiAttachmentUrls';
 
 interface EmailMessage {
   id: number;
@@ -36,6 +43,13 @@ interface EmailDetailModalProps {
   onReply: (email: EmailMessage, action: 'reply' | 'reply-all' | 'forward') => void;
 }
 
+function formatBytes(n: number): string {
+  if (!n || n < 0) return '';
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
   email,
   isOpen,
@@ -46,6 +60,32 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
   onReply
 }) => {
   const { t } = useTranslation('emails');
+  const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !email.has_attachments) {
+      setAttachments([]);
+      return;
+    }
+    let cancelled = false;
+    setAttachmentsLoading(true);
+    emailAPI
+      .getAttachments(email.email_account_id, email.id)
+      .then((rows) => {
+        if (!cancelled) setAttachments(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setAttachments([]);
+      })
+      .finally(() => {
+        if (!cancelled) setAttachmentsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, email.id, email.has_attachments, email.email_account_id]);
+
   const formatEmailDate = (dateString: string) => {
     const date = new Date(dateString);
     return format(date, 'EEEE, dd MMMM yyyy HH:mm');
@@ -176,17 +216,17 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
             </div>
 
             {/* Recipient Info */}
-            <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="bg-gray-50 p-3 rounded-lg dark:bg-gray-800">
               <div className="text-sm space-y-1">
                 <div><strong>{t('detail.toLabel')}</strong> {email.to_address}</div>
               </div>
             </div>
 
             {/* Email Body */}
-            <div className="prose max-w-none">
+            <div className="prose max-w-none dark:prose-invert">
               {email.body_html ? (
-                <div 
-                  dangerouslySetInnerHTML={{ __html: email.body_html }} 
+                <div
+                  dangerouslySetInnerHTML={{ __html: email.body_html }}
                   className="email-body"
                 />
               ) : (
@@ -200,13 +240,67 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
                 <h4 className="font-semibold mb-2 flex items-center">
                   <Paperclip className="h-4 w-4 mr-2" />
                   {t('composePage.attachments')}
+                  {attachments.length > 0 && (
+                    <span className="ml-2 text-sm font-normal text-gray-500">
+                      ({attachments.length})
+                    </span>
+                  )}
                 </h4>
-                <div className="space-y-2">
-                  {/* This would show actual attachments if we had the data */}
-                  <div className="p-3 bg-gray-50 rounded text-sm text-gray-600">
+                {attachmentsLoading ? (
+                  <div className="h-16 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-700" />
+                ) : attachments.length === 0 ? (
+                  <div className="p-3 bg-gray-50 rounded text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                     {t('detail.attachmentsPlaceholder')}
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-3">
+                    {attachments.map((att) => {
+                      const url = emailAttachmentUrl(email.id, att.id);
+                      const sizeLabel = formatBytes(att.size_bytes ?? att.size ?? 0);
+                      if (isImageAttachment(att.content_type, att.filename)) {
+                        return (
+                          <div
+                            key={att.id}
+                            className="rounded-lg border border-gray-200 p-2 dark:border-gray-700"
+                          >
+                            <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+                              <span className="truncate font-medium">{att.filename}</span>
+                              {sizeLabel && (
+                                <span className="shrink-0 text-gray-500">{sizeLabel}</span>
+                              )}
+                            </div>
+                            <AttachmentImagePreview url={url} alt={att.filename} />
+                          </div>
+                        );
+                      }
+                      return (
+                        <div
+                          key={att.id}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800"
+                        >
+                          <div className="min-w-0 flex items-center gap-2">
+                            <Paperclip className="h-4 w-4 shrink-0 text-gray-500" />
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-medium">{att.filename}</div>
+                              {sizeLabel && (
+                                <div className="text-xs text-gray-500">{sizeLabel}</div>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openAttachmentInNewTab(url).catch(() => undefined)}
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            {t('detail.openAttachment')}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 

@@ -653,7 +653,7 @@ export const CalendarPage = () => {
                 </Button>
               )}
               <Button
-                onClick={() => window.location.href = '/settings?tab=integrations'}
+                onClick={() => navigate('/settings/integrations')}
                 variant="outline"
                 size="sm"
               >

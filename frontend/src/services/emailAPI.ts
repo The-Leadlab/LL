@@ -141,8 +141,11 @@ export interface EmailAttachment {
   id: number;
   filename: string;
   content_type: string;
-  size: number;
-  download_url: string;
+  size_bytes: number;
+  is_inline?: boolean;
+  /** @deprecated use size_bytes */
+  size?: number;
+  download_url?: string;
 }
 
 export interface SendEmailData {
@@ -358,15 +361,21 @@ const emailAPI = {
     ];
   },
 
-  // Attachments - Backend'te bu endpoint'ler yok
-  async getAttachments(accountId: number, emailId: number): Promise<EmailAttachment[]> {
-    // Backend'te attachments endpoint'i yok, geçici çözüm
-    return [];
+  async getAttachments(_accountId: number, emailId: number): Promise<EmailAttachment[]> {
+    const response = await api.get(`/email/emails/${emailId}/attachments`);
+    const rows = Array.isArray(response.data) ? response.data : [];
+    return rows.map((a: EmailAttachment & { size?: number }) => ({
+      ...a,
+      size_bytes: a.size_bytes ?? a.size ?? 0,
+    }));
   },
 
-  async downloadAttachment(accountId: number, emailId: number, attachmentId: number): Promise<string> {
-    // Backend'te download endpoint'i yok, geçici çözüm
-    return `/emails/${emailId}/attachments/${attachmentId}/download`;
+  async downloadAttachment(
+    _accountId: number,
+    emailId: number,
+    attachmentId: number
+  ): Promise<string> {
+    return `/email/emails/${emailId}/attachments/${attachmentId}`;
   },
 
   // Calendar Integration

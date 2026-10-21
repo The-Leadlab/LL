@@ -228,73 +228,92 @@ async def import_leads_from_csv(
             )
         default_import_client = resolved
 
-    if not file.filename.endswith(".csv"):
+    filename_lower = (file.filename or "").lower()
+    allowed_ext = (".csv", ".xlsx", ".xls")
+    if not any(filename_lower.endswith(ext) for ext in allowed_ext):
         raise HTTPException(
             status_code=400,
-            detail="Only CSV files are allowed"
+            detail="Only CSV or Excel (.xlsx, .xls) files are allowed",
         )
 
     try:
-        logger.info(f"Starting CSV import for file: {file.filename}")
+        logger.info(f"Starting lead import for file: {file.filename}")
 
         content = await file.read()
         if len(content) == 0:
-            logger.error("Empty CSV file uploaded")
+            logger.error("Empty file uploaded")
             raise HTTPException(
                 status_code=400,
                 detail="The uploaded file is empty"
             )
 
-        csv_text = decode_csv_bytes(content)
-        df = pd.read_csv(io.StringIO(csv_text))
+        if filename_lower.endswith(".csv"):
+            csv_text = decode_csv_bytes(content)
+            df = pd.read_csv(io.StringIO(csv_text))
+        else:
+            try:
+                df = pd.read_excel(io.BytesIO(content))
+            except Exception as excel_err:
+                logger.error("Excel read failed: %s", excel_err)
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Could not read Excel file: {excel_err}",
+                )
 
         if len(df) == 0:
-            logger.error("CSV file has no data rows")
+            logger.error("Import file has no data rows")
             raise HTTPException(
                 status_code=400,
-                detail="The CSV file contains no data rows"
+                detail="The file contains no data rows"
             )
 
-        logger.info(f"Successfully read CSV file with {len(df)} rows")
+        logger.info(f"Successfully read import file with {len(df)} rows")
 
-        # Normalize headers: strip, lowercase, spaces and dashes to underscores (so Excel template columns match)
-        def normalize_header(col):
-            if not isinstance(col, str):
-                col = str(col).strip()
-            s = col.strip().lower().replace(" ", "_").replace("-", "_")
-            while "__" in s:
-                s = s.replace("__", "_")
-            return s.strip("_") or None
+        from app.services.google_workspace import (
+            DEFAULT_SHEET_COLUMN_MAP,
+            normalize_header_name,
+            split_full_name,
+        )
 
-        df.columns = [normalize_header(col) or f"_unnamed_{i}" for i, col in enumerate(df.columns)]
+        df.columns = [
+            normalize_header_name(str(col)) or f"_unnamed_{i}"
+            for i, col in enumerate(df.columns)
+        ]
 
         successful_imports = []
         failed_imports = []
         leads_to_create = []
 
-        # Map CSV column names (any subset is OK; missing headers leave that field null)
-        field_mappings = {
-            "first_name": ["first_name", "firstname", "first"],
-            "last_name": ["last_name", "lastname", "last"],
-            "email": ["email", "email_address", "emails"],
-            "job_title": ["job_title", "jobtitle", "title", "position"],
-            "company": ["company", "organization"],
-            "linkedin": ["linkedin", "linkedin_url", "linkedinurl"],
-            "location": ["location", "city"],
-            "country": ["country"],
-            "website": ["website", "web", "url"],
-            "telephone": ["telephone", "phone", "tel"],
-            "mobile": ["mobile", "cell", "mobile_phone"],
-            "sector": ["sector", "industry"],
+        # Build alias → lead field from shared Sheets map + import-only fields
+        field_mappings: dict = {}
+        for alias, field in DEFAULT_SHEET_COLUMN_MAP.items():
+            field_mappings.setdefault(field, [])
+            if alias not in field_mappings[field]:
+                field_mappings[field].append(alias)
+
+        import_only = {
+            "first_name": ["given_name"],
+            "last_name": ["surname"],
+            "company": ["societe", "entreprise", "firma"],
+            "country": ["country", "pays", "nation"],
+            "website": ["website", "web", "url", "site_web"],
+            "sector": ["sector", "industry", "secteur", "industrie"],
             "time_in_current_role": ["time_in_current_role", "time_in_role", "role_duration"],
-            "unique_lead_id": ["unique_lead_id", "lead_id"],
-            "lab_comments": ["lab_comments", "lab_comment", "labcomments", "note"],
+            "lab_comments": ["lab_comments", "lab_comment", "labcomments", "note", "notes", "comment", "comments"],
             "client_comments": ["client_comments", "client_comment", "clientcomments"],
             "source": ["source", "lead_source"],
             "client": ["client", "client_name", "clientname"],
             "client_id": ["client_id", "clientid"],
+            "full_name": ["full_name", "name", "fullname", "contact_name", "nom_complet"],
         }
+        for field, aliases in import_only.items():
+            field_mappings.setdefault(field, [])
+            for a in aliases:
+                na = normalize_header_name(a)
+                if na and na not in field_mappings[field]:
+                    field_mappings[field].append(na)
 
+        # Prefer explicit first/last over full_name when both exist
         for index, row in df.iterrows():
             try:
                 lead_data = {}
@@ -314,10 +333,28 @@ async def import_leads_from_csv(
                             else:
                                 cleaned = clean_value(value)
                                 value = int(cleaned) if cleaned and str(cleaned).isdigit() else None
+                        elif db_field == "status":
+                            # Sheets status is not a LeadCreate field; skip
+                            continue
                         else:
                             value = clean_value(value)
                         lead_data[db_field] = value
-                    # else: column missing -> field not set; LeadCreate will use default (None)
+
+                # Split full_name when first/last missing
+                full = lead_data.pop("full_name", None)
+                if full and not (lead_data.get("first_name") or lead_data.get("last_name")):
+                    first, last = split_full_name(str(full))
+                    if first:
+                        lead_data["first_name"] = first
+                    if last:
+                        lead_data["last_name"] = last
+                elif full:
+                    if not lead_data.get("first_name"):
+                        first, last = split_full_name(str(full))
+                        if first:
+                            lead_data["first_name"] = first
+                        if last and not lead_data.get("last_name"):
+                            lead_data["last_name"] = last
 
                 if "email" not in lead_data:
                     lead_data["email"] = None

@@ -53,11 +53,20 @@ const tabs = [
 
 const TAB_IDS = new Set(tabs.map((tabItem) => tabItem.id));
 
-function tabFromPath(pathname: string, param?: string): Tab {
+function tabFromPath(pathname: string, param?: string, search?: string): Tab {
   const fromParam = param && TAB_IDS.has(param as Tab) ? (param as Tab) : null;
   if (fromParam) return fromParam;
   const segment = pathname.replace(/^\/settings\/?/, '').split('/')[0];
-  return TAB_IDS.has(segment as Tab) ? (segment as Tab) : 'profile';
+  if (TAB_IDS.has(segment as Tab)) return segment as Tab;
+  // Legacy OAuth return URLs: /settings?tab=integrations
+  try {
+    const q = new URLSearchParams(search || '');
+    const fromQuery = q.get('tab');
+    if (fromQuery && TAB_IDS.has(fromQuery as Tab)) return fromQuery as Tab;
+  } catch {
+    /* ignore */
+  }
+  return 'profile';
 }
 
 export function ModernSettings() {
@@ -73,8 +82,17 @@ export function ModernSettings() {
     : tabs.filter((tabItem) => !adminOnlyTabs.has(tabItem.id));
 
   const allowedIds = new Set(visibleTabs.map((tabItem) => tabItem.id));
-  const requestedTab = tabFromPath(location.pathname, tab);
+  const requestedTab = tabFromPath(location.pathname, tab, location.search);
   const activeTab = allowedIds.has(requestedTab) ? requestedTab : 'profile';
+
+  // Normalize legacy ?tab= query onto /settings/:tab so the Integrations tab stays active
+  useEffect(() => {
+    const q = new URLSearchParams(location.search);
+    const fromQuery = q.get('tab');
+    if (fromQuery && TAB_IDS.has(fromQuery as Tab) && !tab) {
+      navigate(`/settings/${fromQuery}${location.hash || ''}`, { replace: true });
+    }
+  }, [location.search, location.hash, tab, navigate]);
 
   const goToTab = (id: Tab) => {
     navigate(`/settings/${id}`);

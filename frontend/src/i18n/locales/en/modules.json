@@ -891,7 +891,7 @@
         "imapPort": "IMAP port",
         "smtpHost": "SMTP host",
         "smtpPort": "SMTP port",
-        "connectGmail": "Connect Gmail with Google",
+        "connectGmail": "Connect with Gmail",
         "connectMailbox": "Connect mailbox",
         "connecting": "Connecting…",
         "openInbox": "Open Inbox",

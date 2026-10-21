@@ -60,7 +60,8 @@
     "replyAll": "Reply All",
     "delete": "Delete",
     "toLabel": "To:",
-    "attachmentsPlaceholder": "Attachments would be displayed here"
+    "attachmentsPlaceholder": "No attachments found for this email",
+    "openAttachment": "Open"
   },
   "inboxPage": {
     "folders": {

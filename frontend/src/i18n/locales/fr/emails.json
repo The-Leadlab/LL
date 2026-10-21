@@ -60,7 +60,8 @@
     "replyAll": "Répondre à tous",
     "delete": "Supprimer",
     "toLabel": "À :",
-    "attachmentsPlaceholder": "Les pièces jointes s'afficheraient ici"
+    "attachmentsPlaceholder": "Aucune pièce jointe pour cet e-mail",
+    "openAttachment": "Ouvrir"
   },
   "inboxPage": {
     "folders": {
