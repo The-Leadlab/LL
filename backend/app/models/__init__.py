@@ -9,6 +9,8 @@ from .organization import Organization
 from .role import Role
 from .permission import Permission
 from .user import User
+from .user_settings import UserSettings
+from .notification import Notification
 from .email import EmailTemplate
 from .email_log import EmailLog
 from .email_message import Email, EmailDirection, EmailStatus
@@ -74,6 +76,8 @@ __all__ = [
     # Core models
     "Organization",
     "User",
+    "UserSettings",
+    "Notification",
     "Role",
     "Permission",
     
