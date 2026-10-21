@@ -1,5 +1,7 @@
 from typing import List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Form, File, UploadFile
+from datetime import datetime
+from app.models.lead import Lead
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -35,10 +37,15 @@ async def get_organizations(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
+    include_inactive: bool = Query(False, description="Include deactivated teams (admin org management only)"),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
     Retrieve organizations.
+
+    By default only active teams are returned so deleted/deactivated workspaces
+    do not appear in assignment dropdowns. Pass include_inactive=true on the
+    Organization Management screen to reactivate or review them.
     """
     try:
         # Check if user exists and is active
@@ -56,21 +63,26 @@ async def get_organizations(
             
         # Get organizations based on user role
         if current_user.is_admin:
-            logger.debug(f"Admin user {current_user.email} requesting all organizations")
+            logger.debug(f"Admin user {current_user.email} requesting organizations (include_inactive={include_inactive})")
             organizations = crud.organization.get_multi(
                 db,
                 skip=skip,
-                limit=limit
+                limit=max(limit, 500),
             )
+            # Treat null is_active as active for legacy rows; hide deactivated teams by default
+            if not include_inactive:
+                organizations = [o for o in organizations if o.is_active is not False]
             return organizations
         else:
-            # Non-admin users can only see their own organization
+            # Non-admin users can only see their own organization (if still active)
             logger.debug(f"Non-admin user {current_user.email} requesting their organization")
             if not current_user.organization_id:
                 return []
             
             organization = crud.organization.get(db, id=current_user.organization_id)
-            return [organization] if organization else []
+            if not organization or organization.is_active is False:
+                return []
+            return [organization]
 
     except HTTPException as he:
         logger.error(f"HTTP error in get_organizations: {str(he)}")
@@ -337,7 +349,9 @@ async def delete_organization(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    Delete organization.
+    Soft-delete a team/workspace: deactivate it, soft-delete its leads, and
+    tombstone its users so they leave Performance, Reports, and assignment UIs.
+    Hard delete is avoided because FK-linked rows usually block it.
     """
     try:
         if not current_user.is_admin:
@@ -352,15 +366,49 @@ async def delete_organization(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Organization not found"
             )
-            
-        deleted_org = crud.organization.remove(db=db, id=organization_id)
-        if not deleted_org:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Organization not found or already deleted"
-            )
-        return deleted_org
+
+        import time as _time
+
+        now = datetime.utcnow()
+        # Soft-delete all leads in this team
+        db.query(Lead).filter(
+            Lead.organization_id == organization_id,
+            Lead.is_deleted.is_(False),
+        ).update({"is_deleted": True, "updated_at": now}, synchronize_session=False)
+
+        # Deactivate + tombstone users still on this team (keep current admin)
+        org_users = (
+            db.query(User)
+            .filter(User.organization_id == organization_id)
+            .all()
+        )
+        for u in org_users:
+            if int(u.id) == int(current_user.id):
+                continue
+            if (u.email or "").lower().endswith("@deleted.local"):
+                u.is_active = False
+                continue
+            u.email = f"deleted+user-{u.id}-{int(_time.time())}@deleted.local"
+            if hasattr(u, "username"):
+                u.username = None
+            u.first_name = "Deleted"
+            u.last_name = f"User {u.id}"
+            u.is_active = False
+            u.is_superuser = False
+            u.role = "user"
+            u.updated_at = now
+            db.add(u)
+
+        organization.is_active = False
+        organization.updated_at = now
+        db.add(organization)
+        db.commit()
+        db.refresh(organization)
+        return organization
+    except HTTPException:
+        raise
     except Exception as e:
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

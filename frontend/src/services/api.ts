@@ -463,7 +463,10 @@ export const healthAPI = {
 };
 
 export const organizationsAPI = {
-  getAll: () => api.get<Organization[]>('/organizations/'),
+  getAll: (params?: { include_inactive?: boolean }) =>
+    api.get<Organization[]>('/organizations/', {
+      params: params?.include_inactive ? { include_inactive: true } : undefined,
+    }),
   get: (id: number) => api.get<Organization>(`/organizations/${id}/`),
   create: (data: FormData) => {
     // Convert boolean to string for FormData

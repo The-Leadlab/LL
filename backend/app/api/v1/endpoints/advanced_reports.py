@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, extract, desc, asc, text, and_, or_, literal
 from app.api import deps
+from app.crud.crud_user import user as crud_user
 from app.models.user import User
 from app.models.lead import Lead
 from app.models.deal import Deal, DealStatus
@@ -20,6 +21,50 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter(redirect_slashes=False)
+
+
+def _org_active_users(db: Session, organization_id: int) -> List[User]:
+    """Active, non-tombstoned users only — deleted users must not appear in Performance."""
+    return crud_user.get_organization_users(db, organization_id)
+
+
+def _lead_alive():
+    """Exclude soft-deleted leads from report aggregations."""
+    return Lead.is_deleted.is_(False)
+
+
+def _purge_leads_owned_by_deleted_users(db: Session, organization_id: int) -> int:
+    """
+    Soft-delete leads still attached to deactivated/tombstoned users so they
+    stop inflating Performance and other reports.
+    """
+    inactive_ids = [
+        row[0]
+        for row in db.query(User.id)
+        .filter(
+            User.organization_id == organization_id,
+            or_(
+                User.is_active.is_(False),
+                func.lower(User.email).like("%@deleted.local"),
+                func.lower(User.email).like("deleted+user-%"),
+            ),
+        )
+        .all()
+    ]
+    if not inactive_ids:
+        return 0
+    updated = (
+        db.query(Lead)
+        .filter(
+            Lead.organization_id == organization_id,
+            Lead.is_deleted.is_(False),
+            or_(Lead.user_id.in_(inactive_ids), Lead.created_by.in_(inactive_ids)),
+        )
+        .update({"is_deleted": True, "updated_at": datetime.utcnow()}, synchronize_session=False)
+    )
+    if updated:
+        db.commit()
+    return int(updated or 0)
 
 # Response Models
 class LeadSourceReport(BaseModel):
@@ -200,6 +245,7 @@ def get_comprehensive_analytics(
         func.sum(case((Lead.estimated_value.isnot(None), Lead.estimated_value), else_=0)).label('total_value')
     ).filter(
         Lead.organization_id == organization_id,
+            _lead_alive(),
         Lead.created_at >= start_date,
         Lead.created_at <= end_date
     ).group_by(Lead.source).all()
@@ -228,6 +274,7 @@ def get_comprehensive_analytics(
     for stage in funnel_stages:
         leads_in_stage = db.query(func.count(Lead.id)).filter(
         Lead.organization_id == organization_id,
+            _lead_alive(),
             Lead.stage_id == stage.id,
         Lead.created_at >= start_date,
         Lead.created_at <= end_date
@@ -245,13 +292,15 @@ def get_comprehensive_analytics(
         ))
 
     # User Performance
-    users = db.query(User).filter(User.organization_id == organization_id).all()
+    _purge_leads_owned_by_deleted_users(db, organization_id)
+    users = _org_active_users(db, organization_id)
     user_reports = []
     
     for user in users:
         # Total leads assigned to user
         total_leads = db.query(func.count(Lead.id)).filter(
             Lead.organization_id == organization_id,
+            _lead_alive(),
             Lead.user_id == user.id,
             Lead.created_at >= start_date,
             Lead.created_at <= end_date
@@ -260,6 +309,7 @@ def get_comprehensive_analytics(
         # Qualified leads
         qualified_leads = db.query(func.count(Lead.id)).filter(
         Lead.organization_id == organization_id,
+            _lead_alive(),
             Lead.user_id == user.id,
             Lead.stage_id.isnot(None),
         Lead.created_at >= start_date,
@@ -353,6 +403,7 @@ def get_comprehensive_analytics(
     # Summary metrics
     total_leads = db.query(func.count(Lead.id)).filter(
         Lead.organization_id == organization_id,
+            _lead_alive(),
         Lead.created_at >= start_date,
         Lead.created_at <= end_date
     ).scalar()
@@ -439,6 +490,7 @@ def get_kpi_dashboard_simple(
     # Current period metrics
     current_leads = db.query(func.count(Lead.id)).filter(
         Lead.organization_id == organization_id,
+            _lead_alive(),
         Lead.created_at >= start_date,
         Lead.created_at <= end_date
     ).scalar() or 0
@@ -446,6 +498,7 @@ def get_kpi_dashboard_simple(
     # Previous period metrics  
     previous_leads = db.query(func.count(Lead.id)).filter(
         Lead.organization_id == organization_id,
+            _lead_alive(),
         Lead.created_at >= prev_start_date,
         Lead.created_at < prev_end_date
     ).scalar() or 0
@@ -453,6 +506,7 @@ def get_kpi_dashboard_simple(
     # "Qualified" leads (leads with stage assigned)
     current_qualified = db.query(func.count(Lead.id)).filter(
         Lead.organization_id == organization_id,
+            _lead_alive(),
         Lead.stage_id.isnot(None),
         Lead.created_at >= start_date,
         Lead.created_at <= end_date
@@ -460,6 +514,7 @@ def get_kpi_dashboard_simple(
     
     previous_qualified = db.query(func.count(Lead.id)).filter(
         Lead.organization_id == organization_id,
+            _lead_alive(),
         Lead.stage_id.isnot(None),
         Lead.created_at >= prev_start_date,
         Lead.created_at < prev_end_date
@@ -551,6 +606,7 @@ def get_conversion_funnel(
         # Count leads in this stage
         leads_in_stage = db.query(func.count(Lead.id)).filter(
             Lead.organization_id == organization_id,
+            _lead_alive(),
             Lead.stage_id == stage.id,
             Lead.created_at >= start_date,
             Lead.created_at <= end_date
@@ -600,9 +656,11 @@ def get_user_performance(
         end_date = datetime.now()
     
     organization_id = current_user.organization_id  # Use current user's organization
-    
-    # Get all users in organization
-    users = db.query(User).filter(User.organization_id == organization_id).all()
+
+    _purge_leads_owned_by_deleted_users(db, organization_id)
+
+    # Active users only (deleted/tombstoned excluded)
+    users = _org_active_users(db, organization_id)
     
     performance_data = []
     
@@ -610,6 +668,7 @@ def get_user_performance(
         # Total leads assigned to user
         total_leads = db.query(func.count(Lead.id)).filter(
             Lead.organization_id == organization_id,
+            _lead_alive(),
             Lead.user_id == user.id,
         Lead.created_at >= start_date,
             Lead.created_at <= end_date
@@ -618,6 +677,7 @@ def get_user_performance(
         # Qualified leads
         qualified_leads = db.query(func.count(Lead.id)).filter(
             Lead.organization_id == organization_id,
+            _lead_alive(),
             Lead.user_id == user.id,
             Lead.stage_id.isnot(None),
             Lead.created_at >= start_date,
@@ -723,6 +783,7 @@ def get_lead_source_analysis(
         func.sum(case((Lead.stage_id.isnot(None), 1), else_=0)).label('qualified_leads')
     ).filter(
         Lead.organization_id == organization_id,
+            _lead_alive(),
         Lead.created_at >= start_date,
         Lead.created_at <= end_date
     ).group_by(Lead.source).all()
@@ -737,6 +798,7 @@ def get_lead_source_analysis(
         # Get deals created from leads of this source
         deals_created = db.query(func.count(Deal.id)).join(Lead).filter(
             Lead.organization_id == organization_id,
+            _lead_alive(),
             Lead.source == source_name,
             Deal.created_at >= start_date,
             Deal.created_at <= end_date
@@ -745,6 +807,7 @@ def get_lead_source_analysis(
         # Get deals won from leads of this source
         deals_won = db.query(func.count(Deal.id)).join(Lead).filter(
             Lead.organization_id == organization_id,
+            _lead_alive(),
             Lead.source == source_name,
             Deal.status == "Closed_Won",
             Deal.updated_at >= start_date,
@@ -754,6 +817,7 @@ def get_lead_source_analysis(
         # Get total revenue from deals won
         total_revenue = db.query(func.sum(Deal.amount)).join(Lead).filter(
             Lead.organization_id == organization_id,
+            _lead_alive(),
             Lead.source == source_name,
             Deal.status == "Closed_Won",
             Deal.updated_at >= start_date,
@@ -801,6 +865,7 @@ def get_pipeline_health(
         # Count leads in stage
         lead_count = db.query(func.count(Lead.id)).filter(
             Lead.organization_id == organization_id,
+            _lead_alive(),
             Lead.stage_id == stage.id
         ).scalar() or 0
         
@@ -863,7 +928,7 @@ def get_geographic_insights(
         db.query(region_expr.label("region"), func.count(Lead.id).label("lead_count"))
         .filter(
             Lead.organization_id == organization_id,
-            Lead.is_deleted == False,
+            _lead_alive(),
             Lead.created_at >= start_date,
             Lead.created_at <= end_date,
             or_(Lead.country.isnot(None), Lead.location.isnot(None)),
@@ -883,7 +948,7 @@ def get_geographic_insights(
             .join(Lead, Deal.lead_id == Lead.id)
             .filter(
                 Lead.organization_id == organization_id,
-                Lead.is_deleted == False,
+            _lead_alive(),
                 Deal.organization_id == organization_id,
                 region_expr == region,
                 Deal.created_at >= start_date,
@@ -898,7 +963,7 @@ def get_geographic_insights(
             .join(Lead, Deal.lead_id == Lead.id)
             .filter(
                 Lead.organization_id == organization_id,
-                Lead.is_deleted == False,
+            _lead_alive(),
                 Deal.organization_id == organization_id,
                 region_expr == region,
                 Deal.status == DealStatus.Closed_Won,
@@ -951,6 +1016,7 @@ def get_sector_analysis(
         func.count(Lead.id).label('lead_count')
     ).filter(
         Lead.organization_id == organization_id,
+            _lead_alive(),
         Lead.created_at >= start_date,
         Lead.created_at <= end_date,
         Lead.company.isnot(None)
@@ -965,6 +1031,7 @@ def get_sector_analysis(
         # Get deal count for this sector
         deal_count = db.query(func.count(Deal.id)).join(Lead).filter(
             Lead.organization_id == organization_id,
+            _lead_alive(),
             Lead.company == sector,
             Deal.created_at >= start_date,
             Deal.created_at <= end_date
@@ -973,6 +1040,7 @@ def get_sector_analysis(
         # Get total revenue for this sector
         total_revenue = db.query(func.sum(Deal.amount)).join(Lead).filter(
             Lead.organization_id == organization_id,
+            _lead_alive(),
             Lead.company == sector,
             Deal.status == "Closed_Won",
             Deal.updated_at >= start_date,
@@ -1014,9 +1082,10 @@ def get_activity_performance(
         end_date = datetime.now()
     
     organization_id = current_user.organization_id  # Use current user's organization
-    
-    # Get all users in organization
-    users = db.query(User).filter(User.organization_id == organization_id).all()
+
+    _purge_leads_owned_by_deleted_users(db, organization_id)
+
+    users = _org_active_users(db, organization_id)
     
     activity_reports = []
     
@@ -1130,6 +1199,7 @@ def debug_kpi_dashboard(
         try:
             current_qualified = db.query(func.count(Lead.id)).filter(
                 Lead.organization_id == organization_id,
+            _lead_alive(),
                 Lead.stage_id.isnot(None)
             ).scalar() or 0
             result["current_qualified"] = current_qualified

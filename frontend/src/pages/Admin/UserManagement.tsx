@@ -46,16 +46,16 @@ export function UserManagement() {
   });
 
   const { data: organizations = [], isLoading: isOrgsLoading } = useQuery({
-    queryKey: ['organizations'],
+    queryKey: ['organizations', 'active-only'],
     queryFn: async () => {
       try {
+        // Assignment dropdown: active teams only (deleted/deactivated hidden)
         const response = await organizationsAPI.getAll();
         
         // Make sure we return an array
         const orgs = response.data || [];
         const result = Array.isArray(orgs) ? orgs : [];
-        
-        return result;
+        return result.filter((org: { is_active?: boolean | null }) => org.is_active !== false);
       } catch (error) {
         console.error('UserManagement - Error fetching organizations:', error);
         return [];

@@ -62,10 +62,11 @@ export function OrganizationManagement() {
   });
 
   const { data: organizations = [], isLoading: isLoadingOrgs, error: orgsError } = useQuery({
-    queryKey: ['organizations'],
+    queryKey: ['organizations', 'include-inactive'],
     queryFn: async () => {
       try {
-        const response = await organizationsAPI.getAll();
+        // Org management needs inactive teams so admins can review/reactivate
+        const response = await organizationsAPI.getAll({ include_inactive: true });
         
         // Make sure we return an array
         const orgs = response.data || [];

@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional, Union, List
 from datetime import datetime
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from app.core.security import get_password_hash, verify_password
 from app.crud.base import CRUDBase
@@ -264,13 +264,26 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def remove(self, db: Session, *, id: int) -> Optional[User]:
         """
         Purge user identity while keeping row integrity for FK-linked records.
-        This frees the original email so the same address can be reused.
+        Soft-deletes leads owned/created by the user so they leave Performance
+        and Leads UI. Frees the original email so the same address can be reused.
         """
         user = db.query(User).filter(User.id == id).first()
         if not user:
             return None
 
         try:
+            from app.models.lead import Lead
+
+            now = datetime.utcnow()
+            # Hide this user's leads from reports and the Leads list
+            db.query(Lead).filter(
+                or_(Lead.user_id == id, Lead.created_by == id),
+                Lead.is_deleted.is_(False),
+            ).update(
+                {"is_deleted": True, "updated_at": now},
+                synchronize_session=False,
+            )
+
             # Tombstone email to release unique constraint on original address.
             tombstone_email = f"deleted+user-{id}-{int(time.time())}@deleted.local"
             user.email = tombstone_email
@@ -281,7 +294,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             user.is_active = False
             user.is_superuser = False
             user.role = "user"
-            user.updated_at = datetime.utcnow()
+            user.updated_at = now
             db.add(user)
             db.commit()
             db.refresh(user)
