@@ -8,5 +8,11 @@ const DEFAULT_PROD_ORIGIN = 'https://api.the-leadlab.com'
 export function getApiOrigin(): string {
   if (import.meta.env.DEV) return ''
   const raw = (import.meta.env.VITE_API_URL || DEFAULT_PROD_ORIGIN).trim().replace(/\/+$/, '')
-  return raw.replace(/\/api\/v1$/i, '')
+  const origin = raw.replace(/\/api\/v1$/i, '')
+  // Stale Vercel env still bakes ll-ec9p (old free instance). Route to the custom domain
+  // that points at the always-on Starter service.
+  if (origin.includes('ll-ec9p.onrender.com')) {
+    return DEFAULT_PROD_ORIGIN
+  }
+  return origin || DEFAULT_PROD_ORIGIN
 }
