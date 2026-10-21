@@ -94,6 +94,15 @@ async def startup_sequence_guard() -> None:
     except Exception as exc:
         logger.warning("Could not ensure support_tickets: %s", exc)
 
+    try:
+        from app.db.session import engine
+        from app.models.user_settings import UserSettings
+
+        UserSettings.__table__.create(bind=engine, checkfirst=True)
+        logger.info("Ensured user_settings table exists")
+    except Exception as exc:
+        logger.warning("Could not ensure user_settings: %s", exc)
+
     # Outreach platform tables (Phases 1–4) — create if missing so deploy works before manual SQL.
     try:
         from app.db.session import engine, SessionLocal
