@@ -294,6 +294,11 @@ export const leadsAPI = {
     return api.delete(`/leads/${id}`, { params: { confirm } });
   },
 
+  bulkDelete: async (lead_ids: number[]): Promise<{ success?: boolean; data?: { deleted?: number } }> => {
+    const response = await api.post('/leads/bulk/delete', { lead_ids });
+    return response.data;
+  },
+
   uploadCSV: async (formData: FormData): Promise<any> => {
     return api.post('/leads/import/csv', formData, {
       headers: {

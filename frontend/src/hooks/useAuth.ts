@@ -19,7 +19,8 @@ export function useAuth() {
       const response = await api.get('/auth/me');
       return response.data;
     },
-    retry: false
+    retry: false,
+    staleTime: 60_000,
   });
 
   return {

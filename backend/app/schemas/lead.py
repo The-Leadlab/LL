@@ -127,9 +127,14 @@ class Lead(LeadInDBBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+# Slim list row — omits notes to avoid lazy-loading every note on list land
+class LeadListItem(LeadInDBBase):
+    model_config = ConfigDict(from_attributes=True)
+
+
 # Lead List Response
 class LeadListResponse(BaseModel):
-    results: List[Lead]
+    results: List[LeadListItem]
     total: int
     page: int
     size: int

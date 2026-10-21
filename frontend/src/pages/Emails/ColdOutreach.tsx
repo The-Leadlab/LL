@@ -30,6 +30,7 @@ import { leadsAPI, type Lead } from '@/services/api/leads';
 import { stagesAPI, type Stage } from '@/services/api/stages';
 import emailAPI from '@/services/emailAPI';
 import { outreachAPI, type LeadImportPreview } from '@/services/api/outreach';
+import { GenerateBrandedEmailDialog } from '@/pages/Emails/GenerateBrandedEmailDialog';
 
 type LeadGroupBy = 'none' | 'personality' | 'source' | 'sector' | 'stage';
 type LeadSortBy = 'first_name' | 'company' | 'job_title' | 'source' | 'sector' | 'created_at';
@@ -315,27 +316,18 @@ ${trimmed}
 </html>`);
 }
 
+/** Single-page prefetch — avoid serial multi-page waterfalls on Cold Outreach land. */
 async function fetchAllLeads(clientId?: number, search?: string): Promise<Lead[]> {
-  const collected: Lead[] = [];
-  let skip = 0;
-  const limit = 100;
   const needle = search?.trim() || undefined;
-  const maxPages = needle ? 2 : 3;
-  for (let i = 0; i < maxPages; i += 1) {
-    const data = await leadsAPI.getLeads({
-      skip,
-      limit,
-      client_id: clientId,
-      search: needle,
-      sort_by: 'first_name',
-      sort_desc: false,
-    });
-    const page = (data?.results || data?.items || []) as Lead[];
-    collected.push(...page);
-    if (!data?.has_more || page.length === 0 || page.length < limit) break;
-    skip += limit;
-  }
-  return collected;
+  const data = await leadsAPI.getLeads({
+    skip: 0,
+    limit: 100,
+    client_id: clientId,
+    search: needle,
+    sort_by: 'first_name',
+    sort_desc: false,
+  });
+  return (data?.results || data?.items || []) as Lead[];
 }
 
 export function ColdOutreachPage() {
@@ -374,6 +366,7 @@ export function ColdOutreachPage() {
   const [maxPerHour, setMaxPerHour] = useState('12');
   const [useQueue, setUseQueue] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [lastBatchId, setLastBatchId] = useState<string | null>(null);
   const [rewriteInstruction, setRewriteInstruction] = useState(() => t('outreach.rewriteDefault'));
@@ -1148,15 +1141,7 @@ export function ColdOutreachPage() {
     }
   };
 
-  if (accountsLoading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!accounts.length) {
+  if (!accountsLoading && !accounts.length) {
     return (
       <div className="container mx-auto p-6">
         <Card>
@@ -2418,6 +2403,14 @@ export function ColdOutreachPage() {
               <Button
                 type="button"
                 variant="outline"
+                onClick={() => setGenerateOpen(true)}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                {t('outreach.generateBranded')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
                 disabled={!canPreview || rewriteMutation.isPending}
                 onClick={() => rewriteMutation.mutate()}
               >
@@ -2587,6 +2580,17 @@ export function ColdOutreachPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <GenerateBrandedEmailDialog
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
+        subjectHint={subject}
+        onApply={({ subject: nextSubject, html }) => {
+          setSubject(nextSubject);
+          setBody(html);
+          setFormat('html');
+        }}
+      />
     </div>
   );
 }

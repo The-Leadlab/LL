@@ -14,6 +14,38 @@ import logging
 
 router = APIRouter(redirect_slashes=False)
 
+# Cache schema introspection once per process — avoid inspect() on every /stats request
+_cached_table_names: Optional[set] = None
+_cached_org_columns: Optional[set] = None
+
+
+def _table_names(db: Session) -> set:
+    global _cached_table_names
+    if _cached_table_names is None:
+        try:
+            _cached_table_names = set(inspect(db.get_bind()).get_table_names())
+        except Exception:
+            # Known app tables — prefer querying and catching over re-inspecting
+            _cached_table_names = {
+                "tasks", "deals", "activities", "organizations", "leads", "events",
+            }
+    return _cached_table_names
+
+
+def _org_column_names(db: Session) -> set:
+    global _cached_org_columns
+    if _cached_org_columns is None:
+        try:
+            if "organizations" in _table_names(db):
+                _cached_org_columns = {
+                    c["name"] for c in inspect(db.get_bind()).get_columns("organizations")
+                }
+            else:
+                _cached_org_columns = set()
+        except Exception:
+            _cached_org_columns = {"credit_balance", "id"}
+    return _cached_org_columns
+
 
 def _utc_midnight(d: datetime) -> datetime:
     return datetime(d.year, d.month, d.day)
@@ -22,31 +54,47 @@ def _utc_midnight(d: datetime) -> datetime:
 def _lead_trend_last_7_days(db: Session, org_filter, now: datetime) -> List[Dict[str, Any]]:
     """
     Daily new-lead counts (UTC calendar days) for the last 7 days, oldest → newest.
-    Each item: {"date": ISO UTC midnight Z, "new_leads": int} — matches frontend chart expectations.
+    One GROUP BY query; missing days filled with 0.
     """
     today_start = _utc_midnight(now)
+    range_start = today_start - timedelta(days=6)
+    range_end = today_start + timedelta(days=1)
+    try:
+        dialect = db.get_bind().dialect.name
+    except Exception:
+        dialect = "postgresql"
+    if dialect == "postgresql":
+        day_bucket = func.date_trunc("day", Lead.created_at)
+    else:
+        day_bucket = func.date(Lead.created_at)
+    rows = (
+        db.query(day_bucket.label("day"), func.count(Lead.id))
+        .filter(
+            and_(
+                org_filter,
+                Lead.created_at >= range_start,
+                Lead.created_at < range_end,
+            )
+        )
+        .group_by(day_bucket)
+        .all()
+    )
+    counts: Dict[str, int] = {}
+    for day_val, cnt in rows:
+        if day_val is None:
+            continue
+        if hasattr(day_val, "year") and hasattr(day_val, "month"):
+            # date or datetime
+            key = datetime(day_val.year, day_val.month, day_val.day).isoformat() + "Z"
+        else:
+            key = str(day_val)[:10] + "T00:00:00Z"
+        counts[key] = int(cnt or 0)
+
     trend: List[Dict[str, Any]] = []
     for offset in range(6, -1, -1):
         day_start = today_start - timedelta(days=offset)
-        day_end = day_start + timedelta(days=1)
-        cnt = (
-            db.query(func.count(Lead.id))
-            .filter(
-                and_(
-                    org_filter,
-                    Lead.created_at >= day_start,
-                    Lead.created_at < day_end,
-                )
-            )
-            .scalar()
-            or 0
-        )
-        trend.append(
-            {
-                "date": day_start.isoformat() + "Z",
-                "new_leads": int(cnt),
-            }
-        )
+        key = day_start.isoformat() + "Z"
+        trend.append({"date": key, "new_leads": counts.get(key, 0)})
     return trend
 
 
@@ -93,9 +141,13 @@ async def get_dashboard_stats(
         past_range = "30d"
         future_range = "next90d"
         
-        # Organization bazlı filtreleme için temel koşul
-        org_filter = Lead.organization_id == current_user.organization_id
-        
+        # Organization bazlı filtreleme için temel koşul (exclude soft-deleted)
+        org_filter = and_(
+            Lead.organization_id == current_user.organization_id,
+            Lead.is_deleted.is_(False),
+        )
+        tables = _table_names(db)
+
         # LEADS - Total count
         lead_count = db.query(func.count(Lead.id)).filter(org_filter).scalar() or 0
         
@@ -138,10 +190,12 @@ async def get_dashboard_stats(
         pipeline_value_wow_pct_change: Optional[float] = None
         conversion_rate_wow_pp_change: Optional[float] = None
         
-        # TASKS - Open tasks (table doesn't exist in database, return 0)
+        # TASKS - Open tasks
+        task_count = 0
+        overdue_tasks = 0
+        upcoming_tasks = 0
         try:
-            inspector = inspect(db.get_bind())
-            if 'tasks' in inspector.get_table_names():
+            if "tasks" in tables:
                 task_org_filter = Task.organization_id == current_user.organization_id
                 task_count = db.query(func.count(Task.id)).filter(
                     and_(
@@ -149,8 +203,6 @@ async def get_dashboard_stats(
                         Task.status.in_(['PENDING', 'IN_PROGRESS'])
                     )
                 ).scalar() or 0
-                
-                # Overdue tasks
                 overdue_tasks = db.query(func.count(Task.id)).filter(
                     and_(
                         task_org_filter,
@@ -158,8 +210,6 @@ async def get_dashboard_stats(
                         Task.due_date < now
                     )
                 ).scalar() or 0
-                
-                # Upcoming tasks
                 upcoming_tasks = db.query(func.count(Task.id)).filter(
                     and_(
                         task_org_filter,
@@ -168,37 +218,31 @@ async def get_dashboard_stats(
                         Task.status != TaskStatus.COMPLETED
                     )
                 ).scalar() or 0
-            else:
-                task_count = 0
-                overdue_tasks = 0
-                upcoming_tasks = 0
         except Exception as e:
             logger.error(f"Error querying tasks: {str(e)}")
             task_count = 0
             overdue_tasks = 0
             upcoming_tasks = 0
-        
-        # DEALS - Total count (table doesn't exist in database, return 0)
+
+        # DEALS
+        deal_count = 0
+        won_deals = 0
+        conversion_rate = 0.0
+        pipeline_value = 0.0
+        total_revenue = 0.0
+        monthly_revenue = 0.0
         try:
-            inspector = inspect(db.get_bind())
-            if 'deals' in inspector.get_table_names():
+            if "deals" in tables:
                 deal_org_filter = Deal.organization_id == current_user.organization_id
                 deal_count = db.query(func.count(Deal.id)).filter(deal_org_filter).scalar() or 0
-                
-                # Closed won deals
                 won_deals = db.query(func.count(Deal.id)).filter(
                     and_(
                         deal_org_filter,
                         Deal.status == DealStatus.Closed_Won
                     )
                 ).scalar() or 0
-                
-                # Conversion rate: share of deal records that are Closed_Won (not lead→customer funnel %).
-                conversion_rate = 0.0
                 if deal_count > 0:
                     conversion_rate = round((won_deals / deal_count) * 100, 2)
-                
-                # Pipeline value (all non-closed deals)
                 pipeline_value = db.query(func.sum(Deal.amount)).filter(
                     and_(
                         deal_org_filter,
@@ -206,8 +250,6 @@ async def get_dashboard_stats(
                     )
                 ).scalar()
                 pipeline_value = float(pipeline_value) if pipeline_value is not None else 0.0
-                
-                # Revenue from closed deals
                 total_revenue = db.query(func.sum(Deal.amount)).filter(
                     and_(
                         deal_org_filter,
@@ -215,8 +257,6 @@ async def get_dashboard_stats(
                     )
                 ).scalar()
                 total_revenue = float(total_revenue) if total_revenue is not None else 0.0
-                
-                # Monthly revenue
                 monthly_revenue = db.query(func.sum(Deal.amount)).filter(
                     and_(
                         deal_org_filter,
@@ -226,7 +266,6 @@ async def get_dashboard_stats(
                 ).scalar()
                 monthly_revenue = float(monthly_revenue) if monthly_revenue is not None else 0.0
 
-                # WoW: new open-pipeline $ created in last 7d vs previous 7d (proxy for momentum)
                 open_statuses = [
                     DealStatus.Lead,
                     DealStatus.Qualified,
@@ -252,7 +291,6 @@ async def get_dashboard_stats(
                 pn_prev = float(pn_prev) if pn_prev is not None else 0.0
                 pipeline_value_wow_pct_change = _wow_pct_change(pn7, pn_prev)
 
-                # WoW: win-rate (last 7d closed vs prior 7d closed), in percentage points
                 closed_ts = func.coalesce(
                     Deal.accepted_at, Deal.rejected_at, Deal.updated_at, Deal.created_at
                 )
@@ -316,13 +354,6 @@ async def get_dashboard_stats(
                     conversion_rate_wow_pp_change = None
                 else:
                     conversion_rate_wow_pp_change = round((wr7 - wrp) * 100, 2)
-            else:
-                deal_count = 0
-                won_deals = 0
-                conversion_rate = 0.0
-                pipeline_value = 0.0
-                total_revenue = 0.0
-                monthly_revenue = 0.0
         except Exception as e:
             logger.error(f"Error querying deals: {str(e)}")
             deal_count = 0
@@ -331,34 +362,35 @@ async def get_dashboard_stats(
             pipeline_value = 0.0
             total_revenue = 0.0
             monthly_revenue = 0.0
-        
-        # EVENTS - Total count
+
+        # EVENTS
         event_count = db.query(func.count(Event.id)).filter(
             Event.organization_id == current_user.organization_id
         ).scalar() or 0
-        
-        # Upcoming events
         upcoming_events = db.query(func.count(Event.id)).filter(
             Event.organization_id == current_user.organization_id,
             Event.start_date >= now,
             Event.start_date <= now + timedelta(days=7)
         ).scalar() or 0
-        
-        # ACTIVITIES - Get recent activities (table may not exist)
+
+        # ACTIVITIES
+        recent_activities = []
         try:
-            inspector = inspect(db.get_bind())
-            if 'activities' in inspector.get_table_names():
+            if "activities" in tables:
                 activity_org_filter = Activity.organization_id == current_user.organization_id
-                recent_activities = db.query(Activity).filter(activity_org_filter).order_by(Activity.created_at.desc()).limit(10).all()
-            else:
-                recent_activities = []
+                recent_activities = (
+                    db.query(Activity)
+                    .filter(activity_org_filter)
+                    .order_by(Activity.created_at.desc())
+                    .limit(10)
+                    .all()
+                )
         except Exception as e:
             logger.error(f"Error querying activities: {str(e)}")
             recent_activities = []
-        
+
         activities = []
-        
-        # Son leadleri ekle
+
         recent_leads = db.query(Lead).filter(org_filter).order_by(Lead.created_at.desc()).limit(5).all()
         for lead in recent_leads:
             lead_name = f"{lead.first_name or ''} {lead.last_name or ''}".strip() or "New Lead"
@@ -371,18 +403,21 @@ async def get_dashboard_stats(
                 "entity_id": str(lead.id)
             })
 
-        # Son dealleri ekle
+        recent_deals = []
         try:
-            inspector = inspect(db.get_bind())
-            if 'deals' in inspector.get_table_names():
+            if "deals" in tables:
                 deal_org_filter = Deal.organization_id == current_user.organization_id
-                recent_deals = db.query(Deal).filter(deal_org_filter).order_by(Deal.created_at.desc()).limit(5).all()
-            else:
-                recent_deals = []
+                recent_deals = (
+                    db.query(Deal)
+                    .filter(deal_org_filter)
+                    .order_by(Deal.created_at.desc())
+                    .limit(5)
+                    .all()
+                )
         except Exception as e:
             logger.error(f"Error querying recent deals: {str(e)}")
             recent_deals = []
-            
+
         for deal in recent_deals:
             activities.append({
                 "id": f"deal_{deal.id}",
@@ -393,14 +428,10 @@ async def get_dashboard_stats(
                 "entity_id": str(deal.id)
             })
 
-        # Normal aktiviteleri ekle
         for activity in recent_activities:
-            # Get the actual enum value as string
             activity_type = str(activity.type) if activity.type else "other"
-            # Remove "ActivityType." prefix if it exists
             if activity_type.startswith("ActivityType."):
                 activity_type = activity_type.replace("ActivityType.", "")
-            
             activities.append({
                 "id": str(activity.id),
                 "title": activity.description or "Activity",
@@ -410,29 +441,22 @@ async def get_dashboard_stats(
                 "entity_id": str(activity.lead_id) if activity.lead_id else str(activity.deal_id) if activity.deal_id else None
             })
 
-        # Aktiviteleri tarihe göre sırala ve en son 10 tanesini al
         activities = sorted(activities, key=lambda x: x["created_at"], reverse=True)[:10]
-        
+
         lead_trend = _lead_trend_last_7_days(db, org_filter, now)
         task_trend: List[Dict[str, Any]] = []
         pipeline_trend: List[Dict[str, Any]] = []
         event_trend: List[Dict[str, Any]] = []
-        
-        # Org credit balance (same source as GET /credits/balance); replaces hardcoded user.tokens
+
         credit_balance = 0.0
         try:
-            inspector = inspect(db.get_bind())
-            if "organizations" in inspector.get_table_names():
-                org_columns = {c["name"] for c in inspector.get_columns("organizations")}
-                if "credit_balance" in org_columns:
-                    row = db.execute(
-                        text("SELECT credit_balance FROM organizations WHERE id = :org_id"),
-                        {"org_id": current_user.organization_id},
-                    ).fetchone()
-                    if row is not None and row[0] is not None:
-                        credit_balance = float(row[0])
-                else:
-                    logger.info("organizations.credit_balance column not present; using default 0.0")
+            if "organizations" in tables and "credit_balance" in _org_column_names(db):
+                row = db.execute(
+                    text("SELECT credit_balance FROM organizations WHERE id = :org_id"),
+                    {"org_id": current_user.organization_id},
+                ).fetchone()
+                if row is not None and row[0] is not None:
+                    credit_balance = float(row[0])
         except Exception as e:
             logger.warning("Could not load organization credit_balance: %s", e)
         

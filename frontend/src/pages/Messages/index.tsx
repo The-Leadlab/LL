@@ -5,7 +5,7 @@ import { Search, Send, Plus, Users, MoreVertical, Phone, Video, Info, Smile, Pap
 import { messagesApi, ConversationSummary, ConversationMessages, Message, ConversationUser } from '../../api/messages';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../store/auth';
 import { onlineActivityService } from '../../services/onlineActivityService';
 import toast from 'react-hot-toast';
 import { messageAttachmentUrl, openAttachmentInNewTab } from '@/lib/apiAttachmentUrls';
@@ -13,7 +13,8 @@ import { messageAttachmentUrl, openAttachmentInNewTab } from '@/lib/apiAttachmen
 export function MessagesPage() {
   const { t, i18n } = useTranslation('messages');
   const locale = i18n.language || 'en';
-  const { user } = useAuth();
+  // Prefer Zustand user (already hydrated by PrivateRoute) — avoid a second /auth/me
+  const user = useAuthStore((s) => s.user);
   const [searchText, setSearchText] = useState('');
   const [selectedContact, setSelectedContact] = useState<ConversationUser | null>(null);
   const [messageText, setMessageText] = useState('');

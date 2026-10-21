@@ -17,6 +17,7 @@ import enAdmin from './locales/en/admin.json'
 import enErrors from './locales/en/errors.json'
 import enValidation from './locales/en/validation.json'
 import enModules from './locales/en/modules.json'
+import enTour from './locales/en/tour.json'
 
 import frCommon from './locales/fr/common.json'
 import frNav from './locales/fr/nav.json'
@@ -33,6 +34,7 @@ import frAdmin from './locales/fr/admin.json'
 import frErrors from './locales/fr/errors.json'
 import frValidation from './locales/fr/validation.json'
 import frModules from './locales/fr/modules.json'
+import frTour from './locales/fr/tour.json'
 
 export const I18N_NAMESPACES = [
   'common',
@@ -50,6 +52,7 @@ export const I18N_NAMESPACES = [
   'errors',
   'validation',
   'modules',
+  'tour',
 ] as const
 
 void i18n
@@ -73,6 +76,7 @@ void i18n
         errors: enErrors,
         validation: enValidation,
         modules: enModules,
+        tour: enTour,
       },
       fr: {
         common: frCommon,
@@ -90,6 +94,7 @@ void i18n
         errors: frErrors,
         validation: frValidation,
         modules: frModules,
+        tour: frTour,
       },
     },
     fallbackLng: 'en',

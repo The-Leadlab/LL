@@ -30,6 +30,7 @@ from app.models.outreach_platform import (
     OutreachScenario,
     OutreachTemplate,
 )
+from app.models.organization import Organization
 from app.models.user import User
 from app.services.free_ai_service import free_ai_service
 from app.services.google_workspace import (
@@ -141,6 +142,25 @@ class RewriteBody(BaseModel):
     body: str
     instruction: str
     lead: Optional[Dict[str, Any]] = None
+
+
+class GenerateHtmlBrand(BaseModel):
+    company_name: Optional[str] = None
+    logo_url: Optional[str] = None
+    primary_color: Optional[str] = None
+    secondary_color: Optional[str] = None
+
+
+class GenerateHtmlImage(BaseModel):
+    mime_type: str
+    data_base64: str
+
+
+class GenerateHtmlBody(BaseModel):
+    prompt: str = Field(..., min_length=3, max_length=8000)
+    subject_hint: Optional[str] = None
+    brand: Optional[GenerateHtmlBrand] = None
+    images: Optional[List[GenerateHtmlImage]] = Field(default=None, max_length=4)
 
 
 # ---------- helpers ----------
@@ -1408,6 +1428,65 @@ async def ai_rewrite(
         lead_data=body.lead or {},
     )
     return result
+
+
+@router.post("/ai/generate-html")
+async def ai_generate_html(
+    body: GenerateHtmlBody,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Dict[str, Any]:
+    """Generate a branded HTML email from a short prompt (+ optional brand images)."""
+    brand: Dict[str, Any] = {}
+    if body.brand:
+        brand = body.brand.model_dump(exclude_none=True)
+
+    org = None
+    if current_user.organization_id:
+        org = (
+            db.query(Organization)
+            .filter(Organization.id == current_user.organization_id)
+            .first()
+        )
+
+    if not brand.get("company_name") and org and org.name:
+        brand["company_name"] = org.name
+
+    if not brand.get("logo_url") and org and org.logo_filename:
+        base = str(request.base_url).rstrip("/")
+        brand["logo_url"] = (
+            f"{base}{settings.API_V1_STR}/organizations/logo/"
+            f"{org.id}/{quote(org.logo_filename)}"
+        )
+
+    images_payload: List[Dict[str, str]] = []
+    for img in body.images or []:
+        images_payload.append(
+            {"mime_type": img.mime_type, "data_base64": img.data_base64}
+        )
+
+    result = await free_ai_service.generate_branded_html_email(
+        prompt=body.prompt,
+        subject_hint=body.subject_hint,
+        brand=brand,
+        images=images_payload or None,
+    )
+
+    if not result.get("ok"):
+        detail = result.get("error") or "HTML generation failed"
+        status_code = (
+            status.HTTP_503_SERVICE_UNAVAILABLE
+            if "GEMINI_API_KEY" in str(detail)
+            else status.HTTP_502_BAD_GATEWAY
+        )
+        raise HTTPException(status_code=status_code, detail=detail)
+
+    return {
+        "subject": result["subject"],
+        "html": result["html"],
+        "provider": result.get("provider") or "gemini",
+    }
 
 
 # ---------- webhook inbound ----------

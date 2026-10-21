@@ -233,17 +233,6 @@ export function ModernTasks() {
     }
   };
 
-  if (isLoading && !tasksResponse) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-4 dark:bg-neutral-900">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-          <p className="text-neutral-600 dark:text-neutral-400">{t('loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-neutral-50 p-4 sm:p-6 md:p-8 dark:bg-neutral-900">
       <div className="mb-6 md:mb-8">
@@ -253,7 +242,14 @@ export function ModernTasks() {
               {t('title')}
             </h1>
             <p className="text-sm text-neutral-600 dark:text-neutral-400 md:text-base">
-              {t('pageSubtitle', { count: tasks.length })}
+              {isLoading && !tasksResponse ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary-600" />
+                  {t('loading')}
+                </span>
+              ) : (
+                t('pageSubtitle', { count: tasks.length })
+              )}
             </p>
           </div>
           <button
@@ -323,6 +319,12 @@ export function ModernTasks() {
               <Droppable droppableId={status.id}>
                 {(provided) => (
                   <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-3 min-h-[12rem]">
+                    {isLoading && !tasksResponse && (
+                      <>
+                        <div className="h-24 animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-700" />
+                        <div className="h-24 animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-700" />
+                      </>
+                    )}
                     {status.tasks.map((task, index) => (
                       <Draggable key={task.id} draggableId={String(task.id)} index={index}>
                         {(providedDraggable, snapshot) => (

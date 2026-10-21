@@ -220,8 +220,17 @@ export const EmailsPage: React.FC = () => {
 
   if (accountsLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="container mx-auto py-6 h-[calc(100vh-4rem)]">
+        <div className="flex h-full flex-col gap-4 rounded-lg border bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-sm text-neutral-600">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('inboxPage.loadingAccounts', { defaultValue: 'Loading mailboxes…' })}
+          </div>
+          <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-[16rem_1fr]">
+            <div className="animate-pulse rounded-lg bg-neutral-100" />
+            <div className="animate-pulse rounded-lg bg-neutral-100" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -273,7 +282,7 @@ export const EmailsPage: React.FC = () => {
                 <SelectValue placeholder={t('inboxPage.selectAccount')} />
               </SelectTrigger>
               <SelectContent>
-                {accounts.map((account) => (
+                {(accounts ?? []).map((account) => (
                   <SelectItem key={account.id} value={account.id.toString()}>
                     {account.email}
                   </SelectItem>

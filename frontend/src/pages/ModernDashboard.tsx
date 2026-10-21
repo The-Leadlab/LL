@@ -137,42 +137,8 @@ export function ModernDashboard() {
     { name: t('leads:converted'), value: leadStats.converted || 0 },
   ].filter(item => item.value > 0);
 
-  // Loading state
-  if (isLoadingLeadStats || isLoadingDashboard) {
-    return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8 flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
-          <p className="text-neutral-600 dark:text-neutral-400">{t('dashboardPage.loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLeadStatsError || isDashboardError) {
-    return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8 flex items-center justify-center">
-        <div className="max-w-md rounded-xl border border-red-200 dark:border-red-900 bg-white dark:bg-neutral-800 p-8 text-center shadow-sm">
-          <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-2">
-            {t('dashboardPage.loadFailedTitle')}
-          </p>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
-            {t('dashboardPage.loadFailedBody')}
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              void refetchLeadStats();
-              void refetchDashboard();
-            }}
-            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
-          >
-            {t('common:retry')}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const kpiLoading = isLoadingLeadStats || isLoadingDashboard;
+  const hasAnyError = isLeadStatsError || isDashboardError;
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
@@ -186,7 +152,25 @@ export function ModernDashboard() {
         </p>
       </div>
 
-      {/* KPI Cards */}
+      {hasAnyError && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/30">
+          <p className="text-sm text-amber-900 dark:text-amber-100">
+            {t('dashboardPage.loadFailedBody')}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              void refetchLeadStats();
+              void refetchDashboard();
+            }}
+            className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700"
+          >
+            {t('common:retry')}
+          </button>
+        </div>
+      )}
+
+      {/* KPI Cards — paint shell immediately; pulse while queries resolve */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Total Leads */}
         <button
@@ -198,14 +182,22 @@ export function ModernDashboard() {
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
               <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
-            <KpiWowBadge
-              value={dashboardStats.leads?.wow_new_leads_pct_change}
-              suffix="%"
-              sublabel={t('dashboardPage.wowLeadsHint')}
-            />
+            {kpiLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+            ) : (
+              <KpiWowBadge
+                value={dashboardStats.leads?.wow_new_leads_pct_change}
+                suffix="%"
+                sublabel={t('dashboardPage.wowLeadsHint')}
+              />
+            )}
           </div>
           <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
-            {totalLeads.toLocaleString()}
+            {kpiLoading && !leadStatsData ? (
+              <span className="inline-block h-8 w-16 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />
+            ) : (
+              totalLeads.toLocaleString()
+            )}
           </h3>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
             {t('dashboardPage.totalLeads')}

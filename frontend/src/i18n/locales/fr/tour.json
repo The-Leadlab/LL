@@ -1,0 +1,38 @@
+{
+  "welcomeTitle": "Bienvenue sur LeadLab",
+  "welcomeBody": "Faites une visite rapide des zones principales, ou passez et explorez librement. Vous pouvez changer de langue à tout moment.",
+  "chooseLanguage": "Choisissez votre langue",
+  "start": "Commencer la visite",
+  "skip": "Passer",
+  "next": "Suivant",
+  "previous": "Précédent",
+  "done": "Terminé",
+  "retake": "Refaire la visite",
+  "retakeHint": "Rejouer le parcours guidé de LeadLab.",
+  "steps": {
+    "sidebar": {
+      "title": "Votre espace",
+      "description": "Utilisez la barre latérale pour naviguer entre Prospects, Affaires, Tâches, E-mail, et plus."
+    },
+    "leads": {
+      "title": "Prospects",
+      "description": "Capturez et organisez vos prospects, filtrez par client, importez ou exportez des listes."
+    },
+    "deals": {
+      "title": "Affaires",
+      "description": "Suivez les opportunités dans votre pipeline, du premier contact à la conclusion."
+    },
+    "tasks": {
+      "title": "Tâches",
+      "description": "Gardez le contrôle des relances et des to-dos liés à vos ventes."
+    },
+    "email": {
+      "title": "E-mail",
+      "description": "Gérez la boîte de réception et la prospection depuis un seul endroit."
+    },
+    "languageSettings": {
+      "title": "Langue et paramètres",
+      "description": "Passez de l’anglais au français ici, et ouvrez Paramètres pour votre profil et vos préférences."
+    }
+  }
+}

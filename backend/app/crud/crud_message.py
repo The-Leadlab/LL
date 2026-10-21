@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc
+from sqlalchemy import and_, or_, desc, func, case
 from app.crud.base import CRUDBase
 from app.models.message import Message
 from app.models.user import User
@@ -77,88 +77,101 @@ class CRUDMessage(CRUDBase[Message, MessageCreate, MessageUpdate]):
         user_id: int,
         organization_id: int
     ) -> List[tuple]:
-        """Get all users that have conversations with the given user"""
-        # Get unique conversation partners
+        """Get conversation partners with last message + unread (no per-partner N+1)."""
         sent_to = (
             db.query(Message.receiver_id)
             .filter(
                 and_(
                     Message.sender_id == user_id,
-                    Message.organization_id == organization_id
+                    Message.organization_id == organization_id,
                 )
             )
             .distinct()
         )
-        
         received_from = (
             db.query(Message.sender_id)
             .filter(
                 and_(
                     Message.receiver_id == user_id,
-                    Message.organization_id == organization_id
+                    Message.organization_id == organization_id,
                 )
             )
             .distinct()
         )
-        
-        # Combine and get user details
-        partner_ids = sent_to.union(received_from).all()
-        partner_ids = [pid[0] for pid in partner_ids]
-        
+        partner_ids = [pid[0] for pid in sent_to.union(received_from).all()]
         if not partner_ids:
             return []
-            
+
         partners = (
             db.query(User)
             .filter(
                 and_(
                     User.id.in_(partner_ids),
                     User.organization_id == organization_id,
-                    User.is_active == True
+                    User.is_active == True,  # noqa: E712
                 )
             )
             .all()
         )
-        
-        # Get last message and unread count for each partner
-        conversations = []
-        for partner in partners:
-            last_message = (
-                db.query(Message)
-                .filter(
-                    and_(
-                        Message.organization_id == organization_id,
-                        or_(
-                            and_(Message.sender_id == user_id, Message.receiver_id == partner.id),
-                            and_(Message.sender_id == partner.id, Message.receiver_id == user_id)
-                        )
-                    )
-                )
-                .order_by(desc(Message.created_at))
-                .first()
+        if not partners:
+            return []
+        active_partner_ids = [p.id for p in partners]
+
+        partner_expr = case(
+            (Message.sender_id == user_id, Message.receiver_id),
+            else_=Message.sender_id,
+        )
+        last_rows = (
+            db.query(
+                partner_expr.label("partner_id"),
+                func.max(Message.id).label("max_id"),
             )
-            
-            unread_count = (
-                db.query(Message)
-                .filter(
+            .filter(
+                Message.organization_id == organization_id,
+                or_(
                     and_(
-                        Message.sender_id == partner.id,
+                        Message.sender_id == user_id,
+                        Message.receiver_id.in_(active_partner_ids),
+                    ),
+                    and_(
                         Message.receiver_id == user_id,
-                        Message.organization_id == organization_id,
-                        Message.is_read == False
-                    )
-                )
-                .count()
+                        Message.sender_id.in_(active_partner_ids),
+                    ),
+                ),
             )
-            
-            conversations.append((partner, last_message, unread_count))
-        
-        # Sort by last message time
+            .group_by(partner_expr)
+            .all()
+        )
+        max_ids = [row.max_id for row in last_rows if row.max_id]
+        last_by_id = {}
+        if max_ids:
+            for msg in db.query(Message).filter(Message.id.in_(max_ids)).all():
+                last_by_id[msg.id] = msg
+        last_by_partner = {
+            int(row.partner_id): last_by_id.get(row.max_id) for row in last_rows
+        }
+
+        unread_rows = (
+            db.query(Message.sender_id, func.count(Message.id))
+            .filter(
+                Message.receiver_id == user_id,
+                Message.organization_id == organization_id,
+                Message.is_read == False,  # noqa: E712
+                Message.sender_id.in_(active_partner_ids),
+            )
+            .group_by(Message.sender_id)
+            .all()
+        )
+        unread_map = {int(sid): int(cnt) for sid, cnt in unread_rows}
+
+        conversations = [
+            (partner, last_by_partner.get(partner.id), unread_map.get(partner.id, 0))
+            for partner in partners
+        ]
         conversations.sort(
             key=lambda x: x[1].created_at if x[1] else datetime.min,
-            reverse=True
+            reverse=True,
         )
-        
         return conversations
     
     def mark_as_read(

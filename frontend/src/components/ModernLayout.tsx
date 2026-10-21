@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Menu, Moon, Sun } from 'lucide-react';
 import { ModernSidebar } from './ModernSidebar';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { WelcomeTour } from './WelcomeTour';
 import { CommandPalette, useCommandPalette } from './CommandPalette';
 import { useDarkMode } from './ThemeProvider';
 
@@ -89,6 +90,7 @@ export function ModernLayout() {
         <Outlet />
       </main>
       <CommandPalette open={open} onClose={() => setOpen(false)} />
+      <WelcomeTour />
     </div>
   );
 }

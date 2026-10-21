@@ -37,6 +37,10 @@ class BulkMoveClientRequest(BaseModel):
     created_after: Optional[datetime] = None
 
 
+class BulkDeleteLeadsRequest(BaseModel):
+    lead_ids: List[int]
+
+
 class LeadStatsResponse(BaseModel):
     total: int
     new: int
@@ -772,6 +776,34 @@ def update_lead_tags(
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/bulk/delete", response_model=schemas.LeadResponse)
+def bulk_delete_leads(
+    body: BulkDeleteLeadsRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Soft-delete multiple leads in the current organization."""
+    if not current_user.organization_id:
+        raise HTTPException(status_code=400, detail="User has no organization")
+    lead_ids = [int(x) for x in (body.lead_ids or []) if x is not None]
+    if not lead_ids:
+        raise HTTPException(status_code=400, detail="No leads to delete")
+    # Cap batch size for safety
+    if len(lead_ids) > 500:
+        raise HTTPException(status_code=400, detail="Too many leads (max 500)")
+
+    deleted = crud.lead.soft_delete_many(
+        db,
+        lead_ids=lead_ids,
+        organization_id=current_user.organization_id,
+    )
+    return schemas.LeadResponse(
+        success=True,
+        message=f"Deleted {deleted} lead(s)",
+        data={"deleted": deleted},
+    )
+
+
 @router.post("/bulk/move-client", response_model=schemas.LeadResponse)
 def bulk_move_leads_to_client(
     body: BulkMoveClientRequest,
@@ -982,10 +1014,16 @@ def delete_lead(
             }
         )
     
-    # If confirmed, proceed with deletion
+    # Soft-delete (sets is_deleted) — keeps related rows intact
+    if lead.is_deleted:
+        return schemas.LeadResponse(
+            success=True,
+            message="Lead already deleted",
+            data={"id": lead_id},
+        )
     crud.lead.remove(db=db, id=lead_id)
     return schemas.LeadResponse(
         success=True,
         message="Lead deleted successfully",
-        data={"id": lead_id}
+        data={"id": lead_id},
     )

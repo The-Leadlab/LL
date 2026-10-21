@@ -477,6 +477,7 @@
     "batchCancelledBody": "Les tâches en attente de ce lot ont été annulées.",
     "cancelPending": "Annuler les envois en attente",
     "processing": "Traitement {{done}} / {{total}}…",
+    "generateBranded": "Générer un e-mail de marque",
     "rewriteWithAi": "Réécrire avec l'IA",
     "previewEmail": "Aperçu de l'e-mail",
     "confirmQueue_one": "Mettre cet e-mail en file pour {{count}} lead ?",
@@ -499,5 +500,30 @@
     "htmlPreview": "Aperçu HTML",
     "emptyMessage": "(message vide)",
     "htmlPreviewNote": "Aperçu HTML affiché car le corps ressemble à du HTML. Passez le format sur HTML avant l'envoi."
+  },
+  "generateBranded": {
+    "title": "Générer un e-mail de marque",
+    "description": "Décrivez la campagne. L'IA crée le HTML avec vos couleurs, logo et boutons CTA — puis utilisez Aperçu pour le vérifier.",
+    "promptLabel": "Que doit dire l'e-mail ?",
+    "promptPlaceholder": "ex. Créez un e-mail de lancement de marque pour notre CRM avec un CTA pour réserver une démo. Gardez {{first_name}}.",
+    "primaryColor": "Couleur principale",
+    "secondaryColor": "Couleur secondaire",
+    "companyName": "Nom de l'entreprise",
+    "companyPlaceholder": "Votre entreprise",
+    "logoUrl": "URL du logo (optionnel)",
+    "attachments": "Images de marque (optionnel)",
+    "attachmentsHint": "PNG, JPG ou WebP — jusqu'à 4 images, 1,5 Mo chacune.",
+    "addImages": "Ajouter des images",
+    "removeImage": "Retirer l'image",
+    "cancel": "Annuler",
+    "generate": "Générer le HTML",
+    "successTitle": "E-mail généré",
+    "successBody": "HTML appliqué. Ouvrez Aperçu pour voir la mise en page de marque.",
+    "failedTitle": "Échec de la génération",
+    "failedBody": "Impossible de générer l'e-mail. Vérifiez GEMINI_API_KEY ou réessayez.",
+    "invalidImage": "Image non prise en charge",
+    "invalidImageHint": "Utilisez PNG, JPG ou WebP.",
+    "imageTooLarge": "Image trop volumineuse",
+    "imageTooLargeHint": "Chaque image doit faire moins de 1,5 Mo."
   }
 }

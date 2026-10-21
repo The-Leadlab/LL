@@ -33,6 +33,7 @@ import { applyLanguageFromSettings } from '@/i18n/setAppLanguage';
 import { getUserSettings } from '@/services/settings';
 import { updateProfile, uploadAvatar, changePassword } from '@/services/users';
 import { useAuthStore } from '@/store/auth';
+import { requestProductTour } from '@/lib/productTour';
 import api from '@/lib/axios';
 import emailAPI from '@/services/emailAPI';
 import { calendarIntegrationsAPI } from '@/services/calendarIntegrations';
@@ -140,6 +141,7 @@ export function ModernSettings() {
 function ProfileSettings() {
   const { t } = useTranslation('settings');
   const { t: tm } = useTranslation('modules');
+  const { t: tt } = useTranslation('tour');
   const { user, fetchUser } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarVersion, setAvatarVersion] = useState(0);
@@ -392,6 +394,20 @@ function ProfileSettings() {
           <LanguageSwitcher size="md" />
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
             {t('languageHint')}
+          </p>
+        </div>
+
+        {/* Product tour */}
+        <div>
+          <button
+            type="button"
+            onClick={() => requestProductTour({ force: true })}
+            className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+          >
+            {tt('retake')}
+          </button>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+            {tt('retakeHint')}
           </p>
         </div>
 

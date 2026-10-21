@@ -71,6 +71,7 @@
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "dayjs": "^1.11.20",
+    "driver.js": "^1.10.2",
     "framer-motion": "^10.18.0",
     "i18next": "^26.5.3",
     "i18next-browser-languagedetector": "^8.2.1",

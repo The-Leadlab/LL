@@ -441,11 +441,17 @@ def ensure_personal_workspace_if_needed(db: Session, user: User) -> User:
     """
     New / misplaced accounts must not inherit another user's leads and clients.
     Founders and accepted teammates stay on the shared org.
+
+    Fast path: once a user already has an organization_id, skip peer/founder
+    scans on every authenticated request (was a major per-tab tax).
+    Users with no org still get a personal workspace.
     """
     try:
         if _is_tombstone_email(getattr(user, "email", None)):
             return user
-        if user_should_keep_shared_org(db, user):
+        if is_protected_workspace_user(user):
+            return user
+        if user.organization_id:
             return user
         return move_user_to_personal_workspace(db, user)
     except Exception:

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileText, Loader2, Plus, Trash2 } from 'lucide-react';
+import { FileText, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/hooks/use-toast';
 import { outreachAPI, type OutreachTemplate } from '@/services/api/outreach';
+import { GenerateBrandedEmailDialog } from '@/pages/Emails/GenerateBrandedEmailDialog';
 
 const emptyForm = () => ({
   name: '',
@@ -26,6 +27,7 @@ export function OutreachTemplatesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm());
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['outreach-templates'],
@@ -163,7 +165,15 @@ export function OutreachTemplatesPage() {
                 placeholder={t('templatesPage.abPlaceholder')}
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setGenerateOpen(true)}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                {t('outreach.generateBranded')}
+              </Button>
               <Button
                 type="button"
                 disabled={!form.name.trim() || !form.subject.trim() || saveMutation.isPending}
@@ -224,6 +234,21 @@ export function OutreachTemplatesPage() {
           ))
         )}
       </div>
+
+      <GenerateBrandedEmailDialog
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
+        subjectHint={form.subject}
+        onApply={({ subject, html }) => {
+          setForm((f) => ({
+            ...f,
+            subject: subject || f.subject,
+            body: html,
+            format: 'html',
+          }));
+          setShowForm(true);
+        }}
+      />
     </div>
   );
 }

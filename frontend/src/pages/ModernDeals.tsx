@@ -404,17 +404,6 @@ export function ModernDeals() {
     updateStatus.mutate({ id: dealId, status: newStatus });
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8 flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
-          <p className="text-neutral-600 dark:text-neutral-400">{t('loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen overflow-x-hidden bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-8">
       <div className="mb-8">
@@ -422,8 +411,17 @@ export function ModernDeals() {
           <div>
             <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">{t('title')}</h1>
             <p className="text-neutral-600 dark:text-neutral-400">
-              {t('pipelineSummary', { value: formatMoney(totalValue), shown: filteredDeals.length })}
-              {searchQuery.trim() ? ` ${t('totalSuffix', { total: rawDeals.length })}` : ''}
+              {isLoading ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary-600" />
+                  {t('loading')}
+                </span>
+              ) : (
+                <>
+                  {t('pipelineSummary', { value: formatMoney(totalValue), shown: filteredDeals.length })}
+                  {searchQuery.trim() ? ` ${t('totalSuffix', { total: rawDeals.length })}` : ''}
+                </>
+              )}
             </p>
             <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-500">
               {t('dragHint')}
@@ -486,17 +484,24 @@ export function ModernDeals() {
               </div>
 
               <DroppableStageBody stageId={stage.id}>
-                {stage.deals.map((deal) => (
-                  <DraggableDealCard
-                    key={deal.id}
-                    deal={deal}
-                    disabled={updateStatus.isPending || deleteDeal.isPending}
-                    onOpen={(id) => navigate(`/deals/${id}`)}
-                    onEdit={(id) => navigate(`/deals/${id}`)}
-                    onDelete={handleDeleteDeal}
-                  />
-                ))}
-                {stage.deals.length === 0 && (
+                {isLoading
+                  ? Array.from({ length: 2 }).map((_, i) => (
+                      <div
+                        key={`skel-${stage.id}-${i}`}
+                        className="mb-2 h-20 animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-700"
+                      />
+                    ))
+                  : stage.deals.map((deal) => (
+                      <DraggableDealCard
+                        key={deal.id}
+                        deal={deal}
+                        disabled={updateStatus.isPending || deleteDeal.isPending}
+                        onOpen={(id) => navigate(`/deals/${id}`)}
+                        onEdit={(id) => navigate(`/deals/${id}`)}
+                        onDelete={handleDeleteDeal}
+                      />
+                    ))}
+                {!isLoading && stage.deals.length === 0 && (
                   <div className="text-center py-8 text-neutral-500 dark:text-neutral-400 text-sm">
                     {t('dropHere')}
                   </div>

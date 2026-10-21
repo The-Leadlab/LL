@@ -477,6 +477,7 @@
     "batchCancelledBody": "Pending jobs in this batch were cancelled.",
     "cancelPending": "Cancel pending",
     "processing": "Processing {{done}} / {{total}}…",
+    "generateBranded": "Generate branded email",
     "rewriteWithAi": "Rewrite with AI",
     "previewEmail": "Preview email",
     "confirmQueue_one": "Queue this email for {{count}} lead?",
@@ -499,5 +500,30 @@
     "htmlPreview": "HTML preview",
     "emptyMessage": "(empty message)",
     "htmlPreviewNote": "Showing a visual HTML preview because the body looks like HTML. Switch Format to HTML before sending."
+  },
+  "generateBranded": {
+    "title": "Generate branded email",
+    "description": "Describe the campaign. AI builds HTML with your colors, logo, and CTA buttons — then use Preview to review it.",
+    "promptLabel": "What should the email say?",
+    "promptPlaceholder": "e.g. Create a branded launch email for our CRM with a clear CTA to book a demo. Keep {{first_name}}.",
+    "primaryColor": "Primary color",
+    "secondaryColor": "Secondary color",
+    "companyName": "Company name",
+    "companyPlaceholder": "Your company",
+    "logoUrl": "Logo URL (optional)",
+    "attachments": "Brand images (optional)",
+    "attachmentsHint": "PNG, JPG, or WebP — up to 4 images, 1.5 MB each.",
+    "addImages": "Add images",
+    "removeImage": "Remove image",
+    "cancel": "Cancel",
+    "generate": "Generate HTML",
+    "successTitle": "Email generated",
+    "successBody": "HTML applied. Open Preview to see the branded layout.",
+    "failedTitle": "Generation failed",
+    "failedBody": "Could not generate the email. Check GEMINI_API_KEY or try again.",
+    "invalidImage": "Unsupported image",
+    "invalidImageHint": "Use PNG, JPG, or WebP.",
+    "imageTooLarge": "Image too large",
+    "imageTooLargeHint": "Each image must be under 1.5 MB."
   }
 }

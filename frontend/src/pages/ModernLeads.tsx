@@ -69,6 +69,20 @@ const LEADS_GROUP_KEY = 'leadlab.leads.groupBy';
 type LeadGroupBy = 'none' | 'personality' | 'source' | 'sector' | 'stage';
 type LeadSortBy = 'created_at' | 'updated_at' | 'first_name' | 'company' | 'job_title' | 'source' | 'sector';
 
+/** Seed client id from URL / session so leads fetch can start without waiting on clients list. */
+function readInitialClientId(): number | null {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = Number(params.get('client_id'));
+    if (Number.isFinite(fromUrl) && fromUrl > 0) return fromUrl;
+    const fromStore = Number(sessionStorage.getItem(SELECTED_CLIENT_KEY));
+    if (Number.isFinite(fromStore) && fromStore > 0) return fromStore;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 function getLeadPersonality(lead: Lead): string {
   const psycho = lead.psychometrics;
   if (psycho && typeof psycho === 'object') {
@@ -309,7 +323,7 @@ export function ModernLeads() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(() => readInitialClientId());
   const [isManageClientsOpen, setIsManageClientsOpen] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   const [renamingId, setRenamingId] = useState<number | null>(null);
@@ -516,10 +530,29 @@ export function ModernLeads() {
 
   const deleteLeadMutation = useMutation({
     mutationFn: (id: number) => leadsAPI.delete(id, true),
-    onSuccess: () => {
+    onSuccess: (_data, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setSelectedLeads((prev) => prev.filter((id) => id !== deletedId));
       toast({ title: t('deleted') });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('page.deleteFailed'),
+        description: error?.response?.data?.detail || error?.message || t('common:failed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => leadsAPI.bulkDelete(ids),
+    onSuccess: (res) => {
+      const n = res?.data?.deleted ?? selectedLeads.length;
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setSelectedLeads([]);
+      toast({ title: t('page.bulkDeleted', { count: n }) });
     },
     onError: (error: any) => {
       toast({
@@ -770,44 +803,46 @@ export function ModernLeads() {
   const canPrev = page > 0;
   const canNext = hasMore || (totalLeads > 0 && page < pagesFromTotal - 1);
 
-  // Initial load only — avoid replacing the whole page (and search input) on every refetch
-  if (isLoadingLeads && leadsPage === undefined) {
-    return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8 flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
-          <p className="text-neutral-600 dark:text-neutral-400">{t('page.loading')}</p>
-        </div>
-      </div>
-    );
-  }
+  const showLeadsSkeleton = isLoadingLeads && leadsPage === undefined;
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-          <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
+          <div className="min-w-0">
             <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">
               {t('title')}
             </h1>
-            <p className="text-neutral-600 dark:text-neutral-400">
-              {t('page.manageSubtitle')} •{' '}
-              {debouncedSearch || activeFilterCount > 0
-                ? t('page.matchingCount', { count: totalLeads })
-                : t('page.totalLeadsCount', { count: totalLeads })}
-              {totalLeads > 0 && (
-                <>
-                  {' '}
-                  · {t('page.rowsRange', { start: pageStart, end: pageEnd })}
-                  {isFetchingLeads && (
-                    <span className="ml-2 inline-flex items-center gap-1 text-primary-600">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    </span>
-                  )}
-                </>
-              )}
-            </p>
+            <div className="flex flex-col gap-0.5 text-neutral-600 dark:text-neutral-400 sm:block">
+              <span className="block sm:inline">{t('page.manageSubtitle')}</span>
+              <span className="hidden sm:inline"> · </span>
+              <span className="block sm:inline">
+                {showLeadsSkeleton ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-600" />
+                    {t('page.loading')}
+                  </span>
+                ) : (
+                  <>
+                    {debouncedSearch || activeFilterCount > 0
+                      ? t('page.matchingCount', { count: totalLeads })
+                      : t('page.totalLeadsCount', { count: totalLeads })}
+                    {totalLeads > 0 && (
+                      <>
+                        {' '}
+                        · {t('page.rowsRange', { start: pageStart, end: pageEnd })}
+                        {isFetchingLeads && (
+                          <span className="ml-2 inline-flex items-center gap-1 text-primary-600">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </span>
+            </div>
           </div>
           <button
             onClick={() => {
@@ -817,7 +852,8 @@ export function ModernLeads() {
             className="inline-flex min-h-[44px] shrink-0 items-center space-x-2 whitespace-nowrap bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
           >
             <Plus className="w-5 h-5" />
-            <span>{t('addLead')}</span>
+            <span className="hidden sm:inline">{t('addLead')}</span>
+            <span className="sm:hidden">{t('addLeadShort')}</span>
           </button>
         </div>
 
@@ -860,10 +896,9 @@ export function ModernLeads() {
           </button>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex flex-col gap-3 mt-4 lg:flex-row lg:items-center lg:justify-between">
-          {/* Search & Filter */}
-          <div className="flex items-center space-x-3 flex-1 max-w-2xl">
+        {/* Toolbar: search row, then wrap row for sort/group/actions */}
+        <div className="mt-4 flex flex-col gap-3">
+          <div className="flex w-full max-w-3xl items-center gap-2 sm:gap-3">
             <LeadsSearchField
               initialValue={debouncedSearch}
               isFetching={isFetchingLeads}
@@ -877,7 +912,7 @@ export function ModernLeads() {
                 setDraftFilterSector(filterSector);
                 setIsFiltersOpen(true);
               }}
-              className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+              className="flex shrink-0 items-center space-x-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
             >
               <Filter className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
               <span className="text-neutral-700 dark:text-neutral-300">
@@ -887,18 +922,17 @@ export function ModernLeads() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800">
-              <ArrowUpDown className="h-4 w-4 text-neutral-500" />
-              <span className="text-neutral-500 dark:text-neutral-400">{t('page.sort')}</span>
+            <label className="flex max-w-full items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800">
+              <ArrowUpDown className="h-4 w-4 shrink-0 text-neutral-500" />
+              <span className="hidden text-neutral-500 dark:text-neutral-400 md:inline">{t('page.sort')}</span>
               <select
                 value={sortBy}
                 onChange={(e) => {
                   const next = e.target.value as LeadSortBy;
                   setSortBy(next);
-                  // Text fields default Asc; date fields default Desc (Newest first)
                   setSortDesc(next === 'created_at' || next === 'updated_at');
                 }}
-                className="bg-transparent text-neutral-800 outline-none dark:text-neutral-100"
+                className="max-w-[9.5rem] truncate bg-transparent text-neutral-800 outline-none dark:text-neutral-100 sm:max-w-[12rem]"
               >
                 <option value="created_at">{t('page.sortOptions.newest')}</option>
                 <option value="updated_at">{t('page.sortOptions.updated')}</option>
@@ -917,16 +951,16 @@ export function ModernLeads() {
                 {sortDesc ? t('page.descShort') : t('page.ascShort')}
               </button>
             </label>
-            <label className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800">
-              <Layers className="h-4 w-4 text-neutral-500" />
-              <span className="text-neutral-500 dark:text-neutral-400">{t('page.group')}</span>
+            <label className="flex max-w-full items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800">
+              <Layers className="h-4 w-4 shrink-0 text-neutral-500" />
+              <span className="hidden text-neutral-500 dark:text-neutral-400 md:inline">{t('page.group')}</span>
               <select
                 value={groupBy}
                 onChange={(e) => {
                   setGroupBy(e.target.value as LeadGroupBy);
                   setCollapsedGroups({});
                 }}
-                className="bg-transparent text-neutral-800 outline-none dark:text-neutral-100"
+                className="max-w-[9.5rem] truncate bg-transparent text-neutral-800 outline-none dark:text-neutral-100 sm:max-w-[12rem]"
               >
                 <option value="none">{t('page.groupOptions.none')}</option>
                 <option value="personality">{t('page.groupOptions.personality')}</option>
@@ -935,26 +969,47 @@ export function ModernLeads() {
                 <option value="stage">{t('page.groupOptions.stage')}</option>
               </select>
             </label>
-          </div>
 
-          <div className="flex items-center space-x-3">
             {selectedLeads.length > 0 && (
-              <button
-                type="button"
-                onClick={() => openMoveDialog('selected')}
-                className="flex items-center space-x-2 px-4 py-2.5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors"
-              >
-                <FolderInput className="w-4 h-4 text-primary-700 dark:text-primary-300" />
-                <span className="text-primary-800 dark:text-primary-200">
-                  {t('page.moveSelected', { count: selectedLeads.length })}
-                </span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => openMoveDialog('selected')}
+                  className="flex min-h-[44px] items-center gap-2 px-3 sm:px-4 py-2.5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors"
+                >
+                  <FolderInput className="w-4 h-4 shrink-0 text-primary-700 dark:text-primary-300" />
+                  <span className="text-primary-800 dark:text-primary-200">
+                    {t('page.moveSelected', { count: selectedLeads.length })}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  disabled={bulkDeleteMutation.isPending}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        t('page.bulkDeleteConfirm', { count: selectedLeads.length }),
+                      )
+                    ) {
+                      bulkDeleteMutation.mutate(selectedLeads);
+                    }
+                  }}
+                  className="flex min-h-[44px] items-center gap-2 px-3 sm:px-4 py-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors disabled:opacity-60"
+                >
+                  <Trash2 className="w-4 h-4 shrink-0 text-red-700 dark:text-red-300" />
+                  <span className="text-red-800 dark:text-red-200">
+                    {bulkDeleteMutation.isPending
+                      ? t('page.deleting')
+                      : t('page.deleteSelected', { count: selectedLeads.length })}
+                  </span>
+                </button>
+              </>
             )}
             {selectedClientId != null && totalLeads > 0 && (
               <button
                 type="button"
                 onClick={() => openMoveDialog('all_in_client')}
-                className="flex min-h-[44px] items-center space-x-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                className="flex min-h-[44px] items-center gap-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
                 title={t('page.moveAllTitle')}
               >
                 <FolderInput className="w-4 h-4 shrink-0 text-neutral-600 dark:text-neutral-400" />
@@ -962,24 +1017,26 @@ export function ModernLeads() {
                 <span className="sm:hidden text-neutral-700 dark:text-neutral-300">{t('page.moveShort')}</span>
               </button>
             )}
-            <button 
+            <button
+              type="button"
               onClick={() => {
                 setImportClientId(selectedClientId);
                 setIsUploadDialogOpen(true);
               }}
-              className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+              className="flex min-h-[44px] items-center gap-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+              title={t('common:import')}
             >
-              <Upload className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-              <span className="text-neutral-700 dark:text-neutral-300">{t('common:import')}</span>
+              <Upload className="w-4 h-4 shrink-0 text-neutral-600 dark:text-neutral-400" />
+              <span className="hidden sm:inline text-neutral-700 dark:text-neutral-300">{t('common:import')}</span>
             </button>
-            
             <button
               type="button"
               onClick={() => void handleExport()}
-              className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+              className="flex min-h-[44px] items-center gap-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+              title={t('common:export')}
             >
-              <Download className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-              <span className="text-neutral-700 dark:text-neutral-300">{t('common:export')}</span>
+              <Download className="w-4 h-4 shrink-0 text-neutral-600 dark:text-neutral-400" />
+              <span className="hidden sm:inline text-neutral-700 dark:text-neutral-300">{t('common:export')}</span>
             </button>
           </div>
         </div>
@@ -1189,6 +1246,7 @@ export function ModernLeads() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="cursor-pointer text-red-600 focus:text-red-600"
+                                disabled={deleteLeadMutation.isPending}
                                 onClick={() => {
                                   const name = lead.full_name || `${lead.first_name} ${lead.last_name}`.trim() || t('page.thisLead');
                                   if (window.confirm(t('page.deleteConfirm', { name }))) {
@@ -1197,7 +1255,9 @@ export function ModernLeads() {
                                 }}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                {t('common:delete')}
+                                {deleteLeadMutation.isPending && deleteLeadMutation.variables === lead.id
+                                  ? t('page.deleting')
+                                  : t('common:delete')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1210,7 +1270,14 @@ export function ModernLeads() {
             </div>
           );
         })}
-        {!isLoadingLeads && !isFetchingLeads && leads.length === 0 && (
+        {showLeadsSkeleton && (
+          <div className="space-y-2 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-10 animate-pulse rounded-md bg-neutral-100 dark:bg-neutral-700" />
+            ))}
+          </div>
+        )}
+        {!showLeadsSkeleton && !isLoadingLeads && !isFetchingLeads && leads.length === 0 && (
           <div className="rounded-xl border border-neutral-200 bg-white py-12 text-center text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
             {t('page.emptyClient')}
           </div>

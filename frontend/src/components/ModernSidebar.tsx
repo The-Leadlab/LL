@@ -239,8 +239,18 @@ export function ModernSidebar({
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
+  const tourAttr = (labelKey: string): string | undefined => {
+    if (labelKey === 'leads') return 'leads'
+    if (labelKey === 'deals') return 'deals'
+    if (labelKey === 'tasks') return 'tasks'
+    if (labelKey === 'email') return 'email'
+    if (labelKey === 'settings') return 'settings'
+    return undefined
+  }
+
   return (
     <div
+      data-tour="sidebar"
       className={`${
         collapsedEffective ? 'w-20' : 'w-64'
       } h-full bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 flex flex-col transition-all duration-300 ease-in-out`}
@@ -293,8 +303,10 @@ export function ModernSidebar({
           const hasChildren = item.children && item.children.length > 0;
           const label = t(item.labelKey);
 
+          const dataTour = tourAttr(item.labelKey)
+
           return (
-            <div key={item.labelKey}>
+            <div key={item.labelKey} {...(dataTour ? { 'data-tour': dataTour } : {})}>
               {hasChildren ? (
                 <>
                   <button
@@ -370,12 +382,14 @@ export function ModernSidebar({
         {bottomNavigation.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
+          const dataTour = tourAttr(item.labelKey);
 
           return (
             <Link
               key={item.labelKey}
               to={item.path}
               onClick={() => onNavigate?.()}
+              {...(dataTour ? { 'data-tour': dataTour } : {})}
               className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
                 active
                   ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
@@ -392,7 +406,7 @@ export function ModernSidebar({
       {/* Language + User Profile */}
       {!collapsedEffective && (
         <div className="p-4 border-t border-neutral-200 dark:border-neutral-800">
-          <div className="px-3 pb-3">
+          <div className="px-3 pb-3" data-tour="language">
             <LanguageSwitcher />
           </div>
           <div className="flex items-center space-x-3 p-3 rounded-lg">

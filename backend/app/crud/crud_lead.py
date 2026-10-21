@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any, Union
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import asc, desc, func, exists, and_, or_, update, text
 from fastapi.encoders import jsonable_encoder
 from datetime import datetime
@@ -15,6 +15,14 @@ from app.models.lead_stage import LeadStage
 from app.models.user import User
 from app.models.associations import lead_tags
 from app.schemas.lead import LeadCreate, LeadUpdate
+
+_LEAD_LIST_LOAD = (
+    selectinload(Lead.stage),
+    selectinload(Lead.tags),
+    selectinload(Lead.client),
+    selectinload(Lead.user),
+    selectinload(Lead.creator),
+)
 
 logger = logging.getLogger(__name__)
 
@@ -103,12 +111,17 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
             # Main query using the lead IDs from subquery
             query = (
                 db.query(Lead)
+                .options(*_LEAD_LIST_LOAD)
                 .filter(Lead.id.in_(lead_ids_with_tag))
                 .filter(Lead.is_deleted == False)
             )
         else:
             # If no tag filter, start with normal query
-            query = db.query(Lead).filter(Lead.is_deleted == False)
+            query = (
+                db.query(Lead)
+                .options(*_LEAD_LIST_LOAD)
+                .filter(Lead.is_deleted == False)
+            )
         
         # Add organization filter whenever an organization is provided.
         # Org-admin is not a global CRM bypass — each workspace stays isolated.
@@ -400,17 +413,43 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
         return super().update(db=db, db_obj=db_obj, obj_in=update_data)
 
     def remove(self, db: Session, *, id: int) -> Lead:
+        """Soft-delete a lead (sets is_deleted). Avoids FK IntegrityError on related rows."""
         obj = db.query(self.model).get(id)
         if not obj:
             raise HTTPException(status_code=404, detail="Lead not found")
-            
-        # First, delete related deals
-        db.query(Deal).filter(Deal.lead_id == id).delete()
-        
-        # Then delete the lead
-        db.delete(obj)
+        if obj.is_deleted:
+            return obj
+        obj.is_deleted = True
+        obj.updated_at = datetime.utcnow()
+        db.add(obj)
         db.commit()
+        db.refresh(obj)
         return obj
+
+    def soft_delete_many(
+        self,
+        db: Session,
+        *,
+        lead_ids: List[int],
+        organization_id: int,
+    ) -> int:
+        """Soft-delete many leads in one org. Returns count updated."""
+        if not lead_ids:
+            return 0
+        result = (
+            db.query(self.model)
+            .filter(
+                self.model.id.in_(lead_ids),
+                self.model.organization_id == organization_id,
+                self.model.is_deleted.is_(False),
+            )
+            .update(
+                {"is_deleted": True, "updated_at": datetime.utcnow()},
+                synchronize_session=False,
+            )
+        )
+        db.commit()
+        return int(result or 0)
 
     def add_tag(self, db: Session, *, lead: Lead, tag: Tag) -> Lead:
         """Add a tag to a lead"""

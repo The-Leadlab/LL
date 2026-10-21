@@ -1,0 +1,38 @@
+{
+  "welcomeTitle": "Welcome to LeadLab",
+  "welcomeBody": "Take a quick tour of the main areas, or skip and explore on your own. You can change language anytime.",
+  "chooseLanguage": "Choose your language",
+  "start": "Start tour",
+  "skip": "Skip",
+  "next": "Next",
+  "previous": "Previous",
+  "done": "Done",
+  "retake": "Take the tour",
+  "retakeHint": "Replay the guided overview of LeadLab.",
+  "steps": {
+    "sidebar": {
+      "title": "Your workspace",
+      "description": "Use the sidebar to move between Leads, Deals, Tasks, Email, and more."
+    },
+    "leads": {
+      "title": "Leads",
+      "description": "Capture and organize prospects, filter by client, and import or export lists."
+    },
+    "deals": {
+      "title": "Deals",
+      "description": "Track opportunities through your pipeline from first contact to close."
+    },
+    "tasks": {
+      "title": "Tasks",
+      "description": "Stay on top of follow-ups and to-dos tied to your sales work."
+    },
+    "email": {
+      "title": "Email",
+      "description": "Manage inbox and outreach from one place."
+    },
+    "languageSettings": {
+      "title": "Language & settings",
+      "description": "Switch between English and French here, and open Settings for your profile and preferences."
+    }
+  }
+}

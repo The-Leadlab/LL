@@ -3,11 +3,42 @@ import httpx
 import json
 import logging
 import os
+import re
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from .enhanced_personality_service import enhanced_personality_service
 
 logger = logging.getLogger(__name__)
+
+_ALLOWED_IMAGE_MIME = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
+_DEFAULT_PRIMARY = "#2563eb"
+_DEFAULT_SECONDARY = "#4f46e5"
+# Multimodal HTML generation (rewrite stays on gemini-pro for compatibility)
+_GEMINI_HTML_MODEL = os.getenv("GEMINI_HTML_MODEL", "gemini-2.0-flash")
+
+
+def _sanitize_email_html(html: str) -> str:
+    """Strip scripts, iframes, and inline event handlers from generated HTML."""
+    cleaned = re.sub(r"(?is)<script[^>]*>.*?</script>", "", html)
+    cleaned = re.sub(r"(?is)<iframe[^>]*>.*?</iframe>", "", cleaned)
+    cleaned = re.sub(r"(?is)<object[^>]*>.*?</object>", "", cleaned)
+    cleaned = re.sub(r"(?is)<embed[^>]*/?>", "", cleaned)
+    cleaned = re.sub(r"""(?i)\son\w+\s*=\s*(['"]).*?\1""", "", cleaned)
+    cleaned = re.sub(r"""(?i)\son\w+\s*=\s*[^\s>]+""", "", cleaned)
+    cleaned = re.sub(r"(?i)javascript:", "", cleaned)
+    return cleaned.strip()
+
+
+def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
+    start = text.find("{")
+    end = text.rfind("}") + 1
+    if start < 0 or end <= start:
+        return None
+    try:
+        return json.loads(text[start:end])
+    except json.JSONDecodeError:
+        return None
+
 
 class FreeAIService:
     """
@@ -22,7 +53,7 @@ class FreeAIService:
     def __init__(self):
         self.gemini_api_key = os.getenv("GEMINI_API_KEY")
         self.hf_api_key = os.getenv("HUGGINGFACE_API_KEY")
-        self.timeout = 30.0
+        self.timeout = 60.0
         
     async def analyze_lead_personality(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze lead's personality"""
@@ -301,6 +332,133 @@ class FreeAIService:
             "body": (f"({instruction.strip()})\n\n{body}" if instruction else body),
             "provider": "passthrough",
         }
+
+    async def generate_branded_html_email(
+        self,
+        *,
+        prompt: str,
+        subject_hint: Optional[str] = None,
+        brand: Optional[Dict[str, Any]] = None,
+        images: Optional[List[Dict[str, str]]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Generate a campaign-ready branded HTML email from a short prompt.
+        Uses Gemini multimodal when images are provided. Requires GEMINI_API_KEY.
+        """
+        brand = brand or {}
+        company_name = (brand.get("company_name") or "Your Company").strip() or "Your Company"
+        logo_url = (brand.get("logo_url") or "").strip() or None
+        primary = (brand.get("primary_color") or _DEFAULT_PRIMARY).strip() or _DEFAULT_PRIMARY
+        secondary = (brand.get("secondary_color") or _DEFAULT_SECONDARY).strip() or _DEFAULT_SECONDARY
+
+        if not self.gemini_api_key:
+            return {
+                "ok": False,
+                "error": "GEMINI_API_KEY is not configured",
+                "provider": None,
+            }
+
+        system_prompt = (
+            "You are an expert email designer for B2B cold outreach campaigns.\n"
+            "Create a single email-client-safe HTML fragment (tables + inline CSS only).\n"
+            "Rules:\n"
+            "- Return ONLY valid JSON: {\"subject\": \"...\", \"html\": \"...\"}\n"
+            "- No markdown fences, no commentary.\n"
+            "- html must NOT include <html>, <head>, <body>, <script>, or <iframe>.\n"
+            "- Use nested <table> layout, max width ~600px, inline styles only.\n"
+            "- Include a header with logo if logo_url is provided (use that absolute URL in <img>).\n"
+            f"- Brand: company={company_name!r}, primary={primary}, secondary={secondary}.\n"
+            "- Include at least one CTA button styled with the primary color.\n"
+            "- Preserve merge tokens like {{first_name}}, {{company}} if the user prompt mentions personalization.\n"
+            "- Professional, conversion-focused copy matching the user prompt.\n"
+        )
+        user_parts: List[str] = [
+            f"User brief:\n{prompt.strip()}\n",
+            f"Subject hint (optional): {subject_hint or '(none)'}\n",
+            f"Logo URL: {logo_url or '(none — use text wordmark for company name)'}\n",
+        ]
+        if images:
+            user_parts.append(
+                f"The user attached {len(images)} brand/product image(s); match their colors and style.\n"
+            )
+
+        text_prompt = system_prompt + "\n" + "".join(user_parts)
+
+        parts: List[Dict[str, Any]] = [{"text": text_prompt}]
+        for img in (images or [])[:4]:
+            mime = (img.get("mime_type") or "").lower().strip()
+            data_b64 = (img.get("data_base64") or "").strip()
+            if mime == "image/jpg":
+                mime = "image/jpeg"
+            if mime not in _ALLOWED_IMAGE_MIME or not data_b64:
+                continue
+            # Strip data-URL prefix if present
+            if "," in data_b64 and data_b64.startswith("data:"):
+                data_b64 = data_b64.split(",", 1)[1]
+            parts.append({"inline_data": {"mime_type": mime, "data": data_b64}})
+
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{_GEMINI_HTML_MODEL}:generateContent"
+        )
+        headers = {"Content-Type": "application/json", "x-goog-api-key": self.gemini_api_key}
+        payload = {
+            "contents": [{"parts": parts}],
+            "generationConfig": {"temperature": 0.55, "maxOutputTokens": 8192},
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(url, headers=headers, json=payload)
+            if response.status_code != 200:
+                logger.warning(
+                    "Gemini generate-html failed: %s %s",
+                    response.status_code,
+                    response.text[:400],
+                )
+                return {
+                    "ok": False,
+                    "error": f"Gemini error ({response.status_code})",
+                    "provider": "gemini",
+                }
+
+            data = response.json()
+            text = (
+                data.get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "")
+            )
+            parsed = _extract_json_object(text or "")
+            if not parsed:
+                return {
+                    "ok": False,
+                    "error": "AI returned invalid JSON",
+                    "provider": "gemini",
+                }
+
+            subject = str(parsed.get("subject") or subject_hint or "Your update").strip()
+            html = _sanitize_email_html(str(parsed.get("html") or ""))
+            if not html or "<" not in html:
+                return {
+                    "ok": False,
+                    "error": "AI returned empty HTML",
+                    "provider": "gemini",
+                }
+
+            return {
+                "ok": True,
+                "subject": subject,
+                "html": html,
+                "provider": "gemini",
+            }
+        except Exception as e:
+            logger.warning("AI generate branded HTML failed: %s", e)
+            return {
+                "ok": False,
+                "error": str(e) or "Generation failed",
+                "provider": "gemini",
+            }
 
 
 # Global instance

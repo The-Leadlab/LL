@@ -179,6 +179,31 @@ export interface RewriteResult {
   body: string;
 }
 
+export interface GenerateHtmlBrand {
+  company_name?: string;
+  logo_url?: string;
+  primary_color?: string;
+  secondary_color?: string;
+}
+
+export interface GenerateHtmlImage {
+  mime_type: string;
+  data_base64: string;
+}
+
+export interface GenerateHtmlPayload {
+  prompt: string;
+  subject_hint?: string;
+  brand?: GenerateHtmlBrand;
+  images?: GenerateHtmlImage[];
+}
+
+export interface GenerateHtmlResult {
+  subject: string;
+  html: string;
+  provider?: string;
+}
+
 export interface OutreachJobItem {
   id: number;
   batch_id: string;
@@ -375,6 +400,13 @@ export const outreachAPI = {
   // AI rewrite
   rewrite: async (data: RewritePayload): Promise<RewriteResult> => {
     const response = await api.post('/outreach/ai/rewrite', data);
+    return response.data;
+  },
+
+  generateHtml: async (data: GenerateHtmlPayload): Promise<GenerateHtmlResult> => {
+    const response = await api.post('/outreach/ai/generate-html', data, {
+      timeout: 90_000,
+    });
     return response.data;
   },
 
