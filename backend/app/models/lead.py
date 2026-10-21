@@ -122,8 +122,9 @@ class Lead(Base):
 
     @property
     def full_name(self) -> str:
-        """Get full name of the lead."""
-        return f"{self.first_name} {self.last_name}".strip()
+        """Get full name of the lead (never the literal string 'None')."""
+        parts = [p for p in (self.first_name, self.last_name) if p]
+        return " ".join(parts)
 
     @property
     def client_name(self) -> Optional[str]:

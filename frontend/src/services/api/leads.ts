@@ -299,6 +299,25 @@ export const leadsAPI = {
     return response.data;
   },
 
+  previewImport: async (file: File): Promise<{
+    headers: string[];
+    all_headers?: string[];
+    normalized_headers: string[];
+    suggested_mapping: Record<string, string>;
+    sample_rows: Array<{ raw: Record<string, unknown>; mapped: Record<string, unknown> }>;
+    total_rows: number;
+    identity_rows: number;
+    skippable_empty_rows: number;
+    mappable_fields: string[];
+  }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/leads/import/preview', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
   uploadCSV: async (formData: FormData): Promise<any> => {
     return api.post('/leads/import/csv', formData, {
       headers: {

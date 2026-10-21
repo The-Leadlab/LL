@@ -37,6 +37,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import eventsAPI, { Event, EventCreateInput } from '@/services/api/events';
 import emailAPI from '../../services/emailAPI';
+import { calendarIntegrationsAPI, type CalendarIntegration } from '@/services/calendarIntegrations';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth';
@@ -291,7 +292,16 @@ export const CalendarPage = () => {
     queryFn: emailAPI.getAccounts,
   });
 
+  const { data: googleCalendarIntegrations = [], refetch: refetchGoogleCalendars } = useQuery({
+    queryKey: ['calendar-integrations'],
+    queryFn: calendarIntegrationsAPI.list,
+  });
+
   const emailCalendarAccounts = emailAccounts.filter(account => account.calendar_sync_enabled);
+  const googleCalendars = googleCalendarIntegrations.filter(
+    (i: CalendarIntegration) => i.provider?.toLowerCase() === 'google' && i.is_active
+  );
+  const hasAnyCalendarSync = emailCalendarAccounts.length > 0 || googleCalendars.length > 0;
 
   const syncCalendarMutation = useMutation({
     mutationFn: ({ accountId }: { accountId: number }) => 
@@ -305,6 +315,44 @@ export const CalendarPage = () => {
       toast.error(t('page.syncFailed'));
     },
   });
+
+  const syncGoogleCalendarMutation = useMutation({
+    mutationFn: (integrationId: number) => calendarIntegrationsAPI.sync(integrationId),
+    onSuccess: () => {
+      refetchGoogleCalendars();
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      toast.success(t('page.syncDone'));
+    },
+    onError: () => {
+      toast.error(t('page.syncFailed'));
+    },
+  });
+
+  const syncAllCalendars = () => {
+    emailCalendarAccounts.forEach((account) => {
+      syncCalendarMutation.mutate({ accountId: account.id });
+    });
+    googleCalendars.forEach((integration) => {
+      syncGoogleCalendarMutation.mutate(integration.id);
+    });
+  };
+
+  const isSyncing =
+    syncCalendarMutation.isPending || syncGoogleCalendarMutation.isPending;
+
+  const autoSyncedIdsRef = React.useRef<Set<number>>(new Set());
+  // Auto-sync Google Calendar once when landing on the page if never synced
+  useEffect(() => {
+    if (!user || googleCalendars.length === 0) return;
+    googleCalendars.forEach((integration) => {
+      if (integration.last_synced_at) return;
+      if (autoSyncedIdsRef.current.has(integration.id)) return;
+      autoSyncedIdsRef.current.add(integration.id);
+      syncGoogleCalendarMutation.mutate(integration.id);
+    });
+    // Intentionally omit mutation from deps — ref guards one-shot per integration id
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, googleCalendars]);
 
   // Generate calendar days for month view
   const calendarDays = [];
@@ -615,31 +663,29 @@ export const CalendarPage = () => {
         </div>
       </div>
       
-      {/* Email Calendar Sync Section */}
+      {/* Calendar Sync Section (email + Google Calendar integrations) */}
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Mail className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             <span className="text-sm font-medium">{t('page.emailSync')}</span>
-            {emailCalendarAccounts.length > 0 && (
+            {hasAnyCalendarSync && (
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                ({t('page.accountsConnected', { count: emailCalendarAccounts.length })})
+                ({t('page.accountsConnected', {
+                  count: emailCalendarAccounts.length + googleCalendars.length,
+                })})
               </span>
             )}
           </div>
           <div className="flex items-center space-x-2">
-              {emailCalendarAccounts.length > 0 && (
+              {hasAnyCalendarSync && (
                 <Button
-                  onClick={() => {
-                    emailCalendarAccounts.forEach(account => {
-                      syncCalendarMutation.mutate({ accountId: account.id });
-                    });
-                  }}
+                  onClick={syncAllCalendars}
                   variant="outline"
                   size="sm"
-                  disabled={syncCalendarMutation.isPending}
+                  disabled={isSyncing}
                 >
-                  {syncCalendarMutation.isPending ? (
+                  {isSyncing ? (
                     <>
                       <Loader2 className="h-3 w-3 animate-spin mr-1" />
                       {t('page.syncing')}
@@ -662,8 +708,35 @@ export const CalendarPage = () => {
             </div>
         </div>
         
-        {emailCalendarAccounts.length > 0 && (
+        {(emailCalendarAccounts.length > 0 || googleCalendars.length > 0) && (
           <div className="mt-2 flex flex-wrap gap-2">
+            {googleCalendars.map((integration) => (
+              <div
+                key={`gcal-${integration.id}`}
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
+              >
+                Google — {integration.provider_account_email || t('page.googleCalendar')}
+                {integration.last_synced_at && (
+                  <span className="ml-1 text-emerald-700 dark:text-emerald-300">
+                    ({t('page.synced', { date: new Date(integration.last_synced_at).toLocaleDateString(i18n.language) })})
+                  </span>
+                )}
+                {integration.last_error && (
+                  <span className="ml-1 text-red-600" title={integration.last_error}>!</span>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    syncGoogleCalendarMutation.mutate(integration.id);
+                  }}
+                  className="ml-1 text-emerald-700 hover:text-emerald-900 transition-colors"
+                  title={t('page.syncAccount')}
+                  disabled={syncGoogleCalendarMutation.isPending}
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
             {emailCalendarAccounts.map((account) => (
               <div
                 key={account.id}

@@ -3,6 +3,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
@@ -20,6 +21,7 @@ from app.schemas.calendar_integration import (
     OAuthInitResponse,
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter(redirect_slashes=False)
 
 
@@ -197,6 +199,7 @@ def calendar_google_oauth_callback(
         integration.token_expires_at = expires_at
         integration.scopes = scopes
         integration.sync_enabled = True
+        integration.is_active = True
         integration.last_error = None
         integration.updated_at = datetime.utcnow()
     else:
@@ -216,7 +219,28 @@ def calendar_google_oauth_callback(
         )
         db.add(integration)
     db.commit()
-    return RedirectResponse(url=f"{redirect_base}?tab=integrations&calendar_oauth=success")
+    db.refresh(integration)
+
+    # Pull Google events into Lead Lab immediately after connect
+    sync_ok = True
+    sync_reason = ""
+    try:
+        GoogleCalendarSyncService(db).sync_integration(integration)
+    except Exception as sync_err:
+        sync_ok = False
+        sync_reason = "sync_failed"
+        logger.exception("Auto sync after Google Calendar OAuth failed: %s", sync_err)
+        integration.last_error = str(sync_err)[:500]
+        integration.updated_at = datetime.utcnow()
+        db.add(integration)
+        db.commit()
+
+    qs = "tab=integrations&calendar_oauth=success"
+    if not sync_ok:
+        qs += f"&calendar_sync=error&reason={sync_reason}"
+    else:
+        qs += "&calendar_sync=success"
+    return RedirectResponse(url=f"{redirect_base}?{qs}")
 
 
 @router.post("/{integration_id}/disconnect")

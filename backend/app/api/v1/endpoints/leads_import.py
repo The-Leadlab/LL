@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Any, Dict, Optional
+import json
 import logging
 from datetime import datetime
 import traceback
@@ -10,7 +11,14 @@ from app import crud, models, schemas
 from app.schemas.response import GenericResponse
 from app.api import deps
 from app.schemas.lead_stage import LeadStageCreate
-from app.core.config import settings
+from app.services.lead_import_columns import (
+    apply_column_mapping_to_row,
+    build_alias_field_map,
+    clean_cell,
+    prepare_import_dataframe,
+    preview_import_file,
+    row_has_identity,
+)
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -54,14 +62,7 @@ def truncate_lead_strings(lead_data: dict, row_index: int) -> int:
 
 def clean_value(value):
     """Clean value from NaN, empty strings, and whitespace."""
-    import pandas as pd
-
-    if pd.isna(value) or value == "" or (isinstance(value, str) and value.strip() == ""):
-        return None
-    if isinstance(value, str):
-        cleaned = value.strip()
-        return cleaned if cleaned else None
-    return value
+    return clean_cell(value)
 
 
 def decode_csv_bytes(content: bytes) -> str:
@@ -77,6 +78,52 @@ def decode_csv_bytes(content: bytes) -> str:
     )
 
 
+def _parse_column_mapping(raw: Optional[str]) -> Optional[Dict[str, str]]:
+    if not raw or not str(raw).strip():
+        return None
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid column_mapping JSON: {e}")
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="column_mapping must be a JSON object")
+    out: Dict[str, str] = {}
+    for k, v in data.items():
+        if v is None or v == "" or v == "__skip__":
+            continue
+        out[str(k)] = str(v)
+    return out or None
+
+
+@router.post("/import/preview")
+async def preview_leads_import(
+    *,
+    current_user: models.User = Depends(deps.get_current_user),
+    file: UploadFile = File(...),
+):
+    """
+    Preview a CSV/XLSX: headers, suggested column mapping, and sample rows.
+    Use before /import/csv so the user can confirm which columns map to which fields.
+    """
+    _ = current_user
+    filename_lower = (file.filename or "").lower()
+    allowed_ext = (".csv", ".xlsx", ".xls")
+    if not any(filename_lower.endswith(ext) for ext in allowed_ext):
+        raise HTTPException(
+            status_code=400,
+            detail="Only CSV or Excel (.xlsx, .xls) files are allowed",
+        )
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="The uploaded file is empty")
+    try:
+        return preview_import_file(content, file.filename or "upload.csv")
+    except Exception as e:
+        logger.error("Import preview failed: %s", e)
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=400, detail=f"Could not preview file: {e}")
+
+
 @router.post("/import/csv", response_model=GenericResponse)
 async def import_leads_from_csv(
     *,
@@ -86,21 +133,15 @@ async def import_leads_from_csv(
     tag_id: int = Form(None),  # Optional tag ID to assign to leads
     new_tag_name: str = Form(None),  # Optional new tag name to create and assign
     client_id: Optional[int] = Form(None),  # Optional client; defaults to General when omitted
+    column_mapping: Optional[str] = Form(None),  # JSON: lead_field → source header
     file: UploadFile = File(...),
 ):
     """
-    Import leads from CSV file.
-    The leads will be assigned to the specified user.
-    Optionally, a tag can be assigned to all imported leads.
-
-    Client assignment:
-    - If form `client_id` is provided, ALL imported leads use that client
-      (CSV Client / client_name columns are ignored so a template "General"
-      column cannot override the UI selection).
-    - If form `client_id` is omitted, per-row CSV client/client_id is used,
-      falling back to the org General client.
+    Import leads from CSV/XLSX file.
+    Optional column_mapping JSON maps lead fields to file headers (from preview UI).
+    Empty rows (no name and no email) are skipped.
     """
-    import pandas as pd
+    mapping = _parse_column_mapping(column_mapping)
 
     # Non-admins can only assign to themselves
     if not current_user.is_admin and assigned_user_id != current_user.id:
@@ -247,18 +288,16 @@ async def import_leads_from_csv(
                 detail="The uploaded file is empty"
             )
 
-        if filename_lower.endswith(".csv"):
-            csv_text = decode_csv_bytes(content)
-            df = pd.read_csv(io.StringIO(csv_text))
-        else:
-            try:
-                df = pd.read_excel(io.BytesIO(content))
-            except Exception as excel_err:
-                logger.error("Excel read failed: %s", excel_err)
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Could not read Excel file: {excel_err}",
-                )
+        try:
+            df, original_headers, normalized_headers = prepare_import_dataframe(
+                content, file.filename or "upload.csv"
+            )
+        except Exception as parse_err:
+            logger.error("Import parse failed: %s", parse_err)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Could not read file: {parse_err}",
+            )
 
         if len(df) == 0:
             logger.error("Import file has no data rows")
@@ -267,94 +306,31 @@ async def import_leads_from_csv(
                 detail="The file contains no data rows"
             )
 
-        logger.info(f"Successfully read import file with {len(df)} rows")
-
-        from app.services.google_workspace import (
-            DEFAULT_SHEET_COLUMN_MAP,
-            normalize_header_name,
-            split_full_name,
+        logger.info(
+            "Successfully prepared import with %s rows, mapping=%s",
+            len(df),
+            bool(mapping),
         )
-
-        df.columns = [
-            normalize_header_name(str(col)) or f"_unnamed_{i}"
-            for i, col in enumerate(df.columns)
-        ]
 
         successful_imports = []
         failed_imports = []
+        skipped_empty = 0
         leads_to_create = []
+        alias_map = build_alias_field_map()
 
-        # Build alias → lead field from shared Sheets map + import-only fields
-        field_mappings: dict = {}
-        for alias, field in DEFAULT_SHEET_COLUMN_MAP.items():
-            field_mappings.setdefault(field, [])
-            if alias not in field_mappings[field]:
-                field_mappings[field].append(alias)
-
-        import_only = {
-            "first_name": ["given_name"],
-            "last_name": ["surname"],
-            "company": ["societe", "entreprise", "firma"],
-            "country": ["country", "pays", "nation"],
-            "website": ["website", "web", "url", "site_web"],
-            "sector": ["sector", "industry", "secteur", "industrie"],
-            "time_in_current_role": ["time_in_current_role", "time_in_role", "role_duration"],
-            "lab_comments": ["lab_comments", "lab_comment", "labcomments", "note", "notes", "comment", "comments"],
-            "client_comments": ["client_comments", "client_comment", "clientcomments"],
-            "source": ["source", "lead_source"],
-            "client": ["client", "client_name", "clientname"],
-            "client_id": ["client_id", "clientid"],
-            "full_name": ["full_name", "name", "fullname", "contact_name", "nom_complet"],
-        }
-        for field, aliases in import_only.items():
-            field_mappings.setdefault(field, [])
-            for a in aliases:
-                na = normalize_header_name(a)
-                if na and na not in field_mappings[field]:
-                    field_mappings[field].append(na)
-
-        # Prefer explicit first/last over full_name when both exist
         for index, row in df.iterrows():
             try:
-                lead_data = {}
-                for db_field, possible_names in field_mappings.items():
-                    matching_col = next((c for c in possible_names if c in df.columns), None)
-                    if matching_col:
-                        value = row[matching_col]
-                        if hasattr(value, "iloc"):
-                            value = value.iloc[0] if len(value) else None
-                        if db_field in ["mobile", "telephone"]:
-                            if isinstance(value, (int, float)) and not pd.isna(value):
-                                value = str(int(value))
-                            value = clean_value(value)
-                        elif db_field == "client_id":
-                            if isinstance(value, (int, float)) and not pd.isna(value):
-                                value = int(value)
-                            else:
-                                cleaned = clean_value(value)
-                                value = int(cleaned) if cleaned and str(cleaned).isdigit() else None
-                        elif db_field == "status":
-                            # Sheets status is not a LeadCreate field; skip
-                            continue
-                        else:
-                            value = clean_value(value)
-                        lead_data[db_field] = value
+                lead_data = apply_column_mapping_to_row(
+                    row,
+                    original_headers=original_headers,
+                    normalized_headers=normalized_headers,
+                    column_mapping=mapping,
+                    alias_map=alias_map,
+                )
 
-                # Split full_name when first/last missing
-                full = lead_data.pop("full_name", None)
-                if full and not (lead_data.get("first_name") or lead_data.get("last_name")):
-                    first, last = split_full_name(str(full))
-                    if first:
-                        lead_data["first_name"] = first
-                    if last:
-                        lead_data["last_name"] = last
-                elif full:
-                    if not lead_data.get("first_name"):
-                        first, last = split_full_name(str(full))
-                        if first:
-                            lead_data["first_name"] = first
-                        if last and not lead_data.get("last_name"):
-                            lead_data["last_name"] = last
+                if not row_has_identity(lead_data):
+                    skipped_empty += 1
+                    continue
 
                 if "email" not in lead_data:
                     lead_data["email"] = None
@@ -385,39 +361,47 @@ async def import_leads_from_csv(
                         if cobj and not cobj.is_archived:
                             resolved_client_id = cobj.id
 
+                wpi_raw = None
+                if "wpi" in row.index:
+                    wpi_raw = clean_value(row.get("wpi", ""))
+
                 lead_data.update({
                     "psychometrics": None,
-                    "wpi": float(clean_value(row.get("wpi", 0))) if clean_value(row.get("wpi", "")) else None,
+                    "wpi": float(wpi_raw) if wpi_raw is not None else None,
                     "stage_id": default_stage.id,
                     "client_id": resolved_client_id,
                     "user_id": assigned_user_id,
                     "organization_id": assigned_user.organization_id,
                     "created_by": current_user.id,
                     "created_at": datetime.utcnow(),
-                    "source": lead_data.get("source", "Partner")
+                    "source": lead_data.get("source") or "Partner",
                 })
 
                 if lead_data.get("email"):
                     existing_lead = crud.lead.get_by_email(db, email=lead_data["email"])
                     if existing_lead:
                         failed_imports.append({
-                            "row": index + 2,
+                            "row": int(index) + 2,
                             "error": f"Lead with email {lead_data['email']} already exists"
                         })
                         continue
 
-                truncated = truncate_lead_strings(lead_data, index + 2)
+                truncated = truncate_lead_strings(lead_data, int(index) + 2)
                 if truncated:
-                    logger.info("Row %s: truncated %s field(s) to fit column limits", index + 2, truncated)
+                    logger.info(
+                        "Row %s: truncated %s field(s) to fit column limits",
+                        int(index) + 2,
+                        truncated,
+                    )
 
                 lead_create = schemas.LeadCreate(**lead_data)
                 leads_to_create.append(lead_create)
-                successful_imports.append(index + 2)
+                successful_imports.append(int(index) + 2)
 
             except Exception as e:
-                logger.error(f"Error processing row {index + 2}: {str(e)}")
+                logger.error(f"Error processing row {int(index) + 2}: {str(e)}")
                 failed_imports.append({
-                    "row": index + 2,
+                    "row": int(index) + 2,
                     "error": str(e)
                 })
 
@@ -459,6 +443,7 @@ async def import_leads_from_csv(
                 "total_rows": total_rows,
                 "successful_imports": successful_count,
                 "failed_imports": failed_count,
+                "skipped_empty_rows": skipped_empty,
                 "failed_details": failed_imports
             }
         )

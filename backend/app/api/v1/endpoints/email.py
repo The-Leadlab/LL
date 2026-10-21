@@ -361,6 +361,28 @@ def google_email_oauth_callback(
 
     db.commit()
     db.refresh(account)
+
+    # If calendar scopes were granted, pull Google events into Lead Lab now
+    if scopes_include_calendar(scopes):
+        try:
+            from app.services.google_calendar_sync_service import GoogleCalendarSyncService
+
+            cal = (
+                db.query(CalendarIntegration)
+                .filter(
+                    CalendarIntegration.organization_id == organization_id,
+                    CalendarIntegration.user_id == user_id,
+                    CalendarIntegration.provider == "google",
+                    CalendarIntegration.is_active == True,
+                )
+                .order_by(CalendarIntegration.updated_at.desc())
+                .first()
+            )
+            if cal:
+                GoogleCalendarSyncService(db).sync_integration(cal)
+        except Exception as sync_err:
+            logger.warning("Auto sync after Gmail+Calendar OAuth failed: %s", sync_err)
+
     user = db.query(User).filter(User.id == user_id).first()
     if user:
         try:

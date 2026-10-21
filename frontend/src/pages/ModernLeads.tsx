@@ -323,6 +323,19 @@ export function ModernLeads() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [importStep, setImportStep] = useState<'file' | 'mapping'>('file');
+  const [importPreview, setImportPreview] = useState<{
+    headers: string[];
+    suggested_mapping: Record<string, string>;
+    sample_rows: Array<{ raw: Record<string, unknown>; mapped: Record<string, unknown> }>;
+    total_rows: number;
+    identity_rows: number;
+    skippable_empty_rows: number;
+    mappable_fields: string[];
+  } | null>(null);
+  /** lead_field → source header (or "" to skip) */
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const [selectedClientId, setSelectedClientId] = useState<number | null>(() => readInitialClientId());
   const [isManageClientsOpen, setIsManageClientsOpen] = useState(false);
   const [newClientName, setNewClientName] = useState('');
@@ -489,6 +502,15 @@ export function ModernLeads() {
     (filterSource.trim() ? 1 : 0) +
     (filterSector.trim() ? 1 : 0);
 
+  const resetImportDialog = () => {
+    setSelectedFile(null);
+    setImportStep('file');
+    setImportPreview(null);
+    setColumnMapping({});
+    setIsPreviewing(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -503,16 +525,35 @@ export function ModernLeads() {
         throw new Error(t('page.errors.selectClientImport'));
       }
       formData.append('client_id', String(clientForImport));
+      const mappingPayload: Record<string, string> = {};
+      Object.entries(columnMapping).forEach(([field, header]) => {
+        if (header) mappingPayload[field] = header;
+      });
+      if (Object.keys(mappingPayload).length > 0) {
+        formData.append('column_mapping', JSON.stringify(mappingPayload));
+      }
       return leadsAPI.uploadCSV(formData);
     },
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setIsUploadDialogOpen(false);
-      setSelectedFile(null);
+      resetImportDialog();
+      const data = res?.data?.data ?? res?.data ?? res;
+      const count = data?.successful_imports;
+      const skipped = data?.skipped_empty_rows;
       toast({
         title: t('common:success'),
-        description: t('page.importSuccess'),
+        description:
+          typeof count === 'number'
+            ? t('page.importSuccessDetail', {
+                count,
+                skipped:
+                  skipped > 0
+                    ? t('page.importSkippedSuffix', { count: skipped })
+                    : '',
+              })
+            : t('page.importSuccess'),
       });
     },
     onError: (error: any) => {
@@ -739,6 +780,39 @@ export function ModernLeads() {
         return;
       }
       setSelectedFile(file);
+      setImportStep('file');
+      setImportPreview(null);
+      setColumnMapping({});
+    }
+  };
+
+  const handlePreviewContinue = async () => {
+    if (!selectedFile) {
+      toast({
+        title: t('page.noFileSelected'),
+        description: t('page.noFileSelectedHint'),
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsPreviewing(true);
+    try {
+      const preview = await leadsAPI.previewImport(selectedFile);
+      setImportPreview(preview);
+      setColumnMapping({ ...(preview.suggested_mapping || {}) });
+      setImportStep('mapping');
+    } catch (error: any) {
+      const detail =
+        error?.response?.data?.detail ||
+        error?.message ||
+        t('page.importPreviewFailed');
+      toast({
+        title: t('common:error'),
+        description: typeof detail === 'string' ? detail : JSON.stringify(detail),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPreviewing(false);
     }
   };
 
@@ -768,6 +842,37 @@ export function ModernLeads() {
       setIsUploading(false);
     }
   };
+
+  const importFieldLabel = (field: string) => {
+    const key = `page.importField_${field}`;
+    const translated = t(key);
+    return translated === key ? field : translated;
+  };
+
+  const mappingFields = useMemo(() => {
+    const preferred = [
+      'first_name',
+      'last_name',
+      'full_name',
+      'email',
+      'company',
+      'job_title',
+      'telephone',
+      'mobile',
+      'linkedin',
+      'location',
+      'country',
+      'website',
+      'sector',
+      'lab_comments',
+    ];
+    const fromPreview = importPreview?.mappable_fields || preferred;
+    const ordered = [
+      ...preferred.filter((f) => fromPreview.includes(f)),
+      ...fromPreview.filter((f) => !preferred.includes(f) && f !== 'client_id'),
+    ];
+    return ordered;
+  }, [importPreview]);
 
   // Handle download template
   const handleDownloadTemplate = async () => {
@@ -1049,6 +1154,7 @@ export function ModernLeads() {
               type="button"
               onClick={() => {
                 setImportClientId(selectedClientId);
+                resetImportDialog();
                 setIsUploadDialogOpen(true);
               }}
               className="flex min-h-[44px] items-center gap-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
@@ -1410,120 +1516,242 @@ export function ModernLeads() {
       </Dialog>
 
       {/* Upload Dialog */}
-      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog
+        open={isUploadDialogOpen}
+        onOpenChange={(open) => {
+          setIsUploadDialogOpen(open);
+          if (!open) resetImportDialog();
+        }}
+      >
+        <DialogContent className={importStep === 'mapping' ? 'sm:max-w-2xl max-h-[90vh] overflow-y-auto' : 'sm:max-w-md'}>
           <DialogHeader>
             <DialogTitle>{t('importLeads')}</DialogTitle>
             <DialogDescription>
-              {t('page.importDescription')}
+              {importStep === 'file'
+                ? t('page.importDescription')
+                : t('page.importMappingHint')}
             </DialogDescription>
+            <div className="flex gap-2 pt-2 text-xs font-medium">
+              <span className={importStep === 'file' ? 'text-primary-600' : 'text-neutral-400'}>
+                {t('page.importStepFile')}
+              </span>
+              <span className="text-neutral-300">→</span>
+              <span className={importStep === 'mapping' ? 'text-primary-600' : 'text-neutral-400'}>
+                {t('page.importStepMapping')}
+              </span>
+            </div>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="import-client">{t('page.client')}</Label>
-              <select
-                id="import-client"
-                value={importClientId ?? ''}
-                onChange={(e) => setImportClientId(Number(e.target.value))}
-                className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm"
-              >
-                {activeClients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}{c.is_default ? ` (${t('page.defaultLabel')})` : ''}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-neutral-500">
-                {t('page.importClientHint')}
-              </p>
-            </div>
+            {importStep === 'file' ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="import-client">{t('page.client')}</Label>
+                  <select
+                    id="import-client"
+                    value={importClientId ?? ''}
+                    onChange={(e) => setImportClientId(Number(e.target.value))}
+                    className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm"
+                  >
+                    {activeClients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}{c.is_default ? ` (${t('page.defaultLabel')})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-neutral-500">
+                    {t('page.importClientHint')}
+                  </p>
+                </div>
 
-            {/* File input */}
-            <div className="flex flex-col space-y-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center space-x-2 px-4 py-8 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg hover:border-primary-500 dark:hover:border-primary-400 transition-colors"
-              >
-                <Upload className="w-5 h-5 text-neutral-400" />
-                <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                  {selectedFile ? selectedFile.name : t('page.clickToSelectFile')}
-                </span>
-              </button>
-              
-              {selectedFile && (
-                <div className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/20 rounded flex items-center justify-center">
-                      <FileDown className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                <div className="flex flex-col space-y-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center justify-center space-x-2 px-4 py-8 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg hover:border-primary-500 dark:hover:border-primary-400 transition-colors"
+                  >
+                    <Upload className="w-5 h-5 text-neutral-400" />
+                    <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                      {selectedFile ? selectedFile.name : t('page.clickToSelectFile')}
+                    </span>
+                  </button>
+                  
+                  {selectedFile && (
+                    <div className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/20 rounded flex items-center justify-center">
+                          <FileDown className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{selectedFile.name}</p>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                            {(selectedFile.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setImportPreview(null);
+                          setColumnMapping({});
+                        }}
+                        className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded"
+                      >
+                        <X className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                      </button>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{selectedFile.name}</p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        {(selectedFile.size / 1024).toFixed(2)} KB
-                      </p>
+                  )}
+                  
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {t('page.supportedFormats')}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span className="text-sm">{t('page.downloadTemplate')}</span>
+                </button>
+              </>
+            ) : (
+              <>
+                {importPreview && (
+                  <p className="text-xs text-neutral-500">
+                    {t('page.importPreviewStats', {
+                      identity: importPreview.identity_rows,
+                      skipped: importPreview.skippable_empty_rows,
+                      total: importPreview.total_rows,
+                    })}
+                  </p>
+                )}
+                <div className="space-y-2 max-h-64 overflow-y-auto rounded-lg border border-neutral-200 dark:border-neutral-700 p-3">
+                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                    {t('page.importMappingTitle')}
+                  </p>
+                  {mappingFields.map((field) => (
+                    <div key={field} className="grid grid-cols-2 gap-2 items-center">
+                      <Label className="text-xs text-neutral-600 dark:text-neutral-400">
+                        {importFieldLabel(field)}
+                      </Label>
+                      <select
+                        value={columnMapping[field] ?? ''}
+                        onChange={(e) =>
+                          setColumnMapping((prev) => ({
+                            ...prev,
+                            [field]: e.target.value,
+                          }))
+                        }
+                        className="w-full rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1.5 text-sm"
+                      >
+                        <option value="">{t('page.importSkipColumn')}</option>
+                        {(importPreview?.headers || []).map((h) => (
+                          <option key={h} value={h}>
+                            {h}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+                {importPreview && importPreview.sample_rows.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{t('page.importSampleTitle')}</p>
+                    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-x-auto">
+                      <table className="min-w-full text-xs">
+                        <thead className="bg-neutral-50 dark:bg-neutral-800">
+                          <tr>
+                            <th className="px-2 py-1.5 text-left font-medium">{importFieldLabel('first_name')}</th>
+                            <th className="px-2 py-1.5 text-left font-medium">{importFieldLabel('last_name')}</th>
+                            <th className="px-2 py-1.5 text-left font-medium">{importFieldLabel('company')}</th>
+                            <th className="px-2 py-1.5 text-left font-medium">{importFieldLabel('email')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {importPreview.sample_rows.map((row, i) => (
+                            <tr key={i} className="border-t border-neutral-100 dark:border-neutral-700">
+                              <td className="px-2 py-1.5">{String(row.mapped?.first_name ?? '—')}</td>
+                              <td className="px-2 py-1.5">{String(row.mapped?.last_name ?? '—')}</td>
+                              <td className="px-2 py-1.5">{String(row.mapped?.company ?? '—')}</td>
+                              <td className="px-2 py-1.5">{String(row.mapped?.email ?? '—')}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedFile(null)}
-                    className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded"
-                  >
-                    <X className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                  </button>
-                </div>
-              )}
-              
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t('page.supportedFormats')}
-              </p>
-            </div>
-
-            {/* Download template button */}
-            <button
-              onClick={handleDownloadTemplate}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-            >
-              <FileDown className="w-4 h-4" />
-              <span className="text-sm">{t('page.downloadTemplate')}</span>
-            </button>
+                )}
+              </>
+            )}
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsUploadDialogOpen(false);
-                setSelectedFile(null);
-              }}
-              disabled={isUploading}
-            >
-              {t('common:cancel')}
-            </Button>
-            <Button
-              onClick={handleUpload}
-              disabled={!selectedFile || isUploading}
-              className="bg-primary-600 hover:bg-primary-700"
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('page.uploading')}
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  {t('importLeads')}
-                </>
-              )}
-            </Button>
+            {importStep === 'mapping' ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setImportStep('file')}
+                  disabled={isUploading}
+                >
+                  {t('page.importBack')}
+                </Button>
+                <Button
+                  onClick={handleUpload}
+                  disabled={!selectedFile || isUploading}
+                  className="bg-primary-600 hover:bg-primary-700"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {t('page.uploading')}
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      {t('page.importConfirm')}
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsUploadDialogOpen(false);
+                    resetImportDialog();
+                  }}
+                  disabled={isUploading || isPreviewing}
+                >
+                  {t('common:cancel')}
+                </Button>
+                <Button
+                  onClick={handlePreviewContinue}
+                  disabled={!selectedFile || isPreviewing}
+                  className="bg-primary-600 hover:bg-primary-700"
+                >
+                  {isPreviewing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {t('page.uploading')}
+                    </>
+                  ) : (
+                    t('page.importContinue')
+                  )}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

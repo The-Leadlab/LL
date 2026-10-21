@@ -1286,15 +1286,21 @@ function IntegrationsSettings() {
     const params = new URLSearchParams(window.location.search);
     const emailOauth = params.get('email_oauth');
     const calendarOauth = params.get('calendar_oauth');
+    const calendarSync = params.get('calendar_sync');
     if (emailOauth === 'success') toast.success(t('settingsPage.integrations.gmailSuccess'));
     if (emailOauth === 'error') toast.error(t('settingsPage.integrations.gmailError', { reason: params.get('reason') || t('settingsPage.integrations.unknownError') }));
     if (calendarOauth === 'success') toast.success(t('settingsPage.integrations.calendarSuccess'));
     if (calendarOauth === 'error') toast.error(t('settingsPage.integrations.calendarError', { reason: params.get('reason') || t('settingsPage.integrations.unknownError') }));
-    if (emailOauth || calendarOauth) {
+    if (calendarSync === 'success') toast.success(t('settingsPage.integrations.syncQueued'));
+    if (calendarSync === 'error') toast.error(t('settingsPage.integrations.syncFailed'));
+    if (emailOauth || calendarOauth || calendarSync) {
+      queryClient.invalidateQueries({ queryKey: ['calendar-integrations'] });
+      queryClient.invalidateQueries({ queryKey: ['email-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
       const cleanUrl = `${window.location.pathname}${window.location.hash || ''}`;
       window.history.replaceState({}, '', cleanUrl);
     }
-  }, []);
+  }, [queryClient, t]);
   const { data: calendarIntegrations = [], isLoading: isLoadingCalendar } = useQuery({
     queryKey: ['calendar-integrations'],
     queryFn: calendarIntegrationsAPI.list,
@@ -1339,7 +1345,11 @@ function IntegrationsSettings() {
 
   const syncGoogleMutation = useMutation({
     mutationFn: (integrationId: number) => calendarIntegrationsAPI.sync(integrationId),
-    onSuccess: () => toast.success(t('settingsPage.integrations.syncQueued')),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar-integrations'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      toast.success(t('settingsPage.integrations.syncQueued'));
+    },
     onError: () => toast.error(t('settingsPage.integrations.syncFailed')),
   });
 
@@ -1419,31 +1429,47 @@ function IntegrationsSettings() {
             {t('settingsPage.integrations.calendarNote')}
           </p>
           {googleIntegration ? (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={connectGoogleMutation.isPending}
-                className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50"
-                onClick={() => connectGoogleMutation.mutate()}
-              >
-                {connectGoogleMutation.isPending ? t('settingsPage.integrations.redirecting') : t('settingsPage.integrations.addCalendar')}
-              </button>
-              <button
-                type="button"
-                disabled={syncGoogleMutation.isPending}
-                className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50"
-                onClick={() => syncGoogleMutation.mutate(googleIntegration.id)}
-              >
-                {syncGoogleMutation.isPending ? t('settingsPage.integrations.syncing') : t('settingsPage.integrations.syncNow')}
-              </button>
-              <button
-                type="button"
-                disabled={disconnectGoogleMutation.isPending}
-                className="rounded-lg border border-red-300 text-red-700 px-3 py-2 text-sm font-medium hover:bg-red-50 disabled:opacity-50"
-                onClick={() => disconnectGoogleMutation.mutate(googleIntegration.id)}
-              >
-                {t('settingsPage.integrations.disconnect')}
-              </button>
+            <div className="space-y-3">
+              {(googleIntegration.last_synced_at || googleIntegration.last_error) && (
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {googleIntegration.last_synced_at
+                    ? t('settingsPage.integrations.lastSynced', {
+                        date: new Date(googleIntegration.last_synced_at).toLocaleString(),
+                      })
+                    : null}
+                  {googleIntegration.last_error ? (
+                    <span className="block text-red-600 dark:text-red-400 mt-1">
+                      {googleIntegration.last_error}
+                    </span>
+                  ) : null}
+                </p>
+              )}
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  type="button"
+                  disabled={connectGoogleMutation.isPending}
+                  className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50"
+                  onClick={() => connectGoogleMutation.mutate()}
+                >
+                  {connectGoogleMutation.isPending ? t('settingsPage.integrations.redirecting') : t('settingsPage.integrations.addCalendar')}
+                </button>
+                <button
+                  type="button"
+                  disabled={syncGoogleMutation.isPending}
+                  className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50"
+                  onClick={() => syncGoogleMutation.mutate(googleIntegration.id)}
+                >
+                  {syncGoogleMutation.isPending ? t('settingsPage.integrations.syncing') : t('settingsPage.integrations.syncNow')}
+                </button>
+                <button
+                  type="button"
+                  disabled={disconnectGoogleMutation.isPending}
+                  className="rounded-lg border border-red-300 text-red-700 px-3 py-2 text-sm font-medium hover:bg-red-50 disabled:opacity-50"
+                  onClick={() => disconnectGoogleMutation.mutate(googleIntegration.id)}
+                >
+                  {t('settingsPage.integrations.disconnect')}
+                </button>
+              </div>
             </div>
           ) : (
             <button
