@@ -417,4 +417,5 @@ const emailAPI = {
   }
 };
 
+export { emailAPI };
 export default emailAPI;
