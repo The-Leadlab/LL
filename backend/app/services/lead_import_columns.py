@@ -39,7 +39,7 @@ def split_full_name(value: str):
     return parts[0], " ".join(parts[1:])
 
 
-# Keep in sync with google_workspace.DEFAULT_SHEET_COLUMN_MAP (+ import extras)
+# Keep in sync with google_workspace.DEFAULT_SHEET_COLUMN_MAP (+ Apollo / LinkedIn / FR extras)
 DEFAULT_SHEET_COLUMN_MAP = {
     "email": "email",
     "e_mail": "email",
@@ -47,47 +47,86 @@ DEFAULT_SHEET_COLUMN_MAP = {
     "emails": "email",
     "mail": "email",
     "work_email": "email",
+    "personal_email": "email",
+    "primary_email": "email",
+    "contact_email": "email",
+    "person_email": "email",
     "first_name": "first_name",
     "firstname": "first_name",
     "first": "first_name",
     "given_name": "first_name",
     "prenom": "first_name",
+    "person_first_name": "first_name",
+    "contact_first_name": "first_name",
     "last_name": "last_name",
     "lastname": "last_name",
     "last": "last_name",
     "surname": "last_name",
     "family_name": "last_name",
     "nom": "last_name",
+    "person_last_name": "last_name",
+    "contact_last_name": "last_name",
     "name": "full_name",
     "full_name": "full_name",
     "fullname": "full_name",
     "contact_name": "full_name",
     "nom_complet": "full_name",
+    "person_name": "full_name",
+    "contact": "full_name",
     "company": "company",
+    "company_name": "company",
+    "account_name": "company",
+    "account": "company",
+    "company_name_for_emails": "company",
     "organisation": "company",
     "organization": "company",
+    "organization_name": "company",
     "org": "company",
-    "account": "company",
     "societe": "company",
     "entreprise": "company",
     "firma": "company",
+    "employer": "company",
     "job_title": "job_title",
     "jobtitle": "job_title",
     "title": "job_title",
     "position": "job_title",
     "role": "job_title",
+    "person_title": "job_title",
+    "headline": "job_title",
     "unique_lead_id": "unique_lead_id",
     "lead_id": "unique_lead_id",
     "external_id": "unique_lead_id",
+    "apollo_id": "unique_lead_id",
+    "person_id": "unique_lead_id",
     "phone": "telephone",
     "telephone": "telephone",
     "tel": "telephone",
+    "work_phone": "telephone",
+    "office_phone": "telephone",
+    "corporate_phone": "telephone",
     "mobile": "mobile",
     "cell": "mobile",
+    "mobile_phone": "mobile",
+    "cellphone": "mobile",
     "linkedin": "linkedin",
     "linkedin_url": "linkedin",
+    "person_linkedin_url": "linkedin",
+    "linkedin_profile": "linkedin",
     "location": "location",
     "city": "location",
+    "person_city": "location",
+    "company_city": "location",
+    "country": "country",
+    "person_country": "country",
+    "company_country": "country",
+    "pays": "country",
+    "website": "website",
+    "company_website": "website",
+    "company_domain": "website",
+    "web": "website",
+    "sector": "sector",
+    "industry": "sector",
+    "company_industry": "sector",
 }
 
 # Lead fields the UI can map onto
@@ -115,12 +154,54 @@ MAPPABLE_LEAD_FIELDS = (
 )
 
 IMPORT_ONLY_ALIASES: Dict[str, List[str]] = {
-    "first_name": ["given_name"],
-    "last_name": ["surname"],
-    "company": ["societe", "entreprise", "firma"],
-    "country": ["country", "pays", "nation"],
-    "website": ["website", "web", "url", "site_web"],
-    "sector": ["sector", "industry", "secteur", "industrie"],
+    "first_name": [
+        "given_name",
+        "person_first_name",
+        "contact_first_name",
+        "first_name_",
+    ],
+    "last_name": [
+        "surname",
+        "person_last_name",
+        "contact_last_name",
+        "last_name_",
+    ],
+    "email": [
+        "personal_email",
+        "primary_email",
+        "contact_email",
+        "person_email",
+    ],
+    "company": [
+        "societe",
+        "entreprise",
+        "firma",
+        "company_name",
+        "account_name",
+        "company_name_for_emails",
+        "organization_name",
+        "employer",
+    ],
+    "country": ["country", "pays", "nation", "person_country", "company_country"],
+    "website": [
+        "website",
+        "web",
+        "url",
+        "site_web",
+        "company_website",
+        "company_domain",
+    ],
+    "sector": [
+        "sector",
+        "industry",
+        "secteur",
+        "industrie",
+        "company_industry",
+    ],
+    "job_title": ["person_title", "headline", "fonction"],
+    "linkedin": ["person_linkedin_url", "linkedin_profile"],
+    "telephone": ["work_phone", "office_phone", "corporate_phone"],
+    "mobile": ["mobile_phone", "cellphone"],
     "time_in_current_role": ["time_in_current_role", "time_in_role", "role_duration"],
     "lab_comments": [
         "lab_comments",
@@ -135,24 +216,40 @@ IMPORT_ONLY_ALIASES: Dict[str, List[str]] = {
     "source": ["source", "lead_source"],
     "client": ["client", "client_name", "clientname"],
     "client_id": ["client_id", "clientid"],
-    "full_name": ["full_name", "name", "fullname", "contact_name", "nom_complet"],
+    "full_name": [
+        "full_name",
+        "name",
+        "fullname",
+        "contact_name",
+        "nom_complet",
+        "person_name",
+        "contact",
+    ],
+    "unique_lead_id": ["apollo_id", "person_id"],
 }
 
 HEADER_HINT_ALIASES = frozenset(
     {
         "first_name",
         "firstname",
+        "person_first_name",
         "last_name",
         "lastname",
+        "person_last_name",
         "email",
         "e_mail",
+        "email_address",
+        "work_email",
         "company",
+        "company_name",
+        "account_name",
         "full_name",
         "prenom",
         "nom",
         "societe",
         "entreprise",
         "linkedin",
+        "linkedin_url",
         "telephone",
         "phone",
         "mobile",
@@ -201,7 +298,21 @@ def _header_score(cells: List[Any]) -> int:
             continue
         if norm in HEADER_HINT_ALIASES or norm in DEFAULT_SHEET_COLUMN_MAP:
             score += 2
-        elif any(h in norm for h in ("name", "email", "mail", "company", "phone", "tel")):
+        elif any(
+            h in norm
+            for h in (
+                "name",
+                "email",
+                "mail",
+                "company",
+                "account",
+                "phone",
+                "tel",
+                "person",
+                "linkedin",
+                "title",
+            )
+        ):
             score += 1
     return score
 
@@ -458,7 +569,18 @@ def prepare_import_dataframe(
     return normalize_dataframe_headers(df)
 
 
-def preview_import_file(content: bytes, filename: str) -> Dict[str, Any]:
+def preview_import_file(
+    content: bytes,
+    filename: str,
+    column_mapping: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
+    """
+    Preview spreadsheet for import.
+
+    column_mapping (optional): lead_field → source header. When omitted, uses
+    auto-suggested mapping. Samples are the first non-empty rows (regardless of
+    identity) so the UI can remap Apollo-style columns and see the effect.
+    """
     df, original_headers, normalized_headers = prepare_import_dataframe(content, filename)
     if df.empty:
         return {
@@ -467,57 +589,72 @@ def preview_import_file(content: bytes, filename: str) -> Dict[str, Any]:
             "suggested_mapping": {},
             "sample_rows": [],
             "total_rows": 0,
+            "identity_rows": 0,
             "skippable_empty_rows": 0,
             "mappable_fields": list(MAPPABLE_LEAD_FIELDS),
         }
 
     suggested = suggest_column_mapping(original_headers, normalized_headers)
+    active_mapping = column_mapping if column_mapping else suggested
+    # Drop empty / skip values from caller mapping
+    if column_mapping:
+        active_mapping = {
+            str(k): str(v)
+            for k, v in column_mapping.items()
+            if k and v and str(v) not in ("", "__skip__", "skip")
+        } or suggested
     alias_map = build_alias_field_map()
 
     samples: List[Dict[str, Any]] = []
     skippable = 0
     identity_count = 0
+    sample_limit = 8
+
     for _, row in df.iterrows():
         if _row_is_empty(row):
             skippable += 1
             continue
+
         lead_data = apply_column_mapping_to_row(
             row,
             original_headers=original_headers,
             normalized_headers=normalized_headers,
-            column_mapping=suggested,
+            column_mapping=active_mapping,
             alias_map=alias_map,
         )
+
+        raw_sample: Dict[str, Any] = {}
+        for i, orig in enumerate(original_headers):
+            if not orig:
+                continue
+            col = normalized_headers[i]
+            if col in row.index:
+                v = clean_cell(row[col])
+                if v is not None:
+                    raw_sample[orig] = v
+
+        mapped_sample = {
+            k: v
+            for k, v in lead_data.items()
+            if v is not None and k in MAPPABLE_LEAD_FIELDS
+        }
+
+        # Always sample non-empty rows so remapping is visible even when
+        # auto-detect missed name/email columns.
+        if len(samples) < sample_limit:
+            samples.append({"raw": raw_sample, "mapped": mapped_sample})
+
         if not row_has_identity(lead_data):
             skippable += 1
             continue
         identity_count += 1
-        if len(samples) < 5:
-            sample = {}
-            for i, orig in enumerate(original_headers):
-                if not orig:
-                    continue
-                col = normalized_headers[i]
-                if col in row.index:
-                    v = clean_cell(row[col])
-                    if v is not None:
-                        sample[orig] = v
-            samples.append(
-                {
-                    "raw": sample,
-                    "mapped": {
-                        k: v
-                        for k, v in lead_data.items()
-                        if v is not None and k in MAPPABLE_LEAD_FIELDS
-                    },
-                }
-            )
 
     return {
         "headers": [h for h in original_headers if h],
         "all_headers": original_headers,
         "normalized_headers": normalized_headers,
         "suggested_mapping": suggested,
+        "active_mapping": active_mapping,
         "sample_rows": samples,
         "total_rows": int(len(df)),
         "identity_rows": identity_count,

@@ -334,8 +334,9 @@ export function ModernLeads() {
     skippable_empty_rows: number;
     mappable_fields: string[];
   } | null>(null);
-  /** lead_field → source header (or "" to skip) */
-  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+  /** Apollo-style: file header → lead field (or "skip") */
+  const [headerMapping, setHeaderMapping] = useState<Record<string, string>>({});
+  const [isRemappingPreview, setIsRemappingPreview] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(() => readInitialClientId());
   const [isManageClientsOpen, setIsManageClientsOpen] = useState(false);
   const [newClientName, setNewClientName] = useState('');
@@ -502,12 +503,40 @@ export function ModernLeads() {
     (filterSource.trim() ? 1 : 0) +
     (filterSector.trim() ? 1 : 0);
 
+  /** Convert Apollo UI map (header → field) to API map (lead_field → header). */
+  const headerMapToFieldMap = (hm: Record<string, string>): Record<string, string> => {
+    const out: Record<string, string> = {};
+    Object.entries(hm).forEach(([header, field]) => {
+      if (!header || !field || field === 'skip') return;
+      // First header wins if two map to the same field
+      if (!out[field]) out[field] = header;
+    });
+    return out;
+  };
+
+  /** Seed Apollo UI map from API suggested_mapping (lead_field → header). */
+  const fieldMapToHeaderMap = (
+    headers: string[],
+    suggested: Record<string, string>,
+  ): Record<string, string> => {
+    const inverted: Record<string, string> = {};
+    Object.entries(suggested || {}).forEach(([field, header]) => {
+      if (header) inverted[header] = field;
+    });
+    const seeded: Record<string, string> = {};
+    headers.forEach((h) => {
+      seeded[h] = inverted[h] || 'skip';
+    });
+    return seeded;
+  };
+
   const resetImportDialog = () => {
     setSelectedFile(null);
     setImportStep('file');
     setImportPreview(null);
-    setColumnMapping({});
+    setHeaderMapping({});
     setIsPreviewing(false);
+    setIsRemappingPreview(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -525,10 +554,7 @@ export function ModernLeads() {
         throw new Error(t('page.errors.selectClientImport'));
       }
       formData.append('client_id', String(clientForImport));
-      const mappingPayload: Record<string, string> = {};
-      Object.entries(columnMapping).forEach(([field, header]) => {
-        if (header) mappingPayload[field] = header;
-      });
+      const mappingPayload = headerMapToFieldMap(headerMapping);
       if (Object.keys(mappingPayload).length > 0) {
         formData.append('column_mapping', JSON.stringify(mappingPayload));
       }
@@ -782,7 +808,7 @@ export function ModernLeads() {
       setSelectedFile(file);
       setImportStep('file');
       setImportPreview(null);
-      setColumnMapping({});
+      setHeaderMapping({});
     }
   };
 
@@ -799,7 +825,9 @@ export function ModernLeads() {
     try {
       const preview = await leadsAPI.previewImport(selectedFile);
       setImportPreview(preview);
-      setColumnMapping({ ...(preview.suggested_mapping || {}) });
+      setHeaderMapping(
+        fieldMapToHeaderMap(preview.headers || [], preview.suggested_mapping || {}),
+      );
       setImportStep('mapping');
     } catch (error: any) {
       const detail =
@@ -815,6 +843,35 @@ export function ModernLeads() {
       setIsPreviewing(false);
     }
   };
+
+  // Recompute identity counts + samples when the user remaps columns (Apollo-style)
+  useEffect(() => {
+    if (importStep !== 'mapping' || !selectedFile) return;
+    if (Object.keys(headerMapping).length === 0) return;
+
+    const fieldMap = headerMapToFieldMap(headerMapping);
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setIsRemappingPreview(true);
+      try {
+        const preview = await leadsAPI.previewImport(
+          selectedFile,
+          Object.keys(fieldMap).length > 0 ? fieldMap : undefined,
+        );
+        if (cancelled) return;
+        setImportPreview(preview);
+      } catch {
+        // Keep last good preview; toast only on hard failures during confirm
+      } finally {
+        if (!cancelled) setIsRemappingPreview(false);
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [headerMapping, importStep, selectedFile]);
 
   // Handle upload
   const handleUpload = async () => {
@@ -844,12 +901,13 @@ export function ModernLeads() {
   };
 
   const importFieldLabel = (field: string) => {
+    if (field === 'skip') return t('page.importSkipColumn');
     const key = `page.importField_${field}`;
     const translated = t(key);
     return translated === key ? field : translated;
   };
 
-  const mappingFields = useMemo(() => {
+  const mappingFieldOptions = useMemo(() => {
     const preferred = [
       'first_name',
       'last_name',
@@ -865,14 +923,35 @@ export function ModernLeads() {
       'website',
       'sector',
       'lab_comments',
+      'unique_lead_id',
+      'source',
     ];
     const fromPreview = importPreview?.mappable_fields || preferred;
     const ordered = [
       ...preferred.filter((f) => fromPreview.includes(f)),
-      ...fromPreview.filter((f) => !preferred.includes(f) && f !== 'client_id'),
+      ...fromPreview.filter((f) => !preferred.includes(f) && f !== 'client_id' && f !== 'client'),
     ];
-    return ordered;
+    return ['skip', ...ordered];
   }, [importPreview]);
+
+  const hasIdentityMapped = useMemo(() => {
+    const fields = new Set(
+      Object.values(headerMapping).filter((f) => f && f !== 'skip'),
+    );
+    return (
+      fields.has('email') ||
+      fields.has('first_name') ||
+      fields.has('last_name') ||
+      fields.has('full_name')
+    );
+  }, [headerMapping]);
+
+  const canConfirmImport =
+    Boolean(selectedFile) &&
+    hasIdentityMapped &&
+    (importPreview?.identity_rows ?? 0) > 0 &&
+    !isUploading &&
+    !isRemappingPreview;
 
   // Handle download template
   const handleDownloadTemplate = async () => {
@@ -1523,7 +1602,7 @@ export function ModernLeads() {
           if (!open) resetImportDialog();
         }}
       >
-        <DialogContent className={importStep === 'mapping' ? 'sm:max-w-2xl max-h-[90vh] overflow-y-auto' : 'sm:max-w-md'}>
+        <DialogContent className={importStep === 'mapping' ? 'sm:max-w-4xl max-h-[90vh] overflow-y-auto' : 'sm:max-w-md'}>
           <DialogHeader>
             <DialogTitle>{t('importLeads')}</DialogTitle>
             <DialogDescription>
@@ -1602,7 +1681,7 @@ export function ModernLeads() {
                         onClick={() => {
                           setSelectedFile(null);
                           setImportPreview(null);
-                          setColumnMapping({});
+                          setHeaderMapping({});
                         }}
                         className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded"
                       >
@@ -1628,7 +1707,10 @@ export function ModernLeads() {
             ) : (
               <>
                 {importPreview && (
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-xs text-neutral-500 flex items-center gap-2">
+                    {isRemappingPreview && (
+                      <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+                    )}
                     {t('page.importPreviewStats', {
                       identity: importPreview.identity_rows,
                       skipped: importPreview.skippable_empty_rows,
@@ -1640,25 +1722,25 @@ export function ModernLeads() {
                   <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                     {t('page.importMappingTitle')}
                   </p>
-                  {mappingFields.map((field) => (
-                    <div key={field} className="grid grid-cols-2 gap-2 items-center">
-                      <Label className="text-xs text-neutral-600 dark:text-neutral-400">
-                        {importFieldLabel(field)}
+                  <p className="text-xs text-neutral-500">{t('page.importMappingHint')}</p>
+                  {(importPreview?.headers || []).map((header) => (
+                    <div key={header} className="grid grid-cols-2 gap-2 items-center">
+                      <Label className="text-xs text-neutral-600 dark:text-neutral-400 truncate" title={header}>
+                        {header}
                       </Label>
                       <select
-                        value={columnMapping[field] ?? ''}
+                        value={headerMapping[header] ?? 'skip'}
                         onChange={(e) =>
-                          setColumnMapping((prev) => ({
+                          setHeaderMapping((prev) => ({
                             ...prev,
-                            [field]: e.target.value,
+                            [header]: e.target.value,
                           }))
                         }
                         className="w-full rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1.5 text-sm"
                       >
-                        <option value="">{t('page.importSkipColumn')}</option>
-                        {(importPreview?.headers || []).map((h) => (
-                          <option key={h} value={h}>
-                            {h}
+                        {mappingFieldOptions.map((field) => (
+                          <option key={`${header}-${field}`} value={field}>
+                            {importFieldLabel(field)}
                           </option>
                         ))}
                       </select>
@@ -1708,7 +1790,7 @@ export function ModernLeads() {
                 </Button>
                 <Button
                   onClick={handleUpload}
-                  disabled={!selectedFile || isUploading}
+                  disabled={!canConfirmImport}
                   className="bg-primary-600 hover:bg-primary-700"
                 >
                   {isUploading ? (
@@ -1719,7 +1801,9 @@ export function ModernLeads() {
                   ) : (
                     <>
                       <Upload className="w-4 h-4 mr-2" />
-                      {t('page.importConfirm')}
+                      {t('page.importConfirmCount', {
+                        count: importPreview?.identity_rows ?? 0,
+                      })}
                     </>
                   )}
                 </Button>

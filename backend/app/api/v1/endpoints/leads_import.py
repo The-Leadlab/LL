@@ -100,10 +100,12 @@ async def preview_leads_import(
     *,
     current_user: models.User = Depends(deps.get_current_user),
     file: UploadFile = File(...),
+    column_mapping: Optional[str] = Form(None),
 ):
     """
     Preview a CSV/XLSX: headers, suggested column mapping, and sample rows.
-    Use before /import/csv so the user can confirm which columns map to which fields.
+    Pass column_mapping (JSON lead_field → header) to recompute identity counts
+    after the user remaps columns (Apollo-style mapping UI).
     """
     _ = current_user
     filename_lower = (file.filename or "").lower()
@@ -117,7 +119,12 @@ async def preview_leads_import(
     if not content:
         raise HTTPException(status_code=400, detail="The uploaded file is empty")
     try:
-        return preview_import_file(content, file.filename or "upload.csv")
+        mapping = _parse_column_mapping(column_mapping)
+        return preview_import_file(
+            content,
+            file.filename or "upload.csv",
+            column_mapping=mapping,
+        )
     except Exception as e:
         logger.error("Import preview failed: %s", e)
         logger.error(traceback.format_exc())
