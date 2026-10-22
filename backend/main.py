@@ -95,6 +95,15 @@ async def startup_sequence_guard() -> None:
         logger.warning("Could not ensure support_tickets: %s", exc)
 
     try:
+        from app.db.session import engine as db_engine
+        from app.core.client_ownership_schema import ensure_client_ownership_schema
+
+        ensure_client_ownership_schema(db_engine)
+        logger.info("Ensured clients ownership columns exist")
+    except Exception as exc:
+        logger.warning("Could not ensure clients ownership columns: %s", exc)
+
+    try:
         from app.db.session import engine
         from app.models.user_settings import UserSettings
 
