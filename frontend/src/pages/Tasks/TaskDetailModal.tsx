@@ -266,7 +266,7 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                       id="title"
                       value={formData.title || ''}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="border-gray-200 focus:border-blue-500"
+                      className="border-gray-200 dark:border-neutral-700 focus:border-blue-500"
                     />
                   </div>
 
@@ -298,7 +298,7 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                     id="description"
                     value={formData.description || ''}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="border-gray-200 focus:border-blue-500 min-h-[100px]"
+                    className="border-gray-200 dark:border-neutral-700 focus:border-blue-500 min-h-[100px]"
                   />
                 </div>
 
@@ -339,7 +339,7 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                           // Keep the previous value if there's an error
                         }
                       }}
-                      className="border-gray-200 focus:border-blue-500"
+                      className="border-gray-200 dark:border-neutral-700 focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -353,7 +353,7 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                         <Button
                           variant="outline"
                           role="combobox"
-                          className="w-full justify-between bg-white hover:bg-gray-50"
+                          className="w-full justify-between bg-white dark:bg-neutral-900 hover:bg-gray-50 dark:hover:bg-neutral-800"
                           disabled={isLoadingUsers && !selectedUser}
                         >
                           {isLoadingUsers && !selectedUser ? (
@@ -424,7 +424,7 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                             filteredUsers.map((user: User) => (
                               <div
                                 key={user.id}
-                                className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-gray-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                                className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
                                 onClick={() => {
                                   setSelectedUser(user);
                                   setFormData(prev => ({ ...prev, assigned_to_id: user.id }));
@@ -455,14 +455,14 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                   <Button 
                     variant="outline" 
                     onClick={() => setIsEditing(false)}
-                    className="hover:bg-gray-100"
+                    className="hover:bg-gray-100 dark:hover:bg-neutral-800"
                   >
                     Cancel
                   </Button>
                   <Button 
                     variant="outline"
                     onClick={handleSave}
-                    className="hover:bg-gray-100"
+                    className="hover:bg-gray-100 dark:hover:bg-neutral-800"
                   >
                     Save Changes
                   </Button>
@@ -535,7 +535,7 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                       <button
                         type="button"
                         onClick={handleEdit}
-                        className="mt-1 w-full text-left rounded-md hover:bg-gray-50 p-1 -ml-1 transition-colors"
+                        className="mt-1 w-full text-left rounded-md hover:bg-gray-50 dark:hover:bg-neutral-800 p-1 -ml-1 transition-colors"
                         title="Click to assign a teammate"
                       >
                         {currentTask.assigned_to ? (
@@ -592,13 +592,13 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="rounded-lg border border-gray-200 dark:border-neutral-700 bg-gray-50 p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-neutral-200 flex items-center gap-2">
                       <Paperclip className="h-4 w-4" />
                       Attachments
                     </h4>
-                    <label className="inline-flex items-center gap-2 rounded border px-3 py-1.5 text-xs cursor-pointer bg-white hover:bg-gray-100">
+                    <label className="inline-flex items-center gap-2 rounded border px-3 py-1.5 text-xs cursor-pointer bg-white dark:bg-neutral-900 hover:bg-gray-100 dark:hover:bg-neutral-800">
                       <Upload className="h-3.5 w-3.5" />
                       {uploadingAttachment ? 'Uploading...' : 'Upload file'}
                       <input type="file" className="hidden" onChange={handleAttachmentUpload} disabled={uploadingAttachment} />
@@ -622,7 +622,7 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                   ) : (
                     <div className="mt-3 space-y-2">
                       {attachments.map((attachment) => (
-                        <div key={attachment.stored_name} className="flex items-center justify-between rounded border bg-white px-3 py-2">
+                        <div key={attachment.stored_name} className="flex items-center justify-between rounded border bg-white dark:bg-neutral-900 px-3 py-2">
                           <button
                             type="button"
                             disabled={openingTaskAttachmentKey === `${currentTask.id}-${attachment.stored_name}`}
@@ -668,7 +668,7 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
                   <Button
                     variant="outline"
                     onClick={handleEdit}
-                    className="hover:bg-gray-100"
+                    className="hover:bg-gray-100 dark:hover:bg-neutral-800"
                   >
                     Edit Task
                   </Button>
@@ -688,12 +688,12 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
   return (
     <>
       {asPage ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+        <div className="rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4 shadow-sm sm:p-6">
           {detailBody}
         </div>
       ) : (
         <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white shadow-lg">
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 shadow-lg">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold">
                 <span>{isEditing ? 'Edit Task' : 'Task Details'}</span>
@@ -706,14 +706,14 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] bg-white shadow-lg">
+        <DialogContent className="sm:max-w-[400px] bg-white dark:bg-neutral-900 shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">
               Delete Task
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-neutral-300">
               Are you sure you want to delete this task? This action cannot be undone.
             </p>
           </div>
@@ -721,7 +721,7 @@ export function TaskDetailModal({ task, isOpen, onClose, asPage = false }: TaskD
             <Button
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
-              className="hover:bg-gray-100"
+              className="hover:bg-gray-100 dark:hover:bg-neutral-800"
             >
               Cancel
             </Button>

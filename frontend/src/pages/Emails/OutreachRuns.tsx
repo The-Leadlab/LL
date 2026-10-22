@@ -51,10 +51,10 @@ function RunRow({ run }: { run: OutreachRun }) {
         <td className="px-4 py-3 text-sm">
           {run.scenario?.name ?? t('runsPage.scenarioFallback', { id: run.scenario_id })}
         </td>
-        <td className="px-4 py-3 text-sm text-gray-600">
+        <td className="px-4 py-3 text-sm text-gray-600 dark:text-neutral-300">
           {run.started_at ? new Date(run.started_at).toLocaleString() : '—'}
         </td>
-        <td className="px-4 py-3 text-sm text-gray-600">
+        <td className="px-4 py-3 text-sm text-gray-600 dark:text-neutral-300">
           {run.finished_at ? new Date(run.finished_at).toLocaleString() : '—'}
         </td>
       </tr>
@@ -73,7 +73,7 @@ function RunRow({ run }: { run: OutreachRun }) {
                 {steps.map((step) => (
                   <li
                     key={step.id}
-                    className="flex flex-wrap items-center gap-2 rounded border bg-white px-3 py-2 text-sm"
+                    className="flex flex-wrap items-center gap-2 rounded border bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
                   >
                     <Badge variant="outline">{step.status}</Badge>
                     <span className="font-mono text-xs">{step.node_id}</span>
@@ -223,7 +223,7 @@ export function OutreachRunsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">{t('runs')}</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-gray-600 dark:text-neutral-300">
             {t('runsPage.subtitle')}
           </p>
         </div>
@@ -300,7 +300,7 @@ export function OutreachRunsPage() {
                       <td className="px-4 py-3">{batch.pending}</td>
                       <td className="px-4 py-3">{batch.failed}</td>
                       <td className="px-4 py-3">{batch.skipped}</td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-gray-600 dark:text-neutral-300">
                         {batch.latest ? new Date(batch.latest).toLocaleString() : '—'}
                       </td>
                       <td className="px-4 py-3">

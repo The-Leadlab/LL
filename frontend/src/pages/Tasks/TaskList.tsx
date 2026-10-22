@@ -16,11 +16,11 @@ const TASK_STATUSES = [
   { value: TaskStatus.PENDING, label: 'Pending', color: 'bg-yellow-50 border-yellow-200', icon: '⏳' },
   { value: TaskStatus.IN_PROGRESS, label: 'In Progress', color: 'bg-blue-50 border-blue-200', icon: '🔄' },
   { value: TaskStatus.COMPLETED, label: 'Completed', color: 'bg-green-50 border-green-200', icon: '✅' },
-  { value: TaskStatus.CANCELLED, label: 'Cancelled', color: 'bg-gray-50 border-gray-200', icon: '❌' },
+  { value: TaskStatus.CANCELLED, label: 'Cancelled', color: 'bg-gray-50 border-gray-200 dark:border-neutral-700', icon: '❌' },
 ];
 
 const priorityColors = {
-  [TaskPriority.LOW]: 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+  [TaskPriority.LOW]: 'bg-gray-100 text-gray-700 dark:text-neutral-200 hover:bg-gray-200',
   [TaskPriority.MEDIUM]: 'bg-blue-100 text-blue-700 hover:bg-blue-200',
   [TaskPriority.HIGH]: 'bg-orange-100 text-orange-700 hover:bg-orange-200',
   [TaskPriority.URGENT]: 'bg-red-100 text-red-700 hover:bg-red-200',
@@ -139,7 +139,7 @@ export function TaskList() {
                   placeholder="Search tasks..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-[300px] bg-white border-gray-200 focus:border-primary"
+                  className="pl-9 w-[300px] bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-700 focus:border-primary"
                 />
               </div>
               <Button 
@@ -212,7 +212,7 @@ export function TaskList() {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className="p-4 cursor-pointer hover:shadow-md transition-all duration-200 border border-gray-100 hover:border-gray-200 bg-white hover:translate-y-[-2px]"
+                              className="p-4 cursor-pointer hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-neutral-800 hover:border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:translate-y-[-2px]"
                               onClick={() => {
                                 setSelectedTask(task);
                                 setIsDetailOpen(true);
@@ -248,11 +248,11 @@ export function TaskList() {
                                 </div>
 
                                 {/* Assigned To & Lead */}
-                                <div className="flex items-center justify-between text-sm border-t border-gray-100 pt-2.5">
+                                <div className="flex items-center justify-between text-sm border-t border-gray-100 dark:border-neutral-800 pt-2.5">
                                   <div className="flex items-center gap-2">
                                     {task.assigned_to && (
-                                      <div className="flex items-center gap-1.5 text-gray-600">
-                                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
+                                      <div className="flex items-center gap-1.5 text-gray-600 dark:text-neutral-300">
+                                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-neutral-300">
                                           {(task.assigned_to.first_name?.[0] || '?')}{(task.assigned_to.last_name?.[0] || '')}
                                         </div>
                                         <span>{task.assigned_to.first_name} {task.assigned_to.last_name}</span>

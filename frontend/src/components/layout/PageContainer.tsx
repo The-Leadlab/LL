@@ -23,7 +23,7 @@ export function PageContainer({
     <div 
       className={cn(
         'min-h-[calc(100vh-4rem)]',
-        'bg-gray-50/50',
+        'bg-background text-foreground dark:bg-background',
         centerContent && 'flex items-center justify-center',
         className
       )}

@@ -205,7 +205,7 @@ export function OutreachConnectionsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">{t('connectionsPage.title')}</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-gray-600 dark:text-neutral-300">
             {t('connectionsPage.subtitle')}
           </p>
         </div>
@@ -317,7 +317,7 @@ export function OutreachConnectionsPage() {
             )}
 
             {type === 'webhook' && (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-neutral-300">
                 {t('connectionsPage.webhookHint')}
               </p>
             )}
@@ -357,8 +357,8 @@ export function OutreachConnectionsPage() {
                     <div className="flex items-center gap-2">
                       <Link2 className="h-4 w-4 text-gray-500" />
                       <span className="font-medium">{conn.display_name}</span>
-                      <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{conn.type}</span>
-                      <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{conn.status}</span>
+                      <span className="rounded bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 text-xs text-gray-600 dark:text-neutral-300">{conn.type}</span>
+                      <span className="rounded bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 text-xs text-gray-600 dark:text-neutral-300">{conn.status}</span>
                     </div>
                     {conn.type === 'webhook' && conn.public_token && (
                       <div className="text-sm">

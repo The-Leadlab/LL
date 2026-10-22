@@ -13,16 +13,20 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const buttonVariants = {
-  default: 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500/50 shadow-sm',
+  default:
+    'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500/50 shadow-sm dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 dark:hover:bg-neutral-700',
   primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500/50 shadow-sm',
   destructive: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500/50 shadow-sm',
-  outline: 'bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500/50',
-  secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500/50',
-  ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500/50',
-  link: 'bg-transparent text-blue-600 underline-offset-4 hover:underline focus:ring-blue-500/50 p-0 h-auto',
+  outline:
+    'bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500/50 dark:border-neutral-600 dark:text-neutral-100 dark:hover:bg-neutral-800',
+  secondary:
+    'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500/50 dark:bg-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-600',
+  ghost:
+    'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500/50 dark:text-neutral-200 dark:hover:bg-neutral-800',
+  link: 'bg-transparent text-blue-600 underline-offset-4 hover:underline focus:ring-blue-500/50 p-0 h-auto dark:text-blue-400',
   success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500/50 shadow-sm',
   warning: 'bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500/50 shadow-sm',
-  gradient: 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 focus:ring-blue-500/50 shadow-sm'
+  gradient: 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 focus:ring-blue-500/50 shadow-sm',
 }
 
 const buttonSizes = {

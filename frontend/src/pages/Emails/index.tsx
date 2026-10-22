@@ -221,14 +221,14 @@ export const EmailsPage: React.FC = () => {
   if (accountsLoading) {
     return (
       <div className="container mx-auto py-6 h-[calc(100vh-4rem)]">
-        <div className="flex h-full flex-col gap-4 rounded-lg border bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 text-sm text-neutral-600">
+        <div className="flex h-full flex-col gap-4 rounded-lg border border-neutral-200 bg-background p-6 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+          <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
             <Loader2 className="h-4 w-4 animate-spin" />
             {t('inboxPage.loadingAccounts', { defaultValue: 'Loading mailboxes…' })}
           </div>
           <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-[16rem_1fr]">
-            <div className="animate-pulse rounded-lg bg-neutral-100" />
-            <div className="animate-pulse rounded-lg bg-neutral-100" />
+            <div className="animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-800" />
+            <div className="animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-800" />
           </div>
         </div>
       </div>
@@ -243,10 +243,10 @@ export const EmailsPage: React.FC = () => {
             <CardTitle>{t('inboxPage.addAccountTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600 mb-4">
+            <p className="mb-4 text-gray-600 dark:text-neutral-300">
               {t('inboxPage.addAccountBody')}
             </p>
-            <Button type="button" onClick={() => navigate('/settings/integrations')}>
+            <Button type="button" variant="primary" onClick={() => navigate('/settings/integrations')}>
               {t('inboxPage.openIntegrations')}
             </Button>
           </CardContent>
@@ -259,9 +259,10 @@ export const EmailsPage: React.FC = () => {
     <div className="container mx-auto py-6 h-[calc(100vh-4rem)]">
       <div className="flex h-full gap-6">
         {/* Sidebar */}
-        <div className="w-64 bg-white rounded-lg shadow-sm border flex flex-col">
-          <div className="p-4 border-b">
+        <div className="flex w-64 flex-col rounded-lg border border-neutral-200 bg-background shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+          <div className="border-b border-neutral-200 p-4 dark:border-neutral-700">
             <Button 
+              variant="primary"
               onClick={() => setIsComposeOpen(true)} 
               className="w-full justify-start font-medium"
               disabled={!selectedAccount}
@@ -272,8 +273,8 @@ export const EmailsPage: React.FC = () => {
           </div>
 
           {/* Account Selector */}
-          <div className="p-4 border-b">
-            <Label className="text-sm font-medium text-gray-700 mb-2 block">{t('inboxPage.account')}</Label>
+          <div className="border-b border-neutral-200 p-4 dark:border-neutral-700">
+            <Label className="mb-2 block text-sm font-medium text-gray-700 dark:text-neutral-200">{t('inboxPage.account')}</Label>
             <Select
               value={selectedAccount?.toString()}
               onValueChange={(value) => setSelectedAccount(Number(value))}
@@ -293,7 +294,7 @@ export const EmailsPage: React.FC = () => {
 
           {/* Folders */}
           <div className="p-4 flex-1">
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">{t('inboxPage.folders.title')}</Label>
+            <Label className="mb-3 block text-sm font-medium text-gray-700 dark:text-neutral-200">{t('inboxPage.folders.title')}</Label>
             <div className="space-y-1">
               {FOLDERS.map((folder) => {
                 const Icon = folder.icon;
@@ -303,8 +304,8 @@ export const EmailsPage: React.FC = () => {
                     onClick={() => setSelectedFolder(folder.name)}
                     className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       selectedFolder === folder.name
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                        : 'hover:bg-gray-100 text-gray-700 border border-transparent'
+                        ? 'border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300'
+                        : 'border border-transparent text-gray-700 hover:bg-gray-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
                     }`}
                   >
                     <Icon className="h-4 w-4 flex-shrink-0" />
@@ -324,7 +325,9 @@ export const EmailsPage: React.FC = () => {
                       key={label}
                       onClick={() => setSelectedFolder(label.toLowerCase())}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm border ${
-                        selectedFolder === label.toLowerCase() ? 'bg-blue-50 text-blue-700 border-blue-200' : 'hover:bg-gray-100 border-transparent'
+                        selectedFolder === label.toLowerCase()
+                          ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300'
+                          : 'border-transparent text-gray-700 hover:bg-gray-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
                       }`}
                     >
                       {label}
@@ -337,9 +340,9 @@ export const EmailsPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 bg-white rounded-lg shadow-sm border flex flex-col">
-            <div className="border-b px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
+        <div className="flex flex-1 flex-col rounded-lg border border-neutral-200 bg-background shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+            <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4 dark:border-neutral-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-neutral-50">
                 {FOLDERS.some(f => f.name === selectedFolder) ? folderLabel(selectedFolder) : selectedFolder.toUpperCase()}
               </h2>
               <div className="flex items-center gap-2">
@@ -359,7 +362,7 @@ export const EmailsPage: React.FC = () => {
                   size="sm"
                   onClick={handleRefresh}
                   disabled={emailsLoading || isRefreshing}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 dark:text-neutral-300 dark:hover:text-neutral-100"
                 >
                   <RefreshCw className={`h-4 w-4 ${(emailsLoading || isRefreshing) ? 'animate-spin' : ''}`} />
                   <span className="ml-2">{t('inboxPage.refresh')}</span>
@@ -367,12 +370,12 @@ export const EmailsPage: React.FC = () => {
               </div>
             </div>
             {isRefreshing && (
-              <div className="px-6 py-2 border-b bg-blue-50/50">
-                <div className="flex items-center justify-between text-xs text-blue-700 mb-1">
+              <div className="border-b border-neutral-200 bg-blue-50/50 px-6 py-2 dark:border-neutral-700 dark:bg-blue-950/30">
+                <div className="mb-1 flex items-center justify-between text-xs text-blue-700 dark:text-blue-300">
                   <span>{t('inboxPage.syncInProgress')}</span>
                   <span>{Math.min(100, syncProgress)}%</span>
                 </div>
-                <div className="h-2 rounded-full bg-blue-100 overflow-hidden">
+                <div className="h-2 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-900/50">
                   <div
                     className="h-full bg-blue-600 transition-all duration-300"
                     style={{ width: `${Math.min(100, syncProgress)}%` }}
@@ -387,36 +390,36 @@ export const EmailsPage: React.FC = () => {
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : emailsData?.emails?.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 text-center">
-                <Inbox className="h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noEmails')}</h3>
-                <p className="text-sm text-gray-600">
+              <div className="flex h-64 flex-col items-center justify-center text-center">
+                <Inbox className="mb-4 h-12 w-12 text-gray-400 dark:text-neutral-500" />
+                <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-neutral-50">{t('noEmails')}</h3>
+                <p className="text-sm text-gray-600 dark:text-neutral-300">
                   {t('inboxPage.folderEmpty', { folder: (FOLDERS.some(f => f.name === selectedFolder) ? folderLabel(selectedFolder) : selectedFolder).toLowerCase() })}
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-200 dark:divide-neutral-700">
                 {emailsData?.emails?.map((email) => (
                   <div
                     key={email.id}
                     onClick={() => handleEmailClick(email)}
-                    className={`px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                      !email.is_read ? 'bg-blue-50 hover:bg-blue-100' : ''
+                    className={`cursor-pointer px-6 py-4 transition-colors hover:bg-gray-50 dark:hover:bg-neutral-800 ${
+                      !email.is_read ? 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-950/60' : ''
                     } ${
-                      selectedEmail?.id === email.id ? 'bg-blue-100' : ''
+                      selectedEmail?.id === email.id ? 'bg-blue-100 dark:bg-blue-950/70' : ''
                     }`}
                   >
                     <div className="flex items-start space-x-4">
-                      <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium flex-shrink-0">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-800 dark:bg-neutral-700 dark:text-neutral-100">
                         {getSenderInitials(email.from_name, email.from_address)}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-1">
-                          <p className="text-sm font-semibold text-gray-900 truncate pr-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex items-start justify-between">
+                          <p className="truncate pr-2 text-sm font-semibold text-gray-900 dark:text-neutral-50">
                             {email.from_name || email.from_address}
                           </p>
-                          <div className="flex items-center space-x-3 flex-shrink-0">
-                            <span className="text-xs text-gray-500">
+                          <div className="flex flex-shrink-0 items-center space-x-3">
+                            <span className="text-xs text-gray-500 dark:text-neutral-400">
                               {formatEmailDate(email.received_date)}
                             </span>
                             {email.is_starred && (
@@ -424,10 +427,10 @@ export const EmailsPage: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <p className="text-sm font-medium text-gray-900 truncate mb-1">
+                        <p className="mb-1 truncate text-sm font-medium text-gray-900 dark:text-neutral-100">
                           {email.subject || t('inboxPage.noSubject')}
                         </p>
-                        <p className="text-sm text-gray-600 line-clamp-2">
+                        <p className="line-clamp-2 text-sm text-gray-600 dark:text-neutral-300">
                           {email.body_text?.substring(0, 150)}...
                         </p>
                       </div>

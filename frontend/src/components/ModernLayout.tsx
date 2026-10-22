@@ -50,7 +50,7 @@ export function ModernLayout() {
           <button
             type="button"
             aria-label={actualTheme === 'dark' ? t('switchToLight') : t('switchToDark')}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800"
             onClick={toggleTheme}
           >
             {actualTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -83,7 +83,7 @@ export function ModernLayout() {
           <button
             type="button"
             aria-label={actualTheme === 'dark' ? t('switchToLight') : t('switchToDark')}
-            className="flex min-h-[44px] items-center gap-2 rounded-lg border border-neutral-200 px-3 text-sm dark:border-neutral-700"
+            className="flex min-h-[44px] items-center gap-2 rounded-lg border border-neutral-200 bg-transparent px-3 text-sm text-neutral-800 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100 dark:hover:bg-neutral-800"
             onClick={toggleTheme}
           >
             {actualTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

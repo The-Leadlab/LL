@@ -30,7 +30,7 @@ const TASK_STATUSES = [
     value: TaskStatus.PENDING, 
     label: 'Pending', 
     color: 'bg-gray-50', 
-    borderColor: 'border-gray-300', 
+    borderColor: 'border-gray-300 dark:border-neutral-600', 
     textColor: 'text-gray-800',
     badgeColor: 'bg-gray-200 text-gray-800',
     icon: Clock, 
@@ -117,7 +117,7 @@ const getDueDateStatus = (dueDate: string) => {
   if (diff < 0) return { label: 'Overdue', color: 'text-red-600 bg-red-50' };
   if (diff === 0) return { label: 'Due today', color: 'text-orange-600 bg-orange-50' };
   if (diff <= 2) return { label: 'Coming soon', color: 'text-yellow-600 bg-yellow-50' };
-  return { label: 'Upcoming', color: 'text-gray-600 bg-gray-50' };
+  return { label: 'Upcoming', color: 'text-gray-600 dark:text-neutral-300 bg-gray-50' };
 };
 
 const getTasks = async () => {
@@ -287,7 +287,7 @@ export function TasksPage() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {/* Total Tasks */}
-        <Card className="border border-gray-200 bg-white hover:shadow-lg transition-all duration-200 hover:border-indigo-300">
+        <Card className="border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:shadow-lg transition-all duration-200 hover:border-indigo-300">
           <CardContent className="p-6 pt-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -295,7 +295,7 @@ export function TasksPage() {
                   <BarChart3 className="h-6 w-6 text-indigo-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Tasks</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-neutral-300">Total Tasks</p>
                   <p className="text-2xl font-bold text-gray-900">{totalTasks}</p>
                 </div>
               </div>
@@ -309,7 +309,7 @@ export function TasksPage() {
         </Card>
 
         {/* Completed Tasks */}
-        <Card className="border border-gray-200 bg-white hover:shadow-lg transition-all duration-200 hover:border-green-300">
+        <Card className="border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:shadow-lg transition-all duration-200 hover:border-green-300">
           <CardContent className="p-6 pt-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -317,7 +317,7 @@ export function TasksPage() {
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Completed</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-neutral-300">Completed</p>
                   <p className="text-2xl font-bold text-gray-900">{completedTasks}</p>
                 </div>
               </div>
@@ -331,7 +331,7 @@ export function TasksPage() {
         </Card>
 
         {/* In Progress Tasks */}
-        <Card className="border border-gray-200 bg-white hover:shadow-lg transition-all duration-200 hover:border-blue-300">
+        <Card className="border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:shadow-lg transition-all duration-200 hover:border-blue-300">
           <CardContent className="p-6 pt-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -339,7 +339,7 @@ export function TasksPage() {
                   <TrendingUp className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-600">In Progress</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-neutral-300">In Progress</p>
                   <p className="text-2xl font-bold text-gray-900">{inProgressTasks}</p>
                 </div>
               </div>
@@ -353,7 +353,7 @@ export function TasksPage() {
         </Card>
 
         {/* Overdue Tasks */}
-        <Card className="border border-gray-200 bg-white hover:shadow-lg transition-all duration-200 hover:border-red-300">
+        <Card className="border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:shadow-lg transition-all duration-200 hover:border-red-300">
           <CardContent className="p-6 pt-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -361,7 +361,7 @@ export function TasksPage() {
                   <AlertCircle className="h-6 w-6 text-red-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Overdue</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-neutral-300">Overdue</p>
                   <p className="text-2xl font-bold text-gray-900">{overdueTasks}</p>
                 </div>
               </div>
@@ -384,7 +384,7 @@ export function TasksPage() {
     return (
       <Card className={`cursor-pointer transition-all duration-200 group relative overflow-hidden ${
         isDragging ? 'shadow-2xl scale-105 z-50 rotate-1' : 'hover:shadow-lg hover:-translate-y-0.5'
-      } bg-white border border-gray-200`}>
+      } bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700`}>
         <CardContent className="p-4 pt-6">
           {/* Header: Priority and More Actions */}
           <div className="flex items-center justify-between mb-3">
@@ -399,7 +399,7 @@ export function TasksPage() {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600">
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 dark:text-neutral-300">
                   <MoreHorizontal className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
@@ -428,7 +428,7 @@ export function TasksPage() {
 
           {/* Description */}
           {task.description && (
-            <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+            <p className="text-xs text-gray-600 dark:text-neutral-300 mb-3 line-clamp-2">
               {task.description}
             </p>
           )}
@@ -475,7 +475,7 @@ export function TasksPage() {
           <div className="mb-3">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs text-gray-500">Progress</span>
-              <span className="text-xs font-medium text-gray-700">
+              <span className="text-xs font-medium text-gray-700 dark:text-neutral-200">
                 {task.status === TaskStatus.COMPLETED ? '100%' :
                  task.status === TaskStatus.IN_PROGRESS ? '50%' :
                  task.status === TaskStatus.PENDING ? '10%' : '0%'}
@@ -499,7 +499,7 @@ export function TasksPage() {
                 task.status === TaskStatus.IN_PROGRESS ? 'bg-indigo-500' :
                 task.status === TaskStatus.PENDING ? 'bg-gray-400' : 'bg-red-500'
               }`}></div>
-              <span className="text-xs text-gray-600 capitalize">
+              <span className="text-xs text-gray-600 dark:text-neutral-300 capitalize">
                 {task.status.replace('_', ' ')}
               </span>
             </div>
@@ -512,10 +512,10 @@ export function TasksPage() {
 
   // Kanban View Component - Deals Style
   const KanbanView = () => (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      <div className="p-4 border-b border-gray-200">
+    <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 shadow-sm overflow-hidden">
+      <div className="p-4 border-b border-gray-200 dark:border-neutral-700">
         <h2 className="text-lg font-semibold text-gray-900">Task Pipeline Overview</h2>
-        <p className="text-sm text-gray-600 mt-1">Drag and drop tasks between stages</p>
+        <p className="text-sm text-gray-600 dark:text-neutral-300 mt-1">Drag and drop tasks between stages</p>
       </div>
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="p-4">
@@ -527,7 +527,7 @@ export function TasksPage() {
               return (
                 <div key={stage.value} className="min-w-0 w-full">
                   <div className="mb-4">
-                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-3">
+                    <div className="bg-gray-50 rounded-lg border border-gray-200 dark:border-neutral-700 p-3">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <div className={`p-1.5 rounded-lg ${stage.color} border ${stage.borderColor} flex-shrink-0`}>
@@ -545,7 +545,7 @@ export function TasksPage() {
                       </div>
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-gray-500">Progress</span>
-                        <span className="font-medium text-gray-700">{stage.probability}%</span>
+                        <span className="font-medium text-gray-700 dark:text-neutral-200">{stage.probability}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
                         <div 
@@ -566,7 +566,7 @@ export function TasksPage() {
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className={`space-y-2 min-h-[300px] max-h-[500px] overflow-y-auto p-2 rounded-lg transition-colors ${
-                          snapshot.isDraggingOver ? 'bg-gray-50 border-2 border-dashed border-gray-300' : ''
+                          snapshot.isDraggingOver ? 'bg-gray-50 border-2 border-dashed border-gray-300 dark:border-neutral-600' : ''
                         }`}
                       >
                         {stageTasks.map((task, index) => (
@@ -586,7 +586,7 @@ export function TasksPage() {
                         {provided.placeholder}
                         
                         {stageTasks.length === 0 && (
-                          <div className="flex items-center justify-center h-24 border-2 border-dashed border-gray-200 rounded-lg text-gray-400">
+                          <div className="flex items-center justify-center h-24 border-2 border-dashed border-gray-200 dark:border-neutral-700 rounded-lg text-gray-400">
                             <div className="text-center">
                               <StageIcon className="h-5 w-5 mx-auto mb-1 opacity-50" />
                               <p className="text-[10px]">No tasks</p>
@@ -626,7 +626,7 @@ export function TasksPage() {
           <Button 
             onClick={() => refetchTasks()} 
             variant="outline" 
-            className="bg-white text-red-600 border-red-200 hover:bg-red-50"
+            className="bg-white dark:bg-neutral-900 text-red-600 border-red-200 hover:bg-red-50"
           >
             Try Again
           </Button>
@@ -640,12 +640,12 @@ export function TasksPage() {
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <div className="h-full max-w-none p-4 space-y-4 w-full">
         {/* Professional Header - Full Width */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 shadow-sm">
           <div className="px-6 py-4">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between">
               <div className="mb-4 lg:mb-0">
                 <h1 className="text-2xl font-bold text-gray-900 mb-1">Task Management</h1>
-                <p className="text-gray-600">Organize and track your tasks through the workflow</p>
+                <p className="text-gray-600 dark:text-neutral-300">Organize and track your tasks through the workflow</p>
               </div>
               
               <div className="flex items-center gap-3">
@@ -659,7 +659,7 @@ export function TasksPage() {
                           queryClient.invalidateQueries({ queryKey: ['tasks'] });
                           refetchTasks();
                         }}
-                        className="bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        className="bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-800"
                       >
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Refresh
@@ -677,7 +677,7 @@ export function TasksPage() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        className="bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-800"
                       >
                         <Download className="h-4 w-4 mr-2" />
                         Export
@@ -702,7 +702,7 @@ export function TasksPage() {
         <AnalyticsCards />
 
         {/* Professional Toolbar - Full Width */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 shadow-sm">
           <div className="px-6 py-4">
             <div className="space-y-4">
               {/* Row 1: Search and Filter */}
@@ -713,13 +713,13 @@ export function TasksPage() {
                     placeholder="Search tasks..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                    className="pl-9 w-full border-gray-300 dark:border-neutral-600 focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
                 
                 <div className="flex gap-2 sm:gap-3">
                   <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                    <SelectTrigger className="w-full sm:w-48 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                    <SelectTrigger className="w-full sm:w-48 border-gray-300 dark:border-neutral-600 focus:border-indigo-500 focus:ring-indigo-500">
                       <SelectValue placeholder="Filter by priority" />
                     </SelectTrigger>
                     <SelectContent>
@@ -739,19 +739,19 @@ export function TasksPage() {
               {/* Row 2: View Controls */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-600 font-medium hidden sm:inline">View:</span>
+                  <span className="text-sm text-gray-600 dark:text-neutral-300 font-medium hidden sm:inline">View:</span>
                   <Tabs value={viewMode} onValueChange={(value: any) => setViewMode(value)}>
                     <TabsList className="grid w-full grid-cols-2 bg-gray-100 h-10 p-1 rounded-lg">
                       <TabsTrigger 
                         value="kanban" 
-                        className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600 hover:text-gray-900"
+                        className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all data-[state=active]:bg-white dark:bg-neutral-900 data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600 dark:text-neutral-300 hover:text-gray-900"
                       >
                         <Kanban className="h-4 w-4 flex-shrink-0" />
                         <span className="hidden sm:inline">Board</span>
                       </TabsTrigger>
                       <TabsTrigger 
                         value="list" 
-                        className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600 hover:text-gray-900"
+                        className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all data-[state=active]:bg-white dark:bg-neutral-900 data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600 dark:text-neutral-300 hover:text-gray-900"
                       >
                         <List className="h-4 w-4 flex-shrink-0" />
                         <span className="hidden sm:inline">List</span>
@@ -773,7 +773,7 @@ export function TasksPage() {
                   <CheckCircle className="h-8 w-8 text-gray-400" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No tasks found</h3>
-                <p className="text-gray-600 mb-6">Get started by creating your first task or adjust your filters.</p>
+                <p className="text-gray-600 dark:text-neutral-300 mb-6">Get started by creating your first task or adjust your filters.</p>
                 <Button onClick={() => navigate('/tasks/new')} className="bg-blue-600 text-white hover:bg-blue-700">
                   <Plus className="h-4 w-4 mr-2" />
                   Create First Task
@@ -787,9 +787,9 @@ export function TasksPage() {
               </TabsContent>
               
               <TabsContent value="list" className="mt-0">
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-700 overflow-hidden">
                   {/* List header */}
-                  <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-100 bg-gray-50 font-medium text-sm text-gray-600">
+                  <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-100 dark:border-neutral-800 bg-gray-50 font-medium text-sm text-gray-600 dark:text-neutral-300">
                     <div className="col-span-4">Task</div>
                     <div className="col-span-2">Due Date</div>
                     <div className="col-span-2">Priority</div>
@@ -806,7 +806,7 @@ export function TasksPage() {
                       return (
                         <div 
                           key={task.id} 
-                          className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                          className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors"
                           onClick={() => handleTaskClick(task)}
                         >
                           <div className="col-span-4">
@@ -839,7 +839,7 @@ export function TasksPage() {
                                     {(task.lead.first_name?.[0] || '?')}{(task.lead.last_name?.[0] || '')}
                                   </span>
                                 </div>
-                                <span className="text-sm text-gray-700 truncate">
+                                <span className="text-sm text-gray-700 dark:text-neutral-200 truncate">
                                   {task.lead.first_name} {task.lead.last_name}
                                 </span>
                               </div>
@@ -877,7 +877,7 @@ export function TasksPage() {
 
         {/* Error Modal */}
         <Dialog open={errorModalOpen} onOpenChange={setErrorModalOpen}>
-          <DialogContent className="sm:max-w-[500px] bg-white shadow-lg">
+          <DialogContent className="sm:max-w-[500px] bg-white dark:bg-neutral-900 shadow-lg">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold text-red-600 flex items-center gap-2">
                 <AlertCircle className="h-5 w-5" />
@@ -885,12 +885,12 @@ export function TasksPage() {
               </DialogTitle>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-gray-700">{errorMessage}</p>
+              <p className="text-gray-700 dark:text-neutral-200">{errorMessage}</p>
             </div>
             <div className="mt-4 flex justify-end">
               <Button 
                 onClick={() => setErrorModalOpen(false)} 
-                className="bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                className="bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-800"
               >
                 OK
               </Button>

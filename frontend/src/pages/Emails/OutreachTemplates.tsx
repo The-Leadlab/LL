@@ -100,7 +100,7 @@ export function OutreachTemplatesPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">{t('templatesPage.title')}</h1>
-          <p className="mt-1 text-sm text-gray-600">{t('templatesPage.subtitle')}</p>
+          <p className="mt-1 text-sm text-gray-600 dark:text-neutral-300">{t('templatesPage.subtitle')}</p>
         </div>
         <Button
           type="button"
@@ -207,7 +207,7 @@ export function OutreachTemplatesPage() {
                     <span className="font-medium">{tpl.name}</span>
                     <span className="text-xs text-gray-500">{tpl.format}</span>
                   </div>
-                  <p className="mt-1 truncate text-sm text-gray-600">{tpl.subject}</p>
+                  <p className="mt-1 truncate text-sm text-gray-600 dark:text-neutral-300">{tpl.subject}</p>
                   {tpl.ab_subjects && tpl.ab_subjects.length > 0 && (
                     <p className="mt-1 text-xs text-gray-500">
                       {t('templatesPage.abLabel', { subjects: tpl.ab_subjects.join(' · ') })}

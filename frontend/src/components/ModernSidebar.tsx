@@ -275,9 +275,9 @@ export function ModernSidebar({
           aria-label={collapsedEffective ? t('expand') : t('collapse')}
         >
           {collapsedEffective ? (
-            <ChevronRight className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+            <ChevronRight className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
           ) : (
-            <ChevronLeft className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+            <ChevronLeft className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
           )}
         </button>
       </div>
@@ -313,8 +313,8 @@ export function ModernSidebar({
                     onClick={() => toggleExpanded(item.labelKey)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${
                       active
-                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
-                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                        ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300'
+                        : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
@@ -339,8 +339,8 @@ export function ModernSidebar({
                             onClick={() => onNavigate?.()}
                             className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                               childActive
-                                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
-                                : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                                ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200'
+                                : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800'
                             }`}
                           >
                             <ChildIcon className="w-4 h-4" />
@@ -357,8 +357,8 @@ export function ModernSidebar({
                   onClick={() => onNavigate?.()}
                   className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${
                     active
-                      ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
-                      : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                      ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300'
+                      : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
@@ -392,8 +392,8 @@ export function ModernSidebar({
               {...(dataTour ? { 'data-tour': dataTour } : {})}
               className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
                 active
-                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
-                  : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                  ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300'
+                  : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
               }`}
             >
               <Icon className="w-5 h-5" />

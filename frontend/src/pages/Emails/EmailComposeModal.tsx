@@ -252,7 +252,7 @@ export default function EmailComposeModal({
                         key={index}
                         className="flex items-center justify-between p-2 bg-gray-50 rounded"
                       >
-                        <span className="text-sm text-gray-600">{file.name}</span>
+                        <span className="text-sm text-gray-600 dark:text-neutral-300">{file.name}</span>
                         <Button
                           type="button"
                           variant="ghost"
@@ -289,7 +289,7 @@ export default function EmailComposeModal({
             </Button>
             <div className="mt-2 space-y-1">
               {attachments.length > 0 && (
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-gray-600 dark:text-neutral-300">
                   {t('composePage.filesSelected', { count: attachments.length })}{' '}
                   {attachments.slice(0, 2).map((file) => file.name).join(', ')}
                   {attachments.length > 2 ? ` ${t('composePage.moreFiles', { count: attachments.length - 2 })}` : ''}

@@ -11,7 +11,7 @@ export function PageContainer({ children, className, noPadding = false }: PageCo
   return (
     <div
       className={cn(
-        'w-full min-h-full bg-white',
+        'w-full min-h-full bg-background text-foreground',
         !noPadding && 'p-6',
         'animate-in fade-in duration-300',
         className

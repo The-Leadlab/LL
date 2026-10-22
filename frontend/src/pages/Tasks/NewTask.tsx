@@ -124,7 +124,7 @@ export const NewTaskPage = () => {
   // User selection component
   const renderUserSelect = () => (
     <div className="space-y-2">
-      <label htmlFor="assigned_to_id" className="block text-sm font-medium text-gray-700">
+      <label htmlFor="assigned_to_id" className="block text-sm font-medium text-gray-700 dark:text-neutral-200">
         Assign To
       </label>
       <Popover open={userPopoverOpen} onOpenChange={setUserPopoverOpen}>
@@ -132,7 +132,7 @@ export const NewTaskPage = () => {
           <Button
             variant="outline"
             role="combobox"
-            className="w-full justify-between bg-white hover:bg-gray-50"
+            className="w-full justify-between bg-white dark:bg-neutral-900 hover:bg-gray-50 dark:hover:bg-neutral-800"
             disabled={isLoadingUsers && !selectedUser}
           >
             {isLoadingUsers && !selectedUser ? (
@@ -212,7 +212,7 @@ export const NewTaskPage = () => {
               filteredUsers.map((user: User) => (
                 <div
                   key={user.id}
-                  className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-gray-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
                   onClick={() => {
                     handleUserSelect(user);
                   }}
@@ -444,7 +444,7 @@ export const NewTaskPage = () => {
 
         {/* Lead Selection */}
         <div className="space-y-2">
-          <label htmlFor="lead_id" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="lead_id" className="block text-sm font-medium text-gray-700 dark:text-neutral-200">
             Associated Lead
           </label>
           <Popover open={leadPopoverOpen} onOpenChange={setLeadPopoverOpen}>
@@ -452,7 +452,7 @@ export const NewTaskPage = () => {
               <Button
                 variant="outline"
                 role="combobox"
-                className="w-full justify-between bg-white hover:bg-gray-50"
+                className="w-full justify-between bg-white dark:bg-neutral-900 hover:bg-gray-50 dark:hover:bg-neutral-800"
                 disabled={isLoadingLeads}
               >
                 {isLoadingLeads ? (
@@ -541,7 +541,7 @@ export const NewTaskPage = () => {
                 ) : (
                   <>
                     <div
-                      className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-gray-100 border-b"
+                      className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 border-b"
                       onClick={() => {
                         setSelectedLead(null);
                         setValue('lead_id', undefined);
@@ -561,7 +561,7 @@ export const NewTaskPage = () => {
                     {filteredLeads?.map((lead) => (
                       <div
                         key={lead.id}
-                        className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-gray-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                        className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
                         onClick={() => {
                           setSelectedLead(lead);
                           setValue('lead_id', lead.id);
