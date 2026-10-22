@@ -419,22 +419,22 @@ export function ModernLeads() {
     },
     enabled: isAdmin && isManageClientsOpen,
   });
-  const assignableUsers = assignableUsersData ?? [];
+  const assignableUsers = Array.isArray(assignableUsersData)
+    ? assignableUsersData
+    : [];
 
   const { data: stagesData } = useQuery({
     queryKey: ['lead-stages'],
-    queryFn: async () => {
-      const res = await stagesAPI.getAll();
-      const raw = res?.data ?? res;
-      if (Array.isArray(raw)) return raw as Stage[];
-      if (Array.isArray(raw?.results)) return raw.results as Stage[];
-      if (Array.isArray(raw?.items)) return raw.items as Stage[];
-      return [] as Stage[];
-    },
+    queryFn: () => stagesAPI.getAll(),
   });
-  const stages: Stage[] = stagesData ?? [];
+  // Guard: shared react-query cache may still hold a non-array from older queryFns
+  const stages: Stage[] = Array.isArray(stagesData) ? stagesData : [];
 
-  const allClients: Client[] = clientsData?.items ?? [];
+  const allClients: Client[] = Array.isArray(clientsData?.items)
+    ? clientsData.items
+    : Array.isArray(clientsData)
+      ? (clientsData as Client[])
+      : [];
   const activeClients = allClients.filter((c) => !c.is_archived);
   const archivedClients = allClients.filter((c) => c.is_archived);
 

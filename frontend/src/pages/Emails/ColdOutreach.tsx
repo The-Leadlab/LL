@@ -455,6 +455,9 @@ export function ColdOutreachPage() {
   });
   const stages: Stage[] = useMemo(() => {
     if (Array.isArray(stagesRaw)) return stagesRaw as Stage[];
+    if (stagesRaw && Array.isArray((stagesRaw as { data?: Stage[] }).data)) {
+      return (stagesRaw as { data: Stage[] }).data;
+    }
     if (stagesRaw && Array.isArray((stagesRaw as { items?: Stage[] }).items)) {
       return (stagesRaw as { items: Stage[] }).items;
     }
