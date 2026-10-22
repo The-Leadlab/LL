@@ -1,7 +1,7 @@
 from typing import List, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, or_
 from fastapi import HTTPException
 
 from app.models.client import Client
@@ -75,11 +75,28 @@ class CRUDClient:
         *,
         organization_id: int,
         include_archived: bool = False,
+        viewer_user_id: Optional[int] = None,
+        viewer_is_admin: bool = False,
     ) -> List[Client]:
+        """
+        List clients for an org.
+
+        Admins see every list. Members see General, shared lists
+        (assigned_user_id IS NULL), lists assigned to them, and lists they created.
+        """
         self.ensure_general(db, organization_id=organization_id)
         q = db.query(Client).filter(Client.organization_id == organization_id)
         if not include_archived:
             q = q.filter(Client.is_archived == False)  # noqa: E712
+        if not viewer_is_admin and viewer_user_id is not None:
+            q = q.filter(
+                or_(
+                    Client.is_default == True,  # noqa: E712
+                    Client.assigned_user_id.is_(None),
+                    Client.assigned_user_id == viewer_user_id,
+                    Client.created_by == viewer_user_id,
+                )
+            )
         return q.order_by(Client.is_default.desc(), Client.name.asc()).all()
 
     def lead_counts_by_client(
@@ -115,7 +132,15 @@ class CRUDClient:
             q = q.filter(Client.id != exclude_id)
         return q.first()
 
-    def create(self, db: Session, *, organization_id: int, obj_in: ClientCreate) -> Client:
+    def create(
+        self,
+        db: Session,
+        *,
+        organization_id: int,
+        obj_in: ClientCreate,
+        created_by: Optional[int] = None,
+        assigned_user_id: Optional[int] = None,
+    ) -> Client:
         name = (obj_in.name or "").strip()
         if not name:
             raise HTTPException(status_code=400, detail="Client name cannot be empty")
@@ -129,17 +154,40 @@ class CRUDClient:
                 status_code=400,
                 detail=f"Client '{name}' already exists in your organization",
             )
+        # New lists belong to the creator by default (admin can reassign / share)
+        owner_id = assigned_user_id if assigned_user_id is not None else created_by
         client = Client(
             organization_id=organization_id,
             name=name,
             is_default=False,
             is_archived=False,
+            created_by=created_by,
+            assigned_user_id=owner_id,
             created_at=datetime.utcnow(),
         )
         db.add(client)
         db.commit()
         db.refresh(client)
         return client
+
+    def assign(
+        self,
+        db: Session,
+        *,
+        db_obj: Client,
+        assigned_user_id: Optional[int],
+    ) -> Client:
+        if db_obj.is_default:
+            raise HTTPException(
+                status_code=400,
+                detail="The General client cannot be assigned to a single member",
+            )
+        db_obj.assigned_user_id = assigned_user_id
+        db_obj.updated_at = datetime.utcnow()
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
 
     def rename(
         self, db: Session, *, db_obj: Client, obj_in: ClientUpdate

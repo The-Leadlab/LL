@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { leadsAPI, type Lead } from '@/services/api/leads';
 import { clientsAPI, type Client } from '@/services/api/clients';
 import { stagesAPI, type Stage } from '@/services/api/stages';
+import usersAPI from '@/services/api/users';
 import type { LeadListResponse } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/auth';
@@ -313,6 +314,7 @@ export function ModernLeads() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuthStore();
+  const isAdmin = Boolean(user?.is_admin);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [debouncedSearch, setDebouncedSearch] = useState(() => (searchParams.get('q') || '').trim());
@@ -402,6 +404,22 @@ export function ModernLeads() {
     queryKey: ['clients', 'with-archived'],
     queryFn: () => clientsAPI.list(true),
   });
+
+  const { data: assignableUsersData } = useQuery({
+    queryKey: ['assignable-users', user?.organization_id],
+    queryFn: async () => {
+      const res = await usersAPI.getAssignable();
+      const items = res?.items ?? res?.data?.items ?? (Array.isArray(res) ? res : []);
+      return items as Array<{
+        id: number;
+        first_name?: string;
+        last_name?: string;
+        email?: string;
+      }>;
+    },
+    enabled: isAdmin && isManageClientsOpen,
+  });
+  const assignableUsers = assignableUsersData ?? [];
 
   const { data: stagesData } = useQuery({
     queryKey: ['lead-stages'],
@@ -720,6 +738,47 @@ export function ModernLeads() {
     onError: (error: any) => {
       toast({
         title: t('page.deleteClientFailed'),
+        description: error?.response?.data?.detail || error?.message || t('common:failed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const requestDeleteClientMutation = useMutation({
+    mutationFn: (id: number) => clientsAPI.requestDelete(id),
+    onSuccess: (result) => {
+      toast({
+        title: t('page.deleteRequestSent'),
+        description: t('page.deleteRequestSentHint', {
+          name: result.client_name,
+          count: result.admins_notified,
+        }),
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('page.deleteRequestFailed'),
+        description: error?.response?.data?.detail || error?.message || t('common:failed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const assignClientMutation = useMutation({
+    mutationFn: ({
+      id,
+      assignedUserId,
+    }: {
+      id: number;
+      assignedUserId: number | null;
+    }) => clientsAPI.assign(id, assignedUserId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast({ title: t('page.clientAssigned') });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('page.assignClientFailed'),
         description: error?.response?.data?.detail || error?.message || t('common:failed'),
         variant: 'destructive',
       });
@@ -1871,10 +1930,10 @@ export function ModernLeads() {
               {activeClients.map((client) => (
                 <div
                   key={client.id}
-                  className="flex flex-wrap items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-700 p-3"
+                  className="flex flex-col gap-2 rounded-lg border border-neutral-200 dark:border-neutral-700 p-3"
                 >
                   {renamingId === client.id ? (
-                    <>
+                    <div className="flex flex-wrap items-center gap-2">
                       <Input
                         value={renameValue}
                         onChange={(e) => setRenameValue(e.target.value)}
@@ -1892,57 +1951,115 @@ export function ModernLeads() {
                       <Button size="sm" variant="outline" onClick={() => setRenamingId(null)}>
                         {t('common:cancel')}
                       </Button>
-                    </>
+                    </div>
                   ) : (
                     <>
-                      <span className="flex-1 font-medium text-neutral-900 dark:text-neutral-50">
-                        {client.name}
-                        {client.is_default && (
-                          <span className="ml-2 text-xs text-neutral-500">{t('page.defaultLabel')}</span>
-                        )}
-                      </span>
-                      {!client.is_default && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setRenamingId(client.id);
-                              setRenameValue(client.name);
-                            }}
-                          >
-                            {t('page.rename')}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={archiveClientMutation.isPending}
-                            onClick={() => archiveClientMutation.mutate(client.id)}
-                          >
-                            {t('page.archive')}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-red-600 hover:text-red-700 dark:text-red-400"
-                            disabled={deleteClientMutation.isPending}
-                            onClick={() => {
-                              const count = client.lead_count ?? 0;
-                              if (
-                                window.confirm(
-                                  t('page.deleteClientConfirm', {
-                                    name: client.name,
-                                    count,
-                                  })
-                                )
-                              ) {
-                                deleteClientMutation.mutate(client.id);
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="flex-1 font-medium text-neutral-900 dark:text-neutral-50">
+                          {client.name}
+                          {client.is_default && (
+                            <span className="ml-2 text-xs text-neutral-500">{t('page.defaultLabel')}</span>
+                          )}
+                          {!client.is_default && client.assigned_user_name && (
+                            <span className="ml-2 text-xs text-neutral-500">
+                              · {client.assigned_user_name}
+                            </span>
+                          )}
+                          {!client.is_default && !client.assigned_user_id && (
+                            <span className="ml-2 text-xs text-neutral-500">
+                              · {t('page.sharedWithTeam')}
+                            </span>
+                          )}
+                        </span>
+                        {!client.is_default && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setRenamingId(client.id);
+                                setRenameValue(client.name);
+                              }}
+                            >
+                              {t('page.rename')}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={archiveClientMutation.isPending}
+                              onClick={() => archiveClientMutation.mutate(client.id)}
+                            >
+                              {t('page.archive')}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:text-red-700 dark:text-red-400"
+                              disabled={
+                                deleteClientMutation.isPending ||
+                                requestDeleteClientMutation.isPending
                               }
+                              onClick={() => {
+                                const count = client.lead_count ?? 0;
+                                if (isAdmin) {
+                                  if (
+                                    window.confirm(
+                                      t('page.deleteClientConfirm', {
+                                        name: client.name,
+                                        count,
+                                      })
+                                    )
+                                  ) {
+                                    deleteClientMutation.mutate(client.id);
+                                  }
+                                } else if (
+                                  window.confirm(
+                                    t('page.requestDeleteConfirm', {
+                                      name: client.name,
+                                      count,
+                                    })
+                                  )
+                                ) {
+                                  requestDeleteClientMutation.mutate(client.id);
+                                }
+                              }}
+                            >
+                              {t('page.deleteClient')}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                      {isAdmin && !client.is_default && (
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-neutral-500 whitespace-nowrap">
+                            {t('page.assignTo')}
+                          </label>
+                          <select
+                            className="flex-1 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1.5 text-sm"
+                            value={
+                              client.assigned_user_id == null
+                                ? ''
+                                : String(client.assigned_user_id)
+                            }
+                            disabled={assignClientMutation.isPending}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              assignClientMutation.mutate({
+                                id: client.id,
+                                assignedUserId: raw === '' ? null : Number(raw),
+                              });
                             }}
                           >
-                            {t('page.deleteClient')}
-                          </Button>
-                        </>
+                            <option value="">{t('page.sharedWithTeam')}</option>
+                            {assignableUsers.map((u) => (
+                              <option key={u.id} value={u.id}>
+                                {[u.first_name, u.last_name].filter(Boolean).join(' ') ||
+                                  u.email ||
+                                  `#${u.id}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       )}
                     </>
                   )}
@@ -1971,7 +2088,11 @@ export function ModernLeads() {
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={restoreClientMutation.isPending || deleteClientMutation.isPending}
+                      disabled={
+                        restoreClientMutation.isPending ||
+                        deleteClientMutation.isPending ||
+                        requestDeleteClientMutation.isPending
+                      }
                       onClick={() => restoreClientMutation.mutate(client.id)}
                     >
                       {t('page.restore')}
@@ -1980,18 +2101,32 @@ export function ModernLeads() {
                       size="sm"
                       variant="outline"
                       className="text-red-600 hover:text-red-700 dark:text-red-400"
-                      disabled={deleteClientMutation.isPending}
+                      disabled={
+                        deleteClientMutation.isPending ||
+                        requestDeleteClientMutation.isPending
+                      }
                       onClick={() => {
                         const count = client.lead_count ?? 0;
-                        if (
+                        if (isAdmin) {
+                          if (
+                            window.confirm(
+                              t('page.deleteClientConfirm', {
+                                name: client.name,
+                                count,
+                              })
+                            )
+                          ) {
+                            deleteClientMutation.mutate(client.id);
+                          }
+                        } else if (
                           window.confirm(
-                            t('page.deleteClientConfirm', {
+                            t('page.requestDeleteConfirm', {
                               name: client.name,
                               count,
                             })
                           )
                         ) {
-                          deleteClientMutation.mutate(client.id);
+                          requestDeleteClientMutation.mutate(client.id);
                         }
                       }}
                     >

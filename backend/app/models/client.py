@@ -16,11 +16,15 @@ class Client(Base):
     name = Column(String(200), nullable=False)
     is_default = Column(Boolean, nullable=False, default=False)
     is_archived = Column(Boolean, nullable=False, default=False, index=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    assigned_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=True)
 
     organization = relationship("Organization", back_populates="clients")
     leads = relationship("Lead", back_populates="client")
+    creator = relationship("User", foreign_keys=[created_by])
+    assignee = relationship("User", foreign_keys=[assigned_user_id])
 
     def __repr__(self) -> str:
         return f"<Client {self.name} org={self.organization_id}>"

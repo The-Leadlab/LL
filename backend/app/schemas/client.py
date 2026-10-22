@@ -15,11 +15,19 @@ class ClientUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
 
 
+class ClientAssign(BaseModel):
+    """Admin-only: assign a client list to a team member (null = shared with org)."""
+    assigned_user_id: Optional[int] = None
+
+
 class Client(ClientBase):
     id: int
     organization_id: int
     is_default: bool = False
     is_archived: bool = False
+    created_by: Optional[int] = None
+    assigned_user_id: Optional[int] = None
+    assigned_user_name: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     lead_count: Optional[int] = None
