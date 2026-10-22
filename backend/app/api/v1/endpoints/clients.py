@@ -24,9 +24,20 @@ def _to_schema(c, lead_counts: Optional[dict] = None) -> Client:
     data = Client.model_validate(c)
     if lead_counts is not None:
         data.lead_count = lead_counts.get(c.id, 0)
-    assignee = getattr(c, "assignee", None)
-    if assignee is not None:
-        data.assigned_user_name = _display_name(assignee)
+    assignees = list(getattr(c, "assignees", None) or [])
+    # Fall back to legacy singular assignee if join not loaded / empty
+    if not assignees:
+        legacy = getattr(c, "assignee", None)
+        if legacy is not None:
+            assignees = [legacy]
+    data.assignees = assignees
+    data.assigned_user_ids = [u.id for u in assignees]
+    names = [_display_name(u) for u in assignees]
+    data.assigned_user_names = [n for n in names if n]
+    if data.assigned_user_names:
+        data.assigned_user_name = ", ".join(data.assigned_user_names)
+    elif getattr(c, "assignee", None) is not None:
+        data.assigned_user_name = _display_name(c.assignee)
     return data
 
 
@@ -47,13 +58,15 @@ def _member_can_see(c, user: User) -> bool:
         return True
     if c.is_default:
         return True
-    if c.assigned_user_id is None:
-        return True
-    if c.assigned_user_id == user.id:
-        return True
     if c.created_by == user.id:
         return True
-    return False
+    assignees = list(getattr(c, "assignees", None) or [])
+    if assignees:
+        return any(a.id == user.id for a in assignees)
+    # No join rows: shared if legacy null, else singular legacy
+    if c.assigned_user_id is None:
+        return True
+    return c.assigned_user_id == user.id
 
 
 def _require_client(db: Session, client_id: int, user: User):
@@ -63,7 +76,10 @@ def _require_client(db: Session, client_id: int, user: User):
 
     db_obj = (
         db.query(ClientModel)
-        .options(joinedload(ClientModel.assignee))
+        .options(
+            joinedload(ClientModel.assignee),
+            joinedload(ClientModel.assignees),
+        )
         .filter(
             ClientModel.id == client_id,
             ClientModel.organization_id == user.organization_id,
@@ -96,12 +112,15 @@ def list_clients(
         viewer_user_id=current_user.id,
         viewer_is_admin=bool(current_user.is_admin),
     )
-    # Re-load with assignee for display names
+    # Re-load with assignees for display names
     ids = [c.id for c in items]
     if ids:
         loaded = (
             db.query(ClientModel)
-            .options(joinedload(ClientModel.assignee))
+            .options(
+                joinedload(ClientModel.assignee),
+                joinedload(ClientModel.assignees),
+            )
             .filter(ClientModel.id.in_(ids))
             .all()
         )
@@ -188,36 +207,32 @@ def assign_client(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
-    """Admin-only: assign a client list to a team member (null = shared with org)."""
+    """Admin-only: assign a client list to one or more members (empty = shared with org)."""
     if not current_user.is_admin:
         raise HTTPException(
             status_code=403,
             detail="Only admins can assign client lists to team members",
         )
     db_obj = _require_client(db, client_id, current_user)
-    assignee_id = body.assigned_user_id
-    if assignee_id is not None:
-        member = (
-            db.query(User)
-            .filter(
-                User.id == assignee_id,
-                User.organization_id == current_user.organization_id,
-                User.is_active == True,  # noqa: E712
-            )
-            .first()
-        )
-        if not member:
-            raise HTTPException(
-                status_code=400,
-                detail="Assignee must be an active member of your organization",
-            )
-    updated = crud_client.assign(db, db_obj=db_obj, assigned_user_id=assignee_id)
-    # Refresh assignee relationship for response
+
+    if body.assigned_user_ids is not None:
+        assignee_ids = list(body.assigned_user_ids)
+    elif body.assigned_user_id is not None:
+        assignee_ids = [body.assigned_user_id]
+    else:
+        assignee_ids = []
+
+    updated = crud_client.assign_many(
+        db, db_obj=db_obj, assigned_user_ids=assignee_ids
+    )
     from app.models.client import Client as ClientModel
 
     refreshed = (
         db.query(ClientModel)
-        .options(joinedload(ClientModel.assignee))
+        .options(
+            joinedload(ClientModel.assignee),
+            joinedload(ClientModel.assignees),
+        )
         .filter(ClientModel.id == updated.id)
         .first()
     )

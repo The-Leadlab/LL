@@ -14,7 +14,7 @@ from app.models.deal import Deal
 from app.models.task import Task
 from app.models.lead_stage import LeadStage
 from app.models.user import User
-from app.models.associations import lead_tags
+from app.models.associations import lead_tags, lead_assignees
 from app.schemas.lead import LeadCreate, LeadUpdate
 
 
@@ -48,6 +48,7 @@ _LEAD_LIST_LOAD = (
     selectinload(Lead.client),
     selectinload(Lead.user),
     selectinload(Lead.creator),
+    selectinload(Lead.assignees),
 )
 
 logger = logging.getLogger(__name__)
@@ -238,8 +239,110 @@ class CRUDLead(CRUDBase[Lead, LeadCreate, LeadUpdate]):
 
         return query.scalar()
 
-    def get_by_email(self, db: Session, *, email: str) -> Optional[Lead]:
-        return db.query(Lead).filter(Lead.email == email).first()
+    def get_by_email(
+        self,
+        db: Session,
+        *,
+        email: str,
+        organization_id: Optional[int] = None,
+        include_deleted: bool = False,
+    ) -> Optional[Lead]:
+        """
+        Find a lead by email.
+
+        Prefer scoping to organization_id. Soft-deleted leads are excluded by default
+        so imports into a new client list are not blocked by archived/deleted rows.
+        Matching is case-insensitive.
+        """
+        if not email or not str(email).strip():
+            return None
+        normalized = str(email).strip().lower()
+        q = db.query(Lead).filter(func.lower(Lead.email) == normalized)
+        if organization_id is not None:
+            q = q.filter(Lead.organization_id == organization_id)
+        if not include_deleted:
+            q = q.filter(Lead.is_deleted == False)  # noqa: E712
+        return q.first()
+
+    def get_by_email_any_status(
+        self,
+        db: Session,
+        *,
+        email: str,
+        organization_id: int,
+    ) -> Optional[Lead]:
+        """Active or soft-deleted lead with this email in the org (for import merge)."""
+        return self.get_by_email(
+            db,
+            email=email,
+            organization_id=organization_id,
+            include_deleted=True,
+        )
+
+    def set_assignees(
+        self,
+        db: Session,
+        *,
+        db_obj: Lead,
+        assignee_ids: List[int],
+        primary_user_id: Optional[int] = None,
+        commit: bool = True,
+    ) -> Lead:
+        """Replace lead_assignees; keep user_id as primary (first id or explicit)."""
+        seen = set()
+        unique: List[int] = []
+        for uid in assignee_ids:
+            if uid is None or uid in seen:
+                continue
+            seen.add(int(uid))
+            unique.append(int(uid))
+
+        if not unique and primary_user_id is not None:
+            unique = [int(primary_user_id)]
+        if not unique:
+            unique = [int(db_obj.user_id)]
+
+        members = (
+            db.query(User)
+            .filter(
+                User.id.in_(unique),
+                User.organization_id == db_obj.organization_id,
+                User.is_active == True,  # noqa: E712
+            )
+            .all()
+        )
+        found = {m.id for m in members}
+        missing = [uid for uid in unique if uid not in found]
+        if missing:
+            raise HTTPException(
+                status_code=400,
+                detail="Assignees must be active members of your organization",
+            )
+
+        primary = (
+            int(primary_user_id)
+            if primary_user_id is not None and int(primary_user_id) in found
+            else unique[0]
+        )
+        # Ensure primary is first in join rows order for display
+        ordered = [primary] + [uid for uid in unique if uid != primary]
+
+        db.execute(
+            lead_assignees.delete().where(lead_assignees.c.lead_id == db_obj.id)
+        )
+        for uid in ordered:
+            db.execute(
+                lead_assignees.insert().values(lead_id=db_obj.id, user_id=uid)
+            )
+        db_obj.user_id = primary
+        db_obj.updated_at = datetime.utcnow()
+        db.add(db_obj)
+        if commit:
+            db.commit()
+            db.refresh(db_obj)
+        else:
+            db.flush()
+        return db_obj
 
     def get_by_organization(
         self,

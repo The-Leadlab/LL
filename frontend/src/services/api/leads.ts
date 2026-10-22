@@ -72,6 +72,8 @@ export interface Lead {
   stage: Stage | null;
   user: User | null;
   creator: User | null;
+  assignees?: User[];
+  assignee_ids?: number[];
   tags: Tag[];
   notes: Note[];
   client_id?: number | null;
@@ -89,7 +91,10 @@ export interface LeadCreate {
   client_id?: number;
 }
 
-export interface LeadUpdate extends Partial<LeadCreate> {}
+export interface LeadUpdate extends Partial<LeadCreate> {
+  user_id?: number;
+  assignee_ids?: number[];
+}
 
 export interface LeadStage {
   id: number;
@@ -286,7 +291,7 @@ export const leadsAPI = {
     return api.post('/leads/', data);
   },
 
-  update: async (id: number, data: Partial<Lead>): Promise<any> => {
+  update: async (id: number, data: Partial<Lead> & LeadUpdate): Promise<any> => {
     return api.put(`/leads/${id}`, data);
   },
 

@@ -661,6 +661,7 @@ def update_lead(
 
     previous_owner_id = lead.user_id
     update_data = lead_in.model_dump(exclude_unset=True)
+    assignee_ids = update_data.pop("assignee_ids", None)
     if "client_id" in update_data:
         from app.crud.crud_client import client as crud_client
         requested = update_data.get("client_id")
@@ -686,11 +687,40 @@ def update_lead(
                 detail="Assignee must be a member of your organization",
             )
 
-    lead = crud.lead.update(db=db, db_obj=lead, obj_in=update_data)
+    if update_data:
+        lead = crud.lead.update(db=db, db_obj=lead, obj_in=update_data)
+
+    if assignee_ids is not None:
+        primary = update_data.get("user_id") or lead.user_id
+        # Ensure primary is included in multi-assignee set
+        ids = list(assignee_ids)
+        if primary and int(primary) not in {int(x) for x in ids}:
+            ids = [int(primary)] + ids
+        lead = crud.lead.set_assignees(
+            db,
+            db_obj=lead,
+            assignee_ids=ids,
+            primary_user_id=int(primary) if primary else None,
+        )
+    elif "user_id" in update_data and update_data["user_id"] is not None:
+        # Keep join table in sync when only primary owner changes
+        current_ids = [a.id for a in (getattr(lead, "assignees", None) or [])]
+        if int(update_data["user_id"]) not in current_ids:
+            current_ids = [int(update_data["user_id"])] + current_ids
+        else:
+            current_ids = [int(update_data["user_id"])] + [
+                i for i in current_ids if i != int(update_data["user_id"])
+            ]
+        lead = crud.lead.set_assignees(
+            db,
+            db_obj=lead,
+            assignee_ids=current_ids or [int(update_data["user_id"])],
+            primary_user_id=int(update_data["user_id"]),
+        )
 
     new_owner_id = getattr(lead, "user_id", None)
     if (
-        "user_id" in update_data
+        ("user_id" in update_data or assignee_ids is not None)
         and new_owner_id
         and new_owner_id != previous_owner_id
         and int(new_owner_id) != int(current_user.id)

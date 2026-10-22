@@ -82,6 +82,12 @@ async def startup_handler(app: FastAPI) -> None:
             ensure_client_ownership_schema(engine)
         except Exception as exc:
             logger.warning("Could not ensure client ownership columns on startup: %s", exc)
+        try:
+            from app.core.assignees_schema import ensure_assignees_schema
+
+            ensure_assignees_schema(engine)
+        except Exception as exc:
+            logger.warning("Could not ensure assignee tables on startup: %s", exc)
         _ensure_lead_search_indexes()
         ACTIVE_USERS.set(0)
         REQUEST_COUNT.clear()

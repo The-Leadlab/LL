@@ -104,6 +104,15 @@ async def startup_sequence_guard() -> None:
         logger.warning("Could not ensure clients ownership columns: %s", exc)
 
     try:
+        from app.db.session import engine as db_engine
+        from app.core.assignees_schema import ensure_assignees_schema
+
+        ensure_assignees_schema(db_engine)
+        logger.info("Ensured client/lead assignee tables exist")
+    except Exception as exc:
+        logger.warning("Could not ensure assignee tables: %s", exc)
+
+    try:
         from app.db.session import engine
         from app.models.user_settings import UserSettings
 

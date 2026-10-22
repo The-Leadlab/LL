@@ -1,5 +1,12 @@
 import api from '../axios';
 
+export interface ClientAssignee {
+  id: number;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+}
+
 export interface Client {
   id: number;
   organization_id: number;
@@ -9,6 +16,9 @@ export interface Client {
   created_by?: number | null;
   assigned_user_id?: number | null;
   assigned_user_name?: string | null;
+  assigned_user_ids?: number[];
+  assigned_user_names?: string[];
+  assignees?: ClientAssignee[];
   created_at: string;
   updated_at?: string | null;
   lead_count?: number | null;
@@ -47,10 +57,18 @@ export const clientsAPI = {
     return response.data;
   },
 
-  /** Admin-only: assign list to a member (null = shared with org). */
-  assign: async (id: number, assignedUserId: number | null): Promise<Client> => {
+  /** Admin-only: assign list to one or more members (empty = shared with org). */
+  assign: async (
+    id: number,
+    assignedUserIds: number[] | number | null,
+  ): Promise<Client> => {
+    const ids = Array.isArray(assignedUserIds)
+      ? assignedUserIds
+      : assignedUserIds == null
+        ? []
+        : [assignedUserIds];
     const response = await api.post(`/clients/${id}/assign`, {
-      assigned_user_id: assignedUserId,
+      assigned_user_ids: ids,
     });
     return response.data;
   },

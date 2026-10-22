@@ -417,11 +417,21 @@ export function ModernLeads() {
         email?: string;
       }>;
     },
-    enabled: isAdmin && isManageClientsOpen,
+    enabled: !!user?.organization_id,
   });
   const assignableUsers = Array.isArray(assignableUsersData)
     ? assignableUsersData
     : [];
+
+  const userLabel = (u: {
+    id: number;
+    first_name?: string | null;
+    last_name?: string | null;
+    email?: string | null;
+  }) =>
+    [u.first_name, u.last_name].filter(Boolean).join(' ') ||
+    u.email ||
+    `#${u.id}`;
 
   const { data: stagesData } = useQuery({
     queryKey: ['lead-stages'],
@@ -585,19 +595,31 @@ export function ModernLeads() {
       resetImportDialog();
       const data = res?.data?.data ?? res?.data ?? res;
       const count = data?.successful_imports;
+      const created = data?.created_imports;
+      const updated = data?.updated_imports;
+      const failed = data?.failed_imports;
       const skipped = data?.skipped_empty_rows;
+      const parts: string[] = [];
+      if (typeof count === 'number') {
+        parts.push(
+          t('page.importSuccessDetail', {
+            count,
+            skipped:
+              skipped > 0
+                ? t('page.importSkippedSuffix', { count: skipped })
+                : '',
+          }),
+        );
+      }
+      if (typeof created === 'number' && typeof updated === 'number' && updated > 0) {
+        parts.push(t('page.importCreatedUpdated', { created, updated }));
+      }
+      if (typeof failed === 'number' && failed > 0) {
+        parts.push(t('page.importFailedCount', { count: failed }));
+      }
       toast({
         title: t('common:success'),
-        description:
-          typeof count === 'number'
-            ? t('page.importSuccessDetail', {
-                count,
-                skipped:
-                  skipped > 0
-                    ? t('page.importSkippedSuffix', { count: skipped })
-                    : '',
-              })
-            : t('page.importSuccess'),
+        description: parts.length > 0 ? parts.join(' ') : t('page.importSuccess'),
       });
     },
     onError: (error: any) => {
@@ -767,11 +789,11 @@ export function ModernLeads() {
   const assignClientMutation = useMutation({
     mutationFn: ({
       id,
-      assignedUserId,
+      assignedUserIds,
     }: {
       id: number;
-      assignedUserId: number | null;
-    }) => clientsAPI.assign(id, assignedUserId),
+      assignedUserIds: number[];
+    }) => clientsAPI.assign(id, assignedUserIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast({ title: t('page.clientAssigned') });
@@ -779,6 +801,31 @@ export function ModernLeads() {
     onError: (error: any) => {
       toast({
         title: t('page.assignClientFailed'),
+        description: error?.response?.data?.detail || error?.message || t('common:failed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const assignLeadMutation = useMutation({
+    mutationFn: ({
+      id,
+      assigneeIds,
+    }: {
+      id: number;
+      assigneeIds: number[];
+    }) =>
+      leadsAPI.update(id, {
+        assignee_ids: assigneeIds,
+        user_id: assigneeIds[0],
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      toast({ title: t('page.leadAssigned') });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('page.assignLeadFailed'),
         description: error?.response?.data?.detail || error?.message || t('common:failed'),
         variant: 'destructive',
       });
@@ -1475,8 +1522,83 @@ export function ModernLeads() {
                             {GROUP_LABEL_KEYS[getLeadPersonality(lead)] ? t(GROUP_LABEL_KEYS[getLeadPersonality(lead)]) : getLeadPersonality(lead)}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-neutral-900 dark:text-neutral-50">
-                          {lead.user ? `${lead.user.first_name} ${lead.user.last_name}` : t('page.unassigned')}
+                        <td
+                          className="px-6 py-4 text-sm text-neutral-900 dark:text-neutral-50"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {(() => {
+                            const ids =
+                              lead.assignee_ids?.length
+                                ? lead.assignee_ids
+                                : lead.user_id
+                                  ? [lead.user_id]
+                                  : [];
+                            const names =
+                              lead.assignees?.length
+                                ? lead.assignees.map((a) => userLabel(a))
+                                : lead.user
+                                  ? [userLabel(lead.user)]
+                                  : [];
+                            const label =
+                              names.length > 0
+                                ? names.join(', ')
+                                : t('page.unassigned');
+                            return (
+                              <DropdownMenu modal={false}>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="text-left hover:underline decoration-dotted underline-offset-2 max-w-[10rem] truncate"
+                                    title={label}
+                                  >
+                                    {label}
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="start"
+                                  className="z-[200] w-56 max-h-64 overflow-y-auto"
+                                  onCloseAutoFocus={(e) => e.preventDefault()}
+                                >
+                                  <div className="px-2 py-1.5 text-xs font-medium text-neutral-500">
+                                    {t('page.assignTo')}
+                                  </div>
+                                  {assignableUsers.map((u) => {
+                                    const checked = ids.includes(u.id);
+                                    return (
+                                      <DropdownMenuItem
+                                        key={u.id}
+                                        className="cursor-pointer"
+                                        onSelect={(e) => {
+                                          e.preventDefault();
+                                          const next = checked
+                                            ? ids.filter((id) => id !== u.id)
+                                            : [...ids, u.id];
+                                          if (next.length === 0) return;
+                                          assignLeadMutation.mutate({
+                                            id: lead.id,
+                                            assigneeIds: next,
+                                          });
+                                        }}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          readOnly
+                                          checked={checked}
+                                          className="mr-2 h-3.5 w-3.5"
+                                        />
+                                        {userLabel(u)}
+                                      </DropdownMenuItem>
+                                    );
+                                  })}
+                                  {assignableUsers.length === 0 && (
+                                    <div className="px-2 py-1.5 text-xs text-neutral-500">
+                                      {t('page.noTeamMembers')}
+                                    </div>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu modal={false}>
@@ -1960,12 +2082,19 @@ export function ModernLeads() {
                           {client.is_default && (
                             <span className="ml-2 text-xs text-neutral-500">{t('page.defaultLabel')}</span>
                           )}
-                          {!client.is_default && client.assigned_user_name && (
+                          {!client.is_default &&
+                            (client.assigned_user_ids?.length ||
+                              client.assigned_user_id) && (
                             <span className="ml-2 text-xs text-neutral-500">
-                              · {client.assigned_user_name}
+                              ·{' '}
+                              {client.assigned_user_names?.length
+                                ? client.assigned_user_names.join(', ')
+                                : client.assigned_user_name}
                             </span>
                           )}
-                          {!client.is_default && !client.assigned_user_id && (
+                          {!client.is_default &&
+                            !(client.assigned_user_ids?.length) &&
+                            !client.assigned_user_id && (
                             <span className="ml-2 text-xs text-neutral-500">
                               · {t('page.sharedWithTeam')}
                             </span>
@@ -2030,35 +2159,64 @@ export function ModernLeads() {
                         )}
                       </div>
                       {isAdmin && !client.is_default && (
-                        <div className="flex items-center gap-2">
-                          <label className="text-xs text-neutral-500 whitespace-nowrap">
-                            {t('page.assignTo')}
-                          </label>
-                          <select
-                            className="flex-1 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1.5 text-sm"
-                            value={
-                              client.assigned_user_id == null
-                                ? ''
-                                : String(client.assigned_user_id)
-                            }
-                            disabled={assignClientMutation.isPending}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              assignClientMutation.mutate({
-                                id: client.id,
-                                assignedUserId: raw === '' ? null : Number(raw),
-                              });
-                            }}
-                          >
-                            <option value="">{t('page.sharedWithTeam')}</option>
-                            {assignableUsers.map((u) => (
-                              <option key={u.id} value={u.id}>
-                                {[u.first_name, u.last_name].filter(Boolean).join(' ') ||
-                                  u.email ||
-                                  `#${u.id}`}
-                              </option>
-                            ))}
-                          </select>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <label className="text-xs text-neutral-500 whitespace-nowrap">
+                              {t('page.assignTo')}
+                            </label>
+                            <button
+                              type="button"
+                              className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                              disabled={assignClientMutation.isPending}
+                              onClick={() =>
+                                assignClientMutation.mutate({
+                                  id: client.id,
+                                  assignedUserIds: [],
+                                })
+                              }
+                            >
+                              {t('page.sharedWithTeam')}
+                            </button>
+                          </div>
+                          <div className="max-h-36 overflow-y-auto rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-2 space-y-1">
+                            {assignableUsers.map((u) => {
+                              const selectedIds =
+                                client.assigned_user_ids?.length
+                                  ? client.assigned_user_ids
+                                  : client.assigned_user_id
+                                    ? [client.assigned_user_id]
+                                    : [];
+                              const checked = selectedIds.includes(u.id);
+                              return (
+                                <label
+                                  key={u.id}
+                                  className="flex items-center gap-2 text-sm cursor-pointer px-1 py-0.5 rounded hover:bg-neutral-50 dark:hover:bg-neutral-700/50"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-neutral-300"
+                                    checked={checked}
+                                    disabled={assignClientMutation.isPending}
+                                    onChange={() => {
+                                      const next = checked
+                                        ? selectedIds.filter((id) => id !== u.id)
+                                        : [...selectedIds, u.id];
+                                      assignClientMutation.mutate({
+                                        id: client.id,
+                                        assignedUserIds: next,
+                                      });
+                                    }}
+                                  />
+                                  <span>{userLabel(u)}</span>
+                                </label>
+                              );
+                            })}
+                            {assignableUsers.length === 0 && (
+                              <p className="text-xs text-neutral-500 px-1">
+                                {t('page.noTeamMembers')}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       )}
                     </>

@@ -28,3 +28,21 @@ lead_tags = Table(
     Column("organization_id", Integer, ForeignKey("organizations.id"), nullable=False),
     Column("created_at", DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 )
+
+# Client list multi-assignee (who can see a restricted client list)
+client_assignees = Table(
+    "client_assignees",
+    Base.metadata,
+    Column("client_id", Integer, ForeignKey("clients.id", ondelete="CASCADE"), primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+)
+
+# Lead multi-assignee (additional teammates beyond primary user_id)
+lead_assignees = Table(
+    "lead_assignees",
+    Base.metadata,
+    Column("lead_id", Integer, ForeignKey("leads.id", ondelete="CASCADE"), primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+)

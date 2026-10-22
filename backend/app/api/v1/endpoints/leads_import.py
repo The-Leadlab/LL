@@ -320,10 +320,33 @@ async def import_leads_from_csv(
         )
 
         successful_imports = []
+        updated_imports = []
         failed_imports = []
         skipped_empty = 0
         leads_to_create = []
+        seen_emails_in_batch = set()  # type: set
+        org_id = assigned_user.organization_id
         alias_map = build_alias_field_map()
+
+        # Fields safe to refresh on an existing lead when importing into a list
+        _MERGE_FIELDS = (
+            "first_name",
+            "last_name",
+            "company",
+            "job_title",
+            "telephone",
+            "mobile",
+            "location",
+            "linkedin",
+            "country",
+            "website",
+            "sector",
+            "unique_lead_id",
+            "lab_comments",
+            "client_comments",
+            "source",
+            "est_wealth_experience",
+        )
 
         for index, row in df.iterrows():
             try:
@@ -355,14 +378,14 @@ async def import_leads_from_csv(
                         cobj = crud_client.get_for_org(
                             db,
                             id=int(row_client_id),
-                            organization_id=assigned_user.organization_id,
+                            organization_id=org_id,
                         )
                         if cobj and not cobj.is_archived:
                             resolved_client_id = cobj.id
                     elif row_client_name:
                         cobj = crud_client.get_by_name(
                             db,
-                            organization_id=assigned_user.organization_id,
+                            organization_id=org_id,
                             name=str(row_client_name),
                         )
                         if cobj and not cobj.is_archived:
@@ -378,19 +401,64 @@ async def import_leads_from_csv(
                     "stage_id": default_stage.id,
                     "client_id": resolved_client_id,
                     "user_id": assigned_user_id,
-                    "organization_id": assigned_user.organization_id,
+                    "organization_id": org_id,
                     "created_by": current_user.id,
                     "created_at": datetime.utcnow(),
                     "source": lead_data.get("source") or "Partner",
                 })
 
-                if lead_data.get("email"):
-                    existing_lead = crud.lead.get_by_email(db, email=lead_data["email"])
-                    if existing_lead:
+                email_raw = lead_data.get("email")
+                email_key = str(email_raw).strip().lower() if email_raw else ""
+
+                if email_key:
+                    if email_key in seen_emails_in_batch:
                         failed_imports.append({
                             "row": int(index) + 2,
-                            "error": f"Lead with email {lead_data['email']} already exists"
+                            "error": f"Duplicate email in this file: {email_raw}",
                         })
+                        continue
+                    seen_emails_in_batch.add(email_key)
+
+                    existing_lead = crud.lead.get_by_email_any_status(
+                        db, email=email_raw, organization_id=org_id
+                    )
+                    if existing_lead:
+                        # Merge into target list instead of silently failing the import
+                        was_deleted = bool(existing_lead.is_deleted)
+                        same_client = existing_lead.client_id == resolved_client_id
+                        if same_client and not was_deleted:
+                            failed_imports.append({
+                                "row": int(index) + 2,
+                                "error": (
+                                    f"Lead with email {email_raw} already exists "
+                                    f"in this list"
+                                ),
+                            })
+                            continue
+
+                        merge_payload = {
+                            k: lead_data[k]
+                            for k in _MERGE_FIELDS
+                            if k in lead_data and lead_data[k] not in (None, "")
+                        }
+                        merge_payload["client_id"] = resolved_client_id
+                        merge_payload["is_deleted"] = False
+                        if was_deleted:
+                            merge_payload["user_id"] = assigned_user_id
+                        truncated = truncate_lead_strings(
+                            merge_payload, int(index) + 2
+                        )
+                        if truncated:
+                            logger.info(
+                                "Row %s: truncated %s field(s) on merge",
+                                int(index) + 2,
+                                truncated,
+                            )
+                        for key, value in merge_payload.items():
+                            setattr(existing_lead, key, value)
+                        existing_lead.updated_at = datetime.utcnow()
+                        db.add(existing_lead)
+                        updated_imports.append(int(index) + 2)
                         continue
 
                 truncated = truncate_lead_strings(lead_data, int(index) + 2)
@@ -412,10 +480,35 @@ async def import_leads_from_csv(
                     "error": str(e)
                 })
 
+        if updated_imports:
+            try:
+                db.commit()
+                logger.info("Updated/moved %s existing leads during import", len(updated_imports))
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Error committing lead updates: {str(e)}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Error updating existing leads: {str(e)}",
+                )
+
         if leads_to_create:
             try:
                 created_leads = crud.lead.create_bulk(db, obj_in_list=leads_to_create)
                 logger.info(f"Successfully created {len(created_leads)} leads")
+
+                # Seed lead_assignees with primary owner
+                try:
+                    for lead in created_leads:
+                        db.execute(
+                            models.associations.lead_assignees.insert().values(
+                                lead_id=lead.id,
+                                user_id=lead.user_id,
+                            )
+                        )
+                    db.commit()
+                except Exception as assignee_err:
+                    logger.warning("Could not seed lead_assignees: %s", assignee_err)
 
                 if tag and created_leads:
                     try:
@@ -441,6 +534,7 @@ async def import_leads_from_csv(
 
         total_rows = len(df)
         successful_count = len(successful_imports)
+        updated_count = len(updated_imports)
         failed_count = len(failed_imports)
 
         return GenericResponse(
@@ -448,10 +542,12 @@ async def import_leads_from_csv(
             message="Import completed",
             data={
                 "total_rows": total_rows,
-                "successful_imports": successful_count,
+                "successful_imports": successful_count + updated_count,
+                "created_imports": successful_count,
+                "updated_imports": updated_count,
                 "failed_imports": failed_count,
                 "skipped_empty_rows": skipped_empty,
-                "failed_details": failed_imports
+                "failed_details": failed_imports[:50],
             }
         )
 

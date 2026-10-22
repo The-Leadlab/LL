@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any, Union
-from pydantic import BaseModel, Field, ConfigDict, HttpUrl, constr, condecimal, field_validator
+from pydantic import BaseModel, Field, ConfigDict, HttpUrl, constr, condecimal, field_validator, model_validator
 from datetime import datetime
 from .note import Note as NoteSchema
 from .tag import Tag as TagSchema
@@ -96,7 +96,8 @@ class LeadCreate(LeadBase):
 # Lead Update Schema
 class LeadUpdate(LeadBase):
     client_id: Optional[int] = None
-    user_id: Optional[int] = None  # Reassign / tag an org teammate as owner
+    user_id: Optional[int] = None  # Primary owner
+    assignee_ids: Optional[List[int]] = None  # Multi-assignee (includes primary)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -117,9 +118,23 @@ class LeadInDBBase(LeadBase):
     stage: Optional[StageInLead] = None
     user: Optional[UserInLead] = None
     creator: Optional[UserInLead] = None
+    assignees: List[UserInLead] = []
+    assignee_ids: List[int] = []
     tags: List[TagSchema] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="after")
+    def _fill_assignee_ids(self):
+        if self.assignees:
+            ids = [a.id for a in self.assignees]
+            # Keep primary owner first when present
+            if self.user_id in ids:
+                ids = [self.user_id] + [i for i in ids if i != self.user_id]
+            self.assignee_ids = ids
+        elif not self.assignee_ids and self.user_id:
+            self.assignee_ids = [self.user_id]
+        return self
 
 # Lead Schema
 class Lead(LeadInDBBase):

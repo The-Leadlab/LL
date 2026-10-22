@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.models.base import Base
+from app.models.associations import client_assignees
 
 
 class Client(Base):
@@ -17,6 +18,7 @@ class Client(Base):
     is_default = Column(Boolean, nullable=False, default=False)
     is_archived = Column(Boolean, nullable=False, default=False, index=True)
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    # Legacy singular assignee; kept in sync with first of `assignees` (NULL = shared / multi)
     assigned_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=True)
@@ -25,6 +27,11 @@ class Client(Base):
     leads = relationship("Lead", back_populates="client")
     creator = relationship("User", foreign_keys=[created_by])
     assignee = relationship("User", foreign_keys=[assigned_user_id])
+    assignees = relationship(
+        "User",
+        secondary=client_assignees,
+        lazy="selectin",
+    )
 
     def __repr__(self) -> str:
         return f"<Client {self.name} org={self.organization_id}>"

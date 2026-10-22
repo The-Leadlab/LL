@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean, TypeDecorator, Index
 from sqlalchemy.orm import relationship, composite
 from app.models.base import Base
-from app.models.associations import lead_tags
+from app.models.associations import lead_tags, lead_assignees
 from sqlalchemy.ext.hybrid import hybrid_property
 
 class Lead(Base):
@@ -111,6 +111,11 @@ class Lead(Base):
     opportunities = relationship("Opportunity", back_populates="lead")
     information_requests = relationship("InformationRequest", back_populates="lead", cascade="all, delete-orphan")
     tags = relationship("Tag", secondary=lead_tags, back_populates="leads")
+    assignees = relationship(
+        "User",
+        secondary=lead_assignees,
+        lazy="selectin",
+    )
     ai_insights = relationship("AIInsight", back_populates="lead", cascade="all, delete-orphan")
     emails = relationship("Email", back_populates="lead", cascade="all, delete-orphan")
 

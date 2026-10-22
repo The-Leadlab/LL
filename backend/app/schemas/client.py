@@ -16,8 +16,23 @@ class ClientUpdate(BaseModel):
 
 
 class ClientAssign(BaseModel):
-    """Admin-only: assign a client list to a team member (null = shared with org)."""
+    """
+    Admin-only: set who can see a client list.
+
+    Prefer `assigned_user_ids` (multi). Empty list / omitted with null singular = shared with org.
+    Legacy `assigned_user_id` still accepted (single member).
+    """
+    assigned_user_ids: Optional[List[int]] = None
     assigned_user_id: Optional[int] = None
+
+
+class ClientAssigneeOut(BaseModel):
+    id: int
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Client(ClientBase):
@@ -28,6 +43,9 @@ class Client(ClientBase):
     created_by: Optional[int] = None
     assigned_user_id: Optional[int] = None
     assigned_user_name: Optional[str] = None
+    assigned_user_ids: List[int] = []
+    assigned_user_names: List[str] = []
+    assignees: List[ClientAssigneeOut] = []
     created_at: datetime
     updated_at: Optional[datetime] = None
     lead_count: Optional[int] = None

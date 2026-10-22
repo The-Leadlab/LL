@@ -2,7 +2,13 @@
 from .base import Base, TimestampMixin
 
 # Import association tables
-from .associations import user_roles, role_permissions, lead_tags
+from .associations import (
+    user_roles,
+    role_permissions,
+    lead_tags,
+    client_assignees,
+    lead_assignees,
+)
 
 # Import models in dependency order
 from .organization import Organization
@@ -178,6 +184,8 @@ __all__ = [
     # Association tables
     "user_roles",
     "role_permissions",
-    "lead_tags"
+    "lead_tags",
+    "client_assignees",
+    "lead_assignees",
 ]
 
