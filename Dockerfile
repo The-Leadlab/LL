@@ -8,9 +8,12 @@ ENV PYTHONUNBUFFERED=1 \
     MALLOC_ARENA_MAX=2 \
     WEB_CONCURRENCY=1
 
-RUN apt-get update && apt-get install -y \
+# Refresh system CA store (eMudhra intermediate compromise, Oct 2026).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     gcc \
     g++ \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt ./requirements.txt
