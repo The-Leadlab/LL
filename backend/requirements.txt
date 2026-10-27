@@ -43,6 +43,8 @@ feature-engine==1.6.2
 optuna==3.4.0
 
 # HTTP Clients
+# certifi>=2026.10.19: Render/eMudhra CA compromise (Oct 2026) — httpx/requests trust store
+certifi>=2026.10.19
 httpx>=0.25.1
 requests==2.31.0
 aiohttp==3.9.1
