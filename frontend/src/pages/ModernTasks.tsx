@@ -2,13 +2,14 @@
  * Modern Tasks Page — list + board with working row actions.
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '@/services/axios';
 import tasksAPI from '@/services/tasks';
 import { useToast } from '@/hooks/use-toast';
+import { useIsPhone } from '@/hooks/useIsPhone';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -150,11 +151,17 @@ export function ModernTasks() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const isPhone = useIsPhone();
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const handleDebouncedSearch = useCallback((value: string) => {
     setDebouncedSearch(value);
   }, []);
+
+  // Phone defaults to list; desktop keeps prior kanban default after first paint.
+  useEffect(() => {
+    if (isPhone) setView('list');
+  }, [isPhone]);
 
   const { data: tasksResponse, isLoading, isFetching } = useQuery({
     queryKey: ['tasks', debouncedSearch],

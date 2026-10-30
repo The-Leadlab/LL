@@ -9,6 +9,15 @@ html, body, #root {
   padding: 0;
 }
 
+/* Capacitor / iOS: reduce rubber-band overscroll fighting the app chrome */
+html {
+  overscroll-behavior-y: none;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

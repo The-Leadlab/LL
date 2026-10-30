@@ -49,6 +49,9 @@ export function DarkModeProvider({ children }: { children: React.ReactNode }) {
     root.classList.remove('light', 'dark');
     root.classList.add(resolved);
     setActualTheme(resolved);
+    void import('@/native/capacitorBootstrap').then(({ syncStatusBarWithTheme }) =>
+      syncStatusBarWithTheme(resolved)
+    );
   };
 
   // Update theme

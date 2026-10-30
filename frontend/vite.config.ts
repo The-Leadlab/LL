@@ -6,10 +6,21 @@ import { loadEnv } from 'vite'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const isMobileBuild = env.VITE_MOBILE === '1' || process.env.VITE_MOBILE === '1';
   
   return {
-    plugins: [react()],
-    base: '/',
+    plugins: [
+      react(),
+      {
+        name: 'leadlab-mobile-base-href',
+        transformIndexHtml(html) {
+          if (!isMobileBuild) return html;
+          return html.replace(/<base\s+href="\/"\s*\/?>/i, '<base href="./" />');
+        },
+      },
+    ],
+    // Capacitor WebView needs relative asset URLs; Vercel web keeps absolute `/`.
+    base: isMobileBuild ? './' : '/',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),

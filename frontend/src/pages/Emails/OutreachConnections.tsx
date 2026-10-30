@@ -201,7 +201,7 @@ export function OutreachConnectionsPage() {
   }
 
   return (
-    <div className="container mx-auto space-y-6 p-6">
+    <div className="container mx-auto space-y-6 p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">{t('connectionsPage.title')}</h1>

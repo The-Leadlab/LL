@@ -6,6 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:mobile": "VITE_MOBILE=1 vite build",
+    "cap:sync": "npm run build:mobile && npx cap sync",
+    "cap:ios": "npm run cap:sync && npx cap open ios",
+    "cap:android": "npm run cap:sync && npx cap open android",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest run",
@@ -15,6 +19,11 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.5.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/keyboard": "^8.0.6",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
@@ -105,6 +114,9 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/ios": "^8.6.0",
     "@testing-library/jest-dom": "^6.1.4",
     "@testing-library/react": "^14.1.2",
     "@testing-library/user-event": "^14.5.1",

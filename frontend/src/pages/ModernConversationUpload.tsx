@@ -49,7 +49,7 @@ export function ModernConversationUpload() {
   });
   
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
       <div className="max-w-4xl mx-auto">
         <button
           onClick={() => navigate('/conversations')}

@@ -1420,6 +1420,48 @@ export function ModernLeads() {
                 </button>
               )}
               {!collapsed && (
+                <>
+              {/* Phone card list */}
+              <ul className="divide-y divide-neutral-200 dark:divide-neutral-700 md:hidden">
+                {group.leads.map((lead) => (
+                  <li key={lead.id}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/leads/${lead.id}`)}
+                      className="flex w-full min-h-[64px] items-start gap-3 px-4 py-3 text-left active:bg-neutral-50 dark:active:bg-neutral-700/50"
+                    >
+                      <span
+                        className="mt-1"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded"
+                          checked={selectedLeads.includes(lead.id)}
+                          onChange={() => toggleSelectLead(lead.id)}
+                          aria-label={t('page.selectLead', { name: lead.full_name || lead.id })}
+                        />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-medium text-neutral-900 dark:text-neutral-50">
+                          {lead.full_name || `${lead.first_name} ${lead.last_name}`}
+                        </span>
+                        <span className="mt-0.5 block truncate text-sm text-neutral-500 dark:text-neutral-400">
+                          {lead.company || t('page.noCompany')}
+                          {lead.email ? ` · ${lead.email}` : ''}
+                        </span>
+                        {lead.stage?.name ? (
+                          <span className="mt-1 inline-block rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
+                            {lead.stage.name}
+                          </span>
+                        ) : null}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[720px] sm:min-w-[640px]">
                   {groupBy === 'none' && (
                     <thead className="bg-neutral-50 dark:bg-neutral-700/50 border-b border-neutral-200 dark:border-neutral-700">
@@ -1660,6 +1702,8 @@ export function ModernLeads() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              </>
               )}
             </div>
           );

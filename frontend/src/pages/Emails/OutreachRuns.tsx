@@ -268,7 +268,7 @@ export function OutreachRunsPage() {
             <p className="text-xs text-gray-500">{t('runsPage.campaignBatchesHint')}</p>
           </div>
           {jobsLoading ? (
-            <div className="flex items-center justify-center p-8 text-sm text-gray-500">
+            <div className="flex items-center justify-center p-4 sm:p-6 md:p-8 text-sm text-gray-500">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               {t('runsPage.loadingBatches')}
             </div>
@@ -339,7 +339,7 @@ export function OutreachRunsPage() {
             <p className="text-xs text-gray-500">{t('runsPage.otherRunsHint')}</p>
           </div>
           {runsLoading ? (
-            <div className="flex items-center justify-center p-8 text-sm text-gray-500">
+            <div className="flex items-center justify-center p-4 sm:p-6 md:p-8 text-sm text-gray-500">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               {t('runsPage.loadingRuns')}
             </div>

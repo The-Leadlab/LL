@@ -405,7 +405,7 @@ export function ModernDeals() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-8">
+    <div className="min-h-screen overflow-x-hidden bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
       <div className="mb-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div>

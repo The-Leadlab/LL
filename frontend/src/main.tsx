@@ -27,6 +27,10 @@ if (import.meta.env.PROD) {
   startHealthMonitoring(300000); // Check every 5 minutes in development
 }
 
+void import('./native/capacitorBootstrap').then(({ initCapacitorNative }) =>
+  initCapacitorNative()
+);
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <App />
 )

@@ -98,21 +98,21 @@ export const QuoteList: React.FC = () => {
     <PageContainer>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">{t('cpq.quotes.title')}</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-2xl font-bold md:text-3xl">{t('cpq.quotes.title')}</h1>
+            <p className="mt-1 text-sm text-gray-600 md:text-base">
               {t('cpq.quotes.subtitle')}
             </p>
           </div>
-          <Button onClick={() => navigate('/cpq/quotes/new')}>
+          <Button className="min-h-[44px] w-full sm:w-auto" onClick={() => navigate('/cpq/quotes/new')}>
             <Plus className="h-4 w-4 mr-2" />
             {t('cpq.quotes.create')}
           </Button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">

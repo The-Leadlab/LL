@@ -256,10 +256,10 @@ export const EmailsPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto py-6 h-[calc(100vh-4rem)]">
-      <div className="flex h-full gap-6">
-        {/* Sidebar */}
-        <div className="flex w-64 flex-col rounded-lg border border-neutral-200 bg-background shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+    <div className="container mx-auto h-[calc(100vh-4rem)] py-4 md:py-6">
+      <div className="flex h-full flex-col gap-4 md:flex-row md:gap-6">
+        {/* Sidebar — stacked on phone, fixed width on desktop */}
+        <div className="flex w-full flex-col rounded-lg border border-neutral-200 bg-background shadow-sm dark:border-neutral-700 dark:bg-neutral-900 md:w-64 md:shrink-0">
           <div className="border-b border-neutral-200 p-4 dark:border-neutral-700">
             <Button 
               variant="primary"
@@ -292,20 +292,20 @@ export const EmailsPage: React.FC = () => {
             </Select>
           </div>
 
-          {/* Folders */}
-          <div className="p-4 flex-1">
-            <Label className="mb-3 block text-sm font-medium text-gray-700 dark:text-neutral-200">{t('inboxPage.folders.title')}</Label>
-            <div className="space-y-1">
+          {/* Folders — horizontal chips on phone, vertical list on desktop */}
+          <div className="flex-1 p-4">
+            <Label className="mb-3 hidden text-sm font-medium text-gray-700 dark:text-neutral-200 md:block">{t('inboxPage.folders.title')}</Label>
+            <div className="flex gap-2 overflow-x-auto pb-1 md:flex-col md:space-y-1 md:overflow-visible md:pb-0">
               {FOLDERS.map((folder) => {
                 const Icon = folder.icon;
                 return (
                   <button
                     key={folder.name}
                     onClick={() => setSelectedFolder(folder.name)}
-                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex min-h-[44px] shrink-0 items-center space-x-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all md:w-full md:space-x-3 ${
                       selectedFolder === folder.name
                         ? 'border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300'
-                        : 'border border-transparent text-gray-700 hover:bg-gray-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
+                        : 'border border-neutral-200 text-gray-700 hover:bg-gray-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 md:border-transparent'
                     }`}
                   >
                     <Icon className="h-4 w-4 flex-shrink-0" />

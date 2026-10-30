@@ -57,7 +57,7 @@ export function ModernAIInsights() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-neutral-50 dark:bg-neutral-900 p-8">
+      <div className="flex min-h-[50vh] items-center justify-center bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
           <p className="text-neutral-600 dark:text-neutral-400">{t('aiInsights.loading')}</p>
@@ -87,7 +87,7 @@ export function ModernAIInsights() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold text-neutral-900 dark:text-neutral-50">
           {t('aiInsights.title')}

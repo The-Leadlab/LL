@@ -169,7 +169,7 @@ export function ModernDealDetail() {
 
   if (!Number.isFinite(dealId) || dealId <= 0) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
         <p className="text-neutral-600 dark:text-neutral-400">{t('dealDetail.invalid')}</p>
         <button
           type="button"
@@ -184,7 +184,7 @@ export function ModernDealDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
       </div>
     );
@@ -192,7 +192,7 @@ export function ModernDealDetail() {
 
   if (error || !deal) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
         <p className="text-neutral-600 dark:text-neutral-400">{t('dealDetail.loadFailed')}</p>
         <button
           type="button"
@@ -209,7 +209,7 @@ export function ModernDealDetail() {
     typeof deal.amount === 'number' ? deal.amount : parseFloat(String(deal.amount)) || 0;
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
       <button
         type="button"
         onClick={() => navigate('/deals')}

@@ -910,7 +910,7 @@ export function ReportsPage() {
                 ))}
               </div>
             ) : (
-              <Card className="p-8 text-center">
+              <Card className="p-4 sm:p-6 md:p-8 text-center">
                 <PieChart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noFunnel')}</h3>
                 <p className="text-gray-600">
@@ -973,7 +973,7 @@ export function ReportsPage() {
                 ))}
               </div>
             ) : (
-              <Card className="p-8 text-center">
+              <Card className="p-4 sm:p-6 md:p-8 text-center">
                 <LineChart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noPipeline')}</h3>
                 <p className="text-gray-600">
@@ -1189,7 +1189,7 @@ export function ReportsPage() {
                 ))}
               </div>
             ) : (
-              <Card className="p-8 text-center">
+              <Card className="p-4 sm:p-6 md:p-8 text-center">
                 <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noSources')}</h3>
                 <p className="text-gray-600">

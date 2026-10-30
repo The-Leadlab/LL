@@ -767,7 +767,7 @@ export const CalendarPage = () => {
   );
 
   const renderMonthView = () => (
-    <div className="flex-1 p-8">
+    <div className="flex-1 p-4 sm:p-6 md:p-8">
       {/* Day Names Header */}
       <div className="grid grid-cols-7 gap-1 mb-4">
         {dayNames.map((day) => (
@@ -847,7 +847,7 @@ export const CalendarPage = () => {
   );
 
   const renderWeekView = () => (
-    <div className="flex-1 p-8">
+    <div className="flex-1 p-4 sm:p-6 md:p-8">
       {/* Week Header */}
       <div className="grid grid-cols-8 gap-1 mb-6">
         <div className="py-4"></div> {/* Empty space for time column */}
@@ -930,7 +930,7 @@ export const CalendarPage = () => {
     const hasMoreAgendaEvents = sortedAgendaEvents.length > agendaVisibleCount;
 
     return (
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           {agendaEvents.length === 0 ? (
             <div className="text-center py-20">

@@ -3,176 +3,24 @@
  * Clean, intuitive, professional
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/auth';
 import {
-  LayoutDashboard,
   Users,
-  Mail,
-  Calendar,
-  Target,
-  BarChart3,
-  Settings,
   ChevronLeft,
   ChevronRight,
-  Zap,
   Search,
   LogOut,
-  Building2,
-  Settings2,
-  Workflow,
-  MessageSquare,
-  FileText,
-  CheckSquare,
-  Sparkles,
-  Coins,
-  Map,
-  Ticket,
-  ShoppingCart,
-  TrendingUp,
-  Phone,
-  Bell,
-  Send,
-  PlayCircle,
-  FileStack,
 } from 'lucide-react';
-import { featureFlags } from '@/config/featureFlags';
+import {
+  buildMainNavigation,
+  bottomNavigation,
+  type NavItem,
+} from '@/config/navigation';
 import { UserAvatar, useCurrentUserAvatar } from '@/components/UserAvatar';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-
-interface NavItem {
-  /** Key in the `nav` i18n namespace */
-  labelKey: string;
-  icon: any;
-  path: string;
-  badge?: string;
-  children?: NavItem[];
-}
-
-const navigation: NavItem[] = [
-  {
-    labelKey: 'dashboard',
-    icon: LayoutDashboard,
-    path: '/dashboard',
-  },
-  {
-    labelKey: 'leads',
-    icon: Users,
-    path: '/leads',
-  },
-  {
-    labelKey: 'deals',
-    icon: Target,
-    path: '/deals',
-  },
-  {
-    labelKey: 'tasks',
-    icon: CheckSquare,
-    path: '/tasks',
-  },
-  ...(featureFlags.navigation.showEmail
-    ? [{
-        labelKey: 'email',
-        icon: Mail,
-        path: '/emails',
-        children: [
-          { labelKey: 'inbox', icon: Mail, path: '/emails' },
-          { labelKey: 'coldOutreach', icon: Send, path: '/emails/outreach' },
-          ...(featureFlags.navigation.showEmailSequences
-            ? [{ labelKey: 'campaigns', icon: Zap, path: '/email-sequences' }]
-            : []),
-          ...(featureFlags.navigation.showOutreachRuns
-            ? [{ labelKey: 'runs', icon: PlayCircle, path: '/emails/runs' }]
-            : []),
-          ...(featureFlags.navigation.showOutreachTemplates
-            ? [{ labelKey: 'templates', icon: FileStack, path: '/emails/templates' }]
-            : []),
-        ],
-      } as NavItem]
-    : []),
-  {
-    labelKey: 'messages',
-    icon: MessageSquare,
-    path: '/messages',
-  },
-  {
-    labelKey: 'calendar',
-    icon: Calendar,
-    path: '/calendar',
-  },
-  {
-    labelKey: 'sales',
-    icon: ShoppingCart,
-    path: '/cpq/quotes', // Fixed: now points to actual route
-    children: [
-      { labelKey: 'quotes', icon: FileText, path: '/cpq/quotes' },
-      { labelKey: 'products', icon: ShoppingCart, path: '/cpq/products' },
-    ],
-  },
-  ...(featureFlags.navigation.showMindMapping
-    ? [{
-        labelKey: 'mindMapping',
-        icon: Workflow,
-        path: '/workflows',
-      } as NavItem]
-    : []),
-  ...(featureFlags.navigation.showForecasting
-    ? [{
-        labelKey: 'forecasting',
-        icon: TrendingUp,
-        path: '/forecasting',
-      } as NavItem]
-    : []),
-  {
-    labelKey: 'conversations',
-    icon: Phone,
-    path: '/conversations',
-  },
-  {
-    labelKey: 'invoiceCreation',
-    icon: FileText,
-    path: '/invoices/new',
-  },
-  {
-    labelKey: 'reports',
-    icon: BarChart3,
-    path: '/reports',
-  },
-  {
-    labelKey: 'aiInsights',
-    icon: Sparkles,
-    path: '/ai-insights',
-  },
-  {
-    labelKey: 'company',
-    icon: Building2,
-    path: '/settings/company',
-    children: [
-      { labelKey: 'company', icon: Settings2, path: '/settings/company' },
-      { labelKey: 'territories', icon: Map, path: '/settings/territories' },
-    ],
-  },
-];
-
-const bottomNavigation: NavItem[] = [
-  {
-    labelKey: 'reportIssue',
-    icon: Ticket,
-    path: '/report',
-  },
-  {
-    labelKey: 'settings',
-    icon: Settings,
-    path: '/settings/profile',
-  },
-  {
-    labelKey: 'notifications',
-    icon: Bell,
-    path: '/notifications',
-  },
-];
 
 function SidebarQuickSearch({ onSubmit }: { onSubmit: (q: string) => void }) {
   const { t } = useTranslation('nav');
@@ -215,6 +63,7 @@ export function ModernSidebar({
   const avatarRevision = useAuthStore((s) => s.avatarRevision);
   const sidebarAvatarUrl = useCurrentUserAvatar(user?.id, avatarRevision);
   const adminOnlyNavKeys = new Set(['company']);
+  const navigation = useMemo(() => buildMainNavigation(), []);
   const baseNavigation = user?.is_admin
     ? navigation
     : navigation.filter((item) => !adminOnlyNavKeys.has(item.labelKey));

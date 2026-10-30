@@ -469,7 +469,7 @@ export function MessagesPage() {
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center p-8">
+            <div className="flex items-center justify-center p-4 sm:p-6 md:p-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
             </div>
           ) : showNewConversation ? (
@@ -479,7 +479,7 @@ export function MessagesPage() {
                 {t('teamMembers', { count: filteredUsers.length })}
               </div>
               {filteredUsers.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                <div className="p-4 sm:p-6 md:p-8 text-center text-gray-500 dark:text-gray-400">
                   <Users className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                   <p className="text-sm">{searchText ? t('noTeammatesFound') : t('noTeammatesAvailable')}</p>
                   {!searchText && (
@@ -537,7 +537,7 @@ export function MessagesPage() {
                 {t('recent', { count: filteredConversations.length })}
               </div>
               {filteredConversations.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                <div className="p-4 sm:p-6 md:p-8 text-center text-gray-500 dark:text-gray-400">
                   <Hash className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                   <p className="text-sm">{searchText ? t('noConversationsFound') : t('noConversationsYet')}</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('startNewHint')}</p>

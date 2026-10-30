@@ -88,7 +88,7 @@ export function ModernEmailCampaigns() {
   const [view, setView] = useState<'campaigns' | 'create'>('campaigns');
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">

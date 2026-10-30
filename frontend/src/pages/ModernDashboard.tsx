@@ -141,13 +141,13 @@ export function ModernDashboard() {
   const hasAnyError = isLeadStatsError || isDashboardError;
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8">
+    <div className="min-h-screen bg-neutral-50 p-4 dark:bg-neutral-900 sm:p-6 md:p-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">
+      <div className="mb-6 md:mb-8">
+        <h1 className="mb-1 text-2xl font-bold text-neutral-900 dark:text-neutral-50 md:mb-2 md:text-3xl">
           {t('dashboard')}
         </h1>
-        <p className="text-neutral-600 dark:text-neutral-400">
+        <p className="text-sm text-neutral-600 dark:text-neutral-400 md:text-base">
           {t('dashboardPage.welcome')}
         </p>
       </div>
@@ -171,7 +171,7 @@ export function ModernDashboard() {
       )}
 
       {/* KPI Cards — paint shell immediately; pulse while queries resolve */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="mb-6 grid grid-cols-2 gap-3 md:mb-8 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
         {/* Total Leads */}
         <button
           type="button"

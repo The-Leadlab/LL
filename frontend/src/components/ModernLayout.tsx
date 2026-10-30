@@ -1,28 +1,29 @@
 /**
- * Modern Layout — sidebar + main; mobile drawer navigation with overlay.
+ * Modern Layout — desktop sidebar; phone top bar + bottom tabs + More sheet.
  */
 
 import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { ModernSidebar } from './ModernSidebar';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { WelcomeTour } from './WelcomeTour';
 import { CommandPalette, useCommandPalette } from './CommandPalette';
 import { useDarkMode } from './ThemeProvider';
 import { NotificationBell } from './Notifications/NotificationBell';
+import { MobileTabBar } from './mobile/MobileTabBar';
+import { MobileMoreSheet } from './mobile/MobileMoreSheet';
 
 export function ModernLayout() {
   const { t } = useTranslation('common');
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const closeMobile = () => setMobileNavOpen(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const { open, setOpen } = useCommandPalette();
   const { toggleTheme, actualTheme } = useDarkMode();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeMobile();
+      if (event.key === 'Escape') setMoreOpen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -30,15 +31,8 @@ export function ModernLayout() {
 
   return (
     <div className="flex h-screen bg-neutral-50 dark:bg-neutral-900">
-      <header className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-neutral-200 bg-white px-3 dark:border-neutral-800 dark:bg-neutral-900 md:hidden">
-        <button
-          type="button"
-          aria-label={t('openNavigation')}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
-          onClick={() => setMobileNavOpen(true)}
-        >
-          <Menu className="h-6 w-6 text-neutral-700 dark:text-neutral-200" />
-        </button>
+      {/* Phone top bar */}
+      <header className="fixed left-0 right-0 top-0 z-40 flex min-h-14 items-center gap-3 border-b border-neutral-200 bg-white px-3 pt-[env(safe-area-inset-top)] dark:border-neutral-800 dark:bg-neutral-900 md:hidden">
         <img
           src="/images/leadlab-logo.png"
           alt="LeadLab"
@@ -58,25 +52,12 @@ export function ModernLayout() {
         </div>
       </header>
 
-      {mobileNavOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          aria-label={t('closeMenu')}
-          onClick={closeMobile}
-        />
-      )}
-
-      <div
-        className={`fixed top-0 bottom-0 z-50 w-64 max-w-[calc(100vw-env(safe-area-inset-left))] flex-shrink-0 overflow-y-auto overflow-x-hidden bg-white shadow-xl transition-[left] duration-200 ease-out dark:bg-neutral-900 md:static md:left-auto md:w-auto md:max-w-none md:overflow-visible md:shadow-none ${
-          mobileNavOpen ? 'left-0' : '-left-64'
-        } md:left-auto`}
-        style={{ paddingLeft: 'env(safe-area-inset-left)' }}
-      >
-        <ModernSidebar onNavigate={closeMobile} forceExpanded />
+      {/* Desktop sidebar only */}
+      <div className="hidden flex-shrink-0 md:block">
+        <ModernSidebar />
       </div>
 
-      <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto pt-14 md:pt-0">
+      <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
         <div className="hidden md:flex items-center justify-end gap-2 px-4 pt-3">
           <NotificationBell variant="header" />
           <LanguageSwitcher />
@@ -92,6 +73,10 @@ export function ModernLayout() {
         </div>
         <Outlet />
       </main>
+
+      <MobileTabBar onMore={() => setMoreOpen(true)} moreOpen={moreOpen} />
+      <MobileMoreSheet open={moreOpen} onOpenChange={setMoreOpen} />
+
       <CommandPalette open={open} onClose={() => setOpen(false)} />
       <WelcomeTour />
     </div>

@@ -99,7 +99,7 @@ export function ModernSettings() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-8 overflow-x-hidden">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8 overflow-x-hidden">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">
@@ -295,7 +295,7 @@ function ProfileSettings() {
   };
 
   return (
-    <div className="p-4 sm:p-8 min-w-0">
+    <div className="p-4 sm:p-6 md:p-8 min-w-0">
       <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
         {tm('settingsPage.profile.title')}
       </h2>
