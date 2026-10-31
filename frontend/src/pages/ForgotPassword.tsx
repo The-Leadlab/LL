@@ -48,12 +48,12 @@ export function ForgotPassword() {
   return (
     <div className="flex flex-col min-h-screen">
       <PublicHeader />
-      <main className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <main className="flex-1 flex items-center justify-center bg-background">
         <div className="w-full max-w-md mx-4">
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-blue-100">
+          <div className="bg-card rounded-2xl shadow-xl p-8 border border-blue-100">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t('resetPassword')}</h1>
-              <p className="text-gray-600 mt-2">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('resetPassword')}</h1>
+              <p className="text-muted-foreground mt-2">
                 {t('forgotPage.subtitle')}
               </p>
             </div>
@@ -62,7 +62,7 @@ export function ForgotPassword() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-foreground mb-1"
                 >
                   {t('email')}
                 </label>
@@ -75,7 +75,7 @@ export function ForgotPassword() {
                     setEmailSent(false)
                   }}
                   required
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder={t('forgotPage.emailPlaceholder')}
                 />
               </div>
@@ -115,7 +115,7 @@ export function ForgotPassword() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="flex items-center">
@@ -131,10 +131,10 @@ export function ForgotPassword() {
             <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
+                  <div className="w-full border-t border-border" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">
+                  <span className="px-2 bg-card text-muted-foreground">
                     {t('forgotPage.rememberPassword')}
                   </span>
                 </div>

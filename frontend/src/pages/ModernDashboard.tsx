@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'];
+const COLORS = ['#2563eb', '#3b82f6', '#10b981', '#f59e0b'];
 
 function formatPipelineUsd(value: number): string {
   return `$${Math.round(value).toLocaleString('en-US')}`;
@@ -48,7 +48,7 @@ function KpiWowBadge({
 }) {
   if (value === null || value === undefined) {
     return (
-      <span className="text-sm font-medium text-neutral-400 dark:text-neutral-500" title={sublabel}>
+      <span className="text-sm font-medium text-muted-foreground dark:text-foreground0" title={sublabel}>
         —
       </span>
     );
@@ -141,13 +141,13 @@ export function ModernDashboard() {
   const hasAnyError = isLeadStatsError || isDashboardError;
 
   return (
-    <div className="min-h-screen bg-neutral-50 p-4 dark:bg-neutral-900 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
       {/* Header */}
       <div className="mb-6 md:mb-8">
-        <h1 className="mb-1 text-2xl font-bold text-neutral-900 dark:text-neutral-50 md:mb-2 md:text-3xl">
+        <h1 className="mb-1 text-2xl font-bold text-foreground md:mb-2 md:text-3xl">
           {t('dashboard')}
         </h1>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 md:text-base">
+        <p className="text-sm text-muted-foreground dark:text-muted-foreground md:text-base">
           {t('dashboardPage.welcome')}
         </p>
       </div>
@@ -176,14 +176,14 @@ export function ModernDashboard() {
         <button
           type="button"
           onClick={() => navigate('/leads')}
-          className="text-left bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+          className="text-left bg-card rounded-xl p-6 border border-border shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
               <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             {kpiLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : (
               <KpiWowBadge
                 value={dashboardStats.leads?.wow_new_leads_pct_change}
@@ -192,17 +192,17 @@ export function ModernDashboard() {
               />
             )}
           </div>
-          <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
+          <h3 className="text-2xl font-bold text-foreground mb-1">
             {kpiLoading && !leadStatsData ? (
-              <span className="inline-block h-8 w-16 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />
+              <span className="inline-block h-8 w-16 animate-pulse rounded bg-muted dark:bg-muted" />
             ) : (
               totalLeads.toLocaleString()
             )}
           </h3>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground">
             {t('dashboardPage.totalLeads')}
             {typeof dashboardStats.leads?.new_leads_last_7d === 'number' && (
-              <span className="block text-xs text-neutral-500 mt-0.5">
+              <span className="block text-xs text-muted-foreground mt-0.5">
                 {t('dashboardPage.newInLast7d', { count: dashboardStats.leads.new_leads_last_7d })}
               </span>
             )}
@@ -213,7 +213,7 @@ export function ModernDashboard() {
         <button
           type="button"
           onClick={() => navigate('/deals')}
-          className="text-left bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+          className="text-left bg-card rounded-xl p-6 border border-border shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
@@ -225,40 +225,40 @@ export function ModernDashboard() {
               sublabel={t('dashboardPage.wowPipelineHint')}
             />
           </div>
-          <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
+          <h3 className="text-2xl font-bold text-foreground mb-1">
             {formatPipelineUsd(pipelineValue)}
           </h3>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('dashboardPage.openPipeline')}</p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">{t('dashboardPage.excludesClosed')}</p>
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('dashboardPage.openPipeline')}</p>
+          <p className="text-xs text-muted-foreground dark:text-foreground0 mt-1">{t('dashboardPage.excludesClosed')}</p>
         </button>
 
         {/* Tasks */}
         <button
           type="button"
           onClick={() => navigate('/tasks')}
-          className="text-left bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+          className="text-left bg-card rounded-xl p-6 border border-border shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
               <CheckSquare className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
-            <span className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
+            <span className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">
               {dashboardStats.tasks?.overdue
                 ? t('dashboardPage.overdueCount', { count: dashboardStats.tasks.overdue })
                 : t('dashboardPage.noneOverdue')}
             </span>
           </div>
-          <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
+          <h3 className="text-2xl font-bold text-foreground mb-1">
             {(dashboardStats.tasks?.open || 0).toLocaleString()}
           </h3>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('dashboardPage.tasks')}</p>
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('dashboardPage.tasks')}</p>
         </button>
 
         {/* Active Deals */}
         <button
           type="button"
           onClick={() => navigate('/deals')}
-          className="text-left bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+          className="text-left bg-card rounded-xl p-6 border border-border shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
@@ -272,25 +272,25 @@ export function ModernDashboard() {
               </span>
             ) : (
               <span
-                className="text-sm font-medium text-neutral-400 dark:text-neutral-500"
+                className="text-sm font-medium text-muted-foreground dark:text-foreground0"
                 title={t('dashboardPage.closedWonHint')}
               >
                 —
               </span>
             )}
           </div>
-          <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
+          <h3 className="text-2xl font-bold text-foreground mb-1">
             {activeDeals}
           </h3>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('dashboardPage.activeDeals')}</p>
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('dashboardPage.activeDeals')}</p>
         </button>
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Revenue Trend */}
-        <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm">
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-4">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
             {t('dashboardPage.leadActivity')}
           </h3>
           {revenueData.length > 0 ? (
@@ -318,15 +318,15 @@ export function ModernDashboard() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[250px] flex items-center justify-center text-neutral-500 dark:text-neutral-400">
+            <div className="h-[250px] flex items-center justify-center text-muted-foreground dark:text-muted-foreground">
               {t('common:noData')}
             </div>
           )}
         </div>
 
         {/* Pipeline Distribution */}
-        <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm">
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-4">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
             {t('dashboardPage.pipelineDistribution')}
           </h3>
           {pipelineData.length > 0 ? (
@@ -357,11 +357,11 @@ export function ModernDashboard() {
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: COLORS[index % COLORS.length] }}
                       />
-                      <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                      <span className="text-sm text-foreground dark:text-muted-foreground">
                         {item.name}
                       </span>
                     </div>
-                    <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+                    <span className="text-sm font-semibold text-foreground">
                       {item.value}
                     </span>
                   </div>
@@ -369,7 +369,7 @@ export function ModernDashboard() {
               </div>
             </div>
           ) : (
-            <div className="h-[250px] flex items-center justify-center text-neutral-500 dark:text-neutral-400">
+            <div className="h-[250px] flex items-center justify-center text-muted-foreground dark:text-muted-foreground">
               {t('dashboardPage.noPipelineData')}
             </div>
           )}
@@ -379,9 +379,9 @@ export function ModernDashboard() {
       {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activities */}
-        <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+            <h3 className="text-lg font-semibold text-foreground">
               {t('dashboardPage.recentActivities')}
             </h3>
             <button
@@ -396,17 +396,17 @@ export function ModernDashboard() {
               dashboardStats.activities.map((a: { id: string; title: string; created_at: string; type?: string }) => (
                 <div
                   key={a.id}
-                  className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-600 bg-neutral-50/50 dark:bg-neutral-800/50"
+                  className="p-4 rounded-lg border border-border dark:border-border bg-muted/50 dark:bg-muted/50"
                 >
-                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">{a.title}</p>
-                  <p className="text-xs text-neutral-500 mt-1">
+                  <p className="text-sm font-medium text-foreground">{a.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
                     {formatLocalDateTime(a.created_at)}
                     {a.type ? ` · ${a.type}` : ''}
                   </p>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
+              <div className="text-center py-8 text-muted-foreground dark:text-muted-foreground">
                 <p>{t('dashboardPage.noRecentActivities')}</p>
                 <p className="text-sm mt-2">{t('dashboardPage.startAddingLeads')}</p>
               </div>
@@ -415,9 +415,9 @@ export function ModernDashboard() {
         </div>
 
         {/* Upcoming Tasks */}
-        <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+            <h3 className="text-lg font-semibold text-foreground">
               {t('dashboardPage.upcomingTasks')}
             </h3>
             <button
@@ -429,10 +429,10 @@ export function ModernDashboard() {
           </div>
           <div className="space-y-4">
             {dashboardStats.tasks?.open > 0 ? (
-              <div className="flex items-center justify-between p-4 bg-neutral-50 dark:bg-neutral-700/50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-muted/50/50 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <CheckSquare className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-                  <span className="text-sm text-neutral-900 dark:text-neutral-50">
+                  <CheckSquare className="w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
+                  <span className="text-sm text-foreground">
                     {t('dashboardPage.openTasksCount', { count: dashboardStats.tasks.open })}
                   </span>
                 </div>
@@ -443,7 +443,7 @@ export function ModernDashboard() {
                 )}
               </div>
             ) : (
-              <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
+              <div className="text-center py-8 text-muted-foreground dark:text-muted-foreground">
                 <p>{t('dashboardPage.noUpcomingTasks')}</p>
                 <p className="text-sm mt-2">{t('dashboardPage.allCaughtUp')}</p>
               </div>

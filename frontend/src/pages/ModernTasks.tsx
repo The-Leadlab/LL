@@ -67,13 +67,13 @@ function TasksSearchField({
 
   return (
     <div className="relative flex-1">
-      <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400" />
+      <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
       <input
         type="text"
         placeholder={t('searchPlaceholder')}
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        className="min-h-[44px] w-full rounded-lg border border-neutral-200 bg-white py-2.5 pl-10 pr-10 text-base dark:border-neutral-700 dark:bg-neutral-800"
+        className="min-h-[44px] w-full rounded-lg border border-border bg-card py-2.5 pl-10 pr-10 text-base dark:border-border dark:bg-card"
       />
       {(isFetching || value.trim() !== debounced) && (
         <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary-600" />
@@ -107,11 +107,11 @@ function TaskActionsMenu({ taskId }: { taskId: number }) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 hover:bg-muted"
           aria-label={t('taskActions')}
           onClick={(e) => e.stopPropagation()}
         >
-          <MoreVertical className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
+          <MoreVertical className="h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={4} className="z-[200] w-44">
@@ -187,7 +187,7 @@ export function ModernTasks() {
     { id: 'PENDING', name: t('statusLabels.pending'), dot: 'bg-blue-500' },
     { id: 'IN_PROGRESS', name: t('statusLabels.inProgress'), dot: 'bg-yellow-500' },
     { id: 'COMPLETED', name: t('statusLabels.completed'), dot: 'bg-green-500' },
-    { id: 'CANCELLED', name: t('statusLabels.cancelled'), dot: 'bg-gray-500' },
+    { id: 'CANCELLED', name: t('statusLabels.cancelled'), dot: 'bg-muted/500' },
   ];
 
   const tasksByStatus = useMemo(
@@ -236,19 +236,19 @@ export function ModernTasks() {
       case 'LOW':
         return 'text-blue-600 bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400';
       default:
-        return 'text-neutral-600 bg-neutral-100 dark:bg-neutral-700 dark:text-neutral-400';
+        return 'text-muted-foreground bg-muted dark:bg-muted dark:text-muted-foreground';
     }
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 p-4 sm:p-6 md:p-8 dark:bg-neutral-900">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
       <div className="mb-6 md:mb-8">
         <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="mb-2 text-2xl font-bold text-neutral-900 dark:text-neutral-50 md:text-3xl">
+            <h1 className="mb-2 text-2xl font-bold text-foreground md:text-3xl">
               {t('title')}
             </h1>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 md:text-base">
+            <p className="text-sm text-muted-foreground dark:text-muted-foreground md:text-base">
               {isLoading && !tasksResponse ? (
                 <span className="inline-flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin text-primary-600" />
@@ -274,21 +274,21 @@ export function ModernTasks() {
             <TasksSearchField isFetching={isFetching} onDebouncedChange={handleDebouncedSearch} />
             <button
               type="button"
-              className="flex min-h-[44px] items-center justify-center space-x-2 rounded-lg border border-neutral-200 bg-white px-4 py-2.5 dark:border-neutral-700 dark:bg-neutral-800"
+              className="flex min-h-[44px] items-center justify-center space-x-2 rounded-lg border border-border bg-card px-4 py-2.5 dark:border-border dark:bg-card"
             >
-              <Filter className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
-              <span className="text-neutral-700 dark:text-neutral-300">{t('filters')}</span>
+              <Filter className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
+              <span className="text-foreground dark:text-muted-foreground">{t('filters')}</span>
             </button>
           </div>
 
-          <div className="flex items-center justify-center rounded-lg border border-neutral-200 bg-white p-1 dark:border-neutral-700 dark:bg-neutral-800">
+          <div className="flex items-center justify-center rounded-lg border border-border bg-card p-1 dark:border-border dark:bg-card">
             <button
               type="button"
               onClick={() => setView('kanban')}
               className={`flex min-h-[44px] items-center space-x-2 rounded-md px-3 py-1.5 transition-colors ${
                 view === 'kanban'
                   ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400'
-                  : 'text-neutral-600 dark:text-neutral-400'
+                  : 'text-muted-foreground dark:text-muted-foreground'
               }`}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -300,7 +300,7 @@ export function ModernTasks() {
               className={`flex min-h-[44px] items-center space-x-2 rounded-md px-3 py-1.5 transition-colors ${
                 view === 'list'
                   ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400'
-                  : 'text-neutral-600 dark:text-neutral-400'
+                  : 'text-muted-foreground dark:text-muted-foreground'
               }`}
             >
               <List className="h-4 w-4" />
@@ -315,11 +315,11 @@ export function ModernTasks() {
         <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 xl:grid-cols-4">
           {tasksByStatus.map((status) => (
             <div key={status.id} className="flex w-[min(100%,18rem)] flex-shrink-0 flex-col md:w-auto">
-              <div className="mb-4 flex items-center justify-between border-b-2 border-neutral-200 pb-3 dark:border-neutral-700">
+              <div className="mb-4 flex items-center justify-between border-b-2 border-border pb-3 dark:border-border">
                 <div className="flex items-center space-x-2">
                   <div className={`h-3 w-3 rounded-full ${status.dot}`} />
-                  <h3 className="font-semibold text-neutral-900 dark:text-neutral-50">{status.name}</h3>
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">{status.tasks.length}</span>
+                  <h3 className="font-semibold text-foreground">{status.name}</h3>
+                  <span className="text-sm text-muted-foreground dark:text-muted-foreground">{status.tasks.length}</span>
                 </div>
               </div>
 
@@ -328,8 +328,8 @@ export function ModernTasks() {
                   <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-3 min-h-[12rem]">
                     {isLoading && !tasksResponse && (
                       <>
-                        <div className="h-24 animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-700" />
-                        <div className="h-24 animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-700" />
+                        <div className="h-24 animate-pulse rounded-lg bg-muted dark:bg-muted" />
+                        <div className="h-24 animate-pulse rounded-lg bg-muted dark:bg-muted" />
                       </>
                     )}
                     {status.tasks.map((task, index) => (
@@ -345,30 +345,30 @@ export function ModernTasks() {
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') navigate(`/tasks/${task.id}`);
                             }}
-                            className={`cursor-pointer rounded-lg border border-neutral-200 bg-white p-4 transition-all hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800 ${
+                            className={`cursor-pointer rounded-lg border border-border bg-card p-4 transition-all hover:shadow-md dark:border-border dark:bg-card ${
                               snapshot.isDragging ? 'shadow-xl rotate-1' : ''
                             }`}
                           >
                             <div className="mb-2 flex items-start justify-between gap-2">
-                              <h4 className="flex-1 text-sm font-medium text-neutral-900 hover:underline dark:text-neutral-50">
+                              <h4 className="flex-1 text-sm font-medium text-foreground hover:underline dark:text-foreground">
                                 {task.title}
                               </h4>
                               <TaskActionsMenu taskId={task.id} />
                             </div>
 
                             {task.description && (
-                              <p className="mb-3 line-clamp-2 text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200">
+                              <p className="mb-3 line-clamp-2 text-xs text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-neutral-200">
                                 {task.description}
                               </p>
                             )}
-                            <p className="mb-3 text-[11px] text-neutral-400">{t('clickToEdit')}</p>
+                            <p className="mb-3 text-[11px] text-muted-foreground">{t('clickToEdit')}</p>
 
                             <div className="flex items-center justify-between">
                               <span className={`rounded px-2 py-0.5 text-xs font-medium ${getPriorityColor(task.priority)}`}>
                                 {priorityLabel(task.priority)}
                               </span>
                               {task.due_date && (
-                                <div className="flex items-center text-xs text-neutral-600 dark:text-neutral-400">
+                                <div className="flex items-center text-xs text-muted-foreground dark:text-muted-foreground">
                                   <Calendar className="mr-1 h-3 w-3" />
                                   {new Date(task.due_date).toLocaleDateString()}
                                 </div>
@@ -383,7 +383,7 @@ export function ModernTasks() {
                 )}
               </Droppable>
                 {status.tasks.length === 0 && (
-                  <div className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">{t('noTasksColumn')}</div>
+                  <div className="py-8 text-center text-sm text-muted-foreground dark:text-muted-foreground">{t('noTasksColumn')}</div>
                 )}
             </div>
           ))}
@@ -392,26 +392,26 @@ export function ModernTasks() {
       )}
 
       {view === 'list' && (
-        <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card dark:border-border dark:bg-card">
           <table className="w-full min-w-[720px]">
-            <thead className="border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-700/50">
+            <thead className="border-b border-border bg-muted/50 dark:border-border dark:bg-muted/50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
                   {t('columnTask')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
                   {t('columnStatus')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
                   {t('priority')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
                   {t('dueDate')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
                   {t('assignedTo')}
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
                   {t('common:actions')}
                 </th>
               </tr>
@@ -420,14 +420,14 @@ export function ModernTasks() {
               {tasks.map((task) => (
                 <tr
                   key={task.id}
-                  className="cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700/50"
+                  className="cursor-pointer hover:bg-muted/50"
                   onClick={() => navigate(`/tasks/${task.id}`)}
                 >
                   <td className="px-4 py-4">
                     <div>
-                      <div className="font-medium text-neutral-900 dark:text-neutral-50">{task.title}</div>
+                      <div className="font-medium text-foreground">{task.title}</div>
                       {task.description && (
-                        <div className="line-clamp-1 text-sm text-neutral-500 dark:text-neutral-400">
+                        <div className="line-clamp-1 text-sm text-muted-foreground dark:text-muted-foreground">
                           {task.description}
                         </div>
                       )}
@@ -443,10 +443,10 @@ export function ModernTasks() {
                       {priorityLabel(task.priority)}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-sm text-neutral-900 dark:text-neutral-50">
+                  <td className="px-4 py-4 text-sm text-foreground">
                     {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
                   </td>
-                  <td className="px-4 py-4 text-sm text-neutral-900 dark:text-neutral-50">
+                  <td className="px-4 py-4 text-sm text-foreground">
                     {task.assigned_to ? `${task.assigned_to.first_name} ${task.assigned_to.last_name}` : t('unassigned')}
                   </td>
                   <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
@@ -457,7 +457,7 @@ export function ModernTasks() {
             </tbody>
           </table>
           {tasks.length === 0 && (
-            <div className="py-12 text-center text-neutral-500 dark:text-neutral-400">
+            <div className="py-12 text-center text-muted-foreground dark:text-muted-foreground">
               {t('emptyList')}
             </div>
           )}

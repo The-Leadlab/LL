@@ -12,26 +12,25 @@ interface PageContainerProps {
   noPadding?: boolean;
 }
 
-export function PageContainer({ 
-  children, 
+export function PageContainer({
+  children,
   className = '',
   centerContent = false,
   fullWidth = false,
-  noPadding = false
+  noPadding = false,
 }: PageContainerProps) {
   return (
-    <div 
+    <div
       className={cn(
-        'min-h-[calc(100vh-4rem)]',
-        'bg-background text-foreground dark:bg-background',
+        'min-h-[calc(100vh-4rem)] bg-background text-foreground font-sans',
         centerContent && 'flex items-center justify-center',
         className
       )}
     >
-      <div 
+      <div
         className={cn(
-          'w-full mx-auto transition-all duration-300 ease-in-out',
-          !noPadding && 'px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8',
+          'w-full mx-auto',
+          !noPadding && 'px-4 sm:px-6 lg:px-8 py-4 sm:py-6',
           !fullWidth && 'max-w-[1400px]'
         )}
       >

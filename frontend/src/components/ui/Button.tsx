@@ -14,19 +14,22 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const buttonVariants = {
   default:
-    'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500/50 shadow-sm dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 dark:hover:bg-neutral-700',
-  primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500/50 shadow-sm',
-  destructive: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500/50 shadow-sm',
+    'bg-card border border-border text-foreground hover:bg-muted focus-visible:ring-ring shadow-sm',
+  primary:
+    'bg-primary-600 text-white hover:bg-primary-700 focus-visible:ring-primary-500/40 shadow-sm',
+  destructive:
+    'bg-destructive text-destructive-foreground hover:opacity-90 focus-visible:ring-destructive/40 shadow-sm',
   outline:
-    'bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500/50 dark:border-neutral-600 dark:text-neutral-100 dark:hover:bg-neutral-800',
+    'bg-transparent border border-border text-foreground hover:bg-muted focus-visible:ring-ring',
   secondary:
-    'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500/50 dark:bg-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-600',
+    'bg-secondary text-secondary-foreground hover:bg-muted focus-visible:ring-ring',
   ghost:
-    'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500/50 dark:text-neutral-200 dark:hover:bg-neutral-800',
-  link: 'bg-transparent text-blue-600 underline-offset-4 hover:underline focus:ring-blue-500/50 p-0 h-auto dark:text-blue-400',
-  success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500/50 shadow-sm',
-  warning: 'bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500/50 shadow-sm',
-  gradient: 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 focus:ring-blue-500/50 shadow-sm',
+    'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring',
+  link: 'bg-transparent text-primary-600 underline-offset-4 hover:underline focus-visible:ring-primary-500/40 p-0 h-auto dark:text-primary-400',
+  success: 'bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-500/40 shadow-sm',
+  warning: 'bg-amber-600 text-white hover:bg-amber-700 focus-visible:ring-amber-500/40 shadow-sm',
+  /* Atlas: solid primary — no purple gradient */
+  gradient: 'bg-primary-600 text-white hover:bg-primary-700 focus-visible:ring-primary-500/40 shadow-sm',
 }
 
 const buttonSizes = {
@@ -66,10 +69,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center font-medium transition-all duration-200',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+          'inline-flex items-center justify-center font-sans font-medium',
+          'transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           'disabled:pointer-events-none disabled:opacity-50',
-          'active:scale-95',
+          'active:scale-[0.98] motion-reduce:active:scale-100',
           buttonVariants[variant],
           buttonSizes[size],
           buttonRounded[rounded],

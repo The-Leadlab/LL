@@ -101,7 +101,7 @@ export const QuoteList: React.FC = () => {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold md:text-3xl">{t('cpq.quotes.title')}</h1>
-            <p className="mt-1 text-sm text-gray-600 md:text-base">
+            <p className="mt-1 text-sm text-muted-foreground md:text-base">
               {t('cpq.quotes.subtitle')}
             </p>
           </div>
@@ -120,7 +120,7 @@ export const QuoteList: React.FC = () => {
                   <FileText className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('cpq.quotes.total')}</p>
+                  <p className="text-sm text-muted-foreground">{t('cpq.quotes.total')}</p>
                   <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
               </div>
@@ -129,11 +129,11 @@ export const QuoteList: React.FC = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-gray-100 rounded-lg">
-                  <Edit className="h-6 w-6 text-gray-600" />
+                <div className="p-3 bg-muted rounded-lg">
+                  <Edit className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('cpq.quotes.draft')}</p>
+                  <p className="text-sm text-muted-foreground">{t('cpq.quotes.draft')}</p>
                   <p className="text-2xl font-bold">{stats.draft}</p>
                 </div>
               </div>
@@ -146,7 +146,7 @@ export const QuoteList: React.FC = () => {
                   <Send className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('cpq.quotes.sent')}</p>
+                  <p className="text-sm text-muted-foreground">{t('cpq.quotes.sent')}</p>
                   <p className="text-2xl font-bold">{stats.sent}</p>
                 </div>
               </div>
@@ -159,7 +159,7 @@ export const QuoteList: React.FC = () => {
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('cpq.quotes.accepted')}</p>
+                  <p className="text-sm text-muted-foreground">{t('cpq.quotes.accepted')}</p>
                   <p className="text-2xl font-bold">{stats.accepted}</p>
                 </div>
               </div>
@@ -172,7 +172,7 @@ export const QuoteList: React.FC = () => {
                   <DollarSign className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('cpq.quotes.totalValue')}</p>
+                  <p className="text-sm text-muted-foreground">{t('cpq.quotes.totalValue')}</p>
                   <p className="text-2xl font-bold">
                     {formatCurrency(stats.totalValue)}
                   </p>
@@ -235,7 +235,7 @@ export const QuoteList: React.FC = () => {
                 </TableHeader>
                 <TableBody>
                   {quotes.map((quote) => (
-                    <TableRow key={quote.id} className="cursor-pointer hover:bg-gray-50">
+                    <TableRow key={quote.id} className="cursor-pointer hover:bg-muted">
                       <TableCell
                         className="font-medium"
                         onClick={() => navigate(`/cpq/quotes/${quote.id}`)}
@@ -246,10 +246,10 @@ export const QuoteList: React.FC = () => {
                       <TableCell className="font-semibold">
                         {formatCurrency(quote.total_amount, quote.currency)}
                       </TableCell>
-                      <TableCell className="text-gray-600">
+                      <TableCell className="text-muted-foreground">
                         {formatDate(quote.created_at)}
                       </TableCell>
-                      <TableCell className="text-gray-600">
+                      <TableCell className="text-muted-foreground">
                         {quote.valid_until ? formatDate(quote.valid_until) : '-'}
                       </TableCell>
                       <TableCell>
@@ -310,7 +310,7 @@ export const QuoteList: React.FC = () => {
               <div className="text-center py-12">
                 <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-lg font-semibold mb-2">{t('cpq.quotes.emptyTitle')}</h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   {t('cpq.quotes.emptyBody')}
                 </p>
                 <Button onClick={() => navigate('/cpq/quotes/new')}>

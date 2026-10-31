@@ -113,8 +113,8 @@ export function SignUp() {
                 alt="LeadLab"
                 className="mx-auto mb-4 h-12 w-auto"
               />
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t('signUpTitle')}</h1>
-              <p className="text-gray-600 mt-3">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('signUpTitle')}</h1>
+              <p className="text-muted-foreground mt-3">
                 {t('signUpPage.subtitle')}
               </p>
             </motion.div>
@@ -136,7 +136,7 @@ export function SignUp() {
                 <div>
                   <label
                     htmlFor="first_name"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('firstName')}
                   </label>
@@ -151,7 +151,7 @@ export function SignUp() {
                       value={formData.first_name}
                       onChange={handleChange}
                       placeholder="John"
-                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      className="w-full pl-10 px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                   </div>
@@ -159,7 +159,7 @@ export function SignUp() {
                 <div>
                   <label
                     htmlFor="last_name"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('lastName')}
                   </label>
@@ -174,7 +174,7 @@ export function SignUp() {
                       value={formData.last_name}
                       onChange={handleChange}
                       placeholder="Doe"
-                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      className="w-full pl-10 px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                   </div>
@@ -182,7 +182,7 @@ export function SignUp() {
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('signInPage.emailAddress')}
                   </label>
@@ -197,7 +197,7 @@ export function SignUp() {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="you@example.com"
-                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      className="w-full pl-10 px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                   </div>
@@ -205,7 +205,7 @@ export function SignUp() {
                 <div>
                   <label
                     htmlFor="company"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('common:company')}
                   </label>
@@ -220,7 +220,7 @@ export function SignUp() {
                       value={formData.company}
                       onChange={handleChange}
                       placeholder={t('signUpPage.companyPlaceholder')}
-                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      className="w-full pl-10 px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                   </div>
@@ -228,7 +228,7 @@ export function SignUp() {
                 <div>
                   <label
                     htmlFor="job_title"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('signUpPage.jobTitle')}
                   </label>
@@ -243,13 +243,13 @@ export function SignUp() {
                       value={formData.job_title}
                       onChange={handleChange}
                       placeholder={t('signUpPage.jobTitlePlaceholder')}
-                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      className="w-full pl-10 px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="birth_date" className="block text-sm font-medium text-foreground mb-1">
                     {t('signUpPage.dateOfBirth')}
                   </label>
                   <input
@@ -258,17 +258,17 @@ export function SignUp() {
                     name="birth_date"
                     value={birthDate}
                     onChange={(e) => setBirthDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     required
                   />
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {t('signUpPage.dobHelp')}
                   </p>
                 </div>
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('password')}
                   </label>
@@ -283,24 +283,24 @@ export function SignUp() {
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      className="w-full pl-10 pr-10 px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? t('signInPage.hidePassword') : t('signInPage.showPassword')}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 bg-transparent"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-muted-foreground bg-transparent"
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">{t('signUpPage.passwordMinLength')}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t('signUpPage.passwordMinLength')}</p>
                 </div>
                 <div>
                   <label
                     htmlFor="confirm_password"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('confirmPassword')}
                   </label>
@@ -315,14 +315,14 @@ export function SignUp() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      className="w-full pl-10 pr-10 px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((v) => !v)}
                       aria-label={showConfirmPassword ? t('signInPage.hidePassword') : t('signInPage.showPassword')}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 bg-transparent"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-muted-foreground bg-transparent"
                     >
                       {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
@@ -361,10 +361,10 @@ export function SignUp() {
             <div className="mt-8">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
+                  <div className="w-full border-t border-border" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">
+                  <span className="px-2 bg-card text-muted-foreground">
                     {t('hasAccount')}
                   </span>
                 </div>
@@ -380,7 +380,7 @@ export function SignUp() {
               </div>
             </div>
             
-            <div className="mt-6 text-center text-xs text-gray-500">
+            <div className="mt-6 text-center text-xs text-muted-foreground">
               {t('legal.bySigningUp')}{' '}
               <Link to="/legal" className="text-blue-600 hover:text-blue-500 transition-colors">
                 {t('legal.terms')}

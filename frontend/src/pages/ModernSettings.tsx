@@ -99,13 +99,13 @@ export function ModernSettings() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8 overflow-x-hidden">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8 overflow-x-hidden">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">
+        <h1 className="text-3xl font-bold text-foreground mb-2">
           {t('title')}
         </h1>
-        <p className="text-neutral-600 dark:text-neutral-400">
+        <p className="text-muted-foreground dark:text-muted-foreground">
           {t('subtitle')}
         </p>
       </div>
@@ -113,7 +113,7 @@ export function ModernSettings() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 min-w-0">
         {/* Sidebar Tabs */}
         <div className="md:col-span-3 min-w-0">
-          <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700 p-2">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-2">
             <nav className="space-y-1">
               {visibleTabs.map((tab) => {
                 const Icon = tab.icon;
@@ -127,7 +127,7 @@ export function ModernSettings() {
                     className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
                       isActive
                         ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
-                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                        : 'text-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -141,7 +141,7 @@ export function ModernSettings() {
 
         {/* Content Area */}
         <div className="md:col-span-9 min-w-0">
-          <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700">
+          <div className="bg-card rounded-xl shadow-sm border border-border">
             {activeTab === 'profile' && <ProfileSettings />}
             {activeTab === 'notifications' && <NotificationSettings />}
             {activeTab === 'company' && <OrganizationSettings />}
@@ -296,14 +296,14 @@ function ProfileSettings() {
 
   return (
     <div className="p-4 sm:p-6 md:p-8 min-w-0">
-      <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
+      <h2 className="text-2xl font-bold text-foreground mb-6">
         {tm('settingsPage.profile.title')}
       </h2>
 
       <div className="space-y-6">
         {/* Avatar */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-2">
             {tm('settingsPage.profile.photo')}
           </label>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
@@ -330,7 +330,7 @@ function ProfileSettings() {
                 {isUploadingAvatar && <Loader2 className="animate-spin w-4 h-4" />}
                 {tm('settingsPage.profile.uploadPhoto')}
               </button>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
+              <p className="text-xs text-muted-foreground dark:text-muted-foreground mt-2">
                 {tm('settingsPage.profile.photoHint')}
               </p>
             </div>
@@ -340,45 +340,45 @@ function ProfileSettings() {
         {/* Name Fields */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+            <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-2">
               {tm('settingsPage.profile.firstName')}
             </label>
             <input
               type="text"
               value={formState.firstName}
               onChange={(event) => handleChange('firstName', event.target.value)}
-              className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 bg-muted/50 dark:bg-muted border border-border dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+            <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-2">
               {tm('settingsPage.profile.lastName')}
             </label>
             <input
               type="text"
               value={formState.lastName}
               onChange={(event) => handleChange('lastName', event.target.value)}
-              className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 bg-muted/50 dark:bg-muted border border-border dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
         </div>
 
         {/* Email */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-2">
             {tm('settingsPage.profile.email')}
           </label>
           <input
             type="email"
             value={formState.email}
             onChange={(event) => handleChange('email', event.target.value)}
-            className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2.5 bg-muted/50 dark:bg-muted border border-border dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
 
         {/* Phone */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-2">
             {tm('settingsPage.profile.phone')}
           </label>
           <input
@@ -386,13 +386,13 @@ function ProfileSettings() {
             placeholder="+1 (555) 000-0000"
             value={formState.phone}
             onChange={(event) => handleChange('phone', event.target.value)}
-            className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2.5 bg-muted/50 dark:bg-muted border border-border dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
 
         {/* Bio */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-2">
             {tm('settingsPage.profile.bio')}
           </label>
           <textarea
@@ -400,17 +400,17 @@ function ProfileSettings() {
             placeholder={tm('settingsPage.profile.bioPlaceholder')}
             value={formState.bio}
             onChange={(event) => handleChange('bio', event.target.value)}
-            className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2.5 bg-muted/50 dark:bg-muted border border-border dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
 
         {/* Language */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-2">
             {t('language')}
           </label>
           <LanguageSwitcher size="md" />
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
+          <p className="text-xs text-muted-foreground dark:text-muted-foreground mt-2">
             {t('languageHint')}
           </p>
         </div>
@@ -424,17 +424,17 @@ function ProfileSettings() {
           >
             {tt('retake')}
           </button>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+          <p className="text-xs text-muted-foreground dark:text-muted-foreground mt-1">
             {tt('retakeHint')}
           </p>
         </div>
 
         {/* Actions */}
-        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-6 border-t border-border">
           <button
             type="button"
             onClick={handleCancel}
-            className="px-4 py-2 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg font-medium transition-colors"
+            className="px-4 py-2 text-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted rounded-lg font-medium transition-colors"
           >
             {t('common:cancel')}
           </button>
@@ -512,14 +512,14 @@ function OrganizationSettings() {
   if (!orgId) {
     return (
       <div className="p-8">
-        <p className="text-neutral-600 dark:text-neutral-400">{t('settingsPage.company.signInRequired')}</p>
+        <p className="text-muted-foreground dark:text-muted-foreground">{t('settingsPage.company.signInRequired')}</p>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="p-8 flex items-center gap-2 text-neutral-600">
+      <div className="p-8 flex items-center gap-2 text-muted-foreground">
         <Loader2 className="h-5 w-5 animate-spin" />
         {t('settingsPage.company.loading')}
       </div>
@@ -528,7 +528,7 @@ function OrganizationSettings() {
 
   if (isError) {
     return (
-      <div className="p-8 text-neutral-600 dark:text-neutral-300">
+      <div className="p-8 text-muted-foreground dark:text-muted-foreground">
         {t('settingsPage.company.loadFailed')}
       </div>
     );
@@ -536,7 +536,7 @@ function OrganizationSettings() {
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
+      <h2 className="text-2xl font-bold text-foreground mb-6">
         {t('settingsPage.company.title')}
       </h2>
 
@@ -546,14 +546,14 @@ function OrganizationSettings() {
         </p>
       )}
 
-      <div className="mb-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-900/40 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="mb-6 rounded-xl border border-border bg-muted/50/80 dark:bg-background/40 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 rounded-lg bg-primary-100 dark:bg-primary-900/30 p-2">
             <Map className="h-5 w-5 text-primary-700 dark:text-primary-300" aria-hidden />
           </div>
           <div>
-            <h3 className="font-semibold text-neutral-900 dark:text-neutral-50">{t('settingsPage.company.territories')}</h3>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <h3 className="font-semibold text-foreground">{t('settingsPage.company.territories')}</h3>
+            <p className="text-sm text-muted-foreground dark:text-muted-foreground">
               {t('settingsPage.company.territoriesHint')}
             </p>
           </div>
@@ -561,7 +561,7 @@ function OrganizationSettings() {
         <button
           type="button"
           onClick={() => navigate('/settings/territories')}
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-card px-4 py-2.5 text-sm font-medium text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted"
         >
           {t('settingsPage.company.openTerritories')}
           <ChevronRight className="h-4 w-4" />
@@ -570,7 +570,7 @@ function OrganizationSettings() {
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-2">
             {t('settingsPage.company.name')}
           </label>
           <input
@@ -578,12 +578,12 @@ function OrganizationSettings() {
             value={name}
             disabled={!canEditOrg}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-70"
+            className="w-full px-4 py-2.5 bg-muted/50 dark:bg-muted border border-border dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-70"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-2">
             {t('settingsPage.company.website')}
           </label>
           <input
@@ -592,12 +592,12 @@ function OrganizationSettings() {
             value={website}
             disabled={!canEditOrg}
             onChange={(e) => setWebsite(e.target.value)}
-            className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-70"
+            className="w-full px-4 py-2.5 bg-muted/50 dark:bg-muted border border-border dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-70"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-2">
             {t('settingsPage.company.description')}
           </label>
           <textarea
@@ -605,12 +605,12 @@ function OrganizationSettings() {
             value={description}
             disabled={!canEditOrg}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-70"
+            className="w-full px-4 py-2.5 bg-muted/50 dark:bg-muted border border-border dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-70"
           />
         </div>
 
         {canEditOrg && (
-          <div className="flex items-center justify-end space-x-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t border-border">
             <button
               type="button"
               onClick={() => {
@@ -620,7 +620,7 @@ function OrganizationSettings() {
                   setDescription(org.description || '');
                 }
               }}
-              className="px-4 py-2 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg font-medium transition-colors"
+              className="px-4 py-2 text-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted rounded-lg font-medium transition-colors"
             >
               {t('common:cancel')}
             </button>
@@ -736,20 +736,20 @@ function NotificationSettings() {
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
+      <h2 className="text-2xl font-bold text-foreground mb-6">
         {t('settingsPage.notifications.title')}
       </h2>
-      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">{t('settingsPage.notifications.subtitle')}</p>
+      <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-4">{t('settingsPage.notifications.subtitle')}</p>
 
       <div className="space-y-4">
-        <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+        <div className="rounded-lg border border-border p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">
             {t('settingsPage.notifications.prefsTitle')}
           </h3>
           {NOTIFICATION_PREF_KEYS.map((key) => (
             <label
               key={key}
-              className="flex items-center justify-between gap-4 text-sm text-neutral-700 dark:text-neutral-300"
+              className="flex items-center justify-between gap-4 text-sm text-foreground dark:text-muted-foreground"
             >
               <span>{tSettings(key)}</span>
               <button
@@ -762,7 +762,7 @@ function NotificationSettings() {
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-card transition-transform ${
                     prefs[key] ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
@@ -789,15 +789,15 @@ function NotificationSettings() {
         </div>
 
         {isLoading ? (
-          <p className="text-sm text-neutral-600">{t('settingsPage.notifications.loading')}</p>
+          <p className="text-sm text-muted-foreground">{t('settingsPage.notifications.loading')}</p>
         ) : notifications.length === 0 ? (
-          <p className="text-sm text-neutral-600">{t('settingsPage.notifications.empty')}</p>
+          <p className="text-sm text-muted-foreground">{t('settingsPage.notifications.empty')}</p>
         ) : (
           notifications.map((item: any) => (
-            <div key={item.id} className="p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg">
-              <div className="font-medium text-neutral-900 dark:text-neutral-50">{item.title}</div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{item.message}</p>
-              <p className="text-xs text-neutral-500 mt-2">
+            <div key={item.id} className="p-4 border border-border rounded-lg">
+              <div className="font-medium text-foreground">{item.title}</div>
+              <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1">{item.message}</p>
+              <p className="text-xs text-muted-foreground mt-2">
                 {item.is_read ? t('settingsPage.notifications.read') : t('settingsPage.notifications.unread')} • {new Date(item.created_at).toLocaleString()}
               </p>
             </div>
@@ -850,20 +850,20 @@ function SecuritySettings() {
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
+      <h2 className="text-2xl font-bold text-foreground mb-6">
         {t('settingsPage.security.title')}
       </h2>
 
       <div className="space-y-6">
         <form onSubmit={handleChangePassword}>
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-4">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
             {t('settingsPage.security.changePassword')}
           </h3>
           <div className="space-y-4 max-w-md">
             <input
               type="password"
               placeholder={t('settingsPage.security.currentPassword')}
-              className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 bg-muted/50 dark:bg-muted border border-border dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               autoComplete="current-password"
@@ -871,7 +871,7 @@ function SecuritySettings() {
             <input
               type="password"
               placeholder={t('settingsPage.security.newPassword')}
-              className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 bg-muted/50 dark:bg-muted border border-border dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               autoComplete="new-password"
@@ -879,7 +879,7 @@ function SecuritySettings() {
             <input
               type="password"
               placeholder={t('settingsPage.security.confirmPassword')}
-              className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 bg-muted/50 dark:bg-muted border border-border dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               autoComplete="new-password"
@@ -895,11 +895,11 @@ function SecuritySettings() {
           </div>
         </form>
 
-        <div className="pt-6 border-t border-neutral-200 dark:border-neutral-700">
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-4">
+        <div className="pt-6 border-t border-border">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
             {t('settingsPage.security.twoFactor')}
           </h3>
-          <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+          <p className="text-muted-foreground dark:text-muted-foreground mb-4">
             {t('settingsPage.security.twoFactorUnavailable')}
           </p>
         </div>
@@ -913,10 +913,10 @@ function BillingSettings() {
   const navigate = useNavigate();
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
+      <h2 className="text-2xl font-bold text-foreground mb-6">
         {t('settingsPage.billing.title')}
       </h2>
-      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+      <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-4">
         {t('settingsPage.billing.body')}
       </p>
       <button
@@ -962,7 +962,7 @@ function TeamSettings() {
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+        <h2 className="text-2xl font-bold text-foreground">
           {t('settingsPage.team.title')}
         </h2>
         <button
@@ -974,9 +974,9 @@ function TeamSettings() {
         </button>
       </div>
 
-      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4 max-w-2xl">
+      <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-4 max-w-2xl">
         {t('settingsPage.team.intro')}{' '}
-        <span className="font-medium text-neutral-800 dark:text-neutral-200">{t('settingsPage.team.manageUsers')}</span>{' '}
+        <span className="font-medium text-foreground dark:text-foreground">{t('settingsPage.team.manageUsers')}</span>{' '}
         {t('settingsPage.team.introAfter')}
         {user?.is_admin ? (
           <>
@@ -996,7 +996,7 @@ function TeamSettings() {
       </p>
 
       {isLoading && (
-        <div className="flex items-center gap-2 text-neutral-600">
+        <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" />
           {t('settingsPage.team.loading')}
         </div>
@@ -1008,26 +1008,26 @@ function TeamSettings() {
       {!isLoading && !error && (
         <div className="space-y-3">
           {members.length === 0 ? (
-            <p className="text-neutral-600 dark:text-neutral-400">{t('settingsPage.team.empty')}</p>
+            <p className="text-muted-foreground dark:text-muted-foreground">{t('settingsPage.team.empty')}</p>
           ) : (
             members.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg"
+                className="flex items-center justify-between p-4 border border-border rounded-lg"
               >
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
                     <User className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="font-medium text-neutral-900 dark:text-neutral-50">
+                    <p className="font-medium text-foreground">
                       {`${member.first_name || ''} ${member.last_name || ''}`.trim() || member.email}
                     </p>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">{member.email}</p>
+                    <p className="text-sm text-muted-foreground dark:text-muted-foreground">{member.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <span className="px-3 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-sm">
+                  <span className="px-3 py-1 bg-muted dark:bg-muted text-foreground dark:text-muted-foreground rounded-full text-sm">
                     {roleLabel(member)}
                   </span>
                 </div>
@@ -1123,16 +1123,16 @@ function EmailIntegrationPanel() {
     (provider !== 'custom' || (imapHost.trim() && smtpHost.trim()));
 
   return (
-    <div className="mb-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/50 p-6">
-      <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-1">{t('settingsPage.integrations.email.title')}</h3>
-      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+    <div className="mb-10 rounded-xl border border-border bg-card/50 p-6">
+      <h3 className="text-lg font-semibold text-foreground mb-1">{t('settingsPage.integrations.email.title')}</h3>
+      <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-4">
         {t('settingsPage.integrations.email.intro')} <span className="font-medium">{t('settingsPage.integrations.email.customBold')}</span>{' '}
         {t('settingsPage.integrations.email.intro2')}{' '}
         <span className="font-medium">{t('settingsPage.integrations.email.appPasswordBold')}</span> {t('settingsPage.integrations.email.intro3')}
       </p>
 
       {isLoading ? (
-        <p className="text-sm text-neutral-500 flex items-center gap-2">
+        <p className="text-sm text-muted-foreground flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" /> {t('settingsPage.integrations.email.loadingAccounts')}
         </p>
       ) : mailAccounts.length > 0 ? (
@@ -1140,24 +1140,24 @@ function EmailIntegrationPanel() {
           {mailAccounts.map((a) => (
             <li
               key={a.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-neutral-200 dark:border-neutral-600 px-3 py-2"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border dark:border-neutral-600 px-3 py-2"
             >
-              <span className="font-medium text-neutral-800 dark:text-neutral-100">{a.email}</span>
-              <span className="text-neutral-500">{a.provider_type}</span>
+              <span className="font-medium text-foreground dark:text-foreground">{a.email}</span>
+              <span className="text-muted-foreground">{a.provider_type}</span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-neutral-500 mb-4">{t('settingsPage.integrations.email.none')}</p>
+        <p className="text-sm text-muted-foreground mb-4">{t('settingsPage.integrations.email.none')}</p>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.provider')}</label>
+          <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">{t('settingsPage.integrations.email.provider')}</label>
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as typeof provider)}
-            className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-card px-3 py-2 text-sm"
           >
             <option value="custom">{t('settingsPage.integrations.email.providerCustom')}</option>
             <option value="gmail">{t('settingsPage.integrations.email.providerGmail')}</option>
@@ -1166,34 +1166,34 @@ function EmailIntegrationPanel() {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.displayName')}</label>
+          <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">{t('settingsPage.integrations.email.displayName')}</label>
           <input
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder={t('settingsPage.integrations.email.displayNamePlaceholder')}
-            className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-card px-3 py-2 text-sm"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.address')}</label>
+          <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">{t('settingsPage.integrations.email.address')}</label>
           <input
             type="email"
             value={emailAddr}
             onChange={(e) => setEmailAddr(e.target.value)}
             autoComplete="username"
-            className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-card px-3 py-2 text-sm"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.password')}</label>
+          <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">{t('settingsPage.integrations.email.password')}</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
-            className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-card px-3 py-2 text-sm"
             required
           />
         </div>
@@ -1201,47 +1201,47 @@ function EmailIntegrationPanel() {
 
       {provider === 'custom' && (
         <div className="mt-4 space-y-4">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-muted-foreground dark:text-muted-foreground">
             {t('settingsPage.integrations.email.infomaniakHint')}
           </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.imapHost')}</label>
+              <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">{t('settingsPage.integrations.email.imapHost')}</label>
               <input
                 type="text"
                 value={imapHost}
                 onChange={(e) => setImapHost(e.target.value)}
-                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-card px-3 py-2 text-sm"
                 placeholder="mail.infomaniak.com"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.imapPort')}</label>
+              <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">{t('settingsPage.integrations.email.imapPort')}</label>
               <input
                 type="number"
                 value={imapPort}
                 onChange={(e) => setImapPort(Number(e.target.value) || 993)}
-                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-card px-3 py-2 text-sm"
                 placeholder="993"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.smtpHost')}</label>
+              <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">{t('settingsPage.integrations.email.smtpHost')}</label>
               <input
                 type="text"
                 value={smtpHost}
                 onChange={(e) => setSmtpHost(e.target.value)}
-                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-card px-3 py-2 text-sm"
                 placeholder="mail.infomaniak.com"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('settingsPage.integrations.email.smtpPort')}</label>
+              <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">{t('settingsPage.integrations.email.smtpPort')}</label>
               <input
                 type="number"
                 value={smtpPort}
                 onChange={(e) => setSmtpPort(Number(e.target.value) || 587)}
-                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-card px-3 py-2 text-sm"
                 placeholder="587"
               />
             </div>
@@ -1269,7 +1269,7 @@ function EmailIntegrationPanel() {
         <button
           type="button"
           onClick={() => navigate('/emails')}
-          className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-4 py-2.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-4 py-2.5 text-sm font-medium text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted"
         >
           {t('settingsPage.integrations.email.openInbox')}
         </button>
@@ -1391,7 +1391,7 @@ function IntegrationsSettings() {
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
+      <h2 className="text-2xl font-bold text-foreground mb-6">
         {t('settingsPage.integrations.title')}
       </h2>
       {connectedViaGoogleSignIn && (
@@ -1399,22 +1399,22 @@ function IntegrationsSettings() {
           {t('settingsPage.integrations.googleSignIn')}
         </div>
       )}
-      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+      <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-6">
         {t('settingsPage.integrations.intro')}
       </p>
 
       <EmailIntegrationPanel />
 
-      <h3 className="text-md font-semibold text-neutral-900 dark:text-neutral-50 mb-3">{t('settingsPage.integrations.calendar')}</h3>
+      <h3 className="text-md font-semibold text-foreground mb-3">{t('settingsPage.integrations.calendar')}</h3>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="p-6 border border-neutral-200 dark:border-neutral-700 rounded-lg">
+        <div className="p-6 border border-border rounded-lg">
           <div className="flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-neutral-100 dark:bg-neutral-700 rounded-lg flex items-center justify-center">
-              <CalendarDays className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
+            <div className="w-12 h-12 bg-muted dark:bg-muted rounded-lg flex items-center justify-center">
+              <CalendarDays className="w-6 h-6 text-muted-foreground dark:text-muted-foreground" />
             </div>
             <div>
-              <h4 className="font-semibold text-neutral-900 dark:text-neutral-50">{t('settingsPage.integrations.googleCalendar')}</h4>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              <h4 className="font-semibold text-foreground">{t('settingsPage.integrations.googleCalendar')}</h4>
+              <p className="text-sm text-muted-foreground dark:text-muted-foreground">
                 {isLoadingCalendar
                   ? t('settingsPage.integrations.loadingShort')
                   : googleIntegration
@@ -1425,13 +1425,13 @@ function IntegrationsSettings() {
               </p>
             </div>
           </div>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-4">
             {t('settingsPage.integrations.calendarNote')}
           </p>
           {googleIntegration ? (
             <div className="space-y-3">
               {(googleIntegration.last_synced_at || googleIntegration.last_error) && (
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                <p className="text-xs text-muted-foreground dark:text-muted-foreground">
                   {googleIntegration.last_synced_at
                     ? t('settingsPage.integrations.lastSynced', {
                         date: new Date(googleIntegration.last_synced_at).toLocaleString(),
@@ -1448,7 +1448,7 @@ function IntegrationsSettings() {
                 <button
                   type="button"
                   disabled={connectGoogleMutation.isPending}
-                  className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50"
+                  className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 text-sm font-medium hover:bg-muted dark:hover:bg-muted disabled:opacity-50"
                   onClick={() => connectGoogleMutation.mutate()}
                 >
                   {connectGoogleMutation.isPending ? t('settingsPage.integrations.redirecting') : t('settingsPage.integrations.addCalendar')}
@@ -1456,7 +1456,7 @@ function IntegrationsSettings() {
                 <button
                   type="button"
                   disabled={syncGoogleMutation.isPending}
-                  className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50"
+                  className="rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 text-sm font-medium hover:bg-muted dark:hover:bg-muted disabled:opacity-50"
                   onClick={() => syncGoogleMutation.mutate(googleIntegration.id)}
                 >
                   {syncGoogleMutation.isPending ? t('settingsPage.integrations.syncing') : t('settingsPage.integrations.syncNow')}
@@ -1482,7 +1482,7 @@ function IntegrationsSettings() {
             </button>
           )}
           {googleIntegrations.length > 1 && (
-            <div className="mt-3 text-xs text-neutral-600 dark:text-neutral-400">
+            <div className="mt-3 text-xs text-muted-foreground dark:text-muted-foreground">
               {t('settingsPage.integrations.connectedCalendars')}
               <ul className="mt-1 list-disc pl-4">
                 {googleIntegrations.map((integration) => (
@@ -1493,40 +1493,40 @@ function IntegrationsSettings() {
           )}
         </div>
 
-        <div className="p-6 border border-neutral-200 dark:border-neutral-700 rounded-lg">
+        <div className="p-6 border border-border rounded-lg">
           <div className="flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-neutral-100 dark:bg-neutral-700 rounded-lg flex items-center justify-center">
-              <Globe className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
+            <div className="w-12 h-12 bg-muted dark:bg-muted rounded-lg flex items-center justify-center">
+              <Globe className="w-6 h-6 text-muted-foreground dark:text-muted-foreground" />
             </div>
             <div>
-              <h4 className="font-semibold text-neutral-900 dark:text-neutral-50">{t('settingsPage.integrations.otherCalendars')}</h4>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('settingsPage.integrations.otherCalendarsHint')}</p>
+              <h4 className="font-semibold text-foreground">{t('settingsPage.integrations.otherCalendars')}</h4>
+              <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('settingsPage.integrations.otherCalendarsHint')}</p>
             </div>
           </div>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-4">
             {t('settingsPage.integrations.otherCalendarsNote')}
           </p>
-          <span className="inline-flex rounded-full bg-neutral-100 dark:bg-neutral-700 px-3 py-1 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+          <span className="inline-flex rounded-full bg-muted dark:bg-muted px-3 py-1 text-xs font-medium text-muted-foreground dark:text-muted-foreground">
             {t('settingsPage.integrations.comingNext')}
           </span>
         </div>
       </div>
 
-      <h3 className="text-md font-semibold text-neutral-900 dark:text-neutral-50 mb-3">{t('settingsPage.integrations.crmMessaging')}</h3>
+      <h3 className="text-md font-semibold text-foreground mb-3">{t('settingsPage.integrations.crmMessaging')}</h3>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {tiles.map((tile) => {
           const Icon = tile.icon;
           return (
-            <div key={tile.id} className="p-6 border border-neutral-200 dark:border-neutral-700 rounded-lg">
+            <div key={tile.id} className="p-6 border border-border rounded-lg">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-12 h-12 bg-neutral-100 dark:bg-neutral-700 rounded-lg flex items-center justify-center">
-                  <Icon className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
+                <div className="w-12 h-12 bg-muted dark:bg-muted rounded-lg flex items-center justify-center">
+                  <Icon className="w-6 h-6 text-muted-foreground dark:text-muted-foreground" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-neutral-900 dark:text-neutral-50">
+                  <h3 className="font-semibold text-foreground">
                     {tile.name}
                   </h3>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  <p className="text-sm text-muted-foreground dark:text-muted-foreground">
                     {tile.connected ? t('settingsPage.integrations.connected') : t('settingsPage.integrations.notConnected')}
                   </p>
                 </div>

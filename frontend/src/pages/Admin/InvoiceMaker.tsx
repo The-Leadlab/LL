@@ -347,7 +347,7 @@ export function InvoiceMaker() {
 
   // Preview component
   const InvoicePreview = () => (
-    <div id="invoice-preview" ref={invoiceRef} className="bg-white p-8 shadow-lg max-w-4xl mx-auto">
+    <div id="invoice-preview" ref={invoiceRef} className="bg-card p-8 shadow-lg max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div className="flex items-center space-x-6">
@@ -360,11 +360,11 @@ export function InvoiceMaker() {
             />
           </div>
           
-          <div className="border-l border-gray-200 pl-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">INVOICE</h1>
-            <div className="bg-gray-100 px-3 py-2 rounded border">
-              <p className="text-sm text-gray-500 mb-1">Invoice Number</p>
-              <p className="text-lg font-bold text-gray-900">{invoiceData.invoiceNumber}</p>
+          <div className="border-l border-border pl-6">
+            <h1 className="text-3xl font-bold text-foreground mb-2">INVOICE</h1>
+            <div className="bg-muted px-3 py-2 rounded border">
+              <p className="text-sm text-muted-foreground mb-1">Invoice Number</p>
+              <p className="text-lg font-bold text-foreground">{invoiceData.invoiceNumber}</p>
             </div>
           </div>
         </div>
@@ -372,7 +372,7 @@ export function InvoiceMaker() {
           <Badge className={`
             ${invoiceData.status === 'paid' ? 'bg-green-100 text-green-800' : ''}
             ${invoiceData.status === 'sent' ? 'bg-blue-100 text-blue-800' : ''}
-            ${invoiceData.status === 'draft' ? 'bg-gray-100 text-gray-800' : ''}
+            ${invoiceData.status === 'draft' ? 'bg-muted text-foreground' : ''}
             ${invoiceData.status === 'overdue' ? 'bg-red-100 text-red-800' : ''}
           `}>
             {invoiceData.status.toUpperCase()}
@@ -383,8 +383,8 @@ export function InvoiceMaker() {
       {/* Company and Client Info */}
       <div className="grid grid-cols-2 gap-8 mb-8">
         <div>
-          <h3 className="font-semibold text-gray-900 mb-3">From:</h3>
-          <div className="text-gray-600">
+          <h3 className="font-semibold text-foreground mb-3">From:</h3>
+          <div className="text-muted-foreground">
             <p className="font-medium">{invoiceData.companyName}</p>
             <div className="whitespace-pre-line">{invoiceData.companyAddress}</div>
             <p>{invoiceData.companyPhone}</p>
@@ -394,8 +394,8 @@ export function InvoiceMaker() {
         </div>
         
         <div>
-          <h3 className="font-semibold text-gray-900 mb-3">To:</h3>
-          <div className="text-gray-600">
+          <h3 className="font-semibold text-foreground mb-3">To:</h3>
+          <div className="text-muted-foreground">
             <p className="font-medium">{invoiceData.clientName}</p>
             {invoiceData.clientCompany && <p>{invoiceData.clientCompany}</p>}
             <div className="whitespace-pre-line">{invoiceData.clientAddress}</div>
@@ -408,16 +408,16 @@ export function InvoiceMaker() {
       {/* Invoice Details */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div>
-          <p className="text-sm font-medium text-gray-500">Invoice Date</p>
-          <p className="text-gray-900">{new Date(invoiceData.date).toLocaleDateString()}</p>
+          <p className="text-sm font-medium text-muted-foreground">Invoice Date</p>
+          <p className="text-foreground">{new Date(invoiceData.date).toLocaleDateString()}</p>
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-500">Due Date</p>
-          <p className="text-gray-900">{new Date(invoiceData.dueDate).toLocaleDateString()}</p>
+          <p className="text-sm font-medium text-muted-foreground">Due Date</p>
+          <p className="text-foreground">{new Date(invoiceData.dueDate).toLocaleDateString()}</p>
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-500">Payment Terms</p>
-          <p className="text-gray-900">{invoiceData.paymentTerms}</p>
+          <p className="text-sm font-medium text-muted-foreground">Payment Terms</p>
+          <p className="text-foreground">{invoiceData.paymentTerms}</p>
         </div>
       </div>
 
@@ -425,20 +425,20 @@ export function InvoiceMaker() {
       <div className="mb-8">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b-2 border-gray-200">
-              <th className="text-left py-3 font-semibold text-gray-900">Description</th>
-              <th className="text-center py-3 font-semibold text-gray-900">Qty</th>
-              <th className="text-right py-3 font-semibold text-gray-900">Unit Price</th>
-              <th className="text-right py-3 font-semibold text-gray-900">Total</th>
+            <tr className="border-b-2 border-border">
+              <th className="text-left py-3 font-semibold text-foreground">Description</th>
+              <th className="text-center py-3 font-semibold text-foreground">Qty</th>
+              <th className="text-right py-3 font-semibold text-foreground">Unit Price</th>
+              <th className="text-right py-3 font-semibold text-foreground">Total</th>
             </tr>
           </thead>
           <tbody>
             {invoiceData.items.map((item) => (
               <tr key={item.id} className="border-b border-gray-100">
-                <td className="py-3 text-gray-900">{item.description}</td>
-                <td className="py-3 text-center text-gray-600">{item.quantity}</td>
-                <td className="py-3 text-right text-gray-600">{invoiceData.currencySymbol}{item.unitPrice.toFixed(2)}</td>
-                <td className="py-3 text-right text-gray-900 font-medium">{invoiceData.currencySymbol}{item.total.toFixed(2)}</td>
+                <td className="py-3 text-foreground">{item.description}</td>
+                <td className="py-3 text-center text-muted-foreground">{item.quantity}</td>
+                <td className="py-3 text-right text-muted-foreground">{invoiceData.currencySymbol}{item.unitPrice.toFixed(2)}</td>
+                <td className="py-3 text-right text-foreground font-medium">{invoiceData.currencySymbol}{item.total.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
@@ -449,39 +449,39 @@ export function InvoiceMaker() {
       <div className="flex justify-end mb-8">
         <div className="w-64">
           <div className="flex justify-between py-2">
-            <span className="text-gray-600">Subtotal:</span>
-            <span className="text-gray-900">{invoiceData.currencySymbol}{invoiceData.subtotal.toFixed(2)}</span>
+            <span className="text-muted-foreground">Subtotal:</span>
+            <span className="text-foreground">{invoiceData.currencySymbol}{invoiceData.subtotal.toFixed(2)}</span>
           </div>
           {invoiceData.discountAmount > 0 && (
             <div className="flex justify-between py-2">
-              <span className="text-gray-600">Discount:</span>
-              <span className="text-gray-900">-{invoiceData.currencySymbol}{invoiceData.discountAmount.toFixed(2)}</span>
+              <span className="text-muted-foreground">Discount:</span>
+              <span className="text-foreground">-{invoiceData.currencySymbol}{invoiceData.discountAmount.toFixed(2)}</span>
             </div>
           )}
           <div className="flex justify-between py-2">
-            <span className="text-gray-600">Tax ({invoiceData.taxRate}%):</span>
-            <span className="text-gray-900">{invoiceData.currencySymbol}{invoiceData.taxAmount.toFixed(2)}</span>
+            <span className="text-muted-foreground">Tax ({invoiceData.taxRate}%):</span>
+            <span className="text-foreground">{invoiceData.currencySymbol}{invoiceData.taxAmount.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between py-3 border-t-2 border-gray-200 font-bold text-lg">
-            <span className="text-gray-900">Total:</span>
-            <span className="text-gray-900">{invoiceData.currencySymbol}{invoiceData.total.toFixed(2)}</span>
+          <div className="flex justify-between py-3 border-t-2 border-border font-bold text-lg">
+            <span className="text-foreground">Total:</span>
+            <span className="text-foreground">{invoiceData.currencySymbol}{invoiceData.total.toFixed(2)}</span>
           </div>
         </div>
       </div>
 
       {/* Notes and Terms */}
       {(invoiceData.notes || invoiceData.terms) && (
-        <div className="border-t border-gray-200 pt-6">
+        <div className="border-t border-border pt-6">
           {invoiceData.notes && (
             <div className="mb-4">
-              <h4 className="font-semibold text-gray-900 mb-2">Notes:</h4>
-              <p className="text-gray-600 whitespace-pre-line">{invoiceData.notes}</p>
+              <h4 className="font-semibold text-foreground mb-2">Notes:</h4>
+              <p className="text-muted-foreground whitespace-pre-line">{invoiceData.notes}</p>
             </div>
           )}
           {invoiceData.terms && (
             <div>
-              <h4 className="font-semibold text-gray-900 mb-2">Terms & Conditions:</h4>
-              <p className="text-gray-600 whitespace-pre-line">{invoiceData.terms}</p>
+              <h4 className="font-semibold text-foreground mb-2">Terms & Conditions:</h4>
+              <p className="text-muted-foreground whitespace-pre-line">{invoiceData.terms}</p>
             </div>
           )}
         </div>
@@ -491,9 +491,9 @@ export function InvoiceMaker() {
 
   if (isPreviewMode) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         {/* Preview Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="bg-card border-b border-border px-6 py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
             <div className="flex items-center gap-3 min-w-0">
               <Button
@@ -504,7 +504,7 @@ export function InvoiceMaker() {
                 <X className="h-4 w-4" />
                 <span className="hidden sm:inline">{t('invoice.backToEdit')}</span>
               </Button>
-              <h2 className="text-lg font-semibold text-gray-900 truncate">{t('invoice.previewTitle')}</h2>
+              <h2 className="text-lg font-semibold text-foreground truncate">{t('invoice.previewTitle')}</h2>
             </div>
             
             <div className="flex flex-wrap items-center gap-2 min-w-0">
@@ -542,8 +542,8 @@ export function InvoiceMaker() {
         <div className="flex items-center space-x-3 min-w-0">
           <FileText className="h-8 w-8 shrink-0 text-blue-600" />
           <div className="min-w-0">
-            <h2 className="text-2xl font-bold text-gray-900">{t('invoice.title')}</h2>
-            <p className="text-gray-600">{t('invoice.subtitle')}</p>
+            <h2 className="text-2xl font-bold text-foreground">{t('invoice.title')}</h2>
+            <p className="text-muted-foreground">{t('invoice.subtitle')}</p>
           </div>
         </div>
         
@@ -827,7 +827,7 @@ export function InvoiceMaker() {
             <CardContent>
               <div className="space-y-4">
                 {invoiceData.items.map((item, index) => (
-                  <div key={item.id} className="grid grid-cols-1 gap-3 p-4 bg-gray-50 rounded-lg sm:grid-cols-12 sm:gap-4">
+                  <div key={item.id} className="grid grid-cols-1 gap-3 p-4 bg-muted/50 rounded-lg sm:grid-cols-12 sm:gap-4">
                     <div className="min-w-0 sm:col-span-5">
                       <Label htmlFor={`description-${item.id}`}>{t('invoice.description')}</Label>
                       <Input
@@ -865,7 +865,7 @@ export function InvoiceMaker() {
                     </div>
                     <div className="min-w-0 sm:col-span-2">
                       <Label>{t('invoice.total')}</Label>
-                      <div className="mt-2 p-2 bg-white rounded border text-right font-medium">
+                      <div className="mt-2 p-2 bg-card rounded border text-right font-medium">
                         {invoiceData.currencySymbol}{item.total.toFixed(2)}
                       </div>
                     </div>
@@ -884,7 +884,7 @@ export function InvoiceMaker() {
                 ))}
                 
                 {invoiceData.items.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-muted-foreground">
                     {t('invoice.noItems')}
                   </div>
                 )}
@@ -971,7 +971,7 @@ export function InvoiceMaker() {
               
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('invoice.subtotal')}</span>
+                  <span className="text-muted-foreground">{t('invoice.subtotal')}</span>
                   <span className="font-medium">{invoiceData.currencySymbol}{invoiceData.subtotal.toFixed(2)}</span>
                 </div>
                 
@@ -989,7 +989,7 @@ export function InvoiceMaker() {
                 </div>
                 
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('invoice.tax', { rate: invoiceData.taxRate })}</span>
+                  <span className="text-muted-foreground">{t('invoice.tax', { rate: invoiceData.taxRate })}</span>
                   <span className="font-medium">{invoiceData.currencySymbol}{invoiceData.taxAmount.toFixed(2)}</span>
                 </div>
                 
@@ -1007,7 +1007,7 @@ export function InvoiceMaker() {
                 
                 {invoiceData.discountAmount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t('invoice.discount')}</span>
+                    <span className="text-muted-foreground">{t('invoice.discount')}</span>
                     <span className="font-medium text-red-600">-{invoiceData.currencySymbol}{invoiceData.discountAmount.toFixed(2)}</span>
                   </div>
                 )}
@@ -1074,11 +1074,11 @@ export function InvoiceMaker() {
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">{t('invoice.statusColon')}</span>
+                  <span className="text-muted-foreground">{t('invoice.statusColon')}</span>
                   <Badge className={`
                     ${invoiceData.status === 'paid' ? 'bg-green-100 text-green-800' : ''}
                     ${invoiceData.status === 'sent' ? 'bg-blue-100 text-blue-800' : ''}
-                    ${invoiceData.status === 'draft' ? 'bg-gray-100 text-gray-800' : ''}
+                    ${invoiceData.status === 'draft' ? 'bg-muted text-foreground' : ''}
                     ${invoiceData.status === 'overdue' ? 'bg-red-100 text-red-800' : ''}
                   `}>
                     {invoiceData.status.toUpperCase()}
@@ -1086,17 +1086,17 @@ export function InvoiceMaker() {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">{t('invoice.itemsColon')}</span>
+                  <span className="text-muted-foreground">{t('invoice.itemsColon')}</span>
                   <span className="font-medium">{invoiceData.items.length}</span>
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">{t('invoice.createdColon')}</span>
+                  <span className="text-muted-foreground">{t('invoice.createdColon')}</span>
                   <span className="font-medium">{new Date(invoiceData.date).toLocaleDateString()}</span>
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">{t('invoice.dueColon')}</span>
+                  <span className="text-muted-foreground">{t('invoice.dueColon')}</span>
                   <span className="font-medium">{new Date(invoiceData.dueDate).toLocaleDateString()}</span>
                 </div>
               </div>
@@ -1136,7 +1136,7 @@ export function InvoiceMaker() {
                         <Badge className={`
                           ${invoice.status === 'paid' ? 'bg-green-100 text-green-800' : ''}
                           ${invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' : ''}
-                          ${invoice.status === 'draft' ? 'bg-gray-100 text-gray-800' : ''}
+                          ${invoice.status === 'draft' ? 'bg-muted text-foreground' : ''}
                           ${invoice.status === 'overdue' ? 'bg-red-100 text-red-800' : ''}
                         `}>
                           {invoice.status.toUpperCase()}

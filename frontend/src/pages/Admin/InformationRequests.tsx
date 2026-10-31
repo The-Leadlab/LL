@@ -110,26 +110,26 @@ export function InformationRequests() {
       {isLoading ? (
         <div>Loading...</div>
       ) : filteredRequests.length === 0 ? (
-        <div className="text-center text-gray-500">No requests found</div>
+        <div className="text-center text-muted-foreground">No requests found</div>
       ) : (
         <div className="grid gap-4">
           {filteredRequests.map((request: InformationRequest) => (
             <div
               key={request.id}
-              className="bg-white p-4 rounded-lg shadow-sm"
+              className="bg-card p-4 rounded-lg shadow-sm"
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="font-medium">Lead: {request.lead_name}</h3>
-                  <p className="text-sm text-gray-500">Field: {request.field_name}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">Field: {request.field_name}</p>
+                  <p className="text-sm text-muted-foreground">
                     Requested by: {request.requester_name}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Requested: {new Date(request.created_at).toLocaleString()}
                   </p>
                   {request.notes && (
-                    <p className="text-sm text-gray-600 mt-2">Notes: {request.notes}</p>
+                    <p className="text-sm text-muted-foreground mt-2">Notes: {request.notes}</p>
                   )}
                 </div>
                 <span className={`px-2 py-1 rounded text-xs ${statusColors[request.status as Status]}`}>

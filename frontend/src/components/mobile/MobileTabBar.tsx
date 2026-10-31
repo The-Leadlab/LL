@@ -15,7 +15,7 @@ export function MobileTabBar({ onMore, moreOpen }: MobileTabBarProps) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur-md md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label={t('dashboard')}
     >
@@ -28,12 +28,18 @@ export function MobileTabBar({ onMore, moreOpen }: MobileTabBarProps) {
               <Link
                 to={tab.path}
                 className={cn(
-                  'flex h-full min-h-[44px] flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium',
+                  'relative flex h-full min-h-[44px] flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium transition-colors duration-150',
                   active
-                    ? 'text-primary-600 dark:text-primary-300'
-                    : 'text-neutral-500 dark:text-neutral-400'
+                    ? 'text-primary-600 dark:text-primary-400'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
               >
+                {active && (
+                  <span
+                    className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-primary-600 dark:bg-primary-400"
+                    aria-hidden
+                  />
+                )}
                 <Icon className="h-5 w-5" aria-hidden />
                 <span className="truncate">{t(tab.labelKey)}</span>
               </Link>
@@ -45,10 +51,10 @@ export function MobileTabBar({ onMore, moreOpen }: MobileTabBarProps) {
             type="button"
             onClick={onMore}
             className={cn(
-              'flex h-full min-h-[44px] w-full flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium',
+              'flex h-full min-h-[44px] w-full flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium transition-colors duration-150',
               moreOpen
-                ? 'text-primary-600 dark:text-primary-300'
-                : 'text-neutral-500 dark:text-neutral-400'
+                ? 'text-primary-600 dark:text-primary-400'
+                : 'text-muted-foreground hover:text-foreground'
             )}
             aria-expanded={moreOpen}
           >

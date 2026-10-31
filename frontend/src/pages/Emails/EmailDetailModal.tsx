@@ -205,10 +205,10 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
               </Avatar>
               <div className="flex-1">
                 <div className="font-medium">{email.from_name || email.from_address}</div>
-                <div className="text-sm text-gray-500">{email.from_address}</div>
+                <div className="text-sm text-muted-foreground">{email.from_address}</div>
               </div>
               <div className="text-right">
-                <div className="text-sm text-gray-500 flex items-center">
+                <div className="text-sm text-muted-foreground flex items-center">
                   <Clock className="h-3 w-3 mr-1" />
                   {formatEmailDate(email.received_date)}
                 </div>
@@ -216,7 +216,7 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
             </div>
 
             {/* Recipient Info */}
-            <div className="bg-gray-50 p-3 rounded-lg dark:bg-gray-800">
+            <div className="bg-muted/50 p-3 rounded-lg dark:bg-card">
               <div className="text-sm space-y-1">
                 <div><strong>{t('detail.toLabel')}</strong> {email.to_address}</div>
               </div>
@@ -241,15 +241,15 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
                   <Paperclip className="h-4 w-4 mr-2" />
                   {t('composePage.attachments')}
                   {attachments.length > 0 && (
-                    <span className="ml-2 text-sm font-normal text-gray-500">
+                    <span className="ml-2 text-sm font-normal text-muted-foreground">
                       ({attachments.length})
                     </span>
                   )}
                 </h4>
                 {attachmentsLoading ? (
-                  <div className="h-16 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-700" />
+                  <div className="h-16 animate-pulse rounded-lg bg-muted dark:bg-muted" />
                 ) : attachments.length === 0 ? (
-                  <div className="p-3 bg-gray-50 rounded text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                  <div className="p-3 bg-muted/50 rounded text-sm text-muted-foreground dark:bg-card dark:text-muted-foreground">
                     {t('detail.attachmentsPlaceholder')}
                   </div>
                 ) : (
@@ -261,12 +261,12 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
                         return (
                           <div
                             key={att.id}
-                            className="rounded-lg border border-gray-200 p-2 dark:border-gray-700"
+                            className="rounded-lg border border-border p-2 dark:border-border"
                           >
                             <div className="mb-2 flex items-center justify-between gap-2 text-sm">
                               <span className="truncate font-medium">{att.filename}</span>
                               {sizeLabel && (
-                                <span className="shrink-0 text-gray-500">{sizeLabel}</span>
+                                <span className="shrink-0 text-muted-foreground">{sizeLabel}</span>
                               )}
                             </div>
                             <AttachmentImagePreview url={url} alt={att.filename} />
@@ -276,14 +276,14 @@ const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
                       return (
                         <div
                           key={att.id}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800"
+                          className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/50 p-3 dark:border-border dark:bg-card"
                         >
                           <div className="min-w-0 flex items-center gap-2">
-                            <Paperclip className="h-4 w-4 shrink-0 text-gray-500" />
+                            <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
                             <div className="min-w-0">
                               <div className="truncate text-sm font-medium">{att.filename}</div>
                               {sizeLabel && (
-                                <div className="text-xs text-gray-500">{sizeLabel}</div>
+                                <div className="text-xs text-muted-foreground">{sizeLabel}</div>
                               )}
                             </div>
                           </div>

@@ -7,6 +7,11 @@ export default {
   ],
   theme: {
   	extend: {
+  		fontFamily: {
+  			sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			display: ['"Instrument Serif"', 'Georgia', 'Times New Roman', 'serif'],
+  			mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+  		},
   		colors: {
   			primary: {
   				'50': '#EFF6FF',

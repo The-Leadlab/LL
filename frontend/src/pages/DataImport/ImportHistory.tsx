@@ -31,11 +31,11 @@ export const ImportHistory: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { variant: any; icon: any; label: string; color: string }> = {
-      pending: { variant: 'secondary', icon: Clock, label: 'Pending', color: 'bg-gray-100 text-gray-800' },
+      pending: { variant: 'secondary', icon: Clock, label: 'Pending', color: 'bg-muted text-foreground' },
       processing: { variant: 'default', icon: Loader2, label: 'Processing', color: 'bg-blue-100 text-blue-800' },
       completed: { variant: 'default', icon: CheckCircle, label: 'Completed', color: 'bg-green-100 text-green-800' },
       failed: { variant: 'destructive', icon: XCircle, label: 'Failed', color: 'bg-red-100 text-red-800' },
-      cancelled: { variant: 'secondary', icon: XCircle, label: 'Cancelled', color: 'bg-gray-100 text-gray-800' }
+      cancelled: { variant: 'secondary', icon: XCircle, label: 'Cancelled', color: 'bg-muted text-foreground' }
     };
     const style = styles[status] || styles.pending;
     const Icon = style.icon;
@@ -53,7 +53,7 @@ export const ImportHistory: React.FC = () => {
       case 'salesforce': return <Database className="h-5 w-5 text-blue-500" />;
       case 'hubspot': return <Database className="h-5 w-5 text-orange-500" />;
       case 'pipedrive': return <Database className="h-5 w-5 text-green-500" />;
-      default: return <FileText className="h-5 w-5 text-gray-600" />;
+      default: return <FileText className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -74,7 +74,7 @@ export const ImportHistory: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">{t('dataImport.history.title')}</h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-muted-foreground mt-1">
               {t('dataImport.history.subtitle')}
             </p>
           </div>
@@ -94,7 +94,7 @@ export const ImportHistory: React.FC = () => {
                     <FileText className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">{t('dataImport.history.totalImports')}</p>
+                    <p className="text-sm text-muted-foreground">{t('dataImport.history.totalImports')}</p>
                     <p className="text-2xl font-bold">{stats.total_jobs}</p>
                   </div>
                 </div>
@@ -107,7 +107,7 @@ export const ImportHistory: React.FC = () => {
                     <CheckCircle className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">{t('dataImport.history.completed')}</p>
+                    <p className="text-sm text-muted-foreground">{t('dataImport.history.completed')}</p>
                     <p className="text-2xl font-bold">{stats.completed_jobs}</p>
                   </div>
                 </div>
@@ -120,7 +120,7 @@ export const ImportHistory: React.FC = () => {
                     <TrendingUp className="h-6 w-6 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">{t('dataImport.history.recordsImported')}</p>
+                    <p className="text-sm text-muted-foreground">{t('dataImport.history.recordsImported')}</p>
                     <p className="text-2xl font-bold">{stats.total_records_imported}</p>
                   </div>
                 </div>
@@ -141,7 +141,7 @@ export const ImportHistory: React.FC = () => {
                   <Card key={job.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-4">
-                        <div className="p-2 bg-gray-50 rounded-lg">
+                        <div className="p-2 bg-muted/50 rounded-lg">
                           {getSourceIcon(job.source_type)}
                         </div>
 
@@ -156,7 +156,7 @@ export const ImportHistory: React.FC = () => {
                             </Badge>
                           </div>
 
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm text-gray-600 mb-3">
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm text-muted-foreground mb-3">
                             <div>
                               <span className="font-medium">{t('dataImport.history.totalColon')}</span> {job.total_records}
                             </div>
@@ -166,7 +166,7 @@ export const ImportHistory: React.FC = () => {
                             <div className="text-red-600">
                               <span className="font-medium">{t('dataImport.history.failedColon')}</span> {job.failed_records}
                             </div>
-                            <div className="text-gray-500">
+                            <div className="text-muted-foreground">
                               <span className="font-medium">{t('dataImport.history.skippedColon')}</span> {job.skipped_records}
                             </div>
                             <div>
@@ -177,13 +177,13 @@ export const ImportHistory: React.FC = () => {
 
                           {job.status === 'processing' && (
                             <div className="space-y-1">
-                              <div className="flex justify-between text-xs text-gray-600">
+                              <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>{t('dataImport.progress')}</span>
                                 <span>
                                   {job.processed_records} / {job.total_records}
                                 </span>
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="w-full bg-muted rounded-full h-2">
                                 <div
                                   className="bg-blue-600 h-2 rounded-full transition-all"
                                   style={{
@@ -195,7 +195,7 @@ export const ImportHistory: React.FC = () => {
                           )}
 
                           {job.status === 'completed' && job.import_summary && (
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-muted-foreground">
                               {t('dataImport.history.completedOk')}
                             </div>
                           )}
@@ -231,7 +231,7 @@ export const ImportHistory: React.FC = () => {
               <div className="text-center py-12">
                 <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-lg font-semibold mb-2">{t('dataImport.history.emptyTitle')}</h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   {t('dataImport.history.emptyBody')}
                 </p>
                 <Button onClick={() => navigate('/data-import/wizard')}>

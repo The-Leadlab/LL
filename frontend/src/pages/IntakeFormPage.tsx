@@ -153,11 +153,11 @@ export function IntakeFormPage() {
 
   const ndaBlock = (
     <div className="border-t pt-6">
-      <h4 className="text-lg font-semibold text-gray-900 mb-2">{t('intake.form.nda.title')}</h4>
-      <p className="text-sm text-gray-600 mb-4">
+      <h4 className="text-lg font-semibold text-foreground mb-2">{t('intake.form.nda.title')}</h4>
+      <p className="text-sm text-muted-foreground mb-4">
         {t('intake.form.nda.description')}
       </p>
-      <label className="flex items-start gap-3 text-sm text-gray-700">
+      <label className="flex items-start gap-3 text-sm text-foreground">
         <input
           type="checkbox"
           checked={ndaAccepted}
@@ -179,40 +179,40 @@ export function IntakeFormPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-background">
       <MarketingNav />
       <main className="pt-28 pb-20 px-4">
         <div className={`mx-auto ${slug === 'data-request' ? 'max-w-4xl' : 'max-w-3xl'}`}>
           <Link
             to="/intake"
-            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 mb-8"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-blue-600 mb-8"
           >
             <ArrowLeft className="h-4 w-4" />
             {t('intake.form.backToOptions')}
           </Link>
 
           {step === 'success' ? (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 sm:p-10 text-center">
+            <div className="bg-card rounded-2xl shadow-lg border border-gray-100 p-8 sm:p-10 text-center">
               <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-700 mb-6">
                 <CheckCircle className="h-9 w-9" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">{t('intake.form.successTitle')}</h1>
-              <p className="text-gray-600 leading-relaxed max-w-lg mx-auto mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">{t('intake.form.successTitle')}</h1>
+              <p className="text-muted-foreground leading-relaxed max-w-lg mx-auto mb-2">
                 {slug === 'data-request'
                   ? t('intake.form.successDataRequest')
                   : t('intake.form.successDefault')}
               </p>
-              <p className="text-sm text-gray-500 mb-8">{t('intake.form.successWait')}</p>
+              <p className="text-sm text-muted-foreground mb-8">{t('intake.form.successWait')}</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
                   to="/"
-                  className="inline-flex justify-center px-6 py-3 rounded-xl font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  className="inline-flex justify-center px-6 py-3 rounded-xl font-medium text-white bg-primary-600 hover:bg-primary-700"
                 >
                   {t('intake.form.backToHome')}
                 </Link>
                 <Link
                   to="/intake"
-                  className="inline-flex justify-center px-6 py-3 rounded-xl font-medium border border-gray-300 text-gray-800 hover:border-blue-400"
+                  className="inline-flex justify-center px-6 py-3 rounded-xl font-medium border border-border text-foreground hover:border-blue-400"
                 >
                   {t('intake.form.submitAnother')}
                 </Link>
@@ -220,8 +220,8 @@ export function IntakeFormPage() {
             </div>
           ) : (
             <>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{titleForSlug[slug]}</h1>
-              <p className="text-gray-600 mb-8">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{titleForSlug[slug]}</h1>
+              <p className="text-muted-foreground mb-8">
                 {slug === 'data-request'
                   ? t('intake.form.introDataRequest')
                   : step === 'form'
@@ -232,9 +232,9 @@ export function IntakeFormPage() {
               {step === 'form' && slug === 'business-diagnostic' && (
                 <form
                   onSubmit={continueFromForm}
-                  className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6"
+                  className="bg-card rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6"
                 >
-                  <h2 className="text-xl font-bold text-gray-900">{t('intake.form.diagnostic.sectionTitle')}</h2>
+                  <h2 className="text-xl font-bold text-foreground">{t('intake.form.diagnostic.sectionTitle')}</h2>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className={labelClass}>{t('intake.form.fullName')}</label>
@@ -322,7 +322,7 @@ export function IntakeFormPage() {
                   </div>
                   <button
                     type="submit"
-                    className="w-full py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all"
+                    className="w-full py-4 rounded-xl font-semibold text-white bg-primary-600 hover:bg-primary-700 transition-all"
                   >
                     {t('intake.form.continueToNda')}
                   </button>
@@ -336,9 +336,9 @@ export function IntakeFormPage() {
               {step === 'form' && slug === 'pitch-your-idea' && (
                 <form
                   onSubmit={continueFromForm}
-                  className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6"
+                  className="bg-card rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6"
                 >
-                  <h2 className="text-xl font-bold text-gray-900">{t('pitchTitle')}</h2>
+                  <h2 className="text-xl font-bold text-foreground">{t('pitchTitle')}</h2>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className={labelClass}>{t('intake.form.fullName')}</label>
@@ -449,10 +449,10 @@ export function IntakeFormPage() {
               {step === 'nda' && slug === 'business-diagnostic' && (
                 <form
                   onSubmit={onSubmitBusinessDiagnostic}
-                  className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6"
+                  className="bg-card rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6"
                 >
-                  <h2 className="text-xl font-bold text-gray-900">{t('intake.form.reviewSubmit')}</h2>
-                  <p className="text-sm text-gray-600">
+                  <h2 className="text-xl font-bold text-foreground">{t('intake.form.reviewSubmit')}</h2>
+                  <p className="text-sm text-muted-foreground">
                     <Trans
                       i18nKey="intake.form.diagnostic.aboutToSubmit"
                       ns="marketing"
@@ -469,14 +469,14 @@ export function IntakeFormPage() {
                         setNdaSignature('')
                         setStep('form')
                       }}
-                      className="flex-1 py-3 rounded-xl font-medium border border-gray-300 text-gray-800 hover:bg-gray-50"
+                      className="flex-1 py-3 rounded-xl font-medium border border-border text-foreground hover:bg-muted"
                     >
                       {t('intake.form.backToForm')}
                     </button>
                     <button
                       type="submit"
                       disabled={bdLoading}
-                      className="flex-1 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-60"
+                      className="flex-1 py-4 rounded-xl font-semibold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-60"
                     >
                       {bdLoading ? t('intake.form.sending') : t('intake.form.submitRequest')}
                     </button>
@@ -487,10 +487,10 @@ export function IntakeFormPage() {
               {step === 'nda' && slug === 'pitch-your-idea' && (
                 <form
                   onSubmit={onSubmitPitchYourIdea}
-                  className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6"
+                  className="bg-card rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6"
                 >
-                  <h2 className="text-xl font-bold text-gray-900">{t('intake.form.reviewSubmit')}</h2>
-                  <p className="text-sm text-gray-600">
+                  <h2 className="text-xl font-bold text-foreground">{t('intake.form.reviewSubmit')}</h2>
+                  <p className="text-sm text-muted-foreground">
                     <Trans
                       i18nKey="intake.form.pitch.aboutToSubmit"
                       ns="marketing"
@@ -511,7 +511,7 @@ export function IntakeFormPage() {
                         setNdaSignature('')
                         setStep('form')
                       }}
-                      className="flex-1 py-3 rounded-xl font-medium border border-gray-300 text-gray-800 hover:bg-gray-50"
+                      className="flex-1 py-3 rounded-xl font-medium border border-border text-foreground hover:bg-muted"
                     >
                       {t('intake.form.backToForm')}
                     </button>

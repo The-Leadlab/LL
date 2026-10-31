@@ -84,7 +84,7 @@ export function SupportTicketsAdmin() {
   }
 
   if (!user?.is_admin) {
-    return <p className="text-gray-500 p-4">Admin access required.</p>
+    return <p className="text-muted-foreground p-4">Admin access required.</p>
   }
 
   const items = data?.items ?? []
@@ -92,7 +92,7 @@ export function SupportTicketsAdmin() {
   return (
     <div className="space-y-6 p-4">
       <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2 text-gray-700">
+        <div className="flex items-center gap-2 text-foreground">
           <Ticket className="w-6 h-6 text-blue-600" />
           <h2 className="text-xl font-semibold">Issue reports</h2>
         </div>
@@ -109,33 +109,33 @@ export function SupportTicketsAdmin() {
           ))}
         </select>
         {data != null && (
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-muted-foreground">
             Showing {items.length} of {data.total}
           </span>
         )}
       </div>
 
-      {isLoading && <p className="text-gray-500">Loading…</p>}
+      {isLoading && <p className="text-muted-foreground">Loading…</p>}
       {error && (
         <p className="text-red-600 text-sm">Failed to load reports.</p>
       )}
       {!isLoading && items.length === 0 && (
-        <p className="text-gray-500 text-sm">No reports yet.</p>
+        <p className="text-muted-foreground text-sm">No reports yet.</p>
       )}
 
       <div className="space-y-3">
         {items.map((ticket) => (
           <div
             key={ticket.id}
-            className="border border-gray-200 rounded-lg p-4 bg-white"
+            className="border border-border rounded-lg p-4 bg-card"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="font-semibold text-gray-900">
+                <p className="font-semibold text-foreground">
                   #{ticket.id} · {ticket.project_name}
                 </p>
-                <p className="text-sm text-gray-800 mt-0.5">{ticket.subject}</p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm text-foreground mt-0.5">{ticket.subject}</p>
+                <p className="text-xs text-muted-foreground mt-1">
                   {ticket.reporter_name} &lt;{ticket.reporter_email}&gt; ·{' '}
                   {ticket.priority} ·{' '}
                   {ticket.created_at
@@ -157,7 +157,7 @@ export function SupportTicketsAdmin() {
                 ))}
               </select>
             </div>
-            <p className="text-sm text-gray-700 mt-3 whitespace-pre-wrap">
+            <p className="text-sm text-foreground mt-3 whitespace-pre-wrap">
               {ticket.description}
             </p>
             {(ticket.attachments?.length ?? 0) > 0 && (
@@ -171,7 +171,7 @@ export function SupportTicketsAdmin() {
                     >
                       <Download className="w-3.5 h-3.5" />
                       {att.filename}{' '}
-                      <span className="text-gray-500">({formatBytes(att.size_bytes)})</span>
+                      <span className="text-muted-foreground">({formatBytes(att.size_bytes)})</span>
                     </button>
                   </li>
                 ))}

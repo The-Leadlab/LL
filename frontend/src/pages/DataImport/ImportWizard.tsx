@@ -178,7 +178,7 @@ export const ImportWizard: React.FC = () => {
             />
           </div>
           {selectedFile && (
-            <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+            <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
               <FileText className="h-4 w-4" />
               <span>{selectedFile.name}</span>
               <span>({(selectedFile.size / 1024).toFixed(2)} KB)</span>
@@ -247,17 +247,17 @@ export const ImportWizard: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-muted-foreground">
             {t('dataImport.totalRows')} <span className="font-semibold">{preview?.total_rows}</span>
           </span>
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-muted-foreground">
             {t('dataImport.showingFirst')}
           </span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="min-w-full border">
-            <thead className="bg-gray-50">
+            <thead className="bg-muted/50">
               <tr>
                 {preview?.headers.map((header, idx) => (
                   <th key={idx} className="px-4 py-2 text-left text-sm font-semibold border-b">
@@ -268,7 +268,7 @@ export const ImportWizard: React.FC = () => {
             </thead>
             <tbody>
               {preview?.sample_rows.map((row, rowIdx) => (
-                <tr key={rowIdx} className="border-b hover:bg-gray-50">
+                <tr key={rowIdx} className="border-b hover:bg-muted">
                   {row.map((cell, cellIdx) => (
                     <td key={cellIdx} className="px-4 py-2 text-sm">
                       {cell}
@@ -303,7 +303,7 @@ export const ImportWizard: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           {t('dataImport.mappingHelp', { entity: t(`dataImport.entities.${entityType}`, { defaultValue: entityType }) })}
         </p>
 
@@ -437,7 +437,7 @@ export const ImportWizard: React.FC = () => {
                 <span>{t('dataImport.progress')}</span>
                 <span className="font-semibold">{progress.progress_percentage.toFixed(1)}%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-4">
+              <div className="w-full bg-muted rounded-full h-4">
                 <div
                   className="bg-blue-600 h-4 rounded-full transition-all"
                   style={{ width: `${progress.progress_percentage}%` }}
@@ -448,19 +448,19 @@ export const ImportWizard: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
                 <p className="text-2xl font-bold">{progress.total_records}</p>
-                <p className="text-sm text-gray-600">{t('dataImport.total')}</p>
+                <p className="text-sm text-muted-foreground">{t('dataImport.total')}</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-green-600">{progress.successful_records}</p>
-                <p className="text-sm text-gray-600">{t('dataImport.success')}</p>
+                <p className="text-sm text-muted-foreground">{t('dataImport.success')}</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-red-600">{progress.failed_records}</p>
-                <p className="text-sm text-gray-600">{t('dataImport.failed')}</p>
+                <p className="text-sm text-muted-foreground">{t('dataImport.failed')}</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-600">{progress.skipped_records}</p>
-                <p className="text-sm text-gray-600">{t('dataImport.skipped')}</p>
+                <p className="text-2xl font-bold text-muted-foreground">{progress.skipped_records}</p>
+                <p className="text-sm text-muted-foreground">{t('dataImport.skipped')}</p>
               </div>
             </div>
 
@@ -478,7 +478,7 @@ export const ImportWizard: React.FC = () => {
               <div className="text-center space-y-4">
                 <AlertCircle className="h-16 w-16 text-red-600 mx-auto" />
                 <h3 className="text-xl font-semibold">{t('dataImport.importFailed')}</h3>
-                <p className="text-gray-600">{t('dataImport.checkErrorLog')}</p>
+                <p className="text-muted-foreground">{t('dataImport.checkErrorLog')}</p>
               </div>
             )}
           </>
@@ -493,7 +493,7 @@ export const ImportWizard: React.FC = () => {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">{t('dataImport.title')}</h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground mt-1">
             {t('dataImport.subtitle')}
           </p>
         </div>
@@ -516,7 +516,7 @@ export const ImportWizard: React.FC = () => {
             return (
               <React.Fragment key={step}>
                 <div className={`flex flex-col items-center gap-2 ${isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-400'}`}>
-                  <div className={`p-3 rounded-full ${isActive ? 'bg-blue-100' : isCompleted ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  <div className={`p-3 rounded-full ${isActive ? 'bg-blue-100' : isCompleted ? 'bg-green-100' : 'bg-muted'}`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <span className="text-sm font-medium">{label}</span>

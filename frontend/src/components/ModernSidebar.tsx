@@ -27,7 +27,7 @@ function SidebarQuickSearch({ onSubmit }: { onSubmit: (q: string) => void }) {
   const [value, setValue] = useState('');
   return (
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
       <input
         type="text"
         placeholder={t('quickSearch')}
@@ -39,7 +39,7 @@ function SidebarQuickSearch({ onSubmit }: { onSubmit: (q: string) => void }) {
             setValue('');
           }
         }}
-        className="w-full pl-9 pr-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        className="w-full rounded-lg border border-border bg-muted/50 py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-transparent"
       />
     </div>
   );
@@ -102,10 +102,10 @@ export function ModernSidebar({
       data-tour="sidebar"
       className={`${
         collapsedEffective ? 'w-20' : 'w-64'
-      } h-full bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 flex flex-col transition-all duration-300 ease-in-out`}
+      } flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-out`}
     >
       {/* Header */}
-      <div className="h-16 flex items-center justify-between gap-1 px-3 border-b border-neutral-200 dark:border-neutral-800">
+      <div className="flex h-16 items-center justify-between gap-1 border-b border-sidebar-border px-3">
         <Link
           to="/dashboard"
           className={`flex items-center min-w-0 ${collapsedEffective ? 'justify-center flex-1' : 'flex-1'}`}
@@ -120,13 +120,13 @@ export function ModernSidebar({
         </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors shrink-0 md:inline-flex"
+          className="hidden shrink-0 rounded-lg p-2 transition-colors hover:bg-sidebar-accent md:inline-flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
           aria-label={collapsedEffective ? t('expand') : t('collapse')}
         >
           {collapsedEffective ? (
-            <ChevronRight className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
           ) : (
-            <ChevronLeft className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
+            <ChevronLeft className="h-5 w-5 text-muted-foreground" />
           )}
         </button>
       </div>
@@ -160,10 +160,10 @@ export function ModernSidebar({
                 <>
                   <button
                     onClick={() => toggleExpanded(item.labelKey)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors duration-150 ${
                       active
-                        ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300'
-                        : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
+                        ? 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
@@ -186,10 +186,10 @@ export function ModernSidebar({
                             key={child.path}
                             to={child.path}
                             onClick={() => onNavigate?.()}
-                            className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                            className={`flex items-center space-x-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 ${
                               childActive
-                                ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200'
-                                : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800'
+                                ? 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-200'
+                                : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground'
                             }`}
                           >
                             <ChildIcon className="w-4 h-4" />
@@ -204,10 +204,10 @@ export function ModernSidebar({
                 <Link
                   to={item.path}
                   onClick={() => onNavigate?.()}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${
+                  className={`flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors duration-150 ${
                     active
-                      ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300'
-                      : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
+                      ? 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
@@ -227,7 +227,7 @@ export function ModernSidebar({
       </nav>
 
       {/* Bottom Navigation */}
-      <div className="p-3 space-y-1 border-t border-neutral-200 dark:border-neutral-800">
+      <div className="space-y-1 border-t border-sidebar-border p-3">
         {bottomNavigation.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
@@ -239,10 +239,10 @@ export function ModernSidebar({
               to={item.path}
               onClick={() => onNavigate?.()}
               {...(dataTour ? { 'data-tour': dataTour } : {})}
-              className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
+              className={`flex items-center space-x-3 rounded-lg px-3 py-2.5 transition-colors duration-150 ${
                 active
-                  ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300'
-                  : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
+                  ? 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent'
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -254,11 +254,11 @@ export function ModernSidebar({
 
       {/* Language + User Profile */}
       {!collapsedEffective && (
-        <div className="p-4 border-t border-neutral-200 dark:border-neutral-800">
+        <div className="border-t border-sidebar-border p-4">
           <div className="px-3 pb-3" data-tour="language">
             <LanguageSwitcher />
           </div>
-          <div className="flex items-center space-x-3 p-3 rounded-lg">
+          <div className="flex items-center space-x-3 rounded-lg p-3">
             <button
               type="button"
               onClick={() => {
@@ -270,22 +270,22 @@ export function ModernSidebar({
               <UserAvatar
                 user={user}
                 photoUrl={sidebarAvatarUrl}
-                className="w-10 h-10"
+                className="h-10 w-10"
                 textClassName="text-sm"
               />
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50 truncate">
+              <div className="min-w-0 flex-1 text-left">
+                <p className="truncate text-sm font-medium text-foreground">
                   {user?.first_name && user?.last_name
                     ? `${user.first_name} ${user.last_name}`
                     : user?.email || 'User'}
                 </p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                <p className="truncate text-xs text-muted-foreground">
                   {user?.email || ''}
                 </p>
               </div>
             </button>
-            <button type="button" aria-label={t('logout')} onClick={handleLogout} className="min-h-[44px] min-w-[44px] flex items-center justify-center">
-              <LogOut className="w-4 h-4 text-neutral-400 hover:text-red-500" />
+            <button type="button" aria-label={t('logout')} onClick={handleLogout} className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <LogOut className="h-4 w-4 text-muted-foreground hover:text-destructive" />
             </button>
           </div>
         </div>

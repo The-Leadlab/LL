@@ -11,15 +11,12 @@ export function PageContainer({ children, className, noPadding = false }: PageCo
   return (
     <div
       className={cn(
-        'w-full min-h-full bg-background text-foreground',
-        !noPadding && 'p-6',
-        'animate-in fade-in duration-300',
+        'w-full min-h-full bg-background text-foreground font-sans',
+        !noPadding && 'p-4 md:p-6',
         className
       )}
     >
-      <div className="w-full min-h-full">
-        {children}
-      </div>
+      <div className="w-full min-h-full">{children}</div>
     </div>
   );
-} 
+}

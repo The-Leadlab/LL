@@ -297,7 +297,7 @@ export function Settings() {
                         Delete
                       </Button>
                     </div>
-                    <p className="text-sm text-gray-500">{template.subject}</p>
+                    <p className="text-sm text-muted-foreground">{template.subject}</p>
                     <p className="text-sm">{template.body}</p>
                   </div>
                 ))}

@@ -87,7 +87,7 @@ export const WorkflowList: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">{t('workflows.title')}</h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-muted-foreground mt-1">
               {t('workflows.subtitle')}
             </p>
           </div>
@@ -106,7 +106,7 @@ export const WorkflowList: React.FC = () => {
                   <WorkflowIcon className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('workflows.totalMaps')}</p>
+                  <p className="text-sm text-muted-foreground">{t('workflows.totalMaps')}</p>
                   <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
               </div>
@@ -119,7 +119,7 @@ export const WorkflowList: React.FC = () => {
                   <Play className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('workflows.active')}</p>
+                  <p className="text-sm text-muted-foreground">{t('workflows.active')}</p>
                   <p className="text-2xl font-bold">{stats.active}</p>
                 </div>
               </div>
@@ -128,11 +128,11 @@ export const WorkflowList: React.FC = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-gray-100 rounded-lg">
-                  <Pause className="h-6 w-6 text-gray-600" />
+                <div className="p-3 bg-muted rounded-lg">
+                  <Pause className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('workflows.inactive')}</p>
+                  <p className="text-sm text-muted-foreground">{t('workflows.inactive')}</p>
                   <p className="text-2xl font-bold">{stats.inactive}</p>
                 </div>
               </div>
@@ -164,9 +164,9 @@ export const WorkflowList: React.FC = () => {
                         )}
                       </div>
                       {workflow.description && (
-                        <p className="text-gray-600 mb-3">{workflow.description}</p>
+                        <p className="text-muted-foreground mb-3">{workflow.description}</p>
                       )}
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Zap className="h-4 w-4" />
                           <span>{getTriggerLabel(workflow.trigger_type)}</span>
@@ -234,7 +234,7 @@ export const WorkflowList: React.FC = () => {
               <CardContent className="py-12 text-center">
                 <WorkflowIcon className="h-16 w-16 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-lg font-semibold mb-2">{t('workflows.emptyTitle')}</h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   {t('workflows.emptyBody')}
                 </p>
                 <Button onClick={() => navigate('/workflows/new')}>

@@ -205,7 +205,7 @@ export function OutreachConnectionsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">{t('connectionsPage.title')}</h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-neutral-300">
+          <p className="mt-1 text-sm text-muted-foreground dark:text-muted-foreground">
             {t('connectionsPage.subtitle')}
           </p>
         </div>
@@ -244,7 +244,7 @@ export function OutreachConnectionsPage() {
             <p className="text-xs text-amber-700">{sheetsCatalog.drive_error}</p>
           )}
           {sheetsReady && !sheetFiles.length && sheetsCatalog?.drive_error_code !== 'insufficient_scopes' && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               {t('connectionsPage.noPicker')}
             </p>
           )}
@@ -317,7 +317,7 @@ export function OutreachConnectionsPage() {
             )}
 
             {type === 'webhook' && (
-              <p className="text-sm text-gray-600 dark:text-neutral-300">
+              <p className="text-sm text-muted-foreground dark:text-muted-foreground">
                 {t('connectionsPage.webhookHint')}
               </p>
             )}
@@ -342,7 +342,7 @@ export function OutreachConnectionsPage() {
       <div className="space-y-4">
         {connections.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center text-sm text-gray-500">
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
               {t('connectionsPage.empty')}
             </CardContent>
           </Card>
@@ -355,15 +355,15 @@ export function OutreachConnectionsPage() {
                 <CardContent className="flex flex-wrap items-start justify-between gap-4 py-4">
                   <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2">
-                      <Link2 className="h-4 w-4 text-gray-500" />
+                      <Link2 className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">{conn.display_name}</span>
-                      <span className="rounded bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 text-xs text-gray-600 dark:text-neutral-300">{conn.type}</span>
-                      <span className="rounded bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 text-xs text-gray-600 dark:text-neutral-300">{conn.status}</span>
+                      <span className="rounded bg-muted dark:bg-card px-2 py-0.5 text-xs text-muted-foreground dark:text-muted-foreground">{conn.type}</span>
+                      <span className="rounded bg-muted dark:bg-card px-2 py-0.5 text-xs text-muted-foreground dark:text-muted-foreground">{conn.status}</span>
                     </div>
                     {conn.type === 'webhook' && conn.public_token && (
                       <div className="text-sm">
-                        <span className="text-gray-500">{t('connectionsPage.webhookUrl')} </span>
-                        <code className="break-all rounded bg-slate-100 px-1 text-xs">{webhookUrl(conn.public_token)}</code>
+                        <span className="text-muted-foreground">{t('connectionsPage.webhookUrl')} </span>
+                        <code className="break-all rounded bg-muted px-1 text-xs">{webhookUrl(conn.public_token)}</code>
                         <button
                           type="button"
                           className="ml-2 text-xs underline"
@@ -377,7 +377,7 @@ export function OutreachConnectionsPage() {
                       </div>
                     )}
                     {conn.type === 'google_sheets' && savedSheet && (
-                      <p className="text-xs text-gray-500">{t('connectionsPage.sheet', { id: savedSheet })}</p>
+                      <p className="text-xs text-muted-foreground">{t('connectionsPage.sheet', { id: savedSheet })}</p>
                     )}
                     {conn.last_error && (
                       <p className="text-xs text-red-600">{conn.last_error}</p>

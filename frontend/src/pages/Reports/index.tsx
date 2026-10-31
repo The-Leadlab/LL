@@ -72,7 +72,7 @@ const KPICard: React.FC<{
   const getChangeColor = () => {
     if (metric.change_percentage > 0) return 'text-green-600';
     if (metric.change_percentage < 0) return 'text-red-600';
-    return 'text-gray-600';
+    return 'text-muted-foreground';
   };
 
   return (
@@ -89,9 +89,9 @@ const KPICard: React.FC<{
         </div>
       </div>
       <div className="mt-4">
-        <h3 className="text-sm font-medium text-gray-600">{metric.name}</h3>
+        <h3 className="text-sm font-medium text-muted-foreground">{metric.name}</h3>
         <div className="flex items-baseline mt-2">
-          <p className="text-2xl font-bold text-gray-900">
+          <p className="text-2xl font-bold text-foreground">
             {metric.unit === 'USD' 
               ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(metric.current_value)
               : metric.unit === '%'
@@ -99,11 +99,11 @@ const KPICard: React.FC<{
               : new Intl.NumberFormat('en-US').format(metric.current_value)
             }
           </p>
-          <span className="ml-2 text-sm text-gray-500">
+          <span className="ml-2 text-sm text-muted-foreground">
             {metric.unit && metric.unit !== 'USD' && metric.unit !== '%' ? metric.unit : ''}
           </span>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           {t('reports.previous')} {metric.unit === 'USD' 
             ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(metric.previous_value)
             : new Intl.NumberFormat('en-US').format(metric.previous_value)
@@ -121,22 +121,22 @@ const FunnelStageCard: React.FC<{ stage: ConversionFunnelStage; isLast: boolean 
     <div className="relative">
       <Card className="p-6 hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-900">{stage.stage_name}</h3>
+          <h3 className="font-semibold text-foreground">{stage.stage_name}</h3>
           <Badge variant={stage.conversion_rate >= 70 ? "default" : stage.conversion_rate >= 40 ? "outline" : "destructive"}>
             {stage.conversion_rate.toFixed(1)}%
           </Badge>
         </div>
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">{t('reports.labels.leads')}</span>
+            <span className="text-sm text-muted-foreground">{t('reports.labels.leads')}</span>
             <span className="font-medium">{new Intl.NumberFormat('tr-TR').format(stage.lead_count)}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">{t('reports.labels.dropOff')}</span>
+            <span className="text-sm text-muted-foreground">{t('reports.labels.dropOff')}</span>
             <span className="font-medium text-red-600">{stage.drop_off_count}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">{t('reports.labels.avgTime')}</span>
+            <span className="text-sm text-muted-foreground">{t('reports.labels.avgTime')}</span>
             <span className="font-medium">{stage.average_time_days.toFixed(1)} {t('reports.labels.days')}</span>
           </div>
         </div>
@@ -676,17 +676,17 @@ export function ReportsPage() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{t('reports.title')}</h1>
-            <p className="text-gray-600">{t('reports.subtitleShort')}</p>
+            <h1 className="text-3xl font-bold text-foreground">{t('reports.title')}</h1>
+            <p className="text-muted-foreground">{t('reports.subtitleShort')}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i} className="p-6">
               <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-muted rounded w-3/4 mb-4"></div>
+                <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
+                <div className="h-3 bg-muted rounded w-full"></div>
               </div>
             </Card>
           ))}
@@ -700,14 +700,14 @@ export function ReportsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+          <h1 className="text-3xl font-bold text-foreground flex items-center">
             <BarChart3 className="h-8 w-8 mr-3 text-indigo-600" />
             {t('reports.title')}
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground mt-1">
             {t('reports.subtitle')}
           </p>
-          <div className="flex items-center mt-2 space-x-4 text-sm text-gray-500">
+          <div className="flex items-center mt-2 space-x-4 text-sm text-muted-foreground">
             <span className="flex items-center">
               <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
               {usesFallbackData ? t('reports.sampleData') : t('reports.liveData')}
@@ -744,8 +744,8 @@ export function ReportsPage() {
       <Card className="p-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center space-x-4">
-            <Calendar className="h-5 w-5 text-gray-500" />
-            <span className="font-medium text-gray-900">{t('reports.timePeriod')}</span>
+            <Calendar className="h-5 w-5 text-muted-foreground" />
+            <span className="font-medium text-foreground">{t('reports.timePeriod')}</span>
             <Select value={timeRange} onValueChange={(value: string) => setTimeRange(value as TimeRange)}>
               <SelectTrigger className="w-40">
                 <SelectValue />
@@ -768,7 +768,7 @@ export function ReportsPage() {
                   onChange={(e) => setCustomStartDate(e.target.value)}
                   className="px-3 py-2 border rounded-md text-sm"
                 />
-                <span className="text-gray-500">{t('reports.to')}</span>
+                <span className="text-muted-foreground">{t('reports.to')}</span>
                 <input
                   type="date"
                   value={customEndDate}
@@ -785,9 +785,9 @@ export function ReportsPage() {
                 type="checkbox"
                 checked={includeTeam}
                 onChange={(e) => setIncludeTeam(e.target.checked)}
-                className="rounded border-gray-300"
+                className="rounded border-border"
               />
-              <span className="text-sm text-gray-700">{t('reports.includeTeam')}</span>
+              <span className="text-sm text-foreground">{t('reports.includeTeam')}</span>
             </label>
           </div>
         </div>
@@ -795,45 +795,45 @@ export function ReportsPage() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6 bg-white border shadow-sm p-1 h-16 rounded-lg">
+        <TabsList className="grid w-full grid-cols-6 bg-card border shadow-sm p-1 h-16 rounded-lg">
           <TabsTrigger 
             value="overview" 
-            className="flex items-center space-x-2 text-gray-700 font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-gray-50 transition-all duration-200 rounded-md"
+            className="flex items-center space-x-2 text-foreground font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-muted transition-all duration-200 rounded-md"
           >
             <BarChart3 className="h-4 w-4" />
             <span>{t('reports.tabs.overview')}</span>
           </TabsTrigger>
           <TabsTrigger 
             value="performance"
-            className="flex items-center space-x-2 text-gray-700 font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-gray-50 transition-all duration-200 rounded-md"
+            className="flex items-center space-x-2 text-foreground font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-muted transition-all duration-200 rounded-md"
           >
             <Award className="h-4 w-4" />
             <span>{t('reports.tabs.performance')}</span>
           </TabsTrigger>
           <TabsTrigger 
             value="pipeline"
-            className="flex items-center space-x-2 text-gray-700 font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-gray-50 transition-all duration-200 rounded-md"
+            className="flex items-center space-x-2 text-foreground font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-muted transition-all duration-200 rounded-md"
           >
             <TrendingUp className="h-4 w-4" />
             <span>{t('reports.tabs.pipeline')}</span>
           </TabsTrigger>
           <TabsTrigger 
             value="sources"
-            className="flex items-center space-x-2 text-gray-700 font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-gray-50 transition-all duration-200 rounded-md"
+            className="flex items-center space-x-2 text-foreground font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-muted transition-all duration-200 rounded-md"
           >
             <Zap className="h-4 w-4" />
             <span>{t('reports.tabs.sources')}</span>
           </TabsTrigger>
           <TabsTrigger 
             value="geographic"
-            className="flex items-center space-x-2 text-gray-700 font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-gray-50 transition-all duration-200 rounded-md"
+            className="flex items-center space-x-2 text-foreground font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-muted transition-all duration-200 rounded-md"
           >
             <Globe className="h-4 w-4" />
             <span>{t('reports.tabs.geographic')}</span>
           </TabsTrigger>
           <TabsTrigger 
             value="activity"
-            className="flex items-center space-x-2 text-gray-700 font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-gray-50 transition-all duration-200 rounded-md"
+            className="flex items-center space-x-2 text-foreground font-medium data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm hover:bg-muted transition-all duration-200 rounded-md"
           >
             <Activity className="h-4 w-4" />
             <span>{t('reports.tabs.activity')}</span>
@@ -862,10 +862,10 @@ export function ReportsPage() {
           {kpiData && (
             <>
               <div className="mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                <h2 className="text-xl font-semibold text-foreground flex items-center">
                   <BarChart3 className="h-5 w-5 mr-2 text-indigo-500" />
                   {t('reports.kpi')}
-                  <span className="ml-2 text-sm text-gray-500">
+                  <span className="ml-2 text-sm text-muted-foreground">
                     ({format(new Date(kpiData.period.start_date), 'MMM dd')} - {format(new Date(kpiData.period.end_date), 'MMM dd, yyyy')})
                   </span>
                 </h2>
@@ -895,7 +895,7 @@ export function ReportsPage() {
 
           {/* Conversion Funnel */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
               <TrendingUp className="h-5 w-5 mr-2 text-indigo-500" />
               {t('reports.funnel')}
             </h2>
@@ -912,8 +912,8 @@ export function ReportsPage() {
             ) : (
               <Card className="p-4 sm:p-6 md:p-8 text-center">
                 <PieChart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noFunnel')}</h3>
-                <p className="text-gray-600">
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('reports.noFunnel')}</h3>
+                <p className="text-muted-foreground">
                   {t('reports.noFunnelBody')}
                 </p>
               </Card>
@@ -922,7 +922,7 @@ export function ReportsPage() {
 
           {/* Pipeline Health */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
               <Activity className="h-5 w-5 mr-2 text-green-500" />
               {t('reports.pipelineHealth')}
             </h2>
@@ -931,7 +931,7 @@ export function ReportsPage() {
                 {pipelineHealth.map((stage) => (
                   <Card key={stage.stage_name} className="p-6 hover:shadow-lg transition-shadow">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-gray-900">{stage.stage_name}</h3>
+                      <h3 className="font-semibold text-foreground">{stage.stage_name}</h3>
                       <Badge variant={
                         stage.bottleneck_risk === 'low' ? 'default' :
                         stage.bottleneck_risk === 'medium' ? 'outline' : 'destructive'
@@ -942,27 +942,27 @@ export function ReportsPage() {
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('reports.labels.leads')}</span>
+                        <span className="text-sm text-muted-foreground">{t('reports.labels.leads')}</span>
                         <span className="font-medium">{new Intl.NumberFormat('tr-TR').format(stage.lead_count)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('reports.labels.totalValue')}</span>
+                        <span className="text-sm text-muted-foreground">{t('reports.labels.totalValue')}</span>
                         <span className="font-medium">
                           {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'USD' }).format(stage.total_value)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('reports.labels.avgDealSize')}</span>
+                        <span className="text-sm text-muted-foreground">{t('reports.labels.avgDealSize')}</span>
                         <span className="font-medium">
                           {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'USD' }).format(stage.average_deal_size)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('reports.labels.stageVelocity')}</span>
+                        <span className="text-sm text-muted-foreground">{t('reports.labels.stageVelocity')}</span>
                         <span className="font-medium text-blue-600">{stage.stage_velocity_days.toFixed(1)} {t('reports.labels.days')}</span>
                       </div>
                       <div className="mt-4">
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
                           <span>{t('reports.labels.forecastCloseRate')}</span>
                           <span>{stage.forecasted_close_rate.toFixed(1)}%</span>
                         </div>
@@ -975,8 +975,8 @@ export function ReportsPage() {
             ) : (
               <Card className="p-4 sm:p-6 md:p-8 text-center">
                 <LineChart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noPipeline')}</h3>
-                <p className="text-gray-600">
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('reports.noPipeline')}</h3>
+                <p className="text-muted-foreground">
                   {t('reports.noPipelineBody')}
                 </p>
               </Card>
@@ -987,7 +987,7 @@ export function ReportsPage() {
         {/* Performance Tab */}
         <TabsContent value="performance" className="space-y-6">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
               <Award className="h-5 w-5 mr-2 text-yellow-500" />
               {t('reports.userPerformance')}
             </h2>
@@ -996,8 +996,8 @@ export function ReportsPage() {
                 <Card key={user.user_id} className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="font-semibold text-gray-900">{user.user_name}</h3>
-                      <p className="text-sm text-gray-600">{user.user_email}</p>
+                      <h3 className="font-semibold text-foreground">{user.user_name}</h3>
+                      <p className="text-sm text-muted-foreground">{user.user_email}</p>
                     </div>
                     <Badge variant={user.conversion_rate >= 20 ? 'default' : user.conversion_rate >= 10 ? 'outline' : 'destructive'}>
                       {user.conversion_rate.toFixed(1)}% {t('reports.labels.cr')}
@@ -1007,21 +1007,21 @@ export function ReportsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('reports.labels.totalLeads')}</span>
+                        <span className="text-sm text-muted-foreground">{t('reports.labels.totalLeads')}</span>
                         <span className="font-medium">{user.total_leads}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('reports.labels.qualified')}</span>
+                        <span className="text-sm text-muted-foreground">{t('reports.labels.qualified')}</span>
                         <span className="font-medium text-green-600">{user.qualified_leads}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('reports.labels.dealsWon')}</span>
+                        <span className="text-sm text-muted-foreground">{t('reports.labels.dealsWon')}</span>
                         <span className="font-medium text-blue-600">{user.deals_won}</span>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('reports.labels.revenue')}</span>
+                        <span className="text-sm text-muted-foreground">{t('reports.labels.revenue')}</span>
                         <span className="font-medium">
                           {new Intl.NumberFormat('tr-TR', { 
                             style: 'currency', 
@@ -1031,7 +1031,7 @@ export function ReportsPage() {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('reports.labels.avgDeal')}</span>
+                        <span className="text-sm text-muted-foreground">{t('reports.labels.avgDeal')}</span>
                         <span className="font-medium">
                           {new Intl.NumberFormat('tr-TR', { 
                             style: 'currency', 
@@ -1041,7 +1041,7 @@ export function ReportsPage() {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('reports.labels.activities')}</span>
+                        <span className="text-sm text-muted-foreground">{t('reports.labels.activities')}</span>
                         <span className="font-medium">{user.activities_count}</span>
                       </div>
                     </div>
@@ -1055,7 +1055,7 @@ export function ReportsPage() {
         {/* Pipeline Tab */}
         <TabsContent value="pipeline" className="space-y-6">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
               <BarChart3 className="h-5 w-5 mr-2 text-indigo-500" />
               {t('reports.detailedPipeline')}
             </h2>
@@ -1068,7 +1068,7 @@ export function ReportsPage() {
                         stage.bottleneck_risk === 'low' ? 'bg-green-500' :
                         stage.bottleneck_risk === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
                       }`}></div>
-                      <h3 className="text-lg font-semibold text-gray-900">{stage.stage_name}</h3>
+                      <h3 className="text-lg font-semibold text-foreground">{stage.stage_name}</h3>
                     </div>
                     <div className="flex items-center space-x-4">
                       <Badge variant={
@@ -1077,7 +1077,7 @@ export function ReportsPage() {
                       }>
                         {t('reports.risk', { level: stage.bottleneck_risk.toUpperCase() })}
                       </Badge>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-muted-foreground">
                         {t('reports.forecastPct', { value: stage.forecasted_close_rate.toFixed(1) })}
                       </span>
                     </div>
@@ -1085,8 +1085,8 @@ export function ReportsPage() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">{stage.lead_count}</div>
-                      <div className="text-sm text-gray-600">{t('reports.labels.activeLeads')}</div>
+                      <div className="text-2xl font-bold text-foreground">{stage.lead_count}</div>
+                      <div className="text-sm text-muted-foreground">{t('reports.labels.activeLeads')}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">
@@ -1096,7 +1096,7 @@ export function ReportsPage() {
                           maximumFractionDigits: 0
                         }).format(stage.total_value)}
                       </div>
-                      <div className="text-sm text-gray-600">{t('reports.labels.totalValue')}</div>
+                      <div className="text-sm text-muted-foreground">{t('reports.labels.totalValue')}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">
@@ -1106,13 +1106,13 @@ export function ReportsPage() {
                           maximumFractionDigits: 0
                         }).format(stage.average_deal_size)}
                       </div>
-                      <div className="text-sm text-gray-600">{t('reports.labels.avgDealSize')}</div>
+                      <div className="text-sm text-muted-foreground">{t('reports.labels.avgDealSize')}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">
                         {stage.stage_velocity_days.toFixed(1)}
                       </div>
-                      <div className="text-sm text-gray-600">{t('reports.labels.daysInStage')}</div>
+                      <div className="text-sm text-muted-foreground">{t('reports.labels.daysInStage')}</div>
                     </div>
                   </div>
                 </Card>
@@ -1124,7 +1124,7 @@ export function ReportsPage() {
         {/* Lead Sources Tab */}
         <TabsContent value="sources" className="space-y-6">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
               <Zap className="h-5 w-5 mr-2 text-yellow-500" />
               {t('reports.leadSources')}
             </h2>
@@ -1133,8 +1133,8 @@ export function ReportsPage() {
                 {leadSources.map((source) => (
                   <Card key={source.source} className="p-6 hover:shadow-lg transition-shadow">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-gray-900 flex items-center">
-                        <Globe className="h-4 w-4 mr-2 text-gray-500" />
+                      <h3 className="font-semibold text-foreground flex items-center">
+                        <Globe className="h-4 w-4 mr-2 text-muted-foreground" />
                         {source.source}
                       </h3>
                       <div className="flex items-center space-x-2">
@@ -1147,28 +1147,28 @@ export function ReportsPage() {
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <div className="text-lg font-bold text-gray-900">{new Intl.NumberFormat('tr-TR').format(source.total_leads)}</div>
-                          <div className="text-sm text-gray-600">{t('reports.labels.totalLeads')}</div>
+                          <div className="text-lg font-bold text-foreground">{new Intl.NumberFormat('tr-TR').format(source.total_leads)}</div>
+                          <div className="text-sm text-muted-foreground">{t('reports.labels.totalLeads')}</div>
                         </div>
                         <div>
                           <div className="text-lg font-bold text-green-600">{new Intl.NumberFormat('tr-TR').format(source.qualified_leads)}</div>
-                          <div className="text-sm text-gray-600">{t('reports.labels.qualified')}</div>
+                          <div className="text-sm text-muted-foreground">{t('reports.labels.qualified')}</div>
                         </div>
                         <div>
                           <div className="text-lg font-bold text-blue-600">{source.deals_won}</div>
-                          <div className="text-sm text-gray-600">{t('reports.labels.wonDeals')}</div>
+                          <div className="text-sm text-muted-foreground">{t('reports.labels.wonDeals')}</div>
                         </div>
                         <div>
                           <div className="text-lg font-bold text-purple-600">
                             {source.conversion_rate.toFixed(1)}%
                           </div>
-                          <div className="text-sm text-gray-600">{t('reports.labels.conversion')}</div>
+                          <div className="text-sm text-muted-foreground">{t('reports.labels.conversion')}</div>
                         </div>
                       </div>
                       
                       <div className="pt-4 border-t">
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-600">{t('reports.labels.totalRevenue')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.totalRevenue')}</span>
                           <span className="font-semibold text-green-600">
                             {new Intl.NumberFormat('tr-TR', { 
                               style: 'currency', 
@@ -1178,7 +1178,7 @@ export function ReportsPage() {
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">{t('reports.labels.roi')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.roi')}</span>
                           <span className={`font-semibold ${source.roi_percentage > 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {source.roi_percentage > 0 ? '+' : ''}{source.roi_percentage.toFixed(1)}%
                           </span>
@@ -1191,8 +1191,8 @@ export function ReportsPage() {
             ) : (
               <Card className="p-4 sm:p-6 md:p-8 text-center">
                 <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noSources')}</h3>
-                <p className="text-gray-600">
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('reports.noSources')}</h3>
+                <p className="text-muted-foreground">
                   {t('reports.noSourcesBody')}
                 </p>
               </Card>
@@ -1203,7 +1203,7 @@ export function ReportsPage() {
         {/* Geographic Tab */}
         <TabsContent value="geographic" className="space-y-6">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
               <Globe className="h-5 w-5 mr-2 text-blue-500" />
               {t('reports.geographic')}
             </h2>
@@ -1213,11 +1213,11 @@ export function ReportsPage() {
                   <Card key={`${geo.country}-${index}`} className="p-6 hover:shadow-lg transition-shadow">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h3 className="font-semibold text-gray-900 flex items-center">
-                          <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                        <h3 className="font-semibold text-foreground flex items-center">
+                          <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
                           {geo.country}
                         </h3>
-                        {geo.city && <p className="text-sm text-gray-600 ml-6">{geo.city}</p>}
+                        {geo.city && <p className="text-sm text-muted-foreground ml-6">{geo.city}</p>}
                       </div>
                       <Badge variant={geo.conversion_rate >= 15 ? 'default' : geo.conversion_rate >= 8 ? 'outline' : 'destructive'}>
                         {geo.conversion_rate.toFixed(1)}% {t('reports.labels.cr')}
@@ -1227,17 +1227,17 @@ export function ReportsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">{t('reports.labels.leads')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.leads')}</span>
                           <span className="font-medium">{new Intl.NumberFormat('tr-TR').format(geo.lead_count)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">{t('reports.labels.deals')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.deals')}</span>
                           <span className="font-medium text-blue-600">{geo.deal_count}</span>
                         </div>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">{t('reports.labels.revenue')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.revenue')}</span>
                           <span className="font-medium text-green-600">
                             {new Intl.NumberFormat('tr-TR', { 
                               style: 'currency', 
@@ -1248,7 +1248,7 @@ export function ReportsPage() {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">{t('reports.labels.avgDeal')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.avgDeal')}</span>
                           <span className="font-medium">
                             {new Intl.NumberFormat('tr-TR', { 
                               style: 'currency', 
@@ -1266,8 +1266,8 @@ export function ReportsPage() {
             ) : (
               <Card className="p-8 text-center">
                 <Globe className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noGeo')}</h3>
-                <p className="text-gray-600">
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('reports.noGeo')}</h3>
+                <p className="text-muted-foreground">
                   {t('reports.noGeoBody')}
                 </p>
               </Card>
@@ -1276,7 +1276,7 @@ export function ReportsPage() {
 
           {/* Sector Analysis */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
               <Briefcase className="h-5 w-5 mr-2 text-indigo-500" />
               {t('reports.sectorAnalysis')}
             </h2>
@@ -1285,8 +1285,8 @@ export function ReportsPage() {
                 {sectorAnalysis.map((sector) => (
                   <Card key={sector.sector} className="p-6 hover:shadow-lg transition-shadow">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-gray-900 flex items-center">
-                        <Briefcase className="h-4 w-4 mr-2 text-gray-500" />
+                      <h3 className="font-semibold text-foreground flex items-center">
+                        <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
                         {sector.sector}
                       </h3>
                       <Badge variant={sector.conversion_rate >= 15 ? 'default' : sector.conversion_rate >= 8 ? 'outline' : 'destructive'}>
@@ -1297,17 +1297,17 @@ export function ReportsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">{t('reports.labels.leads')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.leads')}</span>
                           <span className="font-medium">{new Intl.NumberFormat('tr-TR').format(sector.lead_count)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">{t('reports.labels.deals')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.deals')}</span>
                           <span className="font-medium text-blue-600">{sector.deal_count}</span>
                         </div>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">{t('reports.labels.revenue')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.revenue')}</span>
                           <span className="font-medium text-green-600">
                             {new Intl.NumberFormat('tr-TR', { 
                               style: 'currency', 
@@ -1318,7 +1318,7 @@ export function ReportsPage() {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">{t('reports.labels.avgDeal')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.avgDeal')}</span>
                           <span className="font-medium">
                             {new Intl.NumberFormat('tr-TR', { 
                               style: 'currency', 
@@ -1336,8 +1336,8 @@ export function ReportsPage() {
             ) : (
               <Card className="p-8 text-center">
                 <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noSector')}</h3>
-                <p className="text-gray-600">
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('reports.noSector')}</h3>
+                <p className="text-muted-foreground">
                   {t('reports.noSectorBody')}
                 </p>
               </Card>
@@ -1348,7 +1348,7 @@ export function ReportsPage() {
         {/* Activity Tab */}
         <TabsContent value="activity" className="space-y-6">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
               <Activity className="h-5 w-5 mr-2 text-green-500" />
               {t('reports.teamActivity')}
             </h2>
@@ -1358,11 +1358,11 @@ export function ReportsPage() {
                   <Card key={report.user_email} className="p-6 hover:shadow-lg transition-shadow">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h3 className="font-semibold text-gray-900 flex items-center">
-                          <Users className="h-4 w-4 mr-2 text-gray-500" />
+                        <h3 className="font-semibold text-foreground flex items-center">
+                          <Users className="h-4 w-4 mr-2 text-muted-foreground" />
                           {report.user_name}
                         </h3>
-                        <p className="text-sm text-gray-600 ml-6">{report.user_email}</p>
+                        <p className="text-sm text-muted-foreground ml-6">{report.user_email}</p>
                       </div>
                       <Badge variant={report.activity_success_rate >= 80 ? 'default' : report.activity_success_rate >= 60 ? 'outline' : 'destructive'}>
                         {report.activity_success_rate.toFixed(1)}% {t('reports.labels.success')}
@@ -1374,37 +1374,37 @@ export function ReportsPage() {
                         <div>
                           <div className="flex items-center justify-center mb-2">
                             <Phone className="h-4 w-4 text-blue-500 mr-1" />
-                            <span className="text-lg font-bold text-gray-900">{report.calls_made}</span>
+                            <span className="text-lg font-bold text-foreground">{report.calls_made}</span>
                           </div>
-                          <div className="text-xs text-gray-600">{t('reports.labels.calls')}</div>
+                          <div className="text-xs text-muted-foreground">{t('reports.labels.calls')}</div>
                         </div>
                         <div>
                           <div className="flex items-center justify-center mb-2">
                             <Mail className="h-4 w-4 text-green-500 mr-1" />
-                            <span className="text-lg font-bold text-gray-900">{report.emails_sent}</span>
+                            <span className="text-lg font-bold text-foreground">{report.emails_sent}</span>
                           </div>
-                          <div className="text-xs text-gray-600">{t('reports.labels.emails')}</div>
+                          <div className="text-xs text-muted-foreground">{t('reports.labels.emails')}</div>
                         </div>
                         <div>
                           <div className="flex items-center justify-center mb-2">
                             <MessageSquare className="h-4 w-4 text-purple-500 mr-1" />
-                            <span className="text-lg font-bold text-gray-900">{report.meetings_held}</span>
+                            <span className="text-lg font-bold text-foreground">{report.meetings_held}</span>
                           </div>
-                          <div className="text-xs text-gray-600">{t('reports.labels.meetings')}</div>
+                          <div className="text-xs text-muted-foreground">{t('reports.labels.meetings')}</div>
                         </div>
                       </div>
                       
                       <div className="pt-4 border-t">
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-600">{t('reports.labels.totalActivities')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.totalActivities')}</span>
                           <span className="font-semibold">{new Intl.NumberFormat('tr-TR').format(report.total_activities)}</span>
                         </div>
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-600">{t('reports.labels.tasksCompleted')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.tasksCompleted')}</span>
                           <span className="font-semibold text-green-600">{report.tasks_completed}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">{t('reports.labels.avgResponse')}</span>
+                          <span className="text-sm text-muted-foreground">{t('reports.labels.avgResponse')}</span>
                           <span className="font-semibold text-blue-600">{report.average_response_time.toFixed(1)}h</span>
                         </div>
                       </div>
@@ -1415,8 +1415,8 @@ export function ReportsPage() {
             ) : (
               <Card className="p-8 text-center">
                 <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('reports.noActivity')}</h3>
-                <p className="text-gray-600">
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('reports.noActivity')}</h3>
+                <p className="text-muted-foreground">
                   {t('reports.noActivityBody')}
                 </p>
               </Card>

@@ -30,7 +30,7 @@ export function ModernNotifications() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">{t('notificationsPage.title')}</h1>
-            <p className="text-gray-600 mt-1">{t('notificationsPage.subtitle')}</p>
+            <p className="text-muted-foreground mt-1">{t('notificationsPage.subtitle')}</p>
           </div>
           <Button type="button" onClick={() => markAllMutation.mutate()} disabled={markAllMutation.isPending}>
             <CheckCheck className="h-4 w-4 mr-2" />
@@ -43,11 +43,11 @@ export function ModernNotifications() {
             <Loader2 className="h-7 w-7 animate-spin text-blue-600" />
           </div>
         ) : isError ? (
-          <div className="rounded-lg border p-10 text-center text-gray-600">
+          <div className="rounded-lg border p-10 text-center text-muted-foreground">
             {t('notificationsPage.loadFailed')}
           </div>
         ) : notifications.length === 0 ? (
-          <div className="rounded-lg border p-10 text-center text-gray-600">
+          <div className="rounded-lg border p-10 text-center text-muted-foreground">
             <Bell className="h-10 w-10 mx-auto mb-3 text-gray-400" />
             {t('notificationsPage.empty')}
           </div>
@@ -56,12 +56,12 @@ export function ModernNotifications() {
             {notifications.map((n: any) => (
               <div
                 key={n.id}
-                className={`rounded-lg border p-4 ${n.is_read ? 'bg-white' : 'bg-blue-50 border-blue-200'}`}
+                className={`rounded-lg border p-4 ${n.is_read ? 'bg-card' : 'bg-blue-50 border-blue-200'}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-medium">{n.title}</p>
-                    {n.message ? <p className="text-sm text-gray-600 mt-1">{n.message}</p> : null}
+                    {n.message ? <p className="text-sm text-muted-foreground mt-1">{n.message}</p> : null}
                   </div>
                   <Button
                     type="button"

@@ -37,7 +37,7 @@ export function ModernQuoteNewPage() {
   });
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 md:p-8">
+    <div className="min-h-screen bg-background p-4 md:p-8">
       <Button
         type="button"
         variant="ghost"
@@ -47,8 +47,8 @@ export function ModernQuoteNewPage() {
         <ArrowLeft className="mr-2 h-4 w-4" />
         {t('cpq.quotePage.backToQuotes')}
       </Button>
-      <h1 className="mb-4 text-2xl font-bold text-neutral-900 dark:text-neutral-50">{t('cpq.quotePage.newTitle')}</h1>
-      <div className="max-w-3xl space-y-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800">
+      <h1 className="mb-4 text-2xl font-bold text-foreground">{t('cpq.quotePage.newTitle')}</h1>
+      <div className="max-w-3xl space-y-4 rounded-xl border border-border bg-card p-4 dark:border-border dark:bg-card">
         <div>
           <label className="text-sm font-medium">{t('cpq.quotePage.validUntil')}</label>
           <input
@@ -122,7 +122,7 @@ export function ModernQuoteDetailPage() {
   if (!Number.isFinite(quoteId) || quoteId <= 0) {
     return (
       <div className="p-4 md:p-8">
-        <p className="text-neutral-600 dark:text-neutral-400">{t('cpq.quotePage.invalid')}</p>
+        <p className="text-muted-foreground dark:text-muted-foreground">{t('cpq.quotePage.invalid')}</p>
         <Button type="button" className="mt-4 min-h-[44px]" onClick={() => navigate('/cpq/quotes')}>
           {t('cpq.quotePage.quotes')}
         </Button>
@@ -141,7 +141,7 @@ export function ModernQuoteDetailPage() {
   if (error || !quote) {
     return (
       <div className="p-4 md:p-8">
-        <p className="text-neutral-600 dark:text-neutral-400">{t('cpq.quotePage.notFound')}</p>
+        <p className="text-muted-foreground dark:text-muted-foreground">{t('cpq.quotePage.notFound')}</p>
         <Button type="button" className="mt-4 min-h-[44px]" onClick={() => navigate('/cpq/quotes')}>
           {t('cpq.quotePage.backToQuotes')}
         </Button>
@@ -150,7 +150,7 @@ export function ModernQuoteDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 md:p-8">
+    <div className="min-h-screen bg-background p-4 md:p-8">
       <Button
         type="button"
         variant="ghost"
@@ -160,26 +160,26 @@ export function ModernQuoteDetailPage() {
         <ArrowLeft className="mr-2 h-4 w-4" />
         {t('cpq.quotePage.back')}
       </Button>
-      <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">{t('cpq.quotePage.quoteTitle', { number: quote.quote_number })}</h1>
-      <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
+      <h1 className="text-2xl font-bold text-foreground">{t('cpq.quotePage.quoteTitle', { number: quote.quote_number })}</h1>
+      <p className="mb-4 text-sm text-muted-foreground dark:text-muted-foreground">
         {t('cpq.quotePage.statusLine', { mode: isEdit ? t('cpq.quotePage.edit') : t('cpq.quotePage.view'), status: quote.status })}
       </p>
-      <div className="max-w-2xl rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800">
+      <div className="max-w-2xl rounded-xl border border-border bg-card p-4 dark:border-border dark:bg-card">
         <dl className="space-y-3 text-sm">
           <div className="flex justify-between gap-4">
-            <dt className="text-neutral-500">{t('cpq.quotePage.total')}</dt>
-            <dd className="font-medium text-neutral-900 dark:text-neutral-50">
+            <dt className="text-muted-foreground">{t('cpq.quotePage.total')}</dt>
+            <dd className="font-medium text-foreground">
               {quote.total_amount} {quote.currency}
             </dd>
           </div>
           {quote.valid_until && (
             <div className="flex justify-between gap-4">
-              <dt className="text-neutral-500">{t('cpq.quotePage.validUntil')}</dt>
+              <dt className="text-muted-foreground">{t('cpq.quotePage.validUntil')}</dt>
               <dd>{new Date(quote.valid_until).toLocaleDateString()}</dd>
             </div>
           )}
           <div className="flex justify-between gap-4">
-            <dt className="text-neutral-500">{t('cpq.quotePage.createdAt')}</dt>
+            <dt className="text-muted-foreground">{t('cpq.quotePage.createdAt')}</dt>
             <dd>{new Date(quote.created_at).toLocaleString()}</dd>
           </div>
         </dl>

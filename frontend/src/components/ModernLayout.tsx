@@ -1,5 +1,6 @@
 /**
  * Modern Layout — desktop sidebar; phone top bar + bottom tabs + More sheet.
+ * Atlas chrome: ink surfaces, LeadLab accent, semantic tokens.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -30,9 +31,8 @@ export function ModernLayout() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-neutral-50 dark:bg-neutral-900">
-      {/* Phone top bar */}
-      <header className="fixed left-0 right-0 top-0 z-40 flex min-h-14 items-center gap-3 border-b border-neutral-200 bg-white px-3 pt-[env(safe-area-inset-top)] dark:border-neutral-800 dark:bg-neutral-900 md:hidden">
+    <div className="flex h-screen bg-background font-sans text-foreground">
+      <header className="fixed left-0 right-0 top-0 z-40 flex min-h-14 items-center gap-3 border-b border-border bg-card px-3 pt-[env(safe-area-inset-top)] md:hidden">
         <img
           src="/images/leadlab-logo.png"
           alt="LeadLab"
@@ -44,7 +44,7 @@ export function ModernLayout() {
           <button
             type="button"
             aria-label={actualTheme === 'dark' ? t('switchToLight') : t('switchToDark')}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={toggleTheme}
           >
             {actualTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -52,19 +52,18 @@ export function ModernLayout() {
         </div>
       </header>
 
-      {/* Desktop sidebar only */}
       <div className="hidden flex-shrink-0 md:block">
         <ModernSidebar />
       </div>
 
-      <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
-        <div className="hidden md:flex items-center justify-end gap-2 px-4 pt-3">
+      <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
+        <div className="hidden items-center justify-end gap-2 border-b border-border/60 bg-card/40 px-4 py-2.5 md:flex">
           <NotificationBell variant="header" />
           <LanguageSwitcher />
           <button
             type="button"
             aria-label={actualTheme === 'dark' ? t('switchToLight') : t('switchToDark')}
-            className="flex min-h-[44px] items-center gap-2 rounded-lg border border-neutral-200 bg-transparent px-3 text-sm text-neutral-800 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100 dark:hover:bg-neutral-800"
+            className="flex min-h-[40px] items-center gap-2 rounded-lg border border-border bg-transparent px-3 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={toggleTheme}
           >
             {actualTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

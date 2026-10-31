@@ -101,10 +101,10 @@ export function AdminPanel() {
                 flex items-center px-4 py-2 rounded-lg transition-colors min-w-max
                 ${isActive 
                   ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' 
-                  : 'bg-white text-gray-600 hover:bg-gray-50'}
+                  : 'bg-card text-muted-foreground hover:bg-muted'}
               `}
             >
-              <Icon className={`w-5 h-5 mr-2 ${isActive ? 'text-blue-700' : 'text-gray-500'}`} />
+              <Icon className={`w-5 h-5 mr-2 ${isActive ? 'text-blue-700' : 'text-muted-foreground'}`} />
               <span className="font-medium">{t(`adminPanel.tabs.${tab.id}.title`)}</span>
             </button>
           );
@@ -112,7 +112,7 @@ export function AdminPanel() {
       </div>
 
       {/* Active Component */}
-      <div className="bg-white rounded-lg">
+      <div className="bg-card rounded-lg">
         <ActiveComponent />
       </div>
     </div>

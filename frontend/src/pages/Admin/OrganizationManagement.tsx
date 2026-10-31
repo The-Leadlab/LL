@@ -321,7 +321,7 @@ export function OrganizationManagement() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-white">
+        <DialogContent className="sm:max-w-[500px] bg-card">
           <DialogHeader>
             <DialogTitle>{editingOrg ? 'Edit' : 'Add'} Organization</DialogTitle>
           </DialogHeader>
@@ -404,9 +404,9 @@ export function OrganizationManagement() {
                                 setPreviewUrl(null);
                                 onChange(null);
                               }}
-                              className="absolute -top-2 -right-2 bg-white rounded-full p-1"
+                              className="absolute -top-2 -right-2 bg-card rounded-full p-1"
                             >
-                              <X className="w-4 h-4 text-gray-500" />
+                              <X className="w-4 h-4 text-muted-foreground" />
                             </button>
                           </div>
                         )}
@@ -478,7 +478,7 @@ export function OrganizationManagement() {
         {Array.isArray(filteredOrganizations) && filteredOrganizations.map((org) => (
           <div
             key={org.id}
-            className="p-4 border rounded-lg shadow-sm flex justify-between items-center bg-white"
+            className="p-4 border rounded-lg shadow-sm flex justify-between items-center bg-card"
           >
             <div className="flex items-center space-x-4">
               {org.logo_filename ? (
@@ -494,7 +494,7 @@ export function OrganizationManagement() {
                   }}
                 />
               ) : (
-                <div className="w-12 h-12 rounded bg-gray-100 flex items-center justify-center">
+                <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
                   <span className="text-2xl font-semibold text-gray-400">
                     {org.name.charAt(0)}
                   </span>
@@ -503,7 +503,7 @@ export function OrganizationManagement() {
               <div>
                 <h3 className="font-semibold">{org.name}</h3>
                 {org.description && (
-                  <p className="text-sm text-gray-600">{org.description}</p>
+                  <p className="text-sm text-muted-foreground">{org.description}</p>
                 )}
                 {org.website && (
                   <a
@@ -522,7 +522,7 @@ export function OrganizationManagement() {
                 variant="ghost"
                 size="sm"
                 onClick={() => handleEditOrg(org)}
-                className="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted"
               >
                 Edit
               </Button>

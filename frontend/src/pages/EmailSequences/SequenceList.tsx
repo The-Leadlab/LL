@@ -75,7 +75,7 @@ export const SequenceList: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">{t('campaigns')}</h1>
-            <p className="mt-1 text-gray-600 dark:text-neutral-300">
+            <p className="mt-1 text-muted-foreground dark:text-muted-foreground">
               {t('sequencesPage.subtitle')}
             </p>
           </div>
@@ -94,7 +94,7 @@ export const SequenceList: React.FC = () => {
                   <Mail className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-neutral-300">{t('sequencesPage.totalCampaigns')}</p>
+                  <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('sequencesPage.totalCampaigns')}</p>
                   <p className="text-2xl font-bold">{sequences?.length || 0}</p>
                 </div>
               </div>
@@ -107,7 +107,7 @@ export const SequenceList: React.FC = () => {
                   <Users className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-neutral-300">{t('sequencesPage.totalEnrolled')}</p>
+                  <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('sequencesPage.totalEnrolled')}</p>
                   <p className="text-2xl font-bold">
                     {sequences?.reduce((sum, s) => sum + s.total_enrolled, 0) || 0}
                   </p>
@@ -122,7 +122,7 @@ export const SequenceList: React.FC = () => {
                   <CheckCircle className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-neutral-300">{t('sequencesPage.completed')}</p>
+                  <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('sequencesPage.completed')}</p>
                   <p className="text-2xl font-bold">
                     {sequences?.reduce((sum, s) => sum + s.total_completed, 0) || 0}
                   </p>
@@ -137,7 +137,7 @@ export const SequenceList: React.FC = () => {
                   <Reply className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-neutral-300">{t('sequencesPage.totalReplies')}</p>
+                  <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('sequencesPage.totalReplies')}</p>
                   <p className="text-2xl font-bold">
                     {sequences?.reduce((sum, s) => sum + s.total_replied, 0) || 0}
                   </p>
@@ -172,11 +172,11 @@ export const SequenceList: React.FC = () => {
                           )}
                         </div>
                         {sequence.description && (
-                          <p className="text-gray-600 dark:text-neutral-300 mb-4">{sequence.description}</p>
+                          <p className="text-muted-foreground dark:text-muted-foreground mb-4">{sequence.description}</p>
                         )}
 
                         {/* Steps Info */}
-                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-neutral-300 mb-4">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground dark:text-muted-foreground mb-4">
                           <span>{t('sequencesPage.stepsCount', { count: sequence.steps.length })}</span>
                           <span>•</span>
                           <span>{t('sequencesPage.enrolledCount', { count: sequence.total_enrolled })}</span>
@@ -188,19 +188,19 @@ export const SequenceList: React.FC = () => {
                         {sequenceStats && (
                           <div className="flex items-center gap-6 text-sm">
                             <div>
-                              <span className="text-gray-600 dark:text-neutral-300">{t('sequencesPage.replyRate')}</span>
+                              <span className="text-muted-foreground dark:text-muted-foreground">{t('sequencesPage.replyRate')}</span>
                               <span className="ml-2 font-semibold text-green-600">
                                 {sequenceStats.reply_rate.toFixed(1)}%
                               </span>
                             </div>
                             <div>
-                              <span className="text-gray-600 dark:text-neutral-300">{t('sequencesPage.completionRate')}</span>
+                              <span className="text-muted-foreground dark:text-muted-foreground">{t('sequencesPage.completionRate')}</span>
                               <span className="ml-2 font-semibold text-blue-600">
                                 {sequenceStats.completion_rate.toFixed(1)}%
                               </span>
                             </div>
                             <div>
-                              <span className="text-gray-600 dark:text-neutral-300">{t('sequencesPage.activeLabel')}</span>
+                              <span className="text-muted-foreground dark:text-muted-foreground">{t('sequencesPage.activeLabel')}</span>
                               <span className="ml-2 font-semibold">
                                 {sequenceStats.active_enrollments}
                               </span>
@@ -261,9 +261,9 @@ export const SequenceList: React.FC = () => {
           ) : (
             <Card>
               <CardContent className="py-12 text-center">
-                <Mail className="mx-auto mb-4 h-16 w-16 text-gray-400 dark:text-neutral-500" />
+                <Mail className="mx-auto mb-4 h-16 w-16 text-gray-400 dark:text-muted-foreground" />
                 <h3 className="mb-2 text-lg font-semibold">{t('sequencesPage.emptyTitle')}</h3>
-                <p className="mb-4 text-gray-600 dark:text-neutral-300">
+                <p className="mb-4 text-muted-foreground dark:text-muted-foreground">
                   {t('sequencesPage.emptyBody')}
                 </p>
                 <Button variant="primary" onClick={() => navigate('/email-sequences/create')}>

@@ -215,16 +215,16 @@ export function LeadsPaginationBar({
   const { t } = useTranslation('leads');
   return (
     <div
-      className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800/80 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+      className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm dark:border-border dark:bg-card sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
       role="navigation"
       aria-label={t('page.paginationAria')}
     >
-      <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground dark:text-muted-foreground">
         <span className="font-medium">{t('page.rowsPerPage')}</span>
         <select
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          className="min-h-[44px] min-w-[5rem] rounded-md border border-neutral-200 bg-white px-3 py-2 text-base text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          className="min-h-[44px] min-w-[5rem] rounded-md border border-border bg-card px-3 py-2 text-base text-foreground dark:border-border dark:bg-card dark:text-foreground"
         >
           {[20, 50, 100, 200].map((n) => (
             <option key={n} value={n}>
@@ -232,7 +232,7 @@ export function LeadsPaginationBar({
             </option>
           ))}
         </select>
-        <span className="text-neutral-500 dark:text-neutral-500">
+        <span className="text-muted-foreground dark:text-foreground0">
           {isLoadingLeads
             ? t('page.loadingLeadsShort')
             : totalLeads > 0
@@ -245,19 +245,19 @@ export function LeadsPaginationBar({
           type="button"
           disabled={!canPrev}
           onClick={onPrev}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 disabled:pointer-events-none disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground disabled:pointer-events-none disabled:opacity-40 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-muted"
         >
           <ChevronLeft className="h-4 w-4" />
           {t('page.previous')}
         </button>
-        <span className="min-w-[8rem] px-2 text-center text-sm tabular-nums text-neutral-700 dark:text-neutral-300">
+        <span className="min-w-[8rem] px-2 text-center text-sm tabular-nums text-foreground dark:text-muted-foreground">
           {t('page.pageOf', { current: Math.min(page + 1, totalPages), total: totalPages })}
         </span>
         <button
           type="button"
           disabled={!canNext}
           onClick={onNext}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 disabled:pointer-events-none disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground disabled:pointer-events-none disabled:opacity-40 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-muted"
         >
           {t('page.next')}
           <ChevronRight className="h-4 w-4" />
@@ -292,13 +292,13 @@ function LeadsSearchField({
 
   return (
     <div className="relative flex-1">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
       <input
         type="text"
         placeholder={t('page.searchPlaceholder')}
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        className="w-full pl-10 pr-10 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
       />
       {(isFetching || value.trim() !== debounced) && (
         <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary-600" />
@@ -1124,15 +1124,15 @@ export function ModernLeads() {
   const showLeadsSkeleton = isLoadingLeads && leadsPage === undefined;
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
               {t('title')}
             </h1>
-            <div className="flex flex-col gap-0.5 text-neutral-600 dark:text-neutral-400 sm:block">
+            <div className="flex flex-col gap-0.5 text-muted-foreground dark:text-muted-foreground sm:block">
               <span className="block sm:inline">{t('page.manageSubtitle')}</span>
               <span className="hidden sm:inline"> · </span>
               <span className="block sm:inline">
@@ -1177,7 +1177,7 @@ export function ModernLeads() {
 
         {/* Clients switcher */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mr-1">
+          <span className="text-sm font-medium text-muted-foreground dark:text-muted-foreground mr-1">
             {t('page.clients')}
           </span>
           <div className="flex flex-wrap items-center gap-2 flex-1">
@@ -1191,12 +1191,12 @@ export function ModernLeads() {
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
                     selected
                       ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700'
+                      : 'bg-card text-foreground dark:text-muted-foreground border-border hover:bg-muted'
                   }`}
                 >
                   {client.name}
                   {typeof client.lead_count === 'number' && (
-                    <span className={`ml-1.5 tabular-nums ${selected ? 'opacity-90' : 'text-neutral-500'}`}>
+                    <span className={`ml-1.5 tabular-nums ${selected ? 'opacity-90' : 'text-muted-foreground'}`}>
                       ({client.lead_count})
                     </span>
                   )}
@@ -1207,7 +1207,7 @@ export function ModernLeads() {
           <button
             type="button"
             onClick={() => setIsManageClientsOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-border bg-card text-foreground dark:text-muted-foreground hover:bg-muted"
           >
             <Settings2 className="w-4 h-4" />
             {t('page.manage')}
@@ -1230,19 +1230,19 @@ export function ModernLeads() {
                 setDraftFilterSector(filterSector);
                 setIsFiltersOpen(true);
               }}
-              className="flex shrink-0 items-center space-x-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+              className="flex shrink-0 items-center space-x-2 px-3 sm:px-4 py-2.5 bg-card border border-border rounded-lg hover:bg-muted transition-colors"
             >
-              <Filter className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-              <span className="text-neutral-700 dark:text-neutral-300">
+              <Filter className="w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
+              <span className="text-foreground dark:text-muted-foreground">
                 {t('page.filters')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
               </span>
             </button>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <label className="flex max-w-full items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800">
-              <ArrowUpDown className="h-4 w-4 shrink-0 text-neutral-500" />
-              <span className="hidden text-neutral-500 dark:text-neutral-400 md:inline">{t('page.sort')}</span>
+            <label className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm dark:border-border dark:bg-card">
+              <ArrowUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="hidden text-muted-foreground dark:text-muted-foreground md:inline">{t('page.sort')}</span>
               <select
                 value={sortBy}
                 onChange={(e) => {
@@ -1250,7 +1250,7 @@ export function ModernLeads() {
                   setSortBy(next);
                   setSortDesc(next === 'created_at' || next === 'updated_at');
                 }}
-                className="max-w-[9.5rem] truncate bg-transparent text-neutral-800 outline-none dark:text-neutral-100 sm:max-w-[12rem]"
+                className="max-w-[9.5rem] truncate bg-transparent text-foreground outline-none dark:text-foreground sm:max-w-[12rem]"
               >
                 <option value="created_at">{t('page.sortOptions.newest')}</option>
                 <option value="updated_at">{t('page.sortOptions.updated')}</option>
@@ -1263,22 +1263,22 @@ export function ModernLeads() {
               <button
                 type="button"
                 onClick={() => setSortDesc((v) => !v)}
-                className="min-h-[36px] min-w-[44px] rounded px-2 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                className="min-h-[36px] min-w-[44px] rounded px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted"
                 title={sortDesc ? t('page.descending') : t('page.ascending')}
               >
                 {sortDesc ? t('page.descShort') : t('page.ascShort')}
               </button>
             </label>
-            <label className="flex max-w-full items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800">
-              <Layers className="h-4 w-4 shrink-0 text-neutral-500" />
-              <span className="hidden text-neutral-500 dark:text-neutral-400 md:inline">{t('page.group')}</span>
+            <label className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm dark:border-border dark:bg-card">
+              <Layers className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="hidden text-muted-foreground dark:text-muted-foreground md:inline">{t('page.group')}</span>
               <select
                 value={groupBy}
                 onChange={(e) => {
                   setGroupBy(e.target.value as LeadGroupBy);
                   setCollapsedGroups({});
                 }}
-                className="max-w-[9.5rem] truncate bg-transparent text-neutral-800 outline-none dark:text-neutral-100 sm:max-w-[12rem]"
+                className="max-w-[9.5rem] truncate bg-transparent text-foreground outline-none dark:text-foreground sm:max-w-[12rem]"
               >
                 <option value="none">{t('page.groupOptions.none')}</option>
                 <option value="personality">{t('page.groupOptions.personality')}</option>
@@ -1327,12 +1327,12 @@ export function ModernLeads() {
               <button
                 type="button"
                 onClick={() => openMoveDialog('all_in_client')}
-                className="flex min-h-[44px] items-center gap-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                className="flex min-h-[44px] items-center gap-2 px-3 sm:px-4 py-2.5 bg-card border border-border rounded-lg hover:bg-muted transition-colors"
                 title={t('page.moveAllTitle')}
               >
-                <FolderInput className="w-4 h-4 shrink-0 text-neutral-600 dark:text-neutral-400" />
-                <span className="hidden sm:inline text-neutral-700 dark:text-neutral-300">{t('page.moveAll')}</span>
-                <span className="sm:hidden text-neutral-700 dark:text-neutral-300">{t('page.moveShort')}</span>
+                <FolderInput className="w-4 h-4 shrink-0 text-muted-foreground dark:text-muted-foreground" />
+                <span className="hidden sm:inline text-foreground dark:text-muted-foreground">{t('page.moveAll')}</span>
+                <span className="sm:hidden text-foreground dark:text-muted-foreground">{t('page.moveShort')}</span>
               </button>
             )}
             <button
@@ -1342,20 +1342,20 @@ export function ModernLeads() {
                 resetImportDialog();
                 setIsUploadDialogOpen(true);
               }}
-              className="flex min-h-[44px] items-center gap-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+              className="flex min-h-[44px] items-center gap-2 px-3 sm:px-4 py-2.5 bg-card border border-border rounded-lg hover:bg-muted transition-colors"
               title={t('common:import')}
             >
-              <Upload className="w-4 h-4 shrink-0 text-neutral-600 dark:text-neutral-400" />
-              <span className="hidden sm:inline text-neutral-700 dark:text-neutral-300">{t('common:import')}</span>
+              <Upload className="w-4 h-4 shrink-0 text-muted-foreground dark:text-muted-foreground" />
+              <span className="hidden sm:inline text-foreground dark:text-muted-foreground">{t('common:import')}</span>
             </button>
             <button
               type="button"
               onClick={() => void handleExport()}
-              className="flex min-h-[44px] items-center gap-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+              className="flex min-h-[44px] items-center gap-2 px-3 sm:px-4 py-2.5 bg-card border border-border rounded-lg hover:bg-muted transition-colors"
               title={t('common:export')}
             >
-              <Download className="w-4 h-4 shrink-0 text-neutral-600 dark:text-neutral-400" />
-              <span className="hidden sm:inline text-neutral-700 dark:text-neutral-300">{t('common:export')}</span>
+              <Download className="w-4 h-4 shrink-0 text-muted-foreground dark:text-muted-foreground" />
+              <span className="hidden sm:inline text-foreground dark:text-muted-foreground">{t('common:export')}</span>
             </button>
           </div>
         </div>
@@ -1385,13 +1385,13 @@ export function ModernLeads() {
           return (
             <div
               key={group.key}
-              className={`relative -mx-4 overflow-x-auto rounded-none border-y border-neutral-200 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:border dark:border-neutral-700 dark:bg-neutral-800 ${
+              className={`relative -mx-4 overflow-x-auto rounded-none border-y border-border bg-card shadow-sm sm:mx-0 sm:rounded-xl sm:border dark:border-border dark:bg-card ${
                 isFetchingLeads ? 'opacity-70' : ''
               }`}
             >
               {isFetchingLeads && (
-                <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center bg-white/40 pt-16 dark:bg-neutral-900/40">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-medium text-neutral-700 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center bg-card/40 pt-16 dark:bg-background/40">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-foreground shadow-sm dark:border-border dark:bg-card dark:text-foreground">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     {t('page.updatingResults')}
                   </span>
@@ -1406,15 +1406,15 @@ export function ModernLeads() {
                       [group.key]: !prev[group.key],
                     }))
                   }
-                  className="flex w-full items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 text-left dark:border-neutral-700 dark:bg-neutral-700/40"
+                  className="flex w-full items-center justify-between border-b border-border bg-muted/50 px-4 py-3 text-left dark:border-border dark:bg-muted/40"
                 >
-                  <span className="flex items-center gap-2 font-medium text-neutral-900 dark:text-neutral-50">
+                  <span className="flex items-center gap-2 font-medium text-foreground">
                     <ChevronDown
                       className={`h-4 w-4 transition-transform ${collapsed ? '-rotate-90' : ''}`}
                     />
                     {GROUP_LABEL_KEYS[group.key] ? t(GROUP_LABEL_KEYS[group.key]) : group.key}
                   </span>
-                  <span className="rounded-full bg-neutral-200 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-700 dark:bg-neutral-600 dark:text-neutral-100">
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium tabular-nums text-foreground dark:bg-muted dark:text-foreground">
                     {group.leads.length}
                   </span>
                 </button>
@@ -1428,7 +1428,7 @@ export function ModernLeads() {
                     <button
                       type="button"
                       onClick={() => navigate(`/leads/${lead.id}`)}
-                      className="flex w-full min-h-[64px] items-start gap-3 px-4 py-3 text-left active:bg-neutral-50 dark:active:bg-neutral-700/50"
+                      className="flex w-full min-h-[64px] items-start gap-3 px-4 py-3 text-left active:bg-muted/50 dark:active:bg-neutral-700/50"
                     >
                       <span
                         className="mt-1"
@@ -1444,15 +1444,15 @@ export function ModernLeads() {
                         />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block font-medium text-neutral-900 dark:text-neutral-50">
+                        <span className="block font-medium text-foreground">
                           {lead.full_name || `${lead.first_name} ${lead.last_name}`}
                         </span>
-                        <span className="mt-0.5 block truncate text-sm text-neutral-500 dark:text-neutral-400">
+                        <span className="mt-0.5 block truncate text-sm text-muted-foreground dark:text-muted-foreground">
                           {lead.company || t('page.noCompany')}
                           {lead.email ? ` · ${lead.email}` : ''}
                         </span>
                         {lead.stage?.name ? (
-                          <span className="mt-1 inline-block rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
+                          <span className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-foreground dark:bg-muted dark:text-foreground">
                             {lead.stage.name}
                           </span>
                         ) : null}
@@ -1464,7 +1464,7 @@ export function ModernLeads() {
               <div className="hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[720px] sm:min-w-[640px]">
                   {groupBy === 'none' && (
-                    <thead className="bg-neutral-50 dark:bg-neutral-700/50 border-b border-neutral-200 dark:border-neutral-700">
+                    <thead className="bg-muted/50/50 border-b border-border">
                       <tr>
                         <th className="px-3 sm:px-6 py-3 text-left">
                           <input
@@ -1475,41 +1475,41 @@ export function ModernLeads() {
                             aria-label={t('page.selectAll')}
                           />
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">
                           {t('page.columnLead')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">
                           {t('page.columnContact')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">
                           {t('page.columnJobTitle')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">
                           {t('page.columnStage')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">
                           {t('page.columnTypePersonality')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">
                           {t('page.columnAssigned')}
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">
                           {t('common:actions')}
                         </th>
                       </tr>
                     </thead>
                   )}
                   {groupBy !== 'none' && (
-                    <thead className="bg-neutral-50/80 dark:bg-neutral-700/30 border-b border-neutral-200 dark:border-neutral-700">
+                    <thead className="bg-muted/50 dark:bg-muted/30 border-b border-border">
                       <tr>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnSelect')}</th>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnLead')}</th>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnContact')}</th>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnJobTitle')}</th>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnStage')}</th>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnTypePersonality')}</th>
-                        <th className="px-6 py-2 text-left text-xs font-medium text-neutral-500 uppercase">{t('page.columnAssigned')}</th>
-                        <th className="px-6 py-2 text-right text-xs font-medium text-neutral-500 uppercase">{t('common:actions')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-muted-foreground uppercase">{t('page.columnSelect')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-muted-foreground uppercase">{t('page.columnLead')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-muted-foreground uppercase">{t('page.columnContact')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-muted-foreground uppercase">{t('page.columnJobTitle')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-muted-foreground uppercase">{t('page.columnStage')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-muted-foreground uppercase">{t('page.columnTypePersonality')}</th>
+                        <th className="px-6 py-2 text-left text-xs font-medium text-muted-foreground uppercase">{t('page.columnAssigned')}</th>
+                        <th className="px-6 py-2 text-right text-xs font-medium text-muted-foreground uppercase">{t('common:actions')}</th>
                       </tr>
                     </thead>
                   )}
@@ -1518,7 +1518,7 @@ export function ModernLeads() {
                       <tr
                         key={lead.id}
                         onClick={() => navigate(`/leads/${lead.id}`)}
-                        className="hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors cursor-pointer"
+                        className="hover:bg-muted/50 transition-colors cursor-pointer"
                       >
                         <td className="px-3 sm:px-6 py-4" onClick={(e) => e.stopPropagation()}>
                           <input
@@ -1535,21 +1535,21 @@ export function ModernLeads() {
                               <User className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                             </div>
                             <div>
-                              <div className="font-medium text-neutral-900 dark:text-neutral-50">
+                              <div className="font-medium text-foreground">
                                 {lead.full_name || `${lead.first_name} ${lead.last_name}`}
                               </div>
-                              <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                              <div className="text-sm text-muted-foreground dark:text-muted-foreground">
                                 {lead.company || t('page.noCompany')}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-neutral-900 dark:text-neutral-50">{lead.email || '-'}</div>
-                          <div className="text-sm text-neutral-500 dark:text-neutral-400">{lead.telephone || lead.mobile || '-'}</div>
+                          <div className="text-sm text-foreground">{lead.email || '-'}</div>
+                          <div className="text-sm text-muted-foreground dark:text-muted-foreground">{lead.telephone || lead.mobile || '-'}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-neutral-900 dark:text-neutral-50">{lead.job_title || '-'}</div>
+                          <div className="text-sm text-foreground">{lead.job_title || '-'}</div>
                         </td>
                         <td className="px-6 py-4">
                           <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400">
@@ -1557,15 +1557,15 @@ export function ModernLeads() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-neutral-900 dark:text-neutral-50">
+                          <div className="text-sm text-foreground">
                             {lead.source || '—'}
                           </div>
-                          <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                          <div className="text-xs text-muted-foreground dark:text-muted-foreground">
                             {GROUP_LABEL_KEYS[getLeadPersonality(lead)] ? t(GROUP_LABEL_KEYS[getLeadPersonality(lead)]) : getLeadPersonality(lead)}
                           </div>
                         </td>
                         <td
-                          className="px-6 py-4 text-sm text-neutral-900 dark:text-neutral-50"
+                          className="px-6 py-4 text-sm text-foreground"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {(() => {
@@ -1601,7 +1601,7 @@ export function ModernLeads() {
                                   className="z-[200] w-56 max-h-64 overflow-y-auto"
                                   onCloseAutoFocus={(e) => e.preventDefault()}
                                 >
-                                  <div className="px-2 py-1.5 text-xs font-medium text-neutral-500">
+                                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
                                     {t('page.assignTo')}
                                   </div>
                                   {assignableUsers.map((u) => {
@@ -1633,7 +1633,7 @@ export function ModernLeads() {
                                     );
                                   })}
                                   {assignableUsers.length === 0 && (
-                                    <div className="px-2 py-1.5 text-xs text-neutral-500">
+                                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
                                       {t('page.noTeamMembers')}
                                     </div>
                                   )}
@@ -1647,10 +1647,10 @@ export function ModernLeads() {
                             <DropdownMenuTrigger asChild>
                               <button
                                 type="button"
-                                className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                                className="p-2 hover:bg-muted rounded-lg transition-colors"
                                 aria-label={t('page.actionsFor', { name: lead.full_name || lead.id })}
                               >
-                                <MoreVertical className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                                <MoreVertical className="w-4 h-4 text-muted-foreground dark:text-muted-foreground" />
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="z-[200] w-44">
@@ -1709,21 +1709,21 @@ export function ModernLeads() {
           );
         })}
         {showLeadsSkeleton && (
-          <div className="space-y-2 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800">
+          <div className="space-y-2 rounded-xl border border-border bg-card p-4 dark:border-border dark:bg-card">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-10 animate-pulse rounded-md bg-neutral-100 dark:bg-neutral-700" />
+              <div key={i} className="h-10 animate-pulse rounded-md bg-muted dark:bg-muted" />
             ))}
           </div>
         )}
         {!showLeadsSkeleton && !isLoadingLeads && !isFetchingLeads && leads.length === 0 && (
-          <div className="rounded-xl border border-neutral-200 bg-white py-12 text-center text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
+          <div className="rounded-xl border border-border bg-card py-12 text-center text-muted-foreground dark:border-border dark:bg-card dark:text-muted-foreground">
             {t('page.emptyClient')}
           </div>
         )}
       </div>
 
-      <div className="mt-8 border-t border-neutral-200 pt-6 dark:border-neutral-700">
-        <p className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+      <div className="mt-8 border-t border-border pt-6 dark:border-border">
+        <p className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground dark:text-muted-foreground">
           {t('page.pagination')}
         </p>
         <LeadsPaginationBar
@@ -1760,7 +1760,7 @@ export function ModernLeads() {
                 onChange={(e) =>
                   setDraftFilterStageId(e.target.value ? Number(e.target.value) : null)
                 }
-                className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm dark:border-border dark:bg-card"
               >
                 <option value="">{t('page.allStages')}</option>
                 {stages.map((stage) => (
@@ -1836,11 +1836,11 @@ export function ModernLeads() {
                 : t('page.importMappingHint')}
             </DialogDescription>
             <div className="flex gap-2 pt-2 text-xs font-medium">
-              <span className={importStep === 'file' ? 'text-primary-600' : 'text-neutral-400'}>
+              <span className={importStep === 'file' ? 'text-primary-600' : 'text-muted-foreground'}>
                 {t('page.importStepFile')}
               </span>
               <span className="text-neutral-300">→</span>
-              <span className={importStep === 'mapping' ? 'text-primary-600' : 'text-neutral-400'}>
+              <span className={importStep === 'mapping' ? 'text-primary-600' : 'text-muted-foreground'}>
                 {t('page.importStepMapping')}
               </span>
             </div>
@@ -1855,7 +1855,7 @@ export function ModernLeads() {
                     id="import-client"
                     value={importClientId ?? ''}
                     onChange={(e) => setImportClientId(Number(e.target.value))}
-                    className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
                   >
                     {activeClients.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -1863,7 +1863,7 @@ export function ModernLeads() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-xs text-muted-foreground">
                     {t('page.importClientHint')}
                   </p>
                 </div>
@@ -1880,23 +1880,23 @@ export function ModernLeads() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center justify-center space-x-2 px-4 py-8 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg hover:border-primary-500 dark:hover:border-primary-400 transition-colors"
+                    className="flex items-center justify-center space-x-2 px-4 py-8 border-2 border-dashed border-neutral-300 dark:border-border rounded-lg hover:border-primary-500 dark:hover:border-primary-400 transition-colors"
                   >
-                    <Upload className="w-5 h-5 text-neutral-400" />
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                    <Upload className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground dark:text-muted-foreground">
                       {selectedFile ? selectedFile.name : t('page.clickToSelectFile')}
                     </span>
                   </button>
                   
                   {selectedFile && (
-                    <div className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 dark:bg-card rounded-lg">
                       <div className="flex items-center space-x-2">
                         <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/20 rounded flex items-center justify-center">
                           <FileDown className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{selectedFile.name}</p>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          <p className="text-sm font-medium text-foreground">{selectedFile.name}</p>
+                          <p className="text-xs text-muted-foreground dark:text-muted-foreground">
                             {(selectedFile.size / 1024).toFixed(2)} KB
                           </p>
                         </div>
@@ -1908,14 +1908,14 @@ export function ModernLeads() {
                           setImportPreview(null);
                           setHeaderMapping({});
                         }}
-                        className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded"
+                        className="p-1 hover:bg-muted dark:hover:bg-muted rounded"
                       >
-                        <X className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                        <X className="w-4 h-4 text-muted-foreground dark:text-muted-foreground" />
                       </button>
                     </div>
                   )}
                   
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  <p className="text-xs text-muted-foreground dark:text-muted-foreground">
                     {t('page.supportedFormats')}
                   </p>
                 </div>
@@ -1923,7 +1923,7 @@ export function ModernLeads() {
                 <button
                   type="button"
                   onClick={handleDownloadTemplate}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
                 >
                   <FileDown className="w-4 h-4" />
                   <span className="text-sm">{t('page.downloadTemplate')}</span>
@@ -1932,7 +1932,7 @@ export function ModernLeads() {
             ) : (
               <>
                 {importPreview && (
-                  <p className="text-xs text-neutral-500 flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground flex items-center gap-2">
                     {isRemappingPreview && (
                       <Loader2 className="w-3 h-3 animate-spin shrink-0" />
                     )}
@@ -1943,14 +1943,14 @@ export function ModernLeads() {
                     })}
                   </p>
                 )}
-                <div className="space-y-2 max-h-64 overflow-y-auto rounded-lg border border-neutral-200 dark:border-neutral-700 p-3">
-                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                <div className="space-y-2 max-h-64 overflow-y-auto rounded-lg border border-border p-3">
+                  <p className="text-sm font-medium text-foreground">
                     {t('page.importMappingTitle')}
                   </p>
-                  <p className="text-xs text-neutral-500">{t('page.importMappingHint')}</p>
+                  <p className="text-xs text-muted-foreground">{t('page.importMappingHint')}</p>
                   {(importPreview?.headers || []).map((header) => (
                     <div key={header} className="grid grid-cols-2 gap-2 items-center">
-                      <Label className="text-xs text-neutral-600 dark:text-neutral-400 truncate" title={header}>
+                      <Label className="text-xs text-muted-foreground dark:text-muted-foreground truncate" title={header}>
                         {header}
                       </Label>
                       <select
@@ -1961,7 +1961,7 @@ export function ModernLeads() {
                             [header]: e.target.value,
                           }))
                         }
-                        className="w-full rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1.5 text-sm"
+                        className="w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm"
                       >
                         {mappingFieldOptions.map((field) => (
                           <option key={`${header}-${field}`} value={field}>
@@ -1975,9 +1975,9 @@ export function ModernLeads() {
                 {importPreview && importPreview.sample_rows.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium">{t('page.importSampleTitle')}</p>
-                    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-x-auto">
+                    <div className="rounded-lg border border-border overflow-x-auto">
                       <table className="min-w-full text-xs">
-                        <thead className="bg-neutral-50 dark:bg-neutral-800">
+                        <thead className="bg-muted/50 dark:bg-card">
                           <tr>
                             <th className="px-2 py-1.5 text-left font-medium">{importFieldLabel('first_name')}</th>
                             <th className="px-2 py-1.5 text-left font-medium">{importFieldLabel('last_name')}</th>
@@ -1987,7 +1987,7 @@ export function ModernLeads() {
                         </thead>
                         <tbody>
                           {importPreview.sample_rows.map((row, i) => (
-                            <tr key={i} className="border-t border-neutral-100 dark:border-neutral-700">
+                            <tr key={i} className="border-t border-neutral-100 dark:border-border">
                               <td className="px-2 py-1.5">{String(row.mapped?.first_name ?? '—')}</td>
                               <td className="px-2 py-1.5">{String(row.mapped?.last_name ?? '—')}</td>
                               <td className="px-2 py-1.5">{String(row.mapped?.company ?? '—')}</td>
@@ -2092,11 +2092,11 @@ export function ModernLeads() {
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t('page.active')}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('page.active')}</p>
               {activeClients.map((client) => (
                 <div
                   key={client.id}
-                  className="flex flex-col gap-2 rounded-lg border border-neutral-200 dark:border-neutral-700 p-3"
+                  className="flex flex-col gap-2 rounded-lg border border-border p-3"
                 >
                   {renamingId === client.id ? (
                     <div className="flex flex-wrap items-center gap-2">
@@ -2121,15 +2121,15 @@ export function ModernLeads() {
                   ) : (
                     <>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="flex-1 font-medium text-neutral-900 dark:text-neutral-50">
+                        <span className="flex-1 font-medium text-foreground">
                           {client.name}
                           {client.is_default && (
-                            <span className="ml-2 text-xs text-neutral-500">{t('page.defaultLabel')}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">{t('page.defaultLabel')}</span>
                           )}
                           {!client.is_default &&
                             (client.assigned_user_ids?.length ||
                               client.assigned_user_id) && (
-                            <span className="ml-2 text-xs text-neutral-500">
+                            <span className="ml-2 text-xs text-muted-foreground">
                               ·{' '}
                               {client.assigned_user_names?.length
                                 ? client.assigned_user_names.join(', ')
@@ -2139,7 +2139,7 @@ export function ModernLeads() {
                           {!client.is_default &&
                             !(client.assigned_user_ids?.length) &&
                             !client.assigned_user_id && (
-                            <span className="ml-2 text-xs text-neutral-500">
+                            <span className="ml-2 text-xs text-muted-foreground">
                               · {t('page.sharedWithTeam')}
                             </span>
                           )}
@@ -2205,7 +2205,7 @@ export function ModernLeads() {
                       {isAdmin && !client.is_default && (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between gap-2">
-                            <label className="text-xs text-neutral-500 whitespace-nowrap">
+                            <label className="text-xs text-muted-foreground whitespace-nowrap">
                               {t('page.assignTo')}
                             </label>
                             <button
@@ -2222,7 +2222,7 @@ export function ModernLeads() {
                               {t('page.sharedWithTeam')}
                             </button>
                           </div>
-                          <div className="max-h-36 overflow-y-auto rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-2 space-y-1">
+                          <div className="max-h-36 overflow-y-auto rounded-md border border-border bg-card p-2 space-y-1">
                             {assignableUsers.map((u) => {
                               const selectedIds =
                                 client.assigned_user_ids?.length
@@ -2234,7 +2234,7 @@ export function ModernLeads() {
                               return (
                                 <label
                                   key={u.id}
-                                  className="flex items-center gap-2 text-sm cursor-pointer px-1 py-0.5 rounded hover:bg-neutral-50 dark:hover:bg-neutral-700/50"
+                                  className="flex items-center gap-2 text-sm cursor-pointer px-1 py-0.5 rounded hover:bg-muted/50"
                                 >
                                   <input
                                     type="checkbox"
@@ -2256,7 +2256,7 @@ export function ModernLeads() {
                               );
                             })}
                             {assignableUsers.length === 0 && (
-                              <p className="text-xs text-neutral-500 px-1">
+                              <p className="text-xs text-muted-foreground px-1">
                                 {t('page.noTeamMembers')}
                               </p>
                             )}
@@ -2271,18 +2271,18 @@ export function ModernLeads() {
 
             {archivedClients.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {t('page.archived')}
                 </p>
                 {archivedClients.map((client) => (
                   <div
                     key={client.id}
-                    className="flex items-center gap-2 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-600 p-3"
+                    className="flex items-center gap-2 rounded-lg border border-dashed border-neutral-300 dark:border-border p-3"
                   >
-                    <span className="flex-1 text-neutral-600 dark:text-neutral-400">
+                    <span className="flex-1 text-muted-foreground dark:text-muted-foreground">
                       {client.name}
                       {typeof client.lead_count === 'number' && (
-                        <span className="ml-2 text-xs text-neutral-500">
+                        <span className="ml-2 text-xs text-muted-foreground">
                           ({client.lead_count})
                         </span>
                       )}
@@ -2367,7 +2367,7 @@ export function ModernLeads() {
               id="move-target"
               value={moveTargetClientId ?? ''}
               onChange={(e) => setMoveTargetClientId(Number(e.target.value))}
-              className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
             >
               {activeClients
                 .filter((c) => c.id !== selectedClientId)

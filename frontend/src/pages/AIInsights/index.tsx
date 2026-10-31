@@ -75,11 +75,11 @@ export function AIInsightsPage() {
       <div className="flex items-center justify-between">
       <div className="flex items-center space-x-3">
           <Brain className="h-8 w-8 text-blue-600" />
-        <h1 className="text-2xl font-semibold text-gray-900">AI Insights</h1>
+        <h1 className="text-2xl font-semibold text-foreground">AI Insights</h1>
           <Badge className="bg-blue-100 text-blue-800">Live</Badge>
       </div>
         <div className="flex items-center gap-3">
-          <Button onClick={handleBatchAnalyze} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0">
+          <Button onClick={handleBatchAnalyze} className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-blue-700 hover:to-purple-700 text-white border-0">
             <Brain className="w-4 h-4 mr-2" />
             Start Batch Analysis
           </Button>
@@ -107,8 +107,8 @@ export function AIInsightsPage() {
                   <div className="flex items-center">
                     <Users className="h-8 w-8 text-blue-600" />
                                          <div className="ml-4">
-                       <p className="text-sm font-medium text-gray-600">Total Insights</p>
-                       <p className="text-2xl font-bold text-gray-900">{analytics.total_insights}</p>
+                       <p className="text-sm font-medium text-muted-foreground">Total Insights</p>
+                       <p className="text-2xl font-bold text-foreground">{analytics.total_insights}</p>
                      </div>
                    </div>
                  </CardContent>
@@ -119,8 +119,8 @@ export function AIInsightsPage() {
                    <div className="flex items-center">
                      <TrendingUp className="h-8 w-8 text-green-600" />
                      <div className="ml-4">
-                       <p className="text-sm font-medium text-gray-600">Avg. Quality</p>
-                       <p className="text-2xl font-bold text-gray-900">{analytics.avg_quality_score}</p>
+                       <p className="text-sm font-medium text-muted-foreground">Avg. Quality</p>
+                       <p className="text-2xl font-bold text-foreground">{analytics.avg_quality_score}</p>
                      </div>
                    </div>
                  </CardContent>
@@ -131,8 +131,8 @@ export function AIInsightsPage() {
                    <div className="flex items-center">
                      <Target className="h-8 w-8 text-purple-600" />
                      <div className="ml-4">
-                       <p className="text-sm font-medium text-gray-600">Avg. Priority</p>
-                       <p className="text-2xl font-bold text-gray-900">{analytics.avg_priority_score}</p>
+                       <p className="text-sm font-medium text-muted-foreground">Avg. Priority</p>
+                       <p className="text-2xl font-bold text-foreground">{analytics.avg_priority_score}</p>
                      </div>
                    </div>
                  </CardContent>
@@ -143,8 +143,8 @@ export function AIInsightsPage() {
                    <div className="flex items-center">
                      <BarChart3 className="h-8 w-8 text-amber-600" />  
                      <div className="ml-4">
-                       <p className="text-sm font-medium text-gray-600">High Priority</p>
-                       <p className="text-2xl font-bold text-gray-900">{highPriorityLeads.length}</p>
+                       <p className="text-sm font-medium text-muted-foreground">High Priority</p>
+                       <p className="text-2xl font-bold text-foreground">{highPriorityLeads.length}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -180,15 +180,15 @@ export function AIInsightsPage() {
                        placeholder="Search leads..."
                        value={searchQuery}
                        onChange={(e) => setSearchQuery(e.target.value)}
-                       className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       className="pl-10 pr-4 py-2 w-full border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                      />
                   </div>
                 </div>
 
                 {/* Personality Type Filters */}
                                  <div className="flex items-center gap-2">
-                   <Filter className="w-4 h-4 text-gray-600" />
-                   <span className="text-sm text-gray-600 mr-2">Personality Type:</span>
+                   <Filter className="w-4 h-4 text-muted-foreground" />
+                   <span className="text-sm text-muted-foreground mr-2">Personality Type:</span>
                    {['D', 'I', 'S', 'C'].map(type => (
                      <button
                        key={type}
@@ -217,11 +217,11 @@ export function AIInsightsPage() {
               <div className="space-y-3">
                 {filteredLeads.length > 0 ? (
                   filteredLeads.map((lead) => (
-                    <div key={lead.lead_id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div key={lead.lead_id} className="p-4 border border-border rounded-lg hover:bg-muted transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
-                            <h3 className="font-semibold text-gray-900">{lead.lead_name}</h3>
+                            <h3 className="font-semibold text-foreground">{lead.lead_name}</h3>
                             <div
                               className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
                               style={{ backgroundColor: aiInsightsService.getPersonalityColor(lead.personality_type) }}
@@ -230,7 +230,7 @@ export function AIInsightsPage() {
                               {lead.personality_type}
                             </div>
                           </div>
-                          <div className="text-sm text-gray-600 mt-1">
+                          <div className="text-sm text-muted-foreground mt-1">
                             {lead.job_title} @ {lead.company}
           </div>
         </div>
@@ -256,7 +256,7 @@ export function AIInsightsPage() {
       </div>
                   ))
                                  ) : (
-                   <div className="text-center py-8 text-gray-500">
+                   <div className="text-center py-8 text-muted-foreground">
                      <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
                      <p>No leads found matching the criteria</p>
                    </div>

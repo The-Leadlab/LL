@@ -57,10 +57,10 @@ export function ModernAIInsights() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
+      <div className="flex min-h-[50vh] items-center justify-center bg-muted/50 dark:bg-background p-4 sm:p-6 md:p-8">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-          <p className="text-neutral-600 dark:text-neutral-400">{t('aiInsights.loading')}</p>
+          <p className="text-muted-foreground dark:text-muted-foreground">{t('aiInsights.loading')}</p>
         </div>
       </div>
     );
@@ -87,12 +87,12 @@ export function ModernAIInsights() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
       <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold text-neutral-900 dark:text-neutral-50">
+        <h1 className="mb-2 text-3xl font-bold text-foreground">
           {t('aiInsights.title')}
         </h1>
-        <p className="text-neutral-600 dark:text-neutral-400">
+        <p className="text-muted-foreground dark:text-muted-foreground">
           {t('aiInsights.subtitle')}
         </p>
         <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
@@ -104,69 +104,69 @@ export function ModernAIInsights() {
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
+        <div className="rounded-xl border border-border bg-card p-6 dark:border-border dark:bg-card">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/20">
             <Brain className="h-6 w-6 text-purple-600 dark:text-purple-400" />
           </div>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('aiInsights.analysesStored')}</p>
-          <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('aiInsights.analysesStored')}</p>
+          <p className="text-2xl font-bold text-foreground">
             {a.total_insights}
           </p>
         </div>
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
+        <div className="rounded-xl border border-border bg-card p-6 dark:border-border dark:bg-card">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/20">
             <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('aiInsights.avgQuality')}</p>
-          <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('aiInsights.avgQuality')}</p>
+          <p className="text-2xl font-bold text-foreground">
             {a.avg_quality_score?.toFixed(1) ?? '—'}
           </p>
         </div>
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
+        <div className="rounded-xl border border-border bg-card p-6 dark:border-border dark:bg-card">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/20">
             <Target className="h-6 w-6 text-amber-600 dark:text-amber-400" />
           </div>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('aiInsights.avgPriority')}</p>
-          <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('aiInsights.avgPriority')}</p>
+          <p className="text-2xl font-bold text-foreground">
             {a.avg_priority_score?.toFixed(1) ?? '—'}
           </p>
         </div>
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
+        <div className="rounded-xl border border-border bg-card p-6 dark:border-border dark:bg-card">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/20">
             <Users className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('aiInsights.avgConfidence')}</p>
-          <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('aiInsights.avgConfidence')}</p>
+          <p className="text-2xl font-bold text-foreground">
             {typeof a.avg_confidence === 'number' ? a.avg_confidence.toFixed(2) : '—'}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
-          <h2 className="mb-4 text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+        <div className="rounded-xl border border-border bg-card p-6 dark:border-border dark:bg-card">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
             {t('aiInsights.personality')}
           </h2>
           {Object.keys(a.personality_distribution || {}).length === 0 ? (
-            <p className="text-sm text-neutral-500">{t('aiInsights.noPersonality')}</p>
+            <p className="text-sm text-muted-foreground">{t('aiInsights.noPersonality')}</p>
           ) : (
             <ul className="space-y-2">
               {Object.entries(a.personality_distribution).map(([k, v]) => (
                 <li key={k} className="flex justify-between text-sm">
-                  <span className="text-neutral-700 dark:text-neutral-300">{k}</span>
-                  <span className="font-medium text-neutral-900 dark:text-neutral-50">{v}</span>
+                  <span className="text-foreground dark:text-muted-foreground">{k}</span>
+                  <span className="font-medium text-foreground">{v}</span>
                 </li>
               ))}
             </ul>
           )}
         </div>
 
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
-          <h2 className="mb-4 text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+        <div className="rounded-xl border border-border bg-card p-6 dark:border-border dark:bg-card">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
             {t('aiInsights.highPriority')}
           </h2>
           {highPriority.length === 0 ? (
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm text-muted-foreground">
               {t('aiInsights.noHighPriority')}
             </p>
           ) : (
@@ -175,12 +175,12 @@ export function ModernAIInsights() {
                 <li key={row.lead_id}>
                   <Link
                     to={`/leads/${row.lead_id}`}
-                    className="block rounded-lg border border-neutral-100 p-3 transition hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-700/50"
+                    className="block rounded-lg border border-neutral-100 p-3 transition hover:bg-muted dark:border-neutral-600 dark:hover:bg-muted/50"
                   >
-                    <div className="font-medium text-neutral-900 dark:text-neutral-50">
+                    <div className="font-medium text-foreground">
                       {row.lead_name}
                     </div>
-                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-neutral-500">
+                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
                       {row.company ? <span>{row.company}</span> : null}
                       <span>
                         {t('aiInsights.priority')}{' '}

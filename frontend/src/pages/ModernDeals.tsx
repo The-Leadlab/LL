@@ -167,7 +167,7 @@ function DroppableStageBody({
   return (
     <div
       ref={setNodeRef}
-      className={`bg-neutral-50 dark:bg-neutral-900/50 rounded-b-xl border-x border-b border-neutral-200 dark:border-neutral-700 p-3 space-y-3 min-h-[320px] transition-colors ${
+      className={`bg-muted/50 dark:bg-background/50 rounded-b-xl border-x border-b border-border p-3 space-y-3 min-h-[320px] transition-colors ${
         isOver ? 'ring-2 ring-inset ring-primary-500 bg-primary-50/40 dark:bg-primary-950/20' : ''
       }`}
     >
@@ -204,14 +204,14 @@ function DraggableDealCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow ${
+      className={`bg-card rounded-lg border border-border hover:shadow-md transition-shadow ${
         isDragging ? 'opacity-50 shadow-lg z-10' : ''
       }`}
       {...listeners}
       {...attributes}
     >
       <div className="flex items-start justify-between p-4 gap-2">
-        <div className="mt-0.5 shrink-0 p-1 rounded text-neutral-400">
+        <div className="mt-0.5 shrink-0 p-1 rounded text-muted-foreground">
           <GripVertical className="w-4 h-4" />
         </div>
         <button
@@ -219,10 +219,10 @@ function DraggableDealCard({
           className="flex-1 min-w-0 text-left"
           onClick={() => onOpen(deal.id)}
         >
-          <h4 className="font-medium text-neutral-900 dark:text-neutral-50 text-sm mb-1 truncate">
+          <h4 className="font-medium text-foreground text-sm mb-1 truncate">
             {deal.name}
           </h4>
-          <div className="flex items-center space-x-2 text-xs text-neutral-600 dark:text-neutral-400">
+          <div className="flex items-center space-x-2 text-xs text-muted-foreground dark:text-muted-foreground">
             <DollarSign className="w-3 h-3 shrink-0" />
             <span className="font-semibold">${formatMoney(value)}</span>
           </div>
@@ -231,10 +231,10 @@ function DraggableDealCard({
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
-              className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded shrink-0"
+              className="p-1 hover:bg-muted rounded shrink-0"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              <MoreVertical className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+              <MoreVertical className="w-4 h-4 text-muted-foreground dark:text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
@@ -264,11 +264,11 @@ function DraggableDealCard({
 
       <div className="px-4 pb-4 space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-neutral-600 dark:text-neutral-400">{t('stageWeight')}</span>
-          <span className="font-medium text-neutral-900 dark:text-neutral-50">{weight}%</span>
+          <span className="text-muted-foreground dark:text-muted-foreground">{t('stageWeight')}</span>
+          <span className="font-medium text-foreground">{weight}%</span>
         </div>
         {deal.valid_until && (
-          <div className="flex items-center text-xs text-neutral-600 dark:text-neutral-400">
+          <div className="flex items-center text-xs text-muted-foreground dark:text-muted-foreground">
             <Calendar className="w-3 h-3 mr-1 shrink-0" />
             {t('closeBy', { date: new Date(deal.valid_until).toLocaleDateString() })}
           </div>
@@ -405,12 +405,12 @@ export function ModernDeals() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen overflow-x-hidden bg-background p-4 sm:p-6 md:p-8">
       <div className="mb-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">{t('title')}</h1>
-            <p className="text-neutral-600 dark:text-neutral-400">
+            <h1 className="text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
+            <p className="text-muted-foreground dark:text-muted-foreground">
               {isLoading ? (
                 <span className="inline-flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin text-primary-600" />
@@ -423,7 +423,7 @@ export function ModernDeals() {
                 </>
               )}
             </p>
-            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-500">
+            <p className="mt-1 text-xs text-muted-foreground dark:text-foreground0">
               {t('dragHint')}
             </p>
           </div>
@@ -439,22 +439,22 @@ export function ModernDeals() {
 
         <div className="flex items-center space-x-3">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
               type="text"
               placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
           <button
             type="button"
             onClick={() => setFiltersOpen(true)}
-            className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2.5 bg-card border border-border rounded-lg hover:bg-muted transition-colors"
           >
-            <Filter className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-            <span className="text-neutral-700 dark:text-neutral-300">{t('filters')}</span>
+            <Filter className="w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
+            <span className="text-foreground dark:text-muted-foreground">{t('filters')}</span>
           </button>
         </div>
       </div>
@@ -468,17 +468,17 @@ export function ModernDeals() {
         <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 lg:grid-cols-3 xl:grid-cols-5">
           {dealsByStage.map((stage) => (
             <div key={stage.id} className="flex w-[min(100%,18rem)] flex-shrink-0 flex-col md:w-auto">
-              <div className="bg-white dark:bg-neutral-800 rounded-t-xl p-4 border-x border-t border-neutral-200 dark:border-neutral-700">
+              <div className="bg-card rounded-t-xl p-4 border-x border-t border-border">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${stage.dotClass}`} />
-                    <h3 className="font-semibold text-neutral-900 dark:text-neutral-50 text-sm">
+                    <h3 className="font-semibold text-foreground text-sm">
                       {t(`stages.${stage.id}`)}
                     </h3>
                   </div>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">{stage.deals.length}</span>
+                  <span className="text-xs text-muted-foreground dark:text-muted-foreground">{stage.deals.length}</span>
                 </div>
-                <div className="text-lg font-bold text-neutral-900 dark:text-neutral-50">
+                <div className="text-lg font-bold text-foreground">
                   ${formatMoney(stage.totalValue)}
                 </div>
               </div>
@@ -488,7 +488,7 @@ export function ModernDeals() {
                   ? Array.from({ length: 2 }).map((_, i) => (
                       <div
                         key={`skel-${stage.id}-${i}`}
-                        className="mb-2 h-20 animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-700"
+                        className="mb-2 h-20 animate-pulse rounded-lg bg-muted dark:bg-muted"
                       />
                     ))
                   : stage.deals.map((deal) => (
@@ -502,7 +502,7 @@ export function ModernDeals() {
                       />
                     ))}
                 {!isLoading && stage.deals.length === 0 && (
-                  <div className="text-center py-8 text-neutral-500 dark:text-neutral-400 text-sm">
+                  <div className="text-center py-8 text-muted-foreground dark:text-muted-foreground text-sm">
                     {t('dropHere')}
                   </div>
                 )}
@@ -512,9 +512,9 @@ export function ModernDeals() {
         </div>
         <DragOverlay dropAnimation={null}>
           {activeDeal ? (
-            <div className="pointer-events-none w-[280px] rounded-lg border border-primary-300 bg-white p-3 shadow-xl dark:border-primary-700 dark:bg-neutral-800">
-              <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">{activeDeal.name}</p>
-              <p className="text-xs text-neutral-500">
+            <div className="pointer-events-none w-[280px] rounded-lg border border-primary-300 bg-card p-3 shadow-xl dark:border-primary-700 dark:bg-card">
+              <p className="text-sm font-medium text-foreground">{activeDeal.name}</p>
+              <p className="text-xs text-muted-foreground">
                 ${formatMoney(toAmountNumber(activeDeal.amount))} · {t(STATUS_LABEL_KEY[activeDeal.status] ?? 'statuses.lead')}
               </p>
             </div>
@@ -533,7 +533,7 @@ export function ModernDeals() {
           <div className="space-y-3 py-2">
             {(['Lead', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] as DealStatusStr[]).map(
               (s) => (
-                <label key={s} className="flex cursor-pointer items-center gap-2 text-sm text-neutral-800 dark:text-neutral-200">
+                <label key={s} className="flex cursor-pointer items-center gap-2 text-sm text-foreground dark:text-foreground">
                   <input
                     type="checkbox"
                     className="h-4 w-4 rounded border-neutral-300"

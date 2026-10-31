@@ -73,19 +73,19 @@ export function ResetPassword() {
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="min-h-screen bg-background">
         <PublicHeader />
         <div className="flex items-center justify-center px-4 py-16">
-          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-blue-100">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="bg-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-blue-100">
+            <h1 className="text-2xl font-bold text-foreground mb-4">
               {t('resetPage.invalidLinkTitle')}
             </h1>
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               {t('resetPage.invalidLinkBody')}
             </p>
             <Link
               to="/forgot-password"
-              className="inline-flex items-center justify-center px-6 py-3 text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md"
+              className="inline-flex items-center justify-center px-6 py-3 text-base font-medium rounded-xl text-white bg-primary-600 hover:bg-primary-700 transition-all duration-200 shadow-md"
             >
               {t('resetPage.requestNewLink')}
             </Link>
@@ -96,7 +96,7 @@ export function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <PublicHeader />
 
       <div className="container mx-auto px-4 py-4">
@@ -111,15 +111,15 @@ export function ResetPassword() {
 
       <div className="flex-1 flex items-center justify-center px-4 pb-16">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-blue-100">
+          <div className="bg-card rounded-2xl shadow-xl p-8 border border-blue-100">
             <div className="text-center mb-8">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md">
                 {success ? <CheckCircle2 className="h-6 w-6" /> : <Lock className="h-6 w-6" />}
               </div>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
                 {success ? t('resetPage.updatedTitle') : t('resetPage.title')}
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-muted-foreground mt-2">
                 {success
                   ? t('resetPage.updatedSubtitle')
                   : t('resetPage.subtitle')}
@@ -139,7 +139,7 @@ export function ResetPassword() {
                 </div>
                 <Link
                   to="/signin"
-                  className="inline-flex w-full items-center justify-center px-6 py-3 text-base font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md"
+                  className="inline-flex w-full items-center justify-center px-6 py-3 text-base font-semibold rounded-xl text-white bg-primary-600 hover:bg-primary-700 transition-all shadow-md"
                 >
                   {t('verifyEmailPage.goToSignIn')}
                 </Link>
@@ -149,7 +149,7 @@ export function ResetPassword() {
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('resetPage.newPassword')}
                   </label>
@@ -163,13 +163,13 @@ export function ResetPassword() {
                       required
                       minLength={8}
                       autoComplete="new-password"
-                      className="w-full px-4 py-2.5 pr-11 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-2.5 pr-11 border border-border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder={t('resetPage.newPasswordPlaceholder')}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-muted-foreground"
                       aria-label={showPassword ? t('signInPage.hidePassword') : t('signInPage.showPassword')}
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -180,7 +180,7 @@ export function ResetPassword() {
                 <div>
                   <label
                     htmlFor="confirmPassword"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('resetPage.confirmNewPassword')}
                   </label>
@@ -194,13 +194,13 @@ export function ResetPassword() {
                       required
                       minLength={8}
                       autoComplete="new-password"
-                      className="w-full px-4 py-2.5 pr-11 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-2.5 pr-11 border border-border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder={t('resetPage.confirmPlaceholder')}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((v) => !v)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-muted-foreground"
                       aria-label={showConfirmPassword ? t('signInPage.hidePassword') : t('signInPage.showPassword')}
                     >
                       {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -211,7 +211,7 @@ export function ResetPassword() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 shadow-md font-semibold"
+                  className="w-full bg-primary-600 text-white py-3 px-4 rounded-xl hover:bg-primary-700 transition-all duration-200 disabled:opacity-50 shadow-md font-semibold"
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center">

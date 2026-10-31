@@ -3,17 +3,13 @@ import { MarketingNav } from '../marketing/MarketingNav'
 
 type PublicAuthShellProps = {
   children: ReactNode
-  /** Wider container for multi-column forms (e.g. signup, invite). */
   maxWidthClassName?: string
-  /** Extra classes on the white card wrapper. */
   cardClassName?: string
-  /** When false, only nav + gradient — children provide their own cards. */
   withCard?: boolean
 }
 
 /**
- * Shared chrome for unauthenticated public pages:
- * MarketingNav + slate/blue/indigo wash + optional centered white card.
+ * Atlas auth chrome — cool ink atmosphere, solid primary CTA (no indigo gradients).
  */
 export function PublicAuthShell({
   children,
@@ -22,13 +18,17 @@ export function PublicAuthShell({
   withCard = true,
 }: PublicAuthShellProps) {
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="relative flex min-h-screen flex-col bg-background font-sans">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(37,99,235,0.08),_transparent_55%)]"
+        aria-hidden
+      />
       <MarketingNav />
-      <main className="flex flex-1 items-center justify-center px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+      <main className="relative flex flex-1 items-center justify-center px-4 pb-16 pt-24 sm:px-6 lg:px-8">
         <div className={`w-full ${maxWidthClassName}`}>
           {withCard ? (
             <div
-              className={`rounded-2xl border border-blue-100 bg-white p-8 shadow-xl ${cardClassName}`}
+              className={`rounded-xl border border-border bg-card p-8 shadow-md ${cardClassName}`}
             >
               {children}
             </div>
@@ -41,6 +41,5 @@ export function PublicAuthShell({
   )
 }
 
-/** Primary CTA for public auth/marketing forms. */
 export const publicAuthCtaClassName =
-  'w-full inline-flex justify-center items-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-blue-700 hover:to-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all'
+  'w-full inline-flex justify-center items-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-[background-color,opacity] duration-150'

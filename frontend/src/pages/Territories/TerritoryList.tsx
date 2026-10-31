@@ -45,9 +45,9 @@ const TerritoryTreeNode: React.FC<TerritoryTreeNodeProps> = ({
   const hasChildren = territory.children && territory.children.length > 0;
 
   return (
-    <div className="border-l-2 border-gray-200 ml-4">
+    <div className="border-l-2 border-border ml-4">
       <div
-        className={`flex items-center gap-2 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors ${
+        className={`flex items-center gap-2 p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors ${
           !territory.is_active ? 'opacity-50' : ''
         }`}
         style={{ marginLeft: `${level * 20}px` }}
@@ -55,7 +55,7 @@ const TerritoryTreeNode: React.FC<TerritoryTreeNodeProps> = ({
         {hasChildren && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 hover:bg-gray-200 rounded"
+            className="p-1 hover:bg-muted rounded"
           >
             {isExpanded ? (
               <ChevronDown className="h-4 w-4" />
@@ -79,7 +79,7 @@ const TerritoryTreeNode: React.FC<TerritoryTreeNodeProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-4 text-sm text-gray-600">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
             <span>{territory.members_count}</span>
@@ -242,7 +242,7 @@ export const TerritoryList: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">{t('territories.title')}</h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-muted-foreground mt-1">
               {t('territories.subtitle')}
             </p>
           </div>
@@ -338,7 +338,7 @@ export const TerritoryList: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-muted-foreground">
                 <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>{t('territories.empty')}</p>
               </div>
@@ -355,7 +355,7 @@ export const TerritoryList: React.FC = () => {
                   <MapPin className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('territories.total')}</p>
+                  <p className="text-sm text-muted-foreground">{t('territories.total')}</p>
                   <p className="text-2xl font-bold">{allTerritories?.length || 0}</p>
                 </div>
               </div>
@@ -368,7 +368,7 @@ export const TerritoryList: React.FC = () => {
                   <Users className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('territories.members')}</p>
+                  <p className="text-sm text-muted-foreground">{t('territories.members')}</p>
                   <p className="text-2xl font-bold">
                     {allTerritories?.reduce((sum, t) => sum + t.members_count, 0) || 0}
                   </p>
@@ -383,7 +383,7 @@ export const TerritoryList: React.FC = () => {
                   <TrendingUp className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('territories.activeCount')}</p>
+                  <p className="text-sm text-muted-foreground">{t('territories.activeCount')}</p>
                   <p className="text-2xl font-bold">
                     {allTerritories?.filter(t => t.is_active).length || 0}
                   </p>

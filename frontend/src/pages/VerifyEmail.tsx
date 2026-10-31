@@ -46,7 +46,7 @@ export function VerifyEmail() {
           alt="LeadLab"
           className="mx-auto mb-4 h-12 w-auto"
         />
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">{t('verifyEmailPage.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('verifyEmailPage.title')}</h1>
         <p className={`mt-4 text-sm ${status === 'error' ? 'text-red-600' : 'text-slate-600'}`}>
           {t(messageKey)}
         </p>

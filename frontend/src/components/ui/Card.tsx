@@ -15,9 +15,9 @@ export interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const cardVariants = {
-  default: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm',
-  outlined: 'bg-transparent border-2 border-gray-200 dark:border-gray-700',
-  elevated: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg',
+  default: 'bg-card text-card-foreground border border-border shadow-sm',
+  outlined: 'bg-transparent border border-border',
+  elevated: 'bg-card text-card-foreground border border-border shadow-md',
   ghost: 'bg-transparent border-0 shadow-none'
 };
 
@@ -33,7 +33,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
     <div
       ref={ref}
       className={cn(
-        'rounded-lg transition-colors',
+        'rounded-lg transition-[background-color,border-color] duration-150',
         cardVariants[variant],
         paddingVariants[padding],
         className
@@ -50,7 +50,7 @@ const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
       ref={ref}
       className={cn(
         'flex flex-col space-y-1.5',
-        divider && 'pb-4 border-b border-gray-200 dark:border-gray-700 mb-4',
+        divider && 'pb-4 border-b border-border mb-4',
         className
       )}
       {...props}
@@ -64,7 +64,7 @@ const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingEleme
     <h3
       ref={ref}
       className={cn(
-        'text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100',
+        'text-lg font-semibold leading-none tracking-tight text-foreground font-sans',
         className
       )}
       {...props}
@@ -78,7 +78,7 @@ const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLPara
     <p
       ref={ref}
       className={cn(
-        'text-sm text-gray-600 dark:text-gray-400',
+        'text-sm text-muted-foreground',
         className
       )}
       {...props}
@@ -91,7 +91,7 @@ const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('text-gray-900 dark:text-gray-100', className)}
+      className={cn('text-foreground', className)}
       {...props}
     />
   )
@@ -104,7 +104,7 @@ const CardFooter = forwardRef<HTMLDivElement, CardFooterProps>(
       ref={ref}
       className={cn(
         'flex items-center',
-        divider && 'pt-4 border-t border-gray-200 dark:border-gray-700 mt-4',
+        divider && 'pt-4 border-t border-border mt-4',
         className
       )}
       {...props}

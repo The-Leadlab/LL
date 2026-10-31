@@ -197,7 +197,7 @@ export function GenerateBrandedEmailDialog({
                   type="color"
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="h-10 w-12 cursor-pointer rounded border border-neutral-200 bg-white p-1"
+                  className="h-10 w-12 cursor-pointer rounded border border-border bg-card p-1"
                 />
                 <Input
                   value={primaryColor}
@@ -214,7 +214,7 @@ export function GenerateBrandedEmailDialog({
                   type="color"
                   value={secondaryColor}
                   onChange={(e) => setSecondaryColor(e.target.value)}
-                  className="h-10 w-12 cursor-pointer rounded border border-neutral-200 bg-white p-1"
+                  className="h-10 w-12 cursor-pointer rounded border border-border bg-card p-1"
                 />
                 <Input
                   value={secondaryColor}
@@ -249,8 +249,8 @@ export function GenerateBrandedEmailDialog({
 
           <div>
             <Label>{t('generateBranded.attachments')}</Label>
-            <p className="mt-0.5 text-xs text-neutral-500">{t('generateBranded.attachmentsHint')}</p>
-            <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-neutral-300 px-4 py-3 text-sm text-neutral-600 hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-800">
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('generateBranded.attachmentsHint')}</p>
+            <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-neutral-300 px-4 py-3 text-sm text-muted-foreground hover:bg-muted dark:border-border dark:hover:bg-muted">
               <ImagePlus className="h-4 w-4" />
               {t('generateBranded.addImages')}
               <input
@@ -269,13 +269,13 @@ export function GenerateBrandedEmailDialog({
                 {images.map((img, idx) => (
                   <li
                     key={`${img.name}-${idx}`}
-                    className="flex items-center justify-between rounded-md bg-neutral-50 px-2 py-1.5 text-xs dark:bg-neutral-800"
+                    className="flex items-center justify-between rounded-md bg-muted/50 px-2 py-1.5 text-xs dark:bg-card"
                   >
                     <span className="truncate">{img.name}</span>
                     <button
                       type="button"
                       aria-label={t('generateBranded.removeImage')}
-                      className="ml-2 rounded p-1 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                      className="ml-2 rounded p-1 hover:bg-muted dark:hover:bg-muted"
                       onClick={() => setImages((prev) => prev.filter((_, i) => i !== idx))}
                     >
                       <X className="h-3.5 w-3.5" />

@@ -88,15 +88,15 @@ export function ModernEmailCampaigns() {
   const [view, setView] = useState<'campaigns' | 'create'>('campaigns');
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
               Email Campaigns
             </h1>
-            <p className="text-neutral-600 dark:text-neutral-400">
+            <p className="text-muted-foreground dark:text-muted-foreground">
               Create and manage your email marketing campaigns
             </p>
           </div>
@@ -145,7 +145,7 @@ export function ModernEmailCampaigns() {
             return (
               <div
                 key={index}
-                className="bg-white dark:bg-neutral-800 rounded-xl p-6 shadow-sm border border-neutral-200 dark:border-neutral-700"
+                className="bg-card rounded-xl p-6 shadow-sm border border-border"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className={`p-3 rounded-lg bg-${stat.color}-50 dark:bg-${stat.color}-900/20`}>
@@ -156,10 +156,10 @@ export function ModernEmailCampaigns() {
                     {stat.change}
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
+                <h3 className="text-2xl font-bold text-foreground mb-1">
                   {stat.value}
                 </h3>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">{stat.title}</p>
+                <p className="text-sm text-muted-foreground dark:text-muted-foreground">{stat.title}</p>
               </div>
             );
           })}
@@ -179,12 +179,12 @@ export function ModernEmailCampaigns() {
           return (
             <div
               key={campaign.id}
-              className="bg-white dark:bg-neutral-800 rounded-xl p-6 shadow-sm border border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow"
+              className="bg-card rounded-xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+                    <h3 className="text-lg font-semibold text-foreground">
                       {campaign.name}
                     </h3>
                     <span
@@ -195,16 +195,16 @@ export function ModernEmailCampaigns() {
                           ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
                           : campaign.status === 'sending'
                           ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400'
-                          : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-400'
+                          : 'bg-muted text-foreground dark:bg-muted dark:text-muted-foreground'
                       }`}
                     >
                       {campaign.status}
                     </span>
                   </div>
-                  <p className="text-neutral-600 dark:text-neutral-400 mb-2">
+                  <p className="text-muted-foreground dark:text-muted-foreground mb-2">
                     {campaign.subject}
                   </p>
-                  <div className="flex items-center space-x-6 text-sm text-neutral-600 dark:text-neutral-400">
+                  <div className="flex items-center space-x-6 text-sm text-muted-foreground dark:text-muted-foreground">
                     <span className="flex items-center space-x-1">
                       <Users className="w-4 h-4" />
                       <span>{campaign.recipients.toLocaleString()} recipients</span>
@@ -227,54 +227,54 @@ export function ModernEmailCampaigns() {
                 {/* Actions */}
                 <div className="flex items-center space-x-2">
                   {campaign.status === 'draft' && (
-                    <button className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors">
-                      <Edit className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                    <button className="p-2 hover:bg-muted dark:hover:bg-muted rounded-lg transition-colors">
+                      <Edit className="w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
                     </button>
                   )}
                   {campaign.status === 'scheduled' && (
-                    <button className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors">
-                      <Pause className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                    <button className="p-2 hover:bg-muted dark:hover:bg-muted rounded-lg transition-colors">
+                      <Pause className="w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
                     </button>
                   )}
-                  <button className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors">
-                    <Copy className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <button className="p-2 hover:bg-muted dark:hover:bg-muted rounded-lg transition-colors">
+                    <Copy className="w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
                   </button>
-                  <button className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors">
-                    <MoreVertical className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <button className="p-2 hover:bg-muted dark:hover:bg-muted rounded-lg transition-colors">
+                    <MoreVertical className="w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
                   </button>
                 </div>
               </div>
 
               {/* Stats */}
               {campaign.stats.sent > 0 && (
-                <div className="grid grid-cols-4 gap-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                <div className="grid grid-cols-4 gap-4 pt-4 border-t border-border">
                   <div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Sent</p>
-                    <p className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+                    <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-1">Sent</p>
+                    <p className="text-xl font-semibold text-foreground">
                       {campaign.stats.sent.toLocaleString()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Opened</p>
+                    <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-1">Opened</p>
                     <div className="flex items-baseline space-x-2">
-                      <p className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+                      <p className="text-xl font-semibold text-foreground">
                         {campaign.stats.opened.toLocaleString()}
                       </p>
                       <span className="text-sm text-green-600 font-medium">{openRate}%</span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Clicked</p>
+                    <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-1">Clicked</p>
                     <div className="flex items-baseline space-x-2">
-                      <p className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+                      <p className="text-xl font-semibold text-foreground">
                         {campaign.stats.clicked.toLocaleString()}
                       </p>
                       <span className="text-sm text-purple-600 font-medium">{clickRate}%</span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Bounced</p>
-                    <p className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+                    <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-1">Bounced</p>
+                    <p className="text-xl font-semibold text-foreground">
                       {campaign.stats.bounced}
                     </p>
                   </div>

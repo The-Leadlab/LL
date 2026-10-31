@@ -435,19 +435,19 @@ export function MessagesPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] bg-gray-50 dark:bg-gray-900 flex">
+    <div className="h-[calc(100vh-4rem)] bg-muted/50 dark:bg-background flex">
       {/* Sidebar */}
-      <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shadow-sm">
+      <div className="w-80 bg-card border-r border-border dark:border-border flex flex-col shadow-sm">
         {/* Header */}
-        <div className="px-4 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="px-4 py-4 border-b border-gray-100 dark:border-border">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+            <h1 className="text-xl font-bold text-foreground dark:text-white flex items-center">
               <Hash className="h-5 w-5 mr-2 text-purple-600 dark:text-purple-400" />
               {t('title')}
             </h1>
             <button
               onClick={() => setShowNewConversation(!showNewConversation)}
-              className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="p-2 text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-gray-200 hover:bg-muted dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               {showNewConversation ? <Users className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
             </button>
@@ -455,13 +455,13 @@ export function MessagesPage() {
           
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-muted-foreground" />
             <input
               type="text"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder={showNewConversation ? t('findTeammates') : t('searchConversations')}
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              className="w-full pl-10 pr-4 py-3 bg-muted/50 dark:bg-background border border-border dark:border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm text-foreground dark:text-white placeholder:text-gray-400 dark:placeholder:text-muted-foreground"
             />
           </div>
         </div>
@@ -475,15 +475,15 @@ export function MessagesPage() {
           ) : showNewConversation ? (
             // Team Members List
             <div className="p-2">
-              <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <div className="px-3 py-2 text-xs font-semibold text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">
                 {t('teamMembers', { count: filteredUsers.length })}
               </div>
               {filteredUsers.length === 0 ? (
-                <div className="p-4 sm:p-6 md:p-8 text-center text-gray-500 dark:text-gray-400">
-                  <Users className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                <div className="p-4 sm:p-6 md:p-8 text-center text-muted-foreground dark:text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-muted-foreground" />
                   <p className="text-sm">{searchText ? t('noTeammatesFound') : t('noTeammatesAvailable')}</p>
                   {!searchText && (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-3 max-w-xs mx-auto leading-relaxed">
+                    <p className="text-xs text-gray-400 dark:text-muted-foreground mt-3 max-w-xs mx-auto leading-relaxed">
                       {t('teammatesHelp')}{' '}
                       <Link to="/settings/team" className="text-purple-600 dark:text-purple-400 hover:underline font-medium">
                         {t('settingsTeam')}
@@ -501,7 +501,7 @@ export function MessagesPage() {
                   <button
                     key={user.id}
                     onClick={() => handleSelectContact(user)}
-                    className="w-full p-3 hover:bg-gray-50 dark:hover:bg-gray-700/60 rounded-lg transition-colors text-left group"
+                    className="w-full p-3 hover:bg-muted dark:hover:bg-gray-700/60 rounded-lg transition-colors text-left group"
                   >
                     <div className="flex items-center space-x-3">
                       <div className="relative">
@@ -514,16 +514,16 @@ export function MessagesPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                        <h3 className="font-medium text-gray-900 dark:text-white group-hover:text-purple-600 truncate">
+                        <h3 className="font-medium text-foreground dark:text-white group-hover:text-purple-600 truncate">
                           {user.first_name} {user.last_name}
                         </h3>
                           {isUserOnline(user.id) ? (
                             <span className="text-xs text-green-600 font-medium">● {t('online')}</span>
                           ) : (
-                            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">● {t('offline')}</span>
+                            <span className="text-xs text-gray-400 dark:text-muted-foreground font-medium">● {t('offline')}</span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                        <p className="text-sm text-muted-foreground dark:text-muted-foreground truncate">{user.email}</p>
                       </div>
                     </div>
                   </button>
@@ -533,14 +533,14 @@ export function MessagesPage() {
           ) : (
             // Conversations List
             <div className="p-2">
-              <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <div className="px-3 py-2 text-xs font-semibold text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">
                 {t('recent', { count: filteredConversations.length })}
               </div>
               {filteredConversations.length === 0 ? (
-                <div className="p-4 sm:p-6 md:p-8 text-center text-gray-500 dark:text-gray-400">
-                  <Hash className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                <div className="p-4 sm:p-6 md:p-8 text-center text-muted-foreground dark:text-muted-foreground">
+                  <Hash className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-muted-foreground" />
                   <p className="text-sm">{searchText ? t('noConversationsFound') : t('noConversationsYet')}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('startNewHint')}</p>
+                  <p className="text-xs text-gray-400 dark:text-muted-foreground mt-1">{t('startNewHint')}</p>
                 </div>
               ) : (
                 filteredConversations.map((conv) => (
@@ -550,7 +550,7 @@ export function MessagesPage() {
                     className={`w-full p-3 rounded-lg transition-colors text-left group ${
  selectedContact?.id === conv.user.id 
  ? 'bg-purple-50 dark:bg-purple-900/40 border border-purple-200 dark:border-purple-800' 
- : 'hover:bg-gray-50 dark:hover:bg-gray-700/60'
+ : 'hover:bg-muted dark:hover:bg-gray-700/60'
  }`}
                   >
                     <div className="flex items-center space-x-3">
@@ -567,16 +567,16 @@ export function MessagesPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <h3 className={`font-medium truncate ${
- selectedContact?.id === conv.user.id ? 'text-purple-700 dark:text-purple-300' : 'text-gray-900 dark:text-white'
+ selectedContact?.id === conv.user.id ? 'text-purple-700 dark:text-purple-300' : 'text-foreground dark:text-white'
  }`}>
                             {conv.user.first_name} {conv.user.last_name}
                           </h3>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                          <span className="text-xs text-muted-foreground dark:text-muted-foreground ml-2">
                             {conv.last_message ? formatTime(conv.last_message.created_at) : ''}
                           </span>
                         </div>
                         <p className={`text-sm truncate mt-1 ${
- conv.unread_count > 0 ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-500 dark:text-gray-400'
+ conv.unread_count > 0 ? 'text-foreground dark:text-white font-medium' : 'text-muted-foreground dark:text-muted-foreground'
  }`}>
                           {conv.last_message?.content || t('noMessagesYet')}
                         </p>
@@ -591,11 +591,11 @@ export function MessagesPage() {
       </div>
 
       {/* Main Chat Area */}
-      <div className={`flex-1 flex flex-col bg-white dark:bg-gray-800 ${showUserInfo ? 'mr-80' : ''} transition-all duration-300`}>
+      <div className={`flex-1 flex flex-col bg-card ${showUserInfo ? 'mr-80' : ''} transition-all duration-300`}>
         {selectedContact ? (
           <>
             {/* Chat Header */}
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="px-6 py-4 border-b border-border dark:border-border bg-card">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="relative">
@@ -607,10 +607,10 @@ export function MessagesPage() {
                     )}
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h2 className="text-lg font-semibold text-foreground dark:text-white">
                       {selectedContact.first_name} {selectedContact.last_name}
                     </h2>
-                    <p className={`text-sm font-medium ${isUserOnline(selectedContact.id) ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'}`}>
+                    <p className={`text-sm font-medium ${isUserOnline(selectedContact.id) ? 'text-green-600' : 'text-muted-foreground dark:text-muted-foreground'}`}>
                       {isUserOnline(selectedContact.id) ? t('activeNow') : t('offlineCap')}
                     </p>
                   </div>
@@ -621,8 +621,8 @@ export function MessagesPage() {
                     disabled={!isUserOnline(selectedContact.id)}
                     className={`p-2 rounded-lg transition-colors ${
  isUserOnline(selectedContact.id) 
- ? 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' 
- : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+ ? 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-gray-200 hover:bg-muted dark:hover:bg-gray-700' 
+ : 'text-gray-300 dark:text-muted-foreground cursor-not-allowed'
  }`}
                     title={isUserOnline(selectedContact.id) ? t('voiceCallLower') : t('userOffline')}
                   >
@@ -633,8 +633,8 @@ export function MessagesPage() {
                     disabled={!isUserOnline(selectedContact.id)}
                     className={`p-2 rounded-lg transition-colors ${
  isUserOnline(selectedContact.id) 
- ? 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' 
- : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+ ? 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-gray-200 hover:bg-muted dark:hover:bg-gray-700' 
+ : 'text-gray-300 dark:text-muted-foreground cursor-not-allowed'
  }`}
                     title={isUserOnline(selectedContact.id) ? t('videoCallLower') : t('userOffline')}
                   >
@@ -643,7 +643,7 @@ export function MessagesPage() {
                   <button 
                     onClick={handleShowInfo}
                     className={`p-2 rounded-lg transition-colors ${
- showUserInfo ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+ showUserInfo ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400' : 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-gray-200 hover:bg-muted dark:hover:bg-gray-700'
  }`}
                     title={t('userInformation')}
                   >
@@ -652,7 +652,7 @@ export function MessagesPage() {
                   <button 
                     onClick={handleMoreOptions}
                     className={`p-2 rounded-lg transition-colors ${
- showMoreMenu ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+ showMoreMenu ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400' : 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-gray-200 hover:bg-muted dark:hover:bg-gray-700'
  }`}
                     title={t('moreOptions')}
                   >
@@ -661,14 +661,14 @@ export function MessagesPage() {
 
                   {/* More Options Dropdown */}
                   {showMoreMenu && (
-                    <div className="absolute top-12 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-2 min-w-[200px] z-10">
-                      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <div className="absolute top-12 right-0 bg-card border border-border dark:border-border rounded-lg shadow-lg py-2 min-w-[200px] z-10">
+                      <button className="w-full px-4 py-2 text-left text-sm text-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-gray-700 transition-colors">
                         {t('exportHistory')}
                       </button>
-                      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                      <button className="w-full px-4 py-2 text-left text-sm text-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-gray-700 transition-colors">
                         {t('clearHistory')}
                       </button>
-                      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                      <button className="w-full px-4 py-2 text-left text-sm text-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-gray-700 transition-colors">
                         {t('blockUser')}
                       </button>
                       <button className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors">
@@ -681,14 +681,14 @@ export function MessagesPage() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-gray-900">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-muted/50 dark:bg-background">
               {currentConversation?.messages && currentConversation.messages.length > 0 ? (
                 <>
                   {/* Date separator */}
                   {currentConversation.messages.length > 0 && (
                     <div className="flex items-center justify-center py-4">
-                      <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      <div className="bg-card px-4 py-2 rounded-full shadow-sm border border-border dark:border-border">
+                        <span className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">
                           {formatMessageDate(currentConversation.messages[0].created_at)}
                         </span>
                       </div>
@@ -728,11 +728,11 @@ export function MessagesPage() {
                                 ) : (
                                   <Video className="h-5 w-5 mr-2 text-blue-600" />
                                 )}
-                                <span className="font-semibold text-gray-900 dark:text-white">
+                                <span className="font-semibold text-foreground dark:text-white">
                                   {getCallType(message.content) === 'voice' ? t('voiceCallInvitation') : t('videoCallInvitation')}
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                              <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-3">
                                 {t('startedCall', { name: isOwnMessage ? t('you') : selectedContact.first_name })}
                               </p>
                               {extractCallUrl(message.content) && (
@@ -745,7 +745,7 @@ export function MessagesPage() {
                                 </button>
                               )}
                               <p className={`text-xs mt-2 ${
- isOwnMessage ? 'text-purple-500' : 'text-gray-500 dark:text-gray-400'
+ isOwnMessage ? 'text-purple-500' : 'text-muted-foreground dark:text-muted-foreground'
  }`}>
                                 {formatMessageTime(message.created_at)}
                               </p>
@@ -775,7 +775,7 @@ export function MessagesPage() {
                                 className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm ${
  isOwnMessage
  ? 'bg-purple-600 text-white rounded-br-md'
- : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-bl-md'
+ : 'bg-card dark:bg-muted text-foreground dark:text-white border border-border dark:border-gray-600 rounded-bl-md'
  }`}
                               >
                                 {showImage && (
@@ -790,7 +790,7 @@ export function MessagesPage() {
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <p className="text-sm font-semibold">{attachment.fileName}</p>
-                                    <p className={`text-xs ${isOwnMessage ? 'text-purple-200' : 'text-gray-500 dark:text-gray-400'}`}>
+                                    <p className={`text-xs ${isOwnMessage ? 'text-purple-200' : 'text-muted-foreground dark:text-muted-foreground'}`}>
                                       {attachment.extension} · {formatFileSize(attachment.sizeBytes)}
                                     </p>
                                   </div>
@@ -817,7 +817,7 @@ export function MessagesPage() {
                                 </div>
                                 <p
                                   className={`text-xs mt-2 ${
- isOwnMessage ? 'text-purple-200' : 'text-gray-500 dark:text-gray-400'
+ isOwnMessage ? 'text-purple-200' : 'text-muted-foreground dark:text-muted-foreground'
  }`}
                                 >
                                   {formatMessageTime(message.created_at)}
@@ -830,13 +830,13 @@ export function MessagesPage() {
                               className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm ${
  isOwnMessage
  ? 'bg-purple-600 text-white rounded-br-md'
- : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-bl-md'
+ : 'bg-card dark:bg-muted text-foreground dark:text-white border border-border dark:border-gray-600 rounded-bl-md'
  }`}
                             >
                               <p className="text-sm leading-relaxed">{message.content}</p>
                               <p
                                 className={`text-xs mt-2 ${
- isOwnMessage ? 'text-purple-200' : 'text-gray-500 dark:text-gray-400'
+ isOwnMessage ? 'text-purple-200' : 'text-muted-foreground dark:text-muted-foreground'
  }`}
                               >
                                 {formatMessageTime(message.created_at)}
@@ -854,10 +854,10 @@ export function MessagesPage() {
                     <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto mb-4 shadow-lg">
                       {getInitials(selectedContact.first_name, selectedContact.last_name)}
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    <h3 className="text-lg font-semibold text-foreground dark:text-white mb-2">
                       {t('startConversationWith', { name: selectedContact.first_name })}
                     </h3>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    <p className="text-muted-foreground dark:text-muted-foreground text-sm">
                       {t('sendToBegin')}
                     </p>
                   </div>
@@ -867,7 +867,7 @@ export function MessagesPage() {
             </div>
 
             {/* Message Input */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="p-4 border-t border-border dark:border-border bg-card">
               <input
                 ref={attachmentInputRef}
                 type="file"
@@ -879,7 +879,7 @@ export function MessagesPage() {
                   type="button"
                   disabled={uploadingAttachment || !selectedContact}
                   onClick={() => attachmentInputRef.current?.click()}
-                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-40"
+                  className="p-2 text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-gray-200 hover:bg-muted dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-40"
                   aria-label={t('attachFile')}
                 >
                   <Paperclip className={`h-5 w-5 ${uploadingAttachment ? 'animate-pulse' : ''}`} />
@@ -890,12 +890,12 @@ export function MessagesPage() {
                     onChange={(e) => setMessageText(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder={t('messagePlaceholder', { name: selectedContact.first_name })}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none max-h-32 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                    className="w-full px-4 py-3 border border-border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none max-h-32 text-sm bg-card dark:bg-background text-foreground dark:text-white placeholder:text-gray-400 dark:placeholder:text-muted-foreground"
                     rows={1}
                     style={{ minHeight: '48px' }}
                   />
                 </div>
-                <button className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                <button className="p-2 text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-gray-200 hover:bg-muted dark:hover:bg-gray-700 rounded-lg transition-colors">
                   <Smile className="h-5 w-5" />
                 </button>
                 <button
@@ -904,7 +904,7 @@ export function MessagesPage() {
                   className={`p-3 rounded-lg transition-colors ${
  messageText.trim() && !sending
  ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-sm'
- : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+ : 'bg-muted text-gray-400 cursor-not-allowed'
  }`}
                 >
                   {sending ? (
@@ -914,13 +914,13 @@ export function MessagesPage() {
                   )}
                 </button>
               </div>
-              <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 px-1">
+              <div className="mt-2 text-xs text-muted-foreground dark:text-muted-foreground px-1">
                 <Trans
                   i18nKey="keyboardHint"
                   t={t}
                   components={{
-                    enter: <kbd className="px-1 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded" />,
-                    shiftEnter: <kbd className="px-1 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded" />,
+                    enter: <kbd className="px-1 py-0.5 text-xs font-medium bg-muted dark:bg-muted border border-border dark:border-gray-600 rounded" />,
+                    shiftEnter: <kbd className="px-1 py-0.5 text-xs font-medium bg-muted dark:bg-muted border border-border dark:border-gray-600 rounded" />,
                   }}
                 />
               </div>
@@ -928,13 +928,13 @@ export function MessagesPage() {
           </>
         ) : (
           // Welcome Screen
-          <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="flex-1 flex items-center justify-center bg-muted/50 dark:bg-background">
             <div className="text-center max-w-md mx-auto">
               <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto mb-6 shadow-lg">
                 <Hash className="h-10 w-10" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t('welcomeTitle')}</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+              <h2 className="text-2xl font-bold text-foreground dark:text-white mb-4">{t('welcomeTitle')}</h2>
+              <p className="text-muted-foreground dark:text-muted-foreground mb-6 leading-relaxed">
                 {t('welcomeBody')}
               </p>
               <button
@@ -951,14 +951,14 @@ export function MessagesPage() {
 
       {/* User Info Panel */}
       {showUserInfo && selectedContact && (
-        <div className="w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col shadow-sm">
+        <div className="w-80 bg-card border-l border-border dark:border-border flex flex-col shadow-sm">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-border dark:border-border">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('userInformation')}</h3>
+              <h3 className="text-lg font-semibold text-foreground dark:text-white">{t('userInformation')}</h3>
               <button
                 onClick={() => setShowUserInfo(false)}
-                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-gray-200 hover:bg-muted dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 ✕
               </button>
@@ -966,7 +966,7 @@ export function MessagesPage() {
           </div>
 
           {/* User Profile */}
-          <div className="px-6 py-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-6 border-b border-border dark:border-border">
             <div className="text-center">
               <div className="relative inline-block">
                 <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4 shadow-lg">
@@ -976,29 +976,29 @@ export function MessagesPage() {
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-400 border-3 border-white dark:border-gray-800 rounded-full"></div>
                 )}
               </div>
-              <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
+              <h4 className="text-xl font-semibold text-foreground dark:text-white mb-1">
                 {selectedContact.first_name} {selectedContact.last_name}
               </h4>
               <p className={`text-sm font-medium mb-2 ${
- isUserOnline(selectedContact.id) ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'
+ isUserOnline(selectedContact.id) ? 'text-green-600' : 'text-muted-foreground dark:text-muted-foreground'
  }`}>
                 {isUserOnline(selectedContact.id) ? `● ${t('activeNow')}` : `● ${t('offlineCap')}`}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{selectedContact.email}</p>
+              <p className="text-sm text-muted-foreground dark:text-muted-foreground">{selectedContact.email}</p>
             </div>
           </div>
 
           {/* Quick Actions */}
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{t('quickActions')}</h5>
+          <div className="px-6 py-4 border-b border-border dark:border-border">
+            <h5 className="text-sm font-semibold text-foreground dark:text-white mb-3">{t('quickActions')}</h5>
             <div className="space-y-2">
               <button 
                 onClick={handleVoiceCall}
                 disabled={!isUserOnline(selectedContact.id)}
                 className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${
  isUserOnline(selectedContact.id)
- ? 'bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
- : 'bg-gray-25 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+ ? 'bg-muted/50 dark:bg-background hover:bg-muted dark:hover:bg-gray-700 text-foreground dark:text-muted-foreground'
+ : 'bg-gray-25 text-gray-400 dark:text-muted-foreground cursor-not-allowed'
  }`}
               >
                 <Phone className="h-5 w-5 mr-3" />
@@ -1009,8 +1009,8 @@ export function MessagesPage() {
                 disabled={!isUserOnline(selectedContact.id)}
                 className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${
  isUserOnline(selectedContact.id)
- ? 'bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
- : 'bg-gray-25 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+ ? 'bg-muted/50 dark:bg-background hover:bg-muted dark:hover:bg-gray-700 text-foreground dark:text-muted-foreground'
+ : 'bg-gray-25 text-gray-400 dark:text-muted-foreground cursor-not-allowed'
  }`}
               >
                 <Video className="h-5 w-5 mr-3" />
@@ -1021,32 +1021,32 @@ export function MessagesPage() {
 
           {/* User Details */}
           <div className="px-6 py-4 flex-1">
-            <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{t('details')}</h5>
+            <h5 className="text-sm font-semibold text-foreground dark:text-white mb-3">{t('details')}</h5>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('email')}</label>
-                <p className="text-sm text-gray-900 dark:text-white mt-1">{selectedContact.email}</p>
+                <label className="text-xs font-medium text-muted-foreground dark:text-muted-foreground uppercase tracking-wide">{t('email')}</label>
+                <p className="text-sm text-foreground dark:text-white mt-1">{selectedContact.email}</p>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('status')}</label>
-                <p className="text-sm text-gray-900 dark:text-white mt-1">
+                <label className="text-xs font-medium text-muted-foreground dark:text-muted-foreground uppercase tracking-wide">{t('status')}</label>
+                <p className="text-sm text-foreground dark:text-white mt-1">
                   {isUserOnline(selectedContact.id) ? t('online') : t('offlineCap')}
                 </p>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('userId')}</label>
-                <p className="text-sm text-gray-900 dark:text-white mt-1">#{selectedContact.id}</p>
+                <label className="text-xs font-medium text-muted-foreground dark:text-muted-foreground uppercase tracking-wide">{t('userId')}</label>
+                <p className="text-sm text-foreground dark:text-white mt-1">#{selectedContact.id}</p>
               </div>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-4 border-t border-border dark:border-border">
             <div className="space-y-2">
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/60 rounded-lg transition-colors">
+              <button className="w-full text-left px-4 py-2 text-sm text-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-gray-700/60 rounded-lg transition-colors">
                 {t('exportHistory')}
               </button>
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/60 rounded-lg transition-colors">
+              <button className="w-full text-left px-4 py-2 text-sm text-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-gray-700/60 rounded-lg transition-colors">
                 {t('clearHistory')}
               </button>
               <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">

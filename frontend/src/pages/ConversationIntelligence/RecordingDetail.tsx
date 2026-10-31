@@ -99,9 +99,9 @@ export const RecordingDetail: React.FC = () => {
         <Card>
           <CardContent className="p-6 space-y-4">
             <h1 className="text-2xl font-bold">{t('conv.callRecordingN', { id: recording.id })}</h1>
-            <p className="text-sm text-gray-600">{t('conv.leadLabel', { name: leadName })}</p>
-            <p className="text-sm text-gray-600">{t('conv.callDate', { date: formatDate(recording.call_date) })}</p>
-            <p className="text-sm text-gray-600">{t('conv.duration', { minutes: Math.floor(recording.duration_seconds / 60), seconds: recording.duration_seconds % 60 })}</p>
+            <p className="text-sm text-muted-foreground">{t('conv.leadLabel', { name: leadName })}</p>
+            <p className="text-sm text-muted-foreground">{t('conv.callDate', { date: formatDate(recording.call_date) })}</p>
+            <p className="text-sm text-muted-foreground">{t('conv.duration', { minutes: Math.floor(recording.duration_seconds / 60), seconds: recording.duration_seconds % 60 })}</p>
 
             <audio controls className="w-full">
               <source src={recording.recording_url} />
@@ -109,7 +109,7 @@ export const RecordingDetail: React.FC = () => {
             </audio>
 
             {recording.transcript && (
-              <div className="rounded-lg border p-4 bg-gray-50">
+              <div className="rounded-lg border p-4 bg-muted/50">
                 <h2 className="font-semibold mb-2">{t('conv.transcript')}</h2>
                 <p className="text-sm whitespace-pre-wrap">{recording.transcript}</p>
               </div>

@@ -513,7 +513,7 @@ const CustomizationPage: React.FC = () => {
 
               <div>
                 <label className="text-sm font-medium">{t('customizationPage.exportLabel')}</label>
-                <div className="p-4 bg-gray-100 rounded-md font-mono text-sm whitespace-pre-wrap">
+                <div className="p-4 bg-muted rounded-md font-mono text-sm whitespace-pre-wrap">
                   {exportCustomization()}
                 </div>
                 <Button onClick={handleExport} disabled={isSaving} className="mt-2">

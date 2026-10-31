@@ -100,7 +100,7 @@ export function SequenceBuilder() {
               ))}
             </SelectContent>
           </Select>
-          <p className="mt-1 text-xs text-gray-500">{t('sequenceBuilder.mailboxRequired')}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t('sequenceBuilder.mailboxRequired')}</p>
         </div>
         <label className="inline-flex items-center gap-2 text-sm">
           <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />

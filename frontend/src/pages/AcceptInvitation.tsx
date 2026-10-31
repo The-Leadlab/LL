@@ -188,9 +188,9 @@ const AcceptInvitation: React.FC = () => {
       case 'member':
         return 'bg-blue-100 text-blue-800';
       case 'viewer':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -227,7 +227,7 @@ const AcceptInvitation: React.FC = () => {
       <PublicAuthShell withCard={false}>
         <div className="flex items-center justify-center space-x-2 py-16">
           <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
-          <span className="text-gray-600">{t('acceptInvitationPage.loading')}</span>
+          <span className="text-muted-foreground">{t('acceptInvitationPage.loading')}</span>
         </div>
       </PublicAuthShell>
     );
@@ -238,8 +238,8 @@ const AcceptInvitation: React.FC = () => {
       <PublicAuthShell>
         <div className="text-center">
           <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('acceptInvitationPage.invalidTitle')}</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t('acceptInvitationPage.invalidTitle')}</h2>
+          <p className="text-muted-foreground mb-6">
             {t('acceptInvitationPage.invalidBody')}
           </p>
           <button type="button" onClick={() => navigate('/signin')} className={publicAuthCtaClassName}>
@@ -255,8 +255,8 @@ const AcceptInvitation: React.FC = () => {
       <PublicAuthShell>
         <div className="text-center">
           <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('acceptInvitationPage.expiredTitle')}</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t('acceptInvitationPage.expiredTitle')}</h2>
+          <p className="text-muted-foreground mb-6">
             {t('acceptInvitationPage.expiredBody')}
           </p>
           <button type="button" onClick={() => navigate('/signin')} className={publicAuthCtaClassName}>
@@ -282,10 +282,10 @@ const AcceptInvitation: React.FC = () => {
           <div className="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
             <Users className="h-6 w-6 text-blue-600" />
           </div>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
+          <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground">
             {t('acceptInvitationPage.joinTeamTitle')}
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-muted-foreground">
             {t('acceptInvitationPage.invitedTo', { organization: invitation.organization_name })}
           </p>
         </div>
@@ -298,16 +298,16 @@ const AcceptInvitation: React.FC = () => {
             <div className="flex items-center space-x-3">
               <Building className="h-5 w-5 text-gray-400" />
               <div>
-                <p className="text-sm font-medium text-gray-900">{invitation.organization_name}</p>
-                <p className="text-xs text-gray-500">{t('acceptInvitationPage.organization')}</p>
+                <p className="text-sm font-medium text-foreground">{invitation.organization_name}</p>
+                <p className="text-xs text-muted-foreground">{t('acceptInvitationPage.organization')}</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
               <Mail className="h-5 w-5 text-gray-400" />
               <div>
-                <p className="text-sm font-medium text-gray-900">{invitation.email}</p>
-                <p className="text-xs text-gray-500">{t('acceptInvitationPage.yourEmailAddress')}</p>
+                <p className="text-sm font-medium text-foreground">{invitation.email}</p>
+                <p className="text-xs text-muted-foreground">{t('acceptInvitationPage.yourEmailAddress')}</p>
               </div>
             </div>
 
@@ -315,10 +315,10 @@ const AcceptInvitation: React.FC = () => {
               <div className="flex items-center space-x-3">
                 {getRoleIcon(invitation.role)}
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-foreground">
                     {getRoleLabel(invitation.role)}
                   </p>
-                  <p className="text-xs text-gray-500">{t('acceptInvitationPage.yourRole')}</p>
+                  <p className="text-xs text-muted-foreground">{t('acceptInvitationPage.yourRole')}</p>
                 </div>
               </div>
               <Badge className={getRoleBadgeColor(invitation.role)}>
@@ -326,8 +326,8 @@ const AcceptInvitation: React.FC = () => {
               </Badge>
             </div>
 
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p className="text-xs text-gray-600">
+            <div className="bg-muted/50 p-3 rounded-md">
+              <p className="text-xs text-muted-foreground">
                 {getRoleDescription(invitation.role)}
               </p>
             </div>
@@ -342,7 +342,7 @@ const AcceptInvitation: React.FC = () => {
             )}
 
             {invitation.created_at && (
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-muted-foreground">
                 {t('acceptInvitationPage.invitedByOn', { name: invitation.invited_by_name, date: formatDate(invitation.created_at) })}
               </div>
             )}
@@ -515,7 +515,7 @@ const AcceptInvitation: React.FC = () => {
         )}
 
         <div className="text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             {t('hasAccount')}{' '}
             <button
               type="button"

@@ -58,8 +58,8 @@ const NODE_TEMPLATES: NodeTemplate[] = [
   { type: 'create_task', label: 'Create Task', description: 'Add follow-up', category: 'flow', kind: 'standard', color: 'bg-emerald-100 text-emerald-700' },
   { type: 'update_field', label: 'Update Field', description: 'Change data', category: 'flow', kind: 'standard', color: 'bg-amber-100 text-amber-700' },
   { type: 'condition', label: 'Decision', description: 'Branch logic', category: 'logic', kind: 'standard', color: 'bg-orange-100 text-orange-700' },
-  { type: 'wait', label: 'Wait', description: 'Delay node', category: 'logic', kind: 'standard', color: 'bg-gray-100 text-gray-700' },
-  { type: 'free_text', label: 'Text Note', description: 'Standalone text', category: 'flow', kind: 'free_text', color: 'bg-white text-neutral-800' },
+  { type: 'wait', label: 'Wait', description: 'Delay node', category: 'logic', kind: 'standard', color: 'bg-muted text-foreground' },
+  { type: 'free_text', label: 'Text Note', description: 'Standalone text', category: 'flow', kind: 'free_text', color: 'bg-card text-foreground' },
 ];
 
 const DEFAULT_TEMPLATES: MapTemplate[] = [
@@ -433,8 +433,8 @@ const WorkflowBuilder: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-neutral-50 overflow-x-hidden">
-      <div className="bg-white border-b border-neutral-200 px-3 sm:px-5 py-3">
+    <div className="h-screen flex flex-col bg-muted/50 overflow-x-hidden">
+      <div className="bg-card border-b border-border px-3 sm:px-5 py-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             <Button variant="ghost" onClick={() => navigate('/workflows')} className="shrink-0">
@@ -442,7 +442,7 @@ const WorkflowBuilder: React.FC = () => {
               {t('workflows.builder.back')}
             </Button>
             <Input value={name} onChange={(e) => setName(e.target.value)} className="text-xl font-semibold border-none shadow-none min-w-0 flex-1" />
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} className="hidden md:block border-none shadow-none text-sm text-neutral-500 min-w-0 flex-1" placeholder={t('workflows.builder.descPlaceholder')} />
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} className="hidden md:block border-none shadow-none text-sm text-muted-foreground min-w-0 flex-1" placeholder={t('workflows.builder.descPlaceholder')} />
           </div>
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <Button
@@ -481,16 +481,16 @@ const WorkflowBuilder: React.FC = () => {
       </div>
 
       <div className="flex-1 flex overflow-hidden relative min-w-0">
-        <aside className={`${showMobilePalette ? 'absolute inset-y-0 left-0 z-20 w-[min(20rem,100%)] shadow-xl' : 'hidden'} md:static md:block md:shadow-none w-80 border-r border-neutral-200 bg-white p-4 overflow-y-auto space-y-4`}>
-          <h3 className="text-sm font-semibold text-neutral-700">{t('workflows.builder.paletteTitle')}</h3>
+        <aside className={`${showMobilePalette ? 'absolute inset-y-0 left-0 z-20 w-[min(20rem,100%)] shadow-xl' : 'hidden'} md:static md:block md:shadow-none w-80 border-r border-border bg-card p-4 overflow-y-auto space-y-4`}>
+          <h3 className="text-sm font-semibold text-foreground">{t('workflows.builder.paletteTitle')}</h3>
           <div className="hidden md:block rounded-md bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-800">
             {t('workflows.builder.paletteHelp')}
           </div>
           <div>
-            <label className="text-xs font-medium text-neutral-500">{t('workflows.builder.template')}</label>
+            <label className="text-xs font-medium text-muted-foreground">{t('workflows.builder.template')}</label>
             <div className="flex gap-2 mt-1">
               <select
-                className="w-full rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm"
+                className="w-full rounded-md border border-neutral-300 bg-card px-2 py-2 text-sm"
                 value={selectedTemplateId}
                 onChange={(e) => setSelectedTemplateId(e.target.value)}
               >
@@ -506,7 +506,7 @@ const WorkflowBuilder: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-neutral-600">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={snapGrid} onChange={(e) => setSnapGrid(e.target.checked)} />
               {t('workflows.builder.snap')}
@@ -516,7 +516,7 @@ const WorkflowBuilder: React.FC = () => {
 
           {(['starting', 'flow', 'logic'] as TemplateCategory[]).map((cat) => (
             <div key={cat} className="space-y-2">
-              <p className="text-xs uppercase font-semibold text-neutral-500">{cat === 'starting' ? t('workflows.builder.catStarting') : cat === 'flow' ? t('workflows.builder.catFlow') : t('workflows.builder.catLogic')}</p>
+              <p className="text-xs uppercase font-semibold text-muted-foreground">{cat === 'starting' ? t('workflows.builder.catStarting') : cat === 'flow' ? t('workflows.builder.catFlow') : t('workflows.builder.catLogic')}</p>
               {NODE_TEMPLATES.filter((t) => t.category === cat).map((t) => (
                 <Card
                   key={t.type}
@@ -529,9 +529,9 @@ const WorkflowBuilder: React.FC = () => {
                   <CardContent className="p-3 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium">{t.label}</p>
-                      <p className="text-xs text-neutral-500">{t.description}</p>
+                      <p className="text-xs text-muted-foreground">{t.description}</p>
                     </div>
-                    <Plus className="h-4 w-4 text-neutral-500" />
+                    <Plus className="h-4 w-4 text-muted-foreground" />
                   </CardContent>
                 </Card>
               ))}
@@ -780,7 +780,7 @@ const WorkflowBuilder: React.FC = () => {
                 <div
                   key={node.id}
                   data-canvas-node="true"
-                  className={`absolute rounded-xl border transition-all ${selectedNodeId === node.id ? 'ring-2 ring-indigo-500 border-indigo-300' : 'border-neutral-200'} ${isText ? 'bg-transparent border-dashed border-neutral-300 shadow-none' : 'bg-white shadow-sm'}`}
+                  className={`absolute rounded-xl border transition-all ${selectedNodeId === node.id ? 'ring-2 ring-indigo-500 border-indigo-300' : 'border-border'} ${isText ? 'bg-transparent border-dashed border-neutral-300 shadow-none' : 'bg-card shadow-sm'}`}
                   style={{ left: node.position.x, top: node.position.y, width: NODE_WIDTH, minHeight: NODE_HEIGHT }}
                   onMouseDown={(e) => {
                     e.stopPropagation();
@@ -824,11 +824,11 @@ const WorkflowBuilder: React.FC = () => {
                   <div className="p-3">
                     {!isText && (
                       <div className="flex items-center justify-between mb-2">
-                        <Badge className={`${template?.color || 'bg-neutral-100 text-neutral-700'} border-none`}>{isCentral ? t('workflows.builder.central') : t('workflows.builder.node')}</Badge>
+                        <Badge className={`${template?.color || 'bg-muted text-foreground'} border-none`}>{isCentral ? t('workflows.builder.central') : t('workflows.builder.node')}</Badge>
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
-                            className="h-6 w-6 rounded-md hover:bg-neutral-100 inline-flex items-center justify-center"
+                            className="h-6 w-6 rounded-md hover:bg-muted inline-flex items-center justify-center"
                             onClick={(e) => {
                               e.stopPropagation();
                               addNodeAt(NODE_TEMPLATES[4], node.position.x + 280, node.position.y + 110);
@@ -867,10 +867,10 @@ const WorkflowBuilder: React.FC = () => {
                           }
                         }}
                         onBlur={() => setEditingNodeId(null)}
-                        className={`w-full resize-none border rounded-md px-2 py-1 text-sm ${isText ? 'min-h-[100px] bg-transparent border-neutral-300' : 'min-h-[64px] border-neutral-200'}`}
+                        className={`w-full resize-none border rounded-md px-2 py-1 text-sm ${isText ? 'min-h-[100px] bg-transparent border-neutral-300' : 'min-h-[64px] border-border'}`}
                       />
                     ) : (
-                      <div className={`${isText ? 'text-base font-medium text-neutral-700 whitespace-pre-wrap' : 'text-sm font-medium text-neutral-900'} min-h-[40px]`}>
+                      <div className={`${isText ? 'text-base font-medium text-foreground whitespace-pre-wrap' : 'text-sm font-medium text-foreground'} min-h-[40px]`}>
                         <MindMapFormattedText text={node.label} className="font-medium" />
                       </div>
                     )}
@@ -893,16 +893,16 @@ const WorkflowBuilder: React.FC = () => {
 
           {contextMenu && (
             <div
-              className="fixed z-50 bg-white border border-neutral-200 rounded-lg shadow-lg min-w-[180px] p-1"
+              className="fixed z-50 bg-card border border-border rounded-lg shadow-lg min-w-[180px] p-1"
               style={{ left: contextMenu.x, top: contextMenu.y }}
             >
-              <button className="w-full text-left px-3 py-2 rounded hover:bg-neutral-100 text-sm" onClick={() => { addChildNode(); setContextMenu(null); }}>
+              <button className="w-full text-left px-3 py-2 rounded hover:bg-muted text-sm" onClick={() => { addChildNode(); setContextMenu(null); }}>
                 {t('workflows.builder.addChild')}
               </button>
-              <button className="w-full text-left px-3 py-2 rounded hover:bg-neutral-100 text-sm" onClick={() => { addSiblingNode(); setContextMenu(null); }}>
+              <button className="w-full text-left px-3 py-2 rounded hover:bg-muted text-sm" onClick={() => { addSiblingNode(); setContextMenu(null); }}>
                 {t('workflows.builder.addSibling')}
               </button>
-              <button className="w-full text-left px-3 py-2 rounded hover:bg-neutral-100 text-sm" onClick={() => { addFreeText(); setContextMenu(null); }}>
+              <button className="w-full text-left px-3 py-2 rounded hover:bg-muted text-sm" onClick={() => { addFreeText(); setContextMenu(null); }}>
                 {t('workflows.builder.addText')}
               </button>
               {contextMenu.nodeId && (
@@ -919,9 +919,9 @@ const WorkflowBuilder: React.FC = () => {
             </div>
           )}
           {/* Minimap */}
-          <div className="hidden md:block absolute right-4 bottom-4 w-52 h-36 rounded-lg border border-neutral-300 bg-white/95 backdrop-blur p-2">
-            <div className="text-[10px] text-neutral-500 mb-1">{t('workflows.builder.minimap')}</div>
-            <svg viewBox={`0 0 ${Math.max(1, mapBounds.maxX - mapBounds.minX)} ${Math.max(1, mapBounds.maxY - mapBounds.minY)}`} className="w-full h-[112px] rounded bg-neutral-50">
+          <div className="hidden md:block absolute right-4 bottom-4 w-52 h-36 rounded-lg border border-neutral-300 bg-card/95 backdrop-blur p-2">
+            <div className="text-[10px] text-muted-foreground mb-1">{t('workflows.builder.minimap')}</div>
+            <svg viewBox={`0 0 ${Math.max(1, mapBounds.maxX - mapBounds.minX)} ${Math.max(1, mapBounds.maxY - mapBounds.minY)}`} className="w-full h-[112px] rounded bg-muted/50">
               {edges.map((edge) => {
                 const src = nodes.find((n) => n.id === edge.source);
                 const tgt = nodes.find((n) => n.id === edge.target);
@@ -947,7 +947,7 @@ const WorkflowBuilder: React.FC = () => {
           </div>
         </div>
 
-        <aside className={`${showMobileShortcuts ? 'absolute inset-y-0 right-0 z-20 w-[min(18rem,100%)] shadow-xl' : 'hidden'} md:static md:block md:shadow-none w-72 border-l border-neutral-200 bg-white p-4 overflow-y-auto`}>
+        <aside className={`${showMobileShortcuts ? 'absolute inset-y-0 right-0 z-20 w-[min(18rem,100%)] shadow-xl' : 'hidden'} md:static md:block md:shadow-none w-72 border-l border-border bg-card p-4 overflow-y-auto`}>
           <h3 className="text-sm font-semibold mb-3">{t('workflows.builder.controls')}</h3>
           <div className="space-y-2">
             <Button variant="outline" className="w-full justify-start" onClick={addChildNode} disabled={!selectedNode}>
@@ -971,7 +971,7 @@ const WorkflowBuilder: React.FC = () => {
               {t('workflows.builder.deleteSelectedLink')}
             </Button>
           </div>
-          <div className="mt-5 space-y-1 text-xs text-neutral-500">
+          <div className="mt-5 space-y-1 text-xs text-muted-foreground">
             <p>{t('workflows.builder.shortcutsLabel')}</p>
             <p>{t('workflows.builder.shortcutChildSibling')}</p>
             <p>{t('workflows.builder.shortcutDelCopy')}</p>
@@ -980,17 +980,17 @@ const WorkflowBuilder: React.FC = () => {
             <p>{t('workflows.builder.shortcutEdit')}</p>
           </div>
           {selectedNode && (
-            <div className="mt-4 rounded-lg border border-neutral-200 p-3">
-              <p className="text-xs uppercase text-neutral-500 mb-1">{t('workflows.builder.selected')}</p>
+            <div className="mt-4 rounded-lg border border-border p-3">
+              <p className="text-xs uppercase text-muted-foreground mb-1">{t('workflows.builder.selected')}</p>
               <p className="text-sm font-medium">
                 <MindMapFormattedText text={selectedNode.label} />
               </p>
-              <p className="text-xs text-neutral-500">{selectedNode.type}</p>
+              <p className="text-xs text-muted-foreground">{selectedNode.type}</p>
             </div>
           )}
           {selectedNode && ((selectedNode.data as any)?.kind === 'free_text' || selectedNode.type === 'free_text') && (
-            <div className="mt-3 rounded-lg border border-neutral-200 p-3 space-y-2">
-              <p className="text-xs uppercase text-neutral-500">{t('workflows.builder.textTools')}</p>
+            <div className="mt-3 rounded-lg border border-border p-3 space-y-2">
+              <p className="text-xs uppercase text-muted-foreground">{t('workflows.builder.textTools')}</p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"

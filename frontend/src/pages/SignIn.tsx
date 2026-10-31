@@ -95,10 +95,10 @@ export function SignIn() {
           alt="LeadLab"
           className="mx-auto mb-4 h-12 w-auto"
         />
-        <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+        <h2 className="text-3xl font-bold tracking-tight text-foreground">
           {t('welcomeBack')}
         </h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-muted-foreground">
           {t('signInPage.subtitle')}
         </p>
       </motion.div>
@@ -111,7 +111,7 @@ export function SignIn() {
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label htmlFor={loginType} className="block text-sm font-medium leading-6 text-gray-900">
+                  <label htmlFor={loginType} className="block text-sm font-medium leading-6 text-foreground">
                     {loginType === 'email' ? t('signInPage.emailAddress') : t('signInPage.username')}
                   </label>
                   <button
@@ -139,7 +139,7 @@ export function SignIn() {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="you@example.com"
-                      className="block w-full rounded-xl border-0 py-2.5 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 transition-all duration-200"
+                      className="block w-full rounded-xl border-0 py-2.5 pl-10 text-foreground shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 transition-all duration-200"
                     />
                   ) : (
                     <input
@@ -151,14 +151,14 @@ export function SignIn() {
                       value={formData.username}
                       onChange={handleChange}
                       placeholder={t('signInPage.usernamePlaceholder')}
-                      className="block w-full rounded-xl border-0 py-2.5 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 transition-all duration-200"
+                      className="block w-full rounded-xl border-0 py-2.5 pl-10 text-foreground shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 transition-all duration-200"
                     />
                   )}
                 </div>
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium leading-6 text-gray-900">
+                <label htmlFor="password" className="block text-sm font-medium leading-6 text-foreground">
                   {t('password')}
                 </label>
                 <div className="relative mt-2">
@@ -174,13 +174,13 @@ export function SignIn() {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="••••••••"
-                    className="block w-full rounded-xl border-0 py-2.5 pl-10 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 transition-all duration-200"
+                    className="block w-full rounded-xl border-0 py-2.5 pl-10 pr-10 text-foreground shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 transition-all duration-200"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label={showPassword ? t('signInPage.hidePassword') : t('signInPage.showPassword')}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors bg-transparent"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-muted-foreground transition-colors bg-transparent"
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" aria-hidden="true" />
@@ -199,11 +199,11 @@ export function SignIn() {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={() => setRememberMe(!rememberMe)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500 cursor-pointer"
                   />
-                  <label htmlFor="remember-me" className="ml-3 block text-sm leading-6 text-gray-700 cursor-pointer">
+                  <label htmlFor="remember-me" className="ml-3 block text-sm leading-6 text-foreground cursor-pointer">
                     {t('rememberMe')}
-                    <span className="block text-xs text-gray-500 font-normal">{t('signInPage.keepSignedIn')}</span>
+                    <span className="block text-xs text-muted-foreground font-normal">{t('signInPage.keepSignedIn')}</span>
                   </label>
                 </div>
 
@@ -229,24 +229,24 @@ export function SignIn() {
             <div className="mt-10">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div className="w-full border-t border-gray-200" />
+                  <div className="w-full border-t border-border" />
                 </div>
                 <div className="relative flex justify-center text-sm font-medium leading-6">
-                  <span className="bg-white px-6 text-gray-900">{t('common:or')}</span>
+                  <span className="bg-card px-6 text-foreground">{t('common:or')}</span>
                 </div>
               </div>
 
-              <div className="mt-8 text-center text-sm text-gray-500">
+              <div className="mt-8 text-center text-sm text-muted-foreground">
                 <button
                   type="button"
                   onClick={handleGoogleSignIn}
-                  className="mb-4 inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="mb-4 inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
                 >
                   {t('signInPage.continueWithGoogle')}
                 </button>
               </div>
 
-              <div className="text-center text-sm text-gray-500">
+              <div className="text-center text-sm text-muted-foreground">
                 {t('noAccount')}{' '}
                 <Link to="/signup" className="font-semibold leading-6 text-blue-600 hover:text-blue-500 transition-colors">
                   {t('signInPage.signUpNow')}
@@ -254,7 +254,7 @@ export function SignIn() {
               </div>
             </div>
 
-          <div className="mt-6 text-center text-xs text-gray-500">
+          <div className="mt-6 text-center text-xs text-muted-foreground">
             {t('legal.bySigningIn')}{' '}
             <Link to="/legal" className="text-blue-600 hover:text-blue-500 transition-colors">
               {t('legal.terms')}

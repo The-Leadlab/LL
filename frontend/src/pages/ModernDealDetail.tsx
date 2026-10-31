@@ -169,8 +169,8 @@ export function ModernDealDetail() {
 
   if (!Number.isFinite(dealId) || dealId <= 0) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
-        <p className="text-neutral-600 dark:text-neutral-400">{t('dealDetail.invalid')}</p>
+      <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
+        <p className="text-muted-foreground dark:text-muted-foreground">{t('dealDetail.invalid')}</p>
         <button
           type="button"
           onClick={() => navigate('/deals')}
@@ -184,7 +184,7 @@ export function ModernDealDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
       </div>
     );
@@ -192,8 +192,8 @@ export function ModernDealDetail() {
 
   if (error || !deal) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
-        <p className="text-neutral-600 dark:text-neutral-400">{t('dealDetail.loadFailed')}</p>
+      <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
+        <p className="text-muted-foreground dark:text-muted-foreground">{t('dealDetail.loadFailed')}</p>
         <button
           type="button"
           onClick={() => navigate('/deals')}
@@ -209,18 +209,18 @@ export function ModernDealDetail() {
     typeof deal.amount === 'number' ? deal.amount : parseFloat(String(deal.amount)) || 0;
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
       <button
         type="button"
         onClick={() => navigate('/deals')}
-        className="mb-6 inline-flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+        className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-neutral-100"
       >
         <ArrowLeft className="w-4 h-4" />
         {t('dealDetail.backToPipeline')}
       </button>
 
-      <div className="max-w-2xl rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-8 shadow-sm">
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">{t('dealDetail.title')}</h1>
+      <div className="max-w-2xl rounded-xl border border-border bg-card p-8 shadow-sm">
+        <h1 className="text-2xl font-bold text-foreground mb-6">{t('dealDetail.title')}</h1>
 
         <form
           className="space-y-4"
@@ -249,7 +249,7 @@ export function ModernDealDetail() {
               onChange={(e) => setAmountStr(e.target.value)}
               className="mt-1"
             />
-            <p className="mt-1 text-xs text-neutral-500">Current value: ${amountDisplay.toLocaleString()}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Current value: ${amountDisplay.toLocaleString()}</p>
           </div>
           <div>
             <Label htmlFor="deal-status">Status</Label>
@@ -257,7 +257,7 @@ export function ModernDealDetail() {
               id="deal-status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="mt-1 flex h-11 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+              className="mt-1 flex h-11 w-full rounded-md border border-border bg-card px-3 py-2 text-sm dark:border-border dark:bg-background"
             >
               {DEAL_STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -275,7 +275,7 @@ export function ModernDealDetail() {
               onChange={(e) => setValidUntil(e.target.value)}
               className="mt-1"
             />
-            <p className="mt-1 text-xs text-neutral-500">{t('dealDetail.noExpiryHint')}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t('dealDetail.noExpiryHint')}</p>
           </div>
           <div className="flex flex-wrap gap-3 pt-2">
             <Button type="submit" disabled={updateMutation.isPending || deleteMutation.isPending}>
@@ -317,19 +317,19 @@ export function ModernDealDetail() {
           </div>
         </form>
 
-        <div className="mt-8 space-y-3 border-t border-neutral-200 pt-6 text-sm text-neutral-600 dark:text-neutral-300 dark:border-neutral-600">
+        <div className="mt-8 space-y-3 border-t border-border pt-6 text-sm text-muted-foreground dark:text-muted-foreground dark:border-neutral-600">
           <div className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-neutral-400" />
+            <DollarSign className="w-5 h-5 text-muted-foreground" />
             <span>{currencyLabel || `Currency ${deal.currency_id}`}</span>
           </div>
           {deal.valid_until && (
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-neutral-400" />
+              <Calendar className="w-4 h-4 text-muted-foreground" />
               <span>Original close date: {new Date(deal.valid_until).toLocaleDateString()}</span>
             </div>
           )}
           <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-neutral-400" />
+            <User className="w-4 h-4 text-muted-foreground" />
             <span>
               Assigned to {assigneeName || 'teammate'} · Created {new Date(deal.created_at).toLocaleString()}
             </span>

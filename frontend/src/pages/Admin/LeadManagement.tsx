@@ -242,7 +242,7 @@ export function LeadManagement() {
                                   </Badge>
                                 )}
                               </div>
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-muted-foreground">
                                 <div>{user.email}</div>
                                 {user.company && <div>{user.company}</div>}
                               </div>
@@ -323,10 +323,10 @@ export function LeadManagement() {
             <CardTitle>CSV Format Guide</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Your CSV file should include the following columns:
             </p>
-            <div className="space-y-1.5 text-sm text-gray-600">
+            <div className="space-y-1.5 text-sm text-muted-foreground">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h4 className="font-medium mb-2">Required Fields:</h4>
@@ -360,7 +360,7 @@ export function LeadManagement() {
             <div className="mt-4 space-y-4">
               <div>
                 <h4 className="font-medium mb-2">File Requirements:</h4>
-                <ul className="list-disc list-inside space-y-1 text-gray-600">
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                   <li>Use comma (,) as the delimiter</li>
                   <li>Include headers in the first row</li>
                   <li>All required fields must be present</li>

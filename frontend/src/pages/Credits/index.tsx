@@ -73,7 +73,7 @@ export function CreditsPage() {
       case 'active': return 'bg-green-100 text-green-800';
       case 'trial': return 'bg-blue-100 text-blue-800';
       case 'inactive': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -91,7 +91,7 @@ export function CreditsPage() {
       case 0: return 'border-blue-200 hover:border-blue-300';
       case 1: return 'border-purple-200 hover:border-purple-300';
       case 2: return 'border-yellow-200 hover:border-yellow-300';
-      default: return 'border-gray-200 hover:border-gray-300';
+      default: return 'border-border hover:border-border';
     }
   };
 
@@ -102,10 +102,10 @@ export function CreditsPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-48"></div>
+          <div className="h-8 bg-muted rounded w-48"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-48 bg-gray-200 rounded"></div>
+              <div key={i} className="h-48 bg-muted rounded"></div>
             ))}
           </div>
         </div>
@@ -117,8 +117,8 @@ export function CreditsPage() {
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('credits.title')}</h1>
-        <p className="text-gray-600">{t('credits.subtitle')}</p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">{t('credits.title')}</h1>
+        <p className="text-muted-foreground">{t('credits.subtitle')}</p>
       </div>
 
       {/* Current Balance */}
@@ -136,7 +136,7 @@ export function CreditsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-4xl font-bold text-gray-900">
+            <span className="text-4xl font-bold text-foreground">
               {balance?.credit_balance?.toLocaleString() || '0'}
             </span>
             {isLowCredits && (
@@ -150,11 +150,11 @@ export function CreditsPage() {
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
             {Object.entries(CREDIT_USAGE_RATES).map(([feature, cost]) => (
-              <div key={feature} className="text-center p-3 bg-gray-50 rounded-lg">
-                <div className="font-semibold text-sm text-gray-700">
+              <div key={feature} className="text-center p-3 bg-muted/50 rounded-lg">
+                <div className="font-semibold text-sm text-foreground">
                   {t(`credits.features.${feature}`, { defaultValue: feature.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) })}
                 </div>
-                <div className="text-xs text-gray-500">{t('credits.creditsCount', { count: cost })}</div>
+                <div className="text-xs text-muted-foreground">{t('credits.creditsCount', { count: cost })}</div>
               </div>
             ))}
           </div>
@@ -175,7 +175,7 @@ export function CreditsPage() {
 
       {/* Credit Packages */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('credits.packages')}</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-6">{t('credits.packages')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.isArray(packagesData) && packagesData.map((pkg, index) => (
             <Card 
@@ -190,7 +190,7 @@ export function CreditsPage() {
                   {getPackageIcon(index)}
                 </div>
                 <CardTitle className="text-xl">{pkg.name}</CardTitle>
-                <div className="text-3xl font-bold text-gray-900">
+                <div className="text-3xl font-bold text-foreground">
                   ${pkg.price}
                 </div>
               </CardHeader>
@@ -199,7 +199,7 @@ export function CreditsPage() {
                   <div className="text-2xl font-bold text-blue-600">
                     {pkg.credits.toLocaleString()}
                   </div>
-                  <div className="text-sm text-gray-500">{t('credits.creditsLabel')}</div>
+                  <div className="text-sm text-muted-foreground">{t('credits.creditsLabel')}</div>
                 </div>
                 
                 <div className="space-y-2">
@@ -209,7 +209,7 @@ export function CreditsPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>{t('credits.bestFor')}</span>
-                    <span className="text-gray-600">
+                    <span className="text-muted-foreground">
                       {index === 0 ? t('credits.bestForTiers.small') : index === 1 ? t('credits.bestForTiers.growing') : t('credits.bestForTiers.enterprise')}
                     </span>
                   </div>

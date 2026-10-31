@@ -295,9 +295,9 @@ const TeamManagement: React.FC = () => {
       case 'member':
         return 'bg-blue-100 text-blue-800';
       case 'viewer':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -331,9 +331,9 @@ const TeamManagement: React.FC = () => {
       case 'expired':
         return <XCircle className="h-4 w-4 text-red-500" />;
       case 'cancelled':
-        return <XCircle className="h-4 w-4 text-gray-500" />;
+        return <XCircle className="h-4 w-4 text-muted-foreground" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -346,9 +346,9 @@ const TeamManagement: React.FC = () => {
       case 'expired':
         return 'bg-red-100 text-red-800';
       case 'cancelled':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -379,8 +379,8 @@ const TeamManagement: React.FC = () => {
           </Button>
           <Separator orientation="vertical" className="h-6" />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{t('teamPage.title')}</h1>
-            <p className="text-gray-600 mt-1">{t('teamPage.subtitle')}</p>
+            <h1 className="text-3xl font-bold text-foreground">{t('teamPage.title')}</h1>
+            <p className="text-muted-foreground mt-1">{t('teamPage.subtitle')}</p>
           </div>
         </div>
         <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
@@ -528,13 +528,13 @@ const TeamManagement: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
         <button
           onClick={() => setSelectedTab('members')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             selectedTab === 'members'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-card text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           {t('teamPage.tabMembers', { count: displayedTeamMembers.length })}
@@ -543,8 +543,8 @@ const TeamManagement: React.FC = () => {
           onClick={() => setSelectedTab('invitations')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             selectedTab === 'invitations'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-card text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           {t('teamPage.tabInvitations', { count: invitations.length })}
@@ -558,8 +558,8 @@ const TeamManagement: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{t('teamPage.statTotalMembers')}</p>
-                  <p className="text-2xl font-bold text-gray-900">{displayedTeamMembers.length}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('teamPage.statTotalMembers')}</p>
+                  <p className="text-2xl font-bold text-foreground">{displayedTeamMembers.length}</p>
                 </div>
                 <Users className="h-8 w-8 text-blue-500" />
               </div>
@@ -570,7 +570,7 @@ const TeamManagement: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{t('teamPage.statPending')}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('teamPage.statPending')}</p>
                   <p className="text-2xl font-bold text-yellow-600">{invitationStats.pending}</p>
                 </div>
                 <Clock className="h-8 w-8 text-yellow-500" />
@@ -582,7 +582,7 @@ const TeamManagement: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{t('teamPage.statAccepted')}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('teamPage.statAccepted')}</p>
                   <p className="text-2xl font-bold text-green-600">{invitationStats.accepted}</p>
                 </div>
                 <CheckCircle className="h-8 w-8 text-green-500" />
@@ -594,10 +594,10 @@ const TeamManagement: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{t('teamPage.statTotalInvites')}</p>
-                  <p className="text-2xl font-bold text-gray-900">{invitationStats.total}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('teamPage.statTotalInvites')}</p>
+                  <p className="text-2xl font-bold text-foreground">{invitationStats.total}</p>
                 </div>
-                <Mail className="h-8 w-8 text-gray-500" />
+                <Mail className="h-8 w-8 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
@@ -614,9 +614,9 @@ const TeamManagement: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-6 rounded-lg border p-4 bg-gray-50">
-              <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('teamPage.addExistingTitle')}</h4>
-              <p className="text-xs text-gray-600 mb-3">
+            <div className="mb-6 rounded-lg border p-4 bg-muted/50">
+              <h4 className="text-sm font-semibold text-foreground mb-2">{t('teamPage.addExistingTitle')}</h4>
+              <p className="text-xs text-muted-foreground mb-3">
                 {t('teamPage.addExistingHelp')}
               </p>
               <div className="flex flex-col md:flex-row gap-3">
@@ -634,7 +634,7 @@ const TeamManagement: React.FC = () => {
                       void searchExistingUser();
                     }
                   }}
-                  className="md:w-[320px] bg-white"
+                  className="md:w-[320px] bg-card"
                 />
                 <Button
                   type="button"
@@ -658,7 +658,7 @@ const TeamManagement: React.FC = () => {
                 </Button>
               </div>
               {foundExistingUser && (
-                <p className="mt-3 text-sm text-gray-700">
+                <p className="mt-3 text-sm text-foreground">
                   {t('teamPage.readyToAdd')}{' '}
                   <span className="font-medium">
                     {foundExistingUser.first_name} {foundExistingUser.last_name}
@@ -675,7 +675,7 @@ const TeamManagement: React.FC = () => {
             ) : teamMembersError ? (
               <div className="text-center py-8">
                 <XCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('teamPage.errorLoadingMembers')}</h3>
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('teamPage.errorLoadingMembers')}</h3>
                 <p className="text-red-600 mb-4">{teamMembersError.message}</p>
                 <Button onClick={() => window.location.reload()}>
                   <RefreshCw className="h-4 w-4 mr-2" />
@@ -685,8 +685,8 @@ const TeamManagement: React.FC = () => {
             ) : displayedTeamMembers.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('teamPage.noMembers')}</h3>
-                <p className="text-gray-600 mb-4">{t('teamPage.noMembersHint')}</p>
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('teamPage.noMembers')}</h3>
+                <p className="text-muted-foreground mb-4">{t('teamPage.noMembersHint')}</p>
                 <Button onClick={() => setIsInviteDialogOpen(true)}>
                   <UserPlus className="h-4 w-4 mr-2" />
                   {t('teamPage.inviteFirstMember')}
@@ -703,13 +703,13 @@ const TeamManagement: React.FC = () => {
                         </span>
                       </div>
                       <div>
-                        <h4 className="font-medium text-gray-900">
+                        <h4 className="font-medium text-foreground">
                           {member.first_name && member.last_name 
                             ? `${member.first_name} ${member.last_name}`
                             : member.full_name || member.email
                           }
                         </h4>
-                        <p className="text-sm text-gray-600">{member.email}</p>
+                        <p className="text-sm text-muted-foreground">{member.email}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -747,8 +747,8 @@ const TeamManagement: React.FC = () => {
             ) : invitations.length === 0 ? (
               <div className="text-center py-8">
                 <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('teamPage.noInvitations')}</h3>
-                <p className="text-gray-600 mb-4">{t('teamPage.noInvitationsHint')}</p>
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('teamPage.noInvitations')}</h3>
+                <p className="text-muted-foreground mb-4">{t('teamPage.noInvitationsHint')}</p>
                 <Button onClick={() => setIsInviteDialogOpen(true)}>
                   <UserPlus className="h-4 w-4 mr-2" />
                   {t('teamPage.sendInvitation')}
@@ -760,18 +760,18 @@ const TeamManagement: React.FC = () => {
                   <div key={invitation.id} className="p-4 border rounded-lg">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                          <Mail className="h-5 w-5 text-gray-600" />
+                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                          <Mail className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div>
-                          <h4 className="font-medium text-gray-900">
+                          <h4 className="font-medium text-foreground">
                             {invitation.first_name && invitation.last_name 
                               ? `${invitation.first_name} ${invitation.last_name}`
                               : invitation.email
                             }
                           </h4>
-                          <p className="text-sm text-gray-600">{invitation.email}</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-sm text-muted-foreground">{invitation.email}</p>
+                          <p className="text-xs text-muted-foreground">
                             {t('teamPage.invitedBy', { name: invitation.invited_by_name })} • {formatDate(invitation.created_at)}
                           </p>
                         </div>
@@ -815,8 +815,8 @@ const TeamManagement: React.FC = () => {
                     {invitation.message && (
                       <>
                         <Separator className="my-3" />
-                        <div className="bg-gray-50 p-3 rounded-md">
-                          <p className="text-sm text-gray-700">
+                        <div className="bg-muted/50 p-3 rounded-md">
+                          <p className="text-sm text-foreground">
                             <strong>{t('teamPage.messageLabel')}</strong> {invitation.message}
                           </p>
                         </div>

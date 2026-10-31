@@ -54,16 +54,16 @@ export const CalendlyCallback: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center">
       <Card className="w-full max-w-md">
         <CardContent className="p-8 text-center">
           {status === 'loading' && (
             <div className="space-y-4">
               <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600" />
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-foreground">
                 Connecting to Calendly...
               </h2>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Please wait while we complete the connection.
               </p>
             </div>
@@ -72,10 +72,10 @@ export const CalendlyCallback: React.FC = () => {
           {status === 'success' && (
             <div className="space-y-4">
               <CheckCircle className="h-12 w-12 mx-auto text-green-600" />
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-foreground">
                 Successfully Connected!
               </h2>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Your Calendly account has been connected successfully. 
                 Redirecting you back to the calendar...
               </p>
@@ -85,10 +85,10 @@ export const CalendlyCallback: React.FC = () => {
           {status === 'error' && (
             <div className="space-y-4">
               <XCircle className="h-12 w-12 mx-auto text-red-600" />
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-foreground">
                 Connection Failed
               </h2>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 {errorMessage}
               </p>
               <Button onClick={handleRetry} className="w-full">

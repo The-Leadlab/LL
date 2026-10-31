@@ -50,7 +50,7 @@ export function NotificationBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         {notifications.length === 0 ? (
-          <div className="p-4 text-center text-sm text-gray-500">
+          <div className="p-4 text-center text-sm text-muted-foreground">
             No new notifications
           </div>
         ) : (
@@ -62,7 +62,7 @@ export function NotificationBell() {
             >
               <div>
                 <div className="font-medium">{notification.title}</div>
-                <div className="text-sm text-gray-500">{notification.message}</div>
+                <div className="text-sm text-muted-foreground">{notification.message}</div>
                 <div className="text-xs text-gray-400 mt-1">
                   {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                 </div>

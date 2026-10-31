@@ -38,7 +38,7 @@ function RunRow({ run }: { run: OutreachRun }) {
   return (
     <>
       <tr
-        className="cursor-pointer border-b hover:bg-gray-50"
+        className="cursor-pointer border-b hover:bg-muted"
         onClick={() => setExpanded((v) => !v)}
       >
         <td className="px-4 py-3">
@@ -51,38 +51,38 @@ function RunRow({ run }: { run: OutreachRun }) {
         <td className="px-4 py-3 text-sm">
           {run.scenario?.name ?? t('runsPage.scenarioFallback', { id: run.scenario_id })}
         </td>
-        <td className="px-4 py-3 text-sm text-gray-600 dark:text-neutral-300">
+        <td className="px-4 py-3 text-sm text-muted-foreground dark:text-muted-foreground">
           {run.started_at ? new Date(run.started_at).toLocaleString() : '—'}
         </td>
-        <td className="px-4 py-3 text-sm text-gray-600 dark:text-neutral-300">
+        <td className="px-4 py-3 text-sm text-muted-foreground dark:text-muted-foreground">
           {run.finished_at ? new Date(run.finished_at).toLocaleString() : '—'}
         </td>
       </tr>
       {expanded && (
-        <tr className="border-b bg-slate-50">
+        <tr className="border-b bg-muted/50">
           <td colSpan={6} className="px-4 py-3">
             {isLoading ? (
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {t('runsPage.loadingSteps')}
               </div>
             ) : steps.length === 0 ? (
-              <p className="text-sm text-gray-500">{t('runsPage.noSteps')}</p>
+              <p className="text-sm text-muted-foreground">{t('runsPage.noSteps')}</p>
             ) : (
               <ul className="space-y-2">
                 {steps.map((step) => (
                   <li
                     key={step.id}
-                    className="flex flex-wrap items-center gap-2 rounded border bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                    className="flex flex-wrap items-center gap-2 rounded border bg-card px-3 py-2 text-sm"
                   >
                     <Badge variant="outline">{step.status}</Badge>
                     <span className="font-mono text-xs">{step.node_id}</span>
                     {step.lead_id != null && <span>{t('runsPage.leadId', { id: step.lead_id })}</span>}
-                    <span className="text-gray-500">
+                    <span className="text-muted-foreground">
                       {t('runsPage.scheduledAt', { date: new Date(step.scheduled_at).toLocaleString() })}
                     </span>
                     {step.executed_at && (
-                      <span className="text-gray-500">
+                      <span className="text-muted-foreground">
                         · {t('runsPage.executedAt', { date: new Date(step.executed_at).toLocaleString() })}
                       </span>
                     )}
@@ -223,7 +223,7 @@ export function OutreachRunsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">{t('runs')}</h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-neutral-300">
+          <p className="mt-1 text-sm text-muted-foreground dark:text-muted-foreground">
             {t('runsPage.subtitle')}
           </p>
         </div>
@@ -265,21 +265,21 @@ export function OutreachRunsPage() {
         <CardContent className="p-0">
           <div className="border-b px-4 py-3">
             <h2 className="font-medium">{t('runsPage.campaignBatches')}</h2>
-            <p className="text-xs text-gray-500">{t('runsPage.campaignBatchesHint')}</p>
+            <p className="text-xs text-muted-foreground">{t('runsPage.campaignBatchesHint')}</p>
           </div>
           {jobsLoading ? (
-            <div className="flex items-center justify-center p-4 sm:p-6 md:p-8 text-sm text-gray-500">
+            <div className="flex items-center justify-center p-4 sm:p-6 md:p-8 text-sm text-muted-foreground">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               {t('runsPage.loadingBatches')}
             </div>
           ) : jobBatches.length === 0 ? (
-            <p className="p-6 text-sm text-gray-500">
+            <p className="p-6 text-sm text-muted-foreground">
               {t('runsPage.noBatches')}
             </p>
           ) : (
             <div className="overflow-auto">
               <table className="min-w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase text-gray-500">
+                <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3">{t('runsPage.colCampaign')}</th>
                     <th className="px-4 py-3">{t('runsPage.colBatch')}</th>
@@ -300,7 +300,7 @@ export function OutreachRunsPage() {
                       <td className="px-4 py-3">{batch.pending}</td>
                       <td className="px-4 py-3">{batch.failed}</td>
                       <td className="px-4 py-3">{batch.skipped}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-neutral-300">
+                      <td className="px-4 py-3 text-muted-foreground dark:text-muted-foreground">
                         {batch.latest ? new Date(batch.latest).toLocaleString() : '—'}
                       </td>
                       <td className="px-4 py-3">
@@ -336,17 +336,17 @@ export function OutreachRunsPage() {
         <CardContent className="p-0">
           <div className="border-b px-4 py-3">
             <h2 className="font-medium">{t('runsPage.otherRuns')}</h2>
-            <p className="text-xs text-gray-500">{t('runsPage.otherRunsHint')}</p>
+            <p className="text-xs text-muted-foreground">{t('runsPage.otherRunsHint')}</p>
           </div>
           {runsLoading ? (
-            <div className="flex items-center justify-center p-4 sm:p-6 md:p-8 text-sm text-gray-500">
+            <div className="flex items-center justify-center p-4 sm:p-6 md:p-8 text-sm text-muted-foreground">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               {t('runsPage.loadingRuns')}
             </div>
           ) : (
             <div className="overflow-auto">
               <table className="min-w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase text-gray-500">
+                <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3" />
                     <th className="px-4 py-3">{t('runsPage.colId')}</th>

@@ -86,7 +86,7 @@ export const CallRecordings: React.FC = () => {
   const getSentimentBadge = (score?: number) => {
     if (score === undefined || score === null) return null;
 
-    let color = 'bg-gray-100 text-gray-800';
+    let color = 'bg-muted text-foreground';
     let label = t('conv.sentiment.neutral');
 
     if (score > 0.3) {
@@ -127,7 +127,7 @@ export const CallRecordings: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">{t('conv.title')}</h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-muted-foreground mt-1">
               {t('conv.subtitle')}
             </p>
           </div>
@@ -147,7 +147,7 @@ export const CallRecordings: React.FC = () => {
                     <Phone className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">{t('conv.totalCalls')}</p>
+                    <p className="text-sm text-muted-foreground">{t('conv.totalCalls')}</p>
                     <p className="text-2xl font-bold">{analytics.total_calls}</p>
                   </div>
                 </div>
@@ -160,7 +160,7 @@ export const CallRecordings: React.FC = () => {
                     <CheckCircle className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">{t('conv.analyzed')}</p>
+                    <p className="text-sm text-muted-foreground">{t('conv.analyzed')}</p>
                     <p className="text-2xl font-bold">{analytics.analyzed_count}</p>
                   </div>
                 </div>
@@ -173,7 +173,7 @@ export const CallRecordings: React.FC = () => {
                     <Clock className="h-6 w-6 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">{t('conv.avgDuration')}</p>
+                    <p className="text-sm text-muted-foreground">{t('conv.avgDuration')}</p>
                     <p className="text-2xl font-bold">{analytics.avg_duration_minutes.toFixed(1)}m</p>
                   </div>
                 </div>
@@ -186,7 +186,7 @@ export const CallRecordings: React.FC = () => {
                     <TrendingUp className="h-6 w-6 text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">{t('conv.avgSentiment')}</p>
+                    <p className="text-sm text-muted-foreground">{t('conv.avgSentiment')}</p>
                     <p className="text-2xl font-bold">{analytics.avg_sentiment_score.toFixed(2)}</p>
                   </div>
                 </div>
@@ -214,7 +214,7 @@ export const CallRecordings: React.FC = () => {
                         {getStatusBadge(recording.transcription_status)}
                         {getSentimentBadge(recording.sentiment_score)}
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-3">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground mb-3">
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
                           <span>{formatDuration(recording.duration_seconds)}</span>
@@ -258,8 +258,8 @@ export const CallRecordings: React.FC = () => {
 
                       {/* Transcript Preview */}
                       {recording.transcript && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                          <p className="text-sm text-gray-600 line-clamp-2">
+                        <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
                             {recording.transcript.substring(0, 200)}...
                           </p>
                         </div>
@@ -307,7 +307,7 @@ export const CallRecordings: React.FC = () => {
               <CardContent className="py-12 text-center">
                 <Phone className="h-16 w-16 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-lg font-semibold mb-2">{t('conv.emptyTitle')}</h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   {t('conv.emptyBody')}
                 </p>
                 <Button onClick={() => navigate('/conversations/upload')}>

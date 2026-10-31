@@ -68,8 +68,8 @@ export function Contact() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Contact Information */}
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-8">{t('contact.title')}</h1>
-              <p className="text-lg text-gray-600 mb-8">
+              <h1 className="text-4xl font-bold text-foreground mb-8">{t('contact.title')}</h1>
+              <p className="text-lg text-muted-foreground mb-8">
                 {t('contact.intro')}
               </p>
 
@@ -77,16 +77,16 @@ export function Contact() {
                 <div className="flex items-start space-x-4">
                   <Mail className="w-6 h-6 text-blue-600 mt-1" />
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">{t('contact.emailLabel')}</h3>
-                    <p className="text-gray-600">info@the-leadlab.com</p>
+                    <h3 className="text-lg font-medium text-foreground">{t('contact.emailLabel')}</h3>
+                    <p className="text-muted-foreground">info@the-leadlab.com</p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-4">
                   <MapPin className="w-6 h-6 text-blue-600 mt-1" />
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">{t('contact.addressLabel')}</h3>
-                    <p className="text-gray-600">
+                    <h3 className="text-lg font-medium text-foreground">{t('contact.addressLabel')}</h3>
+                    <p className="text-muted-foreground">
                       {t('contact.address')}<br />
                     </p>
                   </div>
@@ -95,8 +95,8 @@ export function Contact() {
             </div>
 
             {/* Contact Form */}
-            <div className="bg-white rounded-2xl shadow-xl p-8 w-full">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+            <div className="bg-card rounded-2xl shadow-xl p-8 w-full">
+              <h2 className="text-2xl font-semibold text-foreground mb-6">
                 {t('contact.formTitle')}
               </h2>
 
@@ -104,7 +104,7 @@ export function Contact() {
                 <div>
                   <label
                     htmlFor="name"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('contact.name')}
                   </label>
@@ -115,14 +115,14 @@ export function Contact() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('contact.email')}
                   </label>
@@ -133,14 +133,14 @@ export function Contact() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="subject"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('contact.subject')}
                   </label>
@@ -151,14 +151,14 @@ export function Contact() {
                     value={formData.subject}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="message"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-foreground mb-1"
                   >
                     {t('contact.message')}
                   </label>
@@ -169,7 +169,7 @@ export function Contact() {
                     onChange={handleChange}
                     required
                     rows={4}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 

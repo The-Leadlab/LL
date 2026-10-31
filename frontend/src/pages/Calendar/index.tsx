@@ -537,7 +537,7 @@ export const CalendarPage = () => {
   };
 
   const renderCalendarHeader = () => (
-    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 py-4 sm:px-8 sm:py-6 overflow-x-hidden">
+    <div className="bg-card border-b border-border dark:border-border px-3 py-4 sm:px-8 sm:py-6 overflow-x-hidden">
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-6">
           <div className="flex items-center justify-between gap-2 sm:space-x-4">
@@ -545,19 +545,19 @@ export const CalendarPage = () => {
               variant="ghost"
               size="sm"
               onClick={handlePrevious}
-              className="min-h-[44px] min-w-[44px] p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              className="min-h-[44px] min-w-[44px] p-2 hover:bg-muted dark:hover:bg-gray-700 rounded-lg"
               aria-label={t('page.previous')}
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <h1 className="flex-1 text-lg sm:text-2xl font-bold text-gray-900 dark:text-white sm:min-w-[250px] text-center truncate px-1">
+            <h1 className="flex-1 text-lg sm:text-2xl font-bold text-foreground dark:text-white sm:min-w-[250px] text-center truncate px-1">
               {getViewTitle()}
             </h1>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleNext}
-              className="min-h-[44px] min-w-[44px] p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              className="min-h-[44px] min-w-[44px] p-2 hover:bg-muted dark:hover:bg-gray-700 rounded-lg"
               aria-label={t('page.next')}
             >
               <ChevronRight className="h-5 w-5" />
@@ -569,20 +569,20 @@ export const CalendarPage = () => {
               type="date"
               value={format(currentDate, 'yyyy-MM-dd')}
               onChange={(e) => jumpToDate(e.target.value)}
-              className="hidden sm:block w-[150px] h-9 border-gray-200 dark:border-gray-700"
+              className="hidden sm:block w-[150px] h-9 border-border dark:border-border"
               aria-label={t('page.jumpToDate')}
             />
           </div>
 
-          <div className="hidden sm:flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+          <div className="hidden sm:flex items-center space-x-2 bg-muted dark:bg-muted rounded-lg p-1">
             <Button
               variant={viewMode === 'month' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('month')}
               className={`flex items-center space-x-2 rounded-md px-4 py-2 transition-all ${
  viewMode === 'month' 
- ? 'bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white' 
- : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-600/50'
+ ? 'bg-card shadow-sm text-foreground dark:text-white' 
+ : 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-white hover:bg-card/50 dark:hover:bg-gray-600/50'
  }`}
             >
               <Grid3X3 className="h-4 w-4" />
@@ -594,8 +594,8 @@ export const CalendarPage = () => {
               onClick={() => setViewMode('week')}
               className={`flex items-center space-x-2 rounded-md px-4 py-2 transition-all ${
  viewMode === 'week' 
- ? 'bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white' 
- : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-600/50'
+ ? 'bg-card shadow-sm text-foreground dark:text-white' 
+ : 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-white hover:bg-card/50 dark:hover:bg-gray-600/50'
  }`}
             >
               <List className="h-4 w-4" />
@@ -607,22 +607,22 @@ export const CalendarPage = () => {
               onClick={() => setViewMode('agenda')}
               className={`flex items-center space-x-2 rounded-md px-4 py-2 transition-all ${
  viewMode === 'agenda' 
- ? 'bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white' 
- : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-600/50'
+ ? 'bg-card shadow-sm text-foreground dark:text-white' 
+ : 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-white hover:bg-card/50 dark:hover:bg-gray-600/50'
  }`}
             >
               <Eye className="h-4 w-4" />
               <span>{t('agenda')}</span>
             </Button>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 sm:hidden">{t('page.agendaView')}</p>
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground sm:hidden">{t('page.agendaView')}</p>
 
           {viewMode === 'agenda' && (
             <Select
               value={String(agendaRangeDays)}
               onValueChange={(value) => setAgendaRangeDays(Number(value) as 7 | 14 | 30 | 90)}
             >
-              <SelectTrigger className="w-40 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9">
+              <SelectTrigger className="w-40 bg-card border-border dark:border-border h-9">
                 <SelectValue placeholder={t('page.range')} />
               </SelectTrigger>
               <SelectContent>
@@ -638,9 +638,9 @@ export const CalendarPage = () => {
 
         <div className="flex items-center space-x-4">
           <Select value={selectedTimezone} onValueChange={setSelectedTimezone}>
-            <SelectTrigger className="w-48 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+            <SelectTrigger className="w-48 bg-card border-border dark:border-border">
               <div className="flex items-center space-x-2">
-                <Globe className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <Globe className="h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
                 <SelectValue placeholder={t('page.selectTimezone')} />
               </div>
             </SelectTrigger>
@@ -664,13 +664,13 @@ export const CalendarPage = () => {
       </div>
       
       {/* Calendar Sync Section (email + Google Calendar integrations) */}
-      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="mt-4 pt-4 border-t border-border dark:border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Mail className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            <Mail className="h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
             <span className="text-sm font-medium">{t('page.emailSync')}</span>
             {hasAnyCalendarSync && (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="text-xs text-muted-foreground dark:text-muted-foreground">
                 ({t('page.accountsConnected', {
                   count: emailCalendarAccounts.length + googleCalendars.length,
                 })})
@@ -771,14 +771,14 @@ export const CalendarPage = () => {
       {/* Day Names Header */}
       <div className="grid grid-cols-7 gap-1 mb-4">
         {dayNames.map((day) => (
-          <div key={day} className="text-center py-4 text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+          <div key={day} className="text-center py-4 text-sm font-semibold text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">
             {t(`page.dayShort.${day}`)}
           </div>
         ))}
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-1 bg-gray-50 dark:bg-gray-900 rounded-2xl p-2">
+      <div className="grid grid-cols-7 gap-1 bg-muted/50 dark:bg-background rounded-2xl p-2">
         {calendarDays.map((day, dayIdx) => {
           const dayEvents = getEventsForDay(day);
           const isCurrentMonth = isSameMonth(day, currentDate);
@@ -788,10 +788,10 @@ export const CalendarPage = () => {
             <div
               key={day.toISOString()}
               onClick={() => handleDateClick(day)}
-              className={`min-h-[140px] p-3 cursor-pointer transition-all duration-200 rounded-xl ${isCurrentMonth ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/60' : 'bg-gray-50 dark:bg-gray-900/50 text-gray-400 dark:text-gray-500'} ${isCurrentDay ? 'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/40' : ''} hover:shadow-md border border-gray-100 dark:border-gray-700`}
+              className={`min-h-[140px] p-3 cursor-pointer transition-all duration-200 rounded-xl ${isCurrentMonth ? 'bg-card hover:bg-muted dark:hover:bg-gray-700/60' : 'bg-muted/50 dark:bg-background/50 text-gray-400 dark:text-muted-foreground'} ${isCurrentDay ? 'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/40' : ''} hover:shadow-md border border-gray-100 dark:border-border`}
             >
               <div className="flex justify-between items-start mb-3">
-                <span className={`text-sm font-semibold ${isCurrentDay ? 'text-indigo-600' : isCurrentMonth ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+                <span className={`text-sm font-semibold ${isCurrentDay ? 'text-indigo-600' : isCurrentMonth ? 'text-foreground dark:text-white' : 'text-gray-400 dark:text-muted-foreground'}`}>
                   {format(day, 'd')}
                 </span>
                 {dayEvents.length > 0 && (
@@ -852,11 +852,11 @@ export const CalendarPage = () => {
       <div className="grid grid-cols-8 gap-1 mb-6">
         <div className="py-4"></div> {/* Empty space for time column */}
         {weekDays.map((day) => (
-          <div key={day.toISOString()} className="text-center py-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+          <div key={day.toISOString()} className="text-center py-4 border-b border-border dark:border-border">
+            <div className="text-sm font-semibold text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">
               {format(day, 'EEE', { locale: dfLocale })}
             </div>
-            <div className={`text-lg font-bold mt-1 w-10 h-10 rounded-full flex items-center justify-center mx-auto ${isToday(day) ? 'bg-indigo-600 text-white' : 'text-gray-900 dark:text-white'}`}>
+            <div className={`text-lg font-bold mt-1 w-10 h-10 rounded-full flex items-center justify-center mx-auto ${isToday(day) ? 'bg-indigo-600 text-white' : 'text-foreground dark:text-white'}`}>
               {format(day, 'd')}
             </div>
           </div>
@@ -864,10 +864,10 @@ export const CalendarPage = () => {
       </div>
 
       {/* Week Grid */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border dark:border-border overflow-hidden">
         {Array.from({ length: 24 }, (_, hour) => (
-          <div key={hour} className="grid grid-cols-8 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
-            <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 font-medium">
+          <div key={hour} className="grid grid-cols-8 border-b border-gray-100 dark:border-border last:border-b-0">
+            <div className="px-4 py-3 text-sm text-muted-foreground dark:text-muted-foreground border-r border-gray-100 dark:border-border bg-muted/50 dark:bg-background font-medium">
               {format(new Date().setHours(hour, 0, 0, 0), 'HH:mm')}
             </div>
             {weekDays.map((day) => {
@@ -878,7 +878,7 @@ export const CalendarPage = () => {
               return (
                 <div 
                   key={`${day.toISOString()}-${hour}`} 
-                  className="min-h-[60px] p-2 border-r border-gray-100 dark:border-gray-700 last:border-r-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 cursor-pointer transition-colors"
+                  className="min-h-[60px] p-2 border-r border-gray-100 dark:border-border last:border-r-0 hover:bg-muted dark:hover:bg-gray-700/60 cursor-pointer transition-colors"
                   onClick={() => {
                     const clickedDateTime = new Date(day);
                     clickedDateTime.setHours(hour, 0, 0, 0);
@@ -931,12 +931,12 @@ export const CalendarPage = () => {
 
     return (
       <div className="flex-1 p-4 sm:p-6 md:p-8">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border dark:border-border overflow-hidden">
           {agendaEvents.length === 0 ? (
             <div className="text-center py-20">
-              <CalendarIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('page.noUpcoming')}</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6">{t('page.createFirst')}</p>
+              <CalendarIcon className="h-16 w-16 text-gray-300 dark:text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground dark:text-white mb-2">{t('page.noUpcoming')}</h3>
+              <p className="text-muted-foreground dark:text-muted-foreground mb-6">{t('page.createFirst')}</p>
               <Button 
                 onClick={() => setNewEventDialogOpen(true)}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white"
@@ -962,7 +962,7 @@ export const CalendarPage = () => {
                   <div 
                     key={event.id}
                     onClick={() => handleEventClick(event)}
-                    className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/60 cursor-pointer transition-colors"
+                    className="p-6 hover:bg-muted dark:hover:bg-gray-700/60 cursor-pointer transition-colors"
                   >
                     <div className="flex items-start space-x-4">
                       <div className={`p-3 rounded-xl flex-shrink-0 ${typeDetails.bgColor} ${typeDetails.borderColor} border`}>
@@ -971,15 +971,15 @@ export const CalendarPage = () => {
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className={`text-lg font-semibold truncate ${isPast ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+                          <h3 className={`text-lg font-semibold truncate ${isPast ? 'text-muted-foreground dark:text-muted-foreground' : 'text-foreground dark:text-white'}`}>
                             {event.title}
                           </h3>
-                          <div className={`text-sm px-3 py-1 rounded-full font-medium ${isToday ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>
+                          <div className={`text-sm px-3 py-1 rounded-full font-medium ${isToday ? 'bg-indigo-100 text-indigo-700' : 'bg-muted text-muted-foreground'}`}>
                             {isToday ? t('today') : eventDate}
                           </div>
                         </div>
                         
-                        <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        <div className="flex items-center space-x-4 text-sm text-muted-foreground dark:text-muted-foreground mb-3">
                           <div className="flex items-center space-x-1">
                             <Clock className="h-4 w-4" />
                             <span>
@@ -998,7 +998,7 @@ export const CalendarPage = () => {
                         </div>
                         
                         {event.description && (
-                          <p className={`text-sm leading-relaxed line-clamp-2 ${isPast ? 'text-gray-400 dark:text-gray-500' : 'text-gray-600 dark:text-gray-400'}`}>
+                          <p className={`text-sm leading-relaxed line-clamp-2 ${isPast ? 'text-gray-400 dark:text-muted-foreground' : 'text-muted-foreground dark:text-muted-foreground'}`}>
                             {event.description}
                           </p>
                         )}
@@ -1010,7 +1010,7 @@ export const CalendarPage = () => {
             </div>
           )}
           {hasMoreAgendaEvents && (
-            <div className="p-4 border-t border-gray-100 dark:border-gray-700 text-center">
+            <div className="p-4 border-t border-gray-100 dark:border-border text-center">
               <Button
                 variant="outline"
                 onClick={() => setAgendaVisibleCount((count) => count + AGENDA_PAGE_SIZE)}
@@ -1030,7 +1030,7 @@ export const CalendarPage = () => {
         <div className="flex items-center justify-center py-20">
           <div className="flex items-center space-x-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            <span className="text-gray-500 dark:text-gray-400">{t('page.loading')}</span>
+            <span className="text-muted-foreground dark:text-muted-foreground">{t('page.loading')}</span>
           </div>
         </div>
       );
@@ -1047,9 +1047,9 @@ export const CalendarPage = () => {
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900">
+    <div className="bg-muted/50 dark:bg-background">
       <div className="flex max-h-[calc(100dvh-5rem)] min-h-0 flex-col">
-        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden border-0 shadow-sm rounded-none bg-white dark:bg-gray-800">
+        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden border-0 shadow-sm rounded-none bg-card">
           {renderCalendarHeader()}
           
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
@@ -1086,7 +1086,7 @@ export const CalendarPage = () => {
                   );
                 })}
               {expandedMonthDay && getEventsForDay(expandedMonthDay).length === 0 && (
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('page.noEventsDay')}</p>
+                <p className="text-sm text-muted-foreground dark:text-muted-foreground">{t('page.noEventsDay')}</p>
               )}
             </div>
           </DialogContent>
@@ -1136,8 +1136,8 @@ export const CalendarPage = () => {
             className="sm:max-w-[760px] max-h-[90vh] p-0 overflow-hidden rounded-2xl border-0 shadow-xl"
             showCloseButton={false}
           >
-            <div className="bg-gradient-to-r from-indigo-50 dark:from-indigo-950/40 to-purple-50 dark:to-purple-950/40 px-6 py-5 border-b border-gray-100 dark:border-gray-700 relative">
-              <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-3">
+            <div className="bg-gradient-to-r from-indigo-50 dark:from-indigo-950/40 to-purple-50 dark:to-purple-950/40 px-6 py-5 border-b border-gray-100 dark:border-border relative">
+              <DialogTitle className="text-xl font-semibold text-foreground dark:text-white flex items-center gap-3">
                 <div className="p-2 bg-indigo-100 rounded-lg">
                   <CalendarIcon className="h-5 w-5 text-indigo-600" />
                 </div>
@@ -1147,7 +1147,7 @@ export const CalendarPage = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setNewEventDialogOpen(false)}
-                className="absolute right-4 top-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-2"
+                className="absolute right-4 top-4 text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-gray-200 hover:bg-muted dark:hover:bg-gray-700 rounded-lg p-2"
               >
                 <X className="h-5 w-5" />
               </Button>
@@ -1156,42 +1156,42 @@ export const CalendarPage = () => {
             <div className="px-6 py-6 overflow-y-auto max-h-[65vh]">
               <div className="space-y-6">
                 <div>
-                  <Label htmlFor="title" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">
+                  <Label htmlFor="title" className="text-sm font-semibold text-foreground dark:text-muted-foreground block mb-2">
                     {t('page.eventTitle')}
                   </Label>
                   <Input
                     id="title"
                     value={newEvent.title}
                     onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                    className="border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 h-11"
+                    className="border-border dark:border-border focus:border-indigo-500 focus:ring-indigo-500 h-11"
                     placeholder={t('page.eventTitlePlaceholder')}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="description" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">
+                  <Label htmlFor="description" className="text-sm font-semibold text-foreground dark:text-muted-foreground block mb-2">
                     {t('page.description')}
                   </Label>
                   <Textarea
                     id="description"
                     value={newEvent.description}
                     onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                    className="border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 min-h-[100px] resize-none"
+                    className="border-border dark:border-border focus:border-indigo-500 focus:ring-indigo-500 min-h-[100px] resize-none"
                     placeholder={t('page.descriptionPlaceholder')}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="location" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">
+                  <Label htmlFor="location" className="text-sm font-semibold text-foreground dark:text-muted-foreground block mb-2">
                     {t('location')}
                   </Label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400 dark:text-gray-500" />
+                    <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400 dark:text-muted-foreground" />
                     <Input
                       id="location"
                       value={newEvent.location}
                       onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                      className="pl-11 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 h-11"
+                      className="pl-11 border-border dark:border-border focus:border-indigo-500 focus:ring-indigo-500 h-11"
                       placeholder={t('page.locationPlaceholder')}
                     />
                   </div>
@@ -1199,7 +1199,7 @@ export const CalendarPage = () => {
 
                 {(newEvent.event_type === 'meeting' || newEvent.event_type === 'call' || newEvent.event_type === 'video_call') && (
                   <div>
-                    <Label htmlFor="meeting_link" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">
+                    <Label htmlFor="meeting_link" className="text-sm font-semibold text-foreground dark:text-muted-foreground block mb-2">
                       {t('page.meetingLink')}
                     </Label>
                     <Input
@@ -1207,14 +1207,14 @@ export const CalendarPage = () => {
                       type="url"
                       value={newEvent.meeting_link}
                       onChange={(e) => setNewEvent({ ...newEvent, meeting_link: e.target.value })}
-                      className="border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 h-11"
+                      className="border-border dark:border-border focus:border-indigo-500 focus:ring-indigo-500 h-11"
                       placeholder="https://meet.google.com/..."
                     />
                   </div>
                 )}
 
                 <div className="space-y-3">
-                  <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('page.eventType')}</Label>
+                  <Label className="text-sm font-semibold text-foreground dark:text-muted-foreground">{t('page.eventType')}</Label>
                   <div className="grid grid-cols-5 gap-3">
                     {eventTypes.map(type => (
                       <div 
@@ -1223,13 +1223,13 @@ export const CalendarPage = () => {
                           relative border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center space-y-2
                           ${newEvent.event_type === type.value
                             ? `${type.bgColor} ${type.borderColor} ring-2 ring-offset-2 ring-indigo-300 dark:ring-offset-gray-800`
-                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            : 'border-border dark:border-gray-600 hover:border-border dark:hover:border-gray-500 bg-card hover:bg-muted dark:hover:bg-gray-700'
                           }
                         `}
                         onClick={() => setNewEvent({ ...newEvent, event_type: type.value })}
                       >
-                        <type.icon className={`h-6 w-6 ${newEvent.event_type === type.value ? type.textColor : 'text-gray-500 dark:text-gray-400'}`} />
-                        <span className={`text-xs font-medium text-center ${newEvent.event_type === type.value ? type.textColor : 'text-gray-700 dark:text-gray-300'}`}>
+                        <type.icon className={`h-6 w-6 ${newEvent.event_type === type.value ? type.textColor : 'text-muted-foreground dark:text-muted-foreground'}`} />
+                        <span className={`text-xs font-medium text-center ${newEvent.event_type === type.value ? type.textColor : 'text-foreground dark:text-muted-foreground'}`}>
                           {t(`page.types.${type.value}`)}
                         </span>
                       </div>
@@ -1239,12 +1239,12 @@ export const CalendarPage = () => {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">{t('page.eventTypeLower')}</Label>
+                    <Label className="text-sm font-semibold text-foreground dark:text-muted-foreground mb-2 block">{t('page.eventTypeLower')}</Label>
                     <Select
                       value={newEvent.event_type}
                       onValueChange={(v) => setNewEvent({ ...newEvent, event_type: v })}
                     >
-                      <SelectTrigger className="h-11 border-gray-200 dark:border-gray-700">
+                      <SelectTrigger className="h-11 border-border dark:border-border">
                         <SelectValue placeholder={t('page.selectType')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -1257,12 +1257,12 @@ export const CalendarPage = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">{t('page.timezone')}</Label>
+                    <Label className="text-sm font-semibold text-foreground dark:text-muted-foreground mb-2 block">{t('page.timezone')}</Label>
                     <Select
                       value={newEvent.timezone}
                       onValueChange={(v) => setNewEvent({ ...newEvent, timezone: v })}
                     >
-                      <SelectTrigger className="h-11 border-gray-200 dark:border-gray-700">
+                      <SelectTrigger className="h-11 border-border dark:border-border">
                         <SelectValue placeholder={t('page.timezone')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -1278,46 +1278,46 @@ export const CalendarPage = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="start_time" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">
+                    <Label htmlFor="start_time" className="text-sm font-semibold text-foreground dark:text-muted-foreground block mb-2">
                       {t('page.startTime')}
                     </Label>
                     <div className="relative">
-                      <Clock className="absolute left-3 top-3 h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      <Clock className="absolute left-3 top-3 h-5 w-5 text-gray-400 dark:text-muted-foreground" />
                       <Input
                         id="start_time"
                         type="datetime-local"
                         value={newEvent.start_time}
                         onChange={(e) => setNewEvent({ ...newEvent, start_time: e.target.value })}
-                        className="pl-11 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 h-11"
+                        className="pl-11 border-border dark:border-border focus:border-indigo-500 focus:ring-indigo-500 h-11"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="end_time" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">
+                    <Label htmlFor="end_time" className="text-sm font-semibold text-foreground dark:text-muted-foreground block mb-2">
                       {t('page.endTime')}
                     </Label>
                     <div className="relative">
-                      <Clock3 className="absolute left-3 top-3 h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      <Clock3 className="absolute left-3 top-3 h-5 w-5 text-gray-400 dark:text-muted-foreground" />
                       <Input
                         id="end_time"
                         type="datetime-local"
                         value={newEvent.end_time}
                         onChange={(e) => setNewEvent({ ...newEvent, end_time: e.target.value })}
-                        className="pl-11 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 h-11"
+                        className="pl-11 border-border dark:border-border focus:border-indigo-500 focus:ring-indigo-500 h-11"
                       />
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="duration-preset" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">
+                  <Label htmlFor="duration-preset" className="text-sm font-semibold text-foreground dark:text-muted-foreground block mb-2">
                     {t('page.quickDuration')}
                   </Label>
                   <select
                     id="duration-preset"
                     defaultValue=""
-                    className="h-11 w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-white"
+                    className="h-11 w-full rounded-md border border-border dark:border-border bg-card px-3 text-sm text-foreground dark:text-white"
                     onChange={(e) => {
                       const v = e.target.value;
                       e.target.selectedIndex = 0;
@@ -1343,13 +1343,13 @@ export const CalendarPage = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('page.durationMode')}</Label>
+                  <Label className="text-sm font-semibold text-foreground dark:text-muted-foreground">{t('page.durationMode')}</Label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
                       className={`flex items-center justify-center px-4 py-3 border-2 rounded-xl transition-all duration-200 font-medium ${!newEvent.is_all_day
  ? 'bg-indigo-50 dark:bg-indigo-900/40 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-100 dark:ring-indigo-900'
- : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-800'
+ : 'border-border dark:border-gray-600 text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-gray-700 hover:border-border dark:hover:border-gray-500 bg-card'
  }`}
                       onClick={() => setNewEvent({ ...newEvent, is_all_day: false })}
                     >
@@ -1360,7 +1360,7 @@ export const CalendarPage = () => {
                       type="button"
                       className={`flex items-center justify-center px-4 py-3 border-2 rounded-xl transition-all duration-200 font-medium ${newEvent.is_all_day
  ? 'bg-indigo-50 dark:bg-indigo-900/40 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-100 dark:ring-indigo-900'
- : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-800'
+ : 'border-border dark:border-gray-600 text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-gray-700 hover:border-border dark:hover:border-gray-500 bg-card'
  }`}
                       onClick={() => setNewEvent({ ...newEvent, is_all_day: true })}
                     >
@@ -1372,11 +1372,11 @@ export const CalendarPage = () => {
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t bg-gray-50 dark:bg-gray-900 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t bg-muted/50 dark:bg-background flex justify-end gap-3">
               <Button 
                 variant="outline" 
                 onClick={() => setNewEventDialogOpen(false)}
-                className="border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 px-6"
+                className="border-border dark:border-gray-600 hover:bg-muted dark:hover:bg-gray-700 px-6"
               >
                 {t('page.cancel')}
               </Button>

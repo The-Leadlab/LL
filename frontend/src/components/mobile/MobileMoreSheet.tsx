@@ -33,9 +33,9 @@ function SheetLink({
     <Link
       to={item.path}
       onClick={onNavigate}
-      className="flex min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800"
+      className="flex min-h-[48px] items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <Icon className="h-5 w-5 shrink-0 text-neutral-500 dark:text-neutral-400" />
+      <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
       <span>{t(item.labelKey)}</span>
     </Link>
   );
@@ -60,9 +60,9 @@ export function MobileMoreSheet({ open, onOpenChange }: MobileMoreSheetProps) {
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85vh] pb-[env(safe-area-inset-bottom)] md:hidden">
+      <DrawerContent className="max-h-[85vh] border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
         <DrawerHeader>
-          <DrawerTitle>More</DrawerTitle>
+          <DrawerTitle className="font-sans text-foreground">More</DrawerTitle>
         </DrawerHeader>
         <div className="overflow-y-auto px-3 pb-6">
           <div className="space-y-0.5">
@@ -76,7 +76,7 @@ export function MobileMoreSheet({ open, onOpenChange }: MobileMoreSheetProps) {
           </div>
           <button
             type="button"
-            className="mt-4 flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+            className="mt-4 flex min-h-[48px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={async () => {
               close();
               await logout();

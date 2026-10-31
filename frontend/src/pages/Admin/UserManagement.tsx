@@ -295,7 +295,7 @@ export function UserManagement() {
             <DialogTrigger asChild>
               <Button onClick={handleAddUser}>Add User</Button>
             </DialogTrigger>
-            <DialogContent className="bg-white sm:max-w-[425px]">
+            <DialogContent className="bg-card sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>{editingUser ? 'Edit User' : 'Add New User'}</DialogTitle>
             </DialogHeader>
@@ -355,7 +355,7 @@ export function UserManagement() {
                           <button
                             type="button"
                             onClick={() => setShowPassword((v) => !v)}
-                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 bg-transparent"
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-muted-foreground bg-transparent"
                             aria-label={showPassword ? 'Hide password' : 'Show password'}
                           >
                             {showPassword ? (
@@ -399,10 +399,10 @@ export function UserManagement() {
                     control={form.control}
                     name="is_active"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm transition-colors hover:bg-gray-50">
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm transition-colors hover:bg-muted">
                         <div className="space-y-0.5">
                           <FormLabel className="text-base">Active Status</FormLabel>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-muted-foreground">
                             {field.value ? 'User can access the system' : 'User access is disabled'}
                           </div>
                         </div>
@@ -410,7 +410,7 @@ export function UserManagement() {
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-200"
+                            className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-muted"
                           />
                         </FormControl>
                       </FormItem>
@@ -420,10 +420,10 @@ export function UserManagement() {
                     control={form.control}
                     name="is_admin"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm transition-colors hover:bg-gray-50">
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm transition-colors hover:bg-muted">
                         <div className="space-y-0.5">
                           <FormLabel className="text-base">Admin Access</FormLabel>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-muted-foreground">
                             {field.value ? 'Has full administrative privileges' : 'Regular user permissions'}
                           </div>
                         </div>
@@ -431,7 +431,7 @@ export function UserManagement() {
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            className="data-[state=checked]:bg-purple-500 data-[state=unchecked]:bg-gray-200"
+                            className="data-[state=checked]:bg-purple-500 data-[state=unchecked]:bg-muted"
                           />
                         </FormControl>
                       </FormItem>
@@ -473,7 +473,7 @@ export function UserManagement() {
       <div className="rounded-md border overflow-x-auto min-w-0">
         <table className="w-full min-w-[640px]">
           <thead>
-            <tr className="border-b bg-gray-50">
+            <tr className="border-b bg-muted/50">
               <th className="py-3 px-4 text-left w-10">
                 <input
                   type="checkbox"
@@ -525,7 +525,7 @@ export function UserManagement() {
                       className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         user.is_admin
                           ? 'bg-purple-100 text-purple-800'
-                          : 'bg-gray-100 text-gray-800'
+                          : 'bg-muted text-foreground'
                       }`}
                     >
                       {user.is_admin ? 'Admin' : 'User'}

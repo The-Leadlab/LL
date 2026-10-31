@@ -209,7 +209,7 @@ export const ForecastDashboard: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">{t('forecasting.title')}</h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-muted-foreground mt-1">
               {activePeriod ? (
                 t('forecasting.periodLine', {
                   type: t(`forecasting.periodTypes.${activePeriod.period_type}`, {
@@ -362,7 +362,7 @@ export const ForecastDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 {t('forecasting.pipeline')}
               </CardTitle>
             </CardHeader>
@@ -370,13 +370,13 @@ export const ForecastDashboard: React.FC = () => {
               <p className="text-3xl font-bold">
                 {formatCurrency(myForecast?.pipeline_amount || 0)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">{t('forecasting.pipelineHint')}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('forecasting.pipelineHint')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 {t('forecasting.bestCase')}
               </CardTitle>
             </CardHeader>
@@ -384,13 +384,13 @@ export const ForecastDashboard: React.FC = () => {
               <p className="text-3xl font-bold text-blue-600">
                 {formatCurrency(myForecast?.best_case_amount || 0)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">{t('forecasting.bestCaseHint')}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('forecasting.bestCaseHint')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 {t('forecasting.commit')}
               </CardTitle>
             </CardHeader>
@@ -398,7 +398,7 @@ export const ForecastDashboard: React.FC = () => {
               <p className="text-3xl font-bold text-green-600">
                 {formatCurrency(finalCommit)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">{t('forecasting.commitHint')}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('forecasting.commitHint')}</p>
               {myForecast?.manager_adjusted_commit && (
                 <p className="text-xs text-orange-600 mt-1">
                   {t('forecasting.manager', { amount: formatCurrency(myForecast.manager_adjusted_commit) })}
@@ -409,7 +409,7 @@ export const ForecastDashboard: React.FC = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 {t('forecasting.closed')}
               </CardTitle>
             </CardHeader>
@@ -417,7 +417,7 @@ export const ForecastDashboard: React.FC = () => {
               <p className="text-3xl font-bold text-purple-600">
                 {formatCurrency(myForecast?.closed_amount || 0)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">{t('forecasting.closedHint')}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('forecasting.closedHint')}</p>
             </CardContent>
           </Card>
         </div>
@@ -435,25 +435,25 @@ export const ForecastDashboard: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm text-gray-600">{t('forecasting.quota')}</p>
+                    <p className="text-sm text-muted-foreground">{t('forecasting.quota')}</p>
                     <p className="text-2xl font-bold">
                       {formatCurrency(myForecast.quota_amount)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">{t('forecasting.closed')}</p>
+                    <p className="text-sm text-muted-foreground">{t('forecasting.closed')}</p>
                     <p className="text-2xl font-bold text-green-600">
                       {formatCurrency(myForecast.closed_amount)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">{t('forecasting.attainment')}</p>
+                    <p className="text-sm text-muted-foreground">{t('forecasting.attainment')}</p>
                     <p className={`text-2xl font-bold ${quotaAttainment >= 100 ? 'text-green-600' : quotaAttainment >= 75 ? 'text-blue-600' : 'text-orange-600'}`}>
                       {quotaAttainment.toFixed(1)}%
                     </p>
                   </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-4">
+                <div className="w-full bg-muted rounded-full h-4">
                   <div
                     className={`h-4 rounded-full transition-all ${quotaAttainment >= 100 ? 'bg-green-600' : quotaAttainment >= 75 ? 'bg-blue-600' : 'bg-orange-600'}`}
                     style={{ width: `${Math.min(quotaAttainment, 100)}%` }}
@@ -470,7 +470,7 @@ export const ForecastDashboard: React.FC = () => {
             <CardContent className="py-12 text-center">
               <TrendingUp className="h-16 w-16 mx-auto mb-4 text-gray-400" />
               <h3 className="text-lg font-semibold mb-2">{t('forecasting.emptyTitle')}</h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-muted-foreground mb-4">
                 {t('forecasting.emptyBody')}
               </p>
               <Button onClick={handleEdit}>

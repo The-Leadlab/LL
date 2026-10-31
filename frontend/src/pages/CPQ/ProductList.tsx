@@ -140,7 +140,7 @@ export const ProductList: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">{t('cpq.products.title')}</h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-muted-foreground mt-1">
               {t('cpq.products.subtitle')}
             </p>
           </div>
@@ -241,7 +241,7 @@ export const ProductList: React.FC = () => {
                   <Package className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('cpq.products.total')}</p>
+                  <p className="text-sm text-muted-foreground">{t('cpq.products.total')}</p>
                   <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
               </div>
@@ -254,7 +254,7 @@ export const ProductList: React.FC = () => {
                   <Package className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('cpq.products.active')}</p>
+                  <p className="text-sm text-muted-foreground">{t('cpq.products.active')}</p>
                   <p className="text-2xl font-bold">{stats.active}</p>
                 </div>
               </div>
@@ -267,7 +267,7 @@ export const ProductList: React.FC = () => {
                   <Tag className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('cpq.products.categories')}</p>
+                  <p className="text-sm text-muted-foreground">{t('cpq.products.categories')}</p>
                   <p className="text-2xl font-bold">{stats.categories}</p>
                 </div>
               </div>
@@ -280,7 +280,7 @@ export const ProductList: React.FC = () => {
                   <DollarSign className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('cpq.products.catalogValue')}</p>
+                  <p className="text-sm text-muted-foreground">{t('cpq.products.catalogValue')}</p>
                   <p className="text-2xl font-bold">
                     {formatCurrency(stats.totalValue)}
                   </p>
@@ -303,7 +303,7 @@ export const ProductList: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold">{product.name}</h3>
-                        <p className="text-sm text-gray-600">{t('cpq.products.skuLabel', { sku: product.sku })}</p>
+                        <p className="text-sm text-muted-foreground">{t('cpq.products.skuLabel', { sku: product.sku })}</p>
                       </div>
                     </div>
                     {product.is_active ? (
@@ -313,7 +313,7 @@ export const ProductList: React.FC = () => {
                     )}
                   </div>
                   {product.description && (
-                    <p className="text-sm text-gray-600 mb-3">{product.description}</p>
+                    <p className="text-sm text-muted-foreground mb-3">{product.description}</p>
                   )}
                   {product.category && (
                     <Badge variant="outline" className="mb-3">
@@ -355,7 +355,7 @@ export const ProductList: React.FC = () => {
               <CardContent className="py-12 text-center">
                 <Package className="h-16 w-16 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-lg font-semibold mb-2">{t('cpq.products.emptyTitle')}</h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   {t('cpq.products.emptyBody')}
                 </p>
                 <Button onClick={() => setIsDialogOpen(true)}>

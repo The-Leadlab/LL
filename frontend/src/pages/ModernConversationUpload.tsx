@@ -49,29 +49,29 @@ export function ModernConversationUpload() {
   });
   
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
       <div className="max-w-4xl mx-auto">
         <button
           onClick={() => navigate('/conversations')}
-          className="mb-6 flex items-center space-x-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-50"
+          className="mb-6 flex items-center space-x-2 text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-neutral-50"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>{t('conv.backToConversations')}</span>
         </button>
         
-        <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-6">
+        <h1 className="text-3xl font-bold text-foreground mb-6">
           {t('conv.uploadTitle')}
         </h1>
         
-        <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 border border-neutral-200 dark:border-neutral-700">
+        <div className="bg-card rounded-xl p-8 border border-border">
           <div className="flex flex-col items-center justify-center py-12">
             <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/20 rounded-full flex items-center justify-center mb-4">
               <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
             </div>
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50 mb-2">
+            <h2 className="text-xl font-semibold text-foreground mb-2">
               {t('conv.uploadTitle')}
             </h2>
-            <p className="text-neutral-600 dark:text-neutral-400 mb-6 text-center">
+            <p className="text-muted-foreground dark:text-muted-foreground mb-6 text-center">
               {t('conv.dragDrop')}
             </p>
             <input
@@ -87,7 +87,7 @@ export function ModernConversationUpload() {
             >
               {t('conv.chooseFile')}
             </label>
-            <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="mt-4 text-sm text-muted-foreground dark:text-muted-foreground">
               {t('conv.supportedFormats')}
             </p>
             <div className="mt-6 w-full max-w-lg space-y-3">

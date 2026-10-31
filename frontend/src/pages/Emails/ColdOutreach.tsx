@@ -1152,7 +1152,7 @@ export function ColdOutreachPage() {
             <CardTitle>{t('outreach.connectMailboxTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mb-4 text-gray-600">
+            <p className="mb-4 text-muted-foreground">
               {t('outreach.connectMailboxBody')}
             </p>
             <Button type="button" onClick={() => navigate('/settings/integrations')}>
@@ -1168,8 +1168,8 @@ export function ColdOutreachPage() {
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-neutral-50">{t('coldOutreach')}</h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-neutral-300">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground dark:text-foreground">{t('coldOutreach')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground dark:text-muted-foreground">
             {t('outreach.subtitle')}
           </p>
         </div>
@@ -1188,25 +1188,25 @@ export function ColdOutreachPage() {
         </Button>
       </div>
 
-      <Card className="border-slate-200 dark:border-neutral-700 shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10">
+      <Card className="border-border shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10">
         <CardContent className="space-y-4 pt-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">{t('outreach.campaign')}</p>
-              <h2 className="mt-0.5 text-lg font-semibold text-slate-900 dark:text-neutral-50">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-muted-foreground">{t('outreach.campaign')}</p>
+              <h2 className="mt-0.5 text-lg font-semibold text-foreground dark:text-foreground">
                 {t('outreach.startHere')}
               </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
+              <p className="mt-1 text-sm text-slate-500 dark:text-muted-foreground">
                 {t('outreach.startHereBody')}
               </p>
             </div>
-            <div className="inline-flex rounded-lg border border-slate-200 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 p-1 shadow-inner">
+            <div className="inline-flex rounded-lg border border-border bg-muted dark:bg-card p-1 shadow-inner">
               <button
                 type="button"
                 className={`rounded-md px-4 py-2 text-sm font-medium transition ${
                   campaignMode === 'new'
-                    ? 'bg-white text-slate-900 shadow-sm dark:bg-neutral-700 dark:text-neutral-50'
-                    : 'text-slate-600 hover:text-slate-900 dark:text-neutral-300 dark:hover:text-neutral-50'
+                    ? 'bg-card text-foreground shadow-sm dark:bg-muted dark:text-foreground'
+                    : 'text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-neutral-50'
                 }`}
                 onClick={() => setCampaignMode('new')}
               >
@@ -1216,8 +1216,8 @@ export function ColdOutreachPage() {
                 type="button"
                 className={`rounded-md px-4 py-2 text-sm font-medium transition ${
                   campaignMode === 'existing'
-                    ? 'bg-white text-slate-900 shadow-sm dark:bg-neutral-700 dark:text-neutral-50'
-                    : 'text-slate-600 hover:text-slate-900 dark:text-neutral-300 dark:hover:text-neutral-50'
+                    ? 'bg-card text-foreground shadow-sm dark:bg-muted dark:text-foreground'
+                    : 'text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-neutral-50'
                 }`}
                 onClick={() => setCampaignMode('existing')}
               >
@@ -1258,7 +1258,7 @@ export function ColdOutreachPage() {
                 </SelectContent>
               </Select>
               {selectedCampaign && (
-                <p className="mt-1.5 text-xs text-slate-500 dark:text-neutral-400">
+                <p className="mt-1.5 text-xs text-slate-500 dark:text-muted-foreground">
                   {t('outreach.campaignLoadsHint')}
                 </p>
               )}
@@ -1269,7 +1269,7 @@ export function ColdOutreachPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {[
-          { label: t('outreach.statReady'), value: readyLeadCount, tone: 'text-slate-900 dark:text-neutral-50' },
+          { label: t('outreach.statReady'), value: readyLeadCount, tone: 'text-foreground dark:text-foreground' },
           { label: t('outreach.statSent'), value: sentLeadCount, tone: 'text-emerald-700' },
           { label: t('bounced'), value: bouncedLeadCount, tone: 'text-rose-700' },
           { label: t('outreach.statFailed'), value: failedLeadCount, tone: 'text-amber-700' },
@@ -1281,9 +1281,9 @@ export function ColdOutreachPage() {
         ].map((stat) => (
           <div
             key={stat.label}
-            className="rounded-xl border border-slate-200 dark:border-neutral-700 bg-gradient-to-br from-white to-slate-50 dark:from-neutral-900 dark:to-neutral-800 px-4 py-3 shadow-sm"
+            className="rounded-xl border border-border bg-gradient-to-br from-white to-slate-50 dark:from-neutral-900 dark:to-neutral-800 px-4 py-3 shadow-sm"
           >
-            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-neutral-400">{stat.label}</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-muted-foreground">{stat.label}</p>
             <p className={`mt-1 text-2xl font-semibold tabular-nums ${stat.tone}`}>{stat.value}</p>
           </div>
         ))}
@@ -1308,7 +1308,7 @@ export function ColdOutreachPage() {
               type="button"
               size="sm"
               variant="outline"
-              className="border-rose-300 bg-white dark:bg-neutral-900 text-rose-800 hover:bg-rose-50"
+              className="border-rose-300 bg-card text-rose-800 hover:bg-rose-50"
               onClick={() => setStatusFilter('bounced')}
             >
               {t('outreach.viewBounced')}
@@ -1323,13 +1323,13 @@ export function ColdOutreachPage() {
       )}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
-        <Card className="border-slate-200 dark:border-neutral-700 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardHeader className="border-b border-slate-100 dark:border-neutral-800 pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-neutral-50">
-              <Users className="h-5 w-5 text-slate-700 dark:text-neutral-200" />
+            <CardTitle className="flex items-center gap-2 text-lg text-foreground dark:text-foreground">
+              <Users className="h-5 w-5 text-slate-700 dark:text-foreground" />
               {t('recipients')}
             </CardTitle>
-            <p className="text-sm text-slate-500 dark:text-neutral-400">
+            <p className="text-sm text-slate-500 dark:text-muted-foreground">
               {t('outreach.recipientsHint')}
             </p>
           </CardHeader>
@@ -1494,13 +1494,13 @@ export function ColdOutreachPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <label className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm">
-                  <ArrowUpDown className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
-                  <span className="text-slate-500 dark:text-neutral-400">{t('outreach.sort')}</span>
+                <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm">
+                  <ArrowUpDown className="h-4 w-4 text-slate-500 dark:text-muted-foreground" />
+                  <span className="text-slate-500 dark:text-muted-foreground">{t('outreach.sort')}</span>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as LeadSortBy)}
-                    className="bg-transparent text-slate-800 dark:text-neutral-100 outline-none"
+                    className="bg-transparent text-slate-800 dark:text-foreground outline-none"
                   >
                     <option value="first_name">{t('outreach.sortName')}</option>
                     <option value="company">{t('outreach.sortCompany')}</option>
@@ -1512,21 +1512,21 @@ export function ColdOutreachPage() {
                   <button
                     type="button"
                     onClick={() => setSortDesc((v) => !v)}
-                    className="rounded px-1.5 py-0.5 text-xs font-medium text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-700 dark:bg-neutral-800"
+                    className="rounded px-1.5 py-0.5 text-xs font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted dark:bg-card"
                   >
                     {sortDesc ? t('outreach.desc') : t('outreach.asc')}
                   </button>
                 </label>
-                <label className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm">
-                  <Layers className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
-                  <span className="text-slate-500 dark:text-neutral-400">{t('outreach.group')}</span>
+                <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm">
+                  <Layers className="h-4 w-4 text-slate-500 dark:text-muted-foreground" />
+                  <span className="text-slate-500 dark:text-muted-foreground">{t('outreach.group')}</span>
                   <select
                     value={groupBy}
                     onChange={(e) => {
                       setGroupBy(e.target.value as LeadGroupBy);
                       setCollapsedGroups({});
                     }}
-                    className="bg-transparent text-slate-800 dark:text-neutral-100 outline-none"
+                    className="bg-transparent text-slate-800 dark:text-foreground outline-none"
                   >
                     <option value="none">{t('outreach.groupNone')}</option>
                     <option value="personality">{t('outreach.personality')}</option>
@@ -1555,7 +1555,7 @@ export function ColdOutreachPage() {
               </div>
 
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground dark:text-foreground0" />
                 <Input
                   className="pl-9"
                   value={search}
@@ -1601,14 +1601,14 @@ export function ColdOutreachPage() {
                     {t('outreach.retrySelected')}
                   </Button>
                 )}
-                <span className="ml-auto text-sm font-medium text-slate-700 dark:text-neutral-200">
+                <span className="ml-auto text-sm font-medium text-slate-700 dark:text-foreground">
                   {t('outreach.selectedShown', { selected: selectedIds.size, shown: visibleLeads.length })}
                 </span>
               </div>
 
-              <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-sm">
+              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                 {leadsLoading ? (
-                  <div className="flex items-center justify-center p-10 text-sm text-slate-500 dark:text-neutral-400">
+                  <div className="flex items-center justify-center p-10 text-sm text-slate-500 dark:text-muted-foreground">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {t('outreach.loadingPeople')}
                   </div>
@@ -1629,13 +1629,13 @@ export function ColdOutreachPage() {
                   </div>
                 ) : visibleLeads.length === 0 ? (
                   <div className="px-6 py-10 text-center">
-                    <Users className="mx-auto h-8 w-8 text-slate-300 dark:text-neutral-600" />
-                    <h3 className="mt-3 text-base font-medium text-slate-900 dark:text-neutral-50">
+                    <Users className="mx-auto h-8 w-8 text-slate-300 dark:text-muted-foreground" />
+                    <h3 className="mt-3 text-base font-medium text-foreground dark:text-foreground">
                       {selectedClient
                         ? t('outreach.noPeopleOnClient', { name: selectedClient.name })
                         : t('outreach.noPeopleMatch')}
                     </h3>
-                    <p className="mx-auto mt-1 max-w-md text-sm text-slate-500 dark:text-neutral-400">
+                    <p className="mx-auto mt-1 max-w-md text-sm text-slate-500 dark:text-muted-foreground">
                       {clientId === 'all'
                         ? t('outreach.pickClientHint')
                         : t('outreach.tryOtherFilter')}
@@ -1657,7 +1657,7 @@ export function ColdOutreachPage() {
                   <div className="max-h-[min(70vh,52rem)] overflow-auto">
                     <Table>
                       <TableHeader className="sticky top-0 z-10">
-                        <TableRow className="bg-slate-50 dark:bg-neutral-800/60/95 dark:bg-neutral-800/95 backdrop-blur">
+                        <TableRow className="bg-muted/50/95 dark:bg-muted backdrop-blur">
                           <TableHead className="w-10">
                             <Checkbox
                               checked={
@@ -1685,14 +1685,14 @@ export function ColdOutreachPage() {
                           return (
                             <React.Fragment key={group.key}>
                               {groupBy !== 'none' && (
-                                <TableRow className="bg-slate-100 dark:bg-neutral-800/90 dark:bg-neutral-800/90 hover:bg-slate-100 dark:hover:bg-neutral-700 dark:bg-neutral-800">
+                                <TableRow className="bg-muted dark:bg-muted dark:bg-muted hover:bg-muted dark:hover:bg-muted dark:bg-card">
                                   <TableCell
                                     colSpan={clientId === 'all' ? 8 : 7}
                                     className="py-2"
                                   >
                                     <button
                                       type="button"
-                                      className="flex w-full items-center gap-2 text-left text-sm font-semibold text-slate-800 dark:text-neutral-100"
+                                      className="flex w-full items-center gap-2 text-left text-sm font-semibold text-slate-800 dark:text-foreground"
                                       onClick={() =>
                                         setCollapsedGroups((prev) => ({
                                           ...prev,
@@ -1700,9 +1700,9 @@ export function ColdOutreachPage() {
                                         }))
                                       }
                                     >
-                                      <span className="text-slate-500 dark:text-neutral-400">{collapsed ? '▸' : '▾'}</span>
+                                      <span className="text-slate-500 dark:text-muted-foreground">{collapsed ? '▸' : '▾'}</span>
                                       {groupText(group.key)}
-                                      <span className="ml-1 rounded-full bg-white dark:bg-neutral-900 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-neutral-300">
+                                      <span className="ml-1 rounded-full bg-card px-2 py-0.5 text-xs font-medium text-muted-foreground dark:text-muted-foreground">
                                         {group.leads.length}
                                       </span>
                                     </button>
@@ -1729,7 +1729,7 @@ export function ColdOutreachPage() {
                                     ? 'cursor-pointer bg-rose-50/40 hover:bg-rose-50'
                                     : failed
                                       ? 'cursor-pointer bg-amber-50/40 hover:bg-amber-50'
-                                      : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800 dark:bg-neutral-800/60'
+                                      : 'cursor-pointer hover:bg-muted/50 dark:hover:bg-muted dark:bg-muted/40'
                               }
                               onClick={() => hasEmail && toggleLead(lead.id, !selectedIds.has(lead.id))}
                             >
@@ -1747,10 +1747,10 @@ export function ColdOutreachPage() {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell className="font-medium text-slate-900 dark:text-neutral-50">
+                              <TableCell className="font-medium text-foreground dark:text-foreground">
                                 {[lead.first_name, lead.last_name].filter(Boolean).join(' ') || '—'}
                               </TableCell>
-                              <TableCell className="max-w-[220px] truncate font-mono text-xs text-slate-600 dark:text-neutral-300">
+                              <TableCell className="max-w-[220px] truncate font-mono text-xs text-muted-foreground dark:text-muted-foreground">
                                 {lead.email || t('outreach.noEmail')}
                               </TableCell>
                               <TableCell className="max-w-[160px] truncate">{lead.company || '—'}</TableCell>
@@ -1760,7 +1760,7 @@ export function ColdOutreachPage() {
                                     {discStyle.label}
                                   </Badge>
                                 ) : (
-                                  <span className="text-xs text-slate-300 dark:text-neutral-600">—</span>
+                                  <span className="text-xs text-slate-300 dark:text-muted-foreground">—</span>
                                 )}
                               </TableCell>
                               {clientId === 'all' && (
@@ -1776,7 +1776,7 @@ export function ColdOutreachPage() {
                                         ? 'border-amber-200 bg-amber-50 text-amber-800'
                                         : sent
                                           ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                                          : 'border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800/60 text-slate-600 dark:text-neutral-300'
+                                          : 'border-border bg-muted/50 text-muted-foreground dark:text-muted-foreground'
                                   }
                                 >
                                   {deliveryText(status)}
@@ -1812,7 +1812,7 @@ export function ColdOutreachPage() {
                 )}
               </div>
 
-              <p className="text-xs text-slate-500 dark:text-neutral-400">
+              <p className="text-xs text-slate-500 dark:text-muted-foreground">
                 {selectedClient ? `${selectedClient.name} · ` : `${t('outreach.allClients')} · `}
                 {t('outreach.summaryLine', {
                   ready: readyLeadCount,
@@ -1827,16 +1827,16 @@ export function ColdOutreachPage() {
             </div>
 
             {selectedOrder.length > 0 && (
-              <div className="rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+              <div className="rounded-lg border border-border bg-card">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-neutral-800 px-4 py-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900 dark:text-neutral-50">
+                    <h3 className="text-sm font-semibold text-foreground dark:text-foreground">
                       {t('outreach.sendQueue')}
-                      <span className="ml-1.5 text-xs font-normal text-slate-500 dark:text-neutral-400">
+                      <span className="ml-1.5 text-xs font-normal text-slate-500 dark:text-muted-foreground">
                         ({t('outreach.leadsCount', { count: selectedOrder.length })})
                       </span>
                     </h3>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-muted-foreground">
                       {t('outreach.dragHint')}
                     </p>
                   </div>
@@ -1844,7 +1844,7 @@ export function ColdOutreachPage() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="text-xs text-slate-500 dark:text-neutral-400"
+                    className="text-xs text-slate-500 dark:text-muted-foreground"
                     onClick={() => setSelectedOrder([])}
                   >
                     {t('outreach.clearAll')}
@@ -1883,12 +1883,12 @@ export function ColdOutreachPage() {
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   className={`flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                                    snapshot.isDragging ? 'bg-slate-50 dark:bg-neutral-800/60 shadow-sm' : 'bg-white dark:bg-neutral-900'
+                                    snapshot.isDragging ? 'bg-muted/50 shadow-sm' : 'bg-card'
                                   }`}
                                 >
                                   <div
                                     {...dragProvided.dragHandleProps}
-                                    className="flex cursor-grab items-center text-slate-400 dark:text-neutral-500 hover:text-slate-600 dark:hover:text-neutral-200 dark:text-neutral-300 active:cursor-grabbing"
+                                    className="flex cursor-grab items-center text-muted-foreground dark:text-foreground0 hover:text-muted-foreground dark:hover:text-neutral-200 dark:text-muted-foreground active:cursor-grabbing"
                                   >
                                     <GripVertical className="h-4 w-4" />
                                   </div>
@@ -1896,10 +1896,10 @@ export function ColdOutreachPage() {
                                     {index + 1}
                                   </span>
                                   <div className="min-w-0 flex-1">
-                                    <span className="font-medium text-slate-900 dark:text-neutral-50">
+                                    <span className="font-medium text-foreground dark:text-foreground">
                                       {[lead.first_name, lead.last_name].filter(Boolean).join(' ') || '—'}
                                     </span>
-                                    <span className="ml-2 text-slate-500 dark:text-neutral-400">{lead.email || ''}</span>
+                                    <span className="ml-2 text-slate-500 dark:text-muted-foreground">{lead.email || ''}</span>
                                   </div>
                                   {discStyle && (
                                     <Badge variant="outline" className={`shrink-0 text-[10px] font-bold ${discStyle.color}`}>
@@ -1908,7 +1908,7 @@ export function ColdOutreachPage() {
                                   )}
                                   <button
                                     type="button"
-                                    className="shrink-0 rounded p-0.5 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 dark:hover:bg-neutral-700 dark:bg-neutral-800 hover:text-slate-600 dark:hover:text-neutral-200 dark:text-neutral-300"
+                                    className="shrink-0 rounded p-0.5 text-muted-foreground dark:text-foreground0 hover:bg-muted dark:hover:bg-muted dark:bg-card hover:text-muted-foreground dark:hover:text-neutral-200 dark:text-muted-foreground"
                                     onClick={() =>
                                       setSelectedOrder((prev) => prev.filter((x) => x !== id))
                                     }
@@ -1928,19 +1928,19 @@ export function ColdOutreachPage() {
               </div>
             )}
 
-            <div className="rounded-lg border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800/60/70 dark:bg-neutral-800/70 p-4">
+            <div className="rounded-lg border border-border bg-muted/50/70 dark:bg-muted/50 p-4">
               <button
                 type="button"
                 className="flex w-full items-center justify-between text-left"
                 onClick={() => setShowAddPeople((open) => !open)}
               >
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-neutral-50">{t('outreach.addPeople')}</h3>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">
+                  <h3 className="text-sm font-semibold text-foreground dark:text-foreground">{t('outreach.addPeople')}</h3>
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-muted-foreground">
                     {t('outreach.addPeopleHint', { list: selectedClient ? selectedClient.name : t('outreach.aClientList') })}
                   </p>
                 </div>
-                <span className="text-sm text-slate-500 dark:text-neutral-400">{showAddPeople ? t('outreach.hide') : t('outreach.show')}</span>
+                <span className="text-sm text-slate-500 dark:text-muted-foreground">{showAddPeople ? t('outreach.hide') : t('outreach.show')}</span>
               </button>
 
               {showAddPeople && (
@@ -1951,7 +1951,7 @@ export function ColdOutreachPage() {
                   </p>
               )}
 
-              <div className="mt-3 flex flex-wrap gap-1 rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-1">
+              <div className="mt-3 flex flex-wrap gap-1 rounded-md border border-border bg-card p-1">
                 {(
                   [
                     { id: 'paste', label: t('outreach.methodPaste') },
@@ -1965,7 +1965,7 @@ export function ColdOutreachPage() {
                     className={`rounded px-3 py-1.5 text-sm ${
                       addPeopleMethod === method.id
                         ? 'bg-slate-900 text-white'
-                        : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-700 dark:bg-neutral-800'
+                        : 'text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted dark:bg-card'
                     }`}
                     onClick={() => setAddPeopleMethod(method.id)}
                   >
@@ -1982,7 +1982,7 @@ export function ColdOutreachPage() {
                       value={pasteEmails}
                       onChange={(event) => setPasteEmails(event.target.value)}
                       placeholder={'email,first_name,last_name,company\nada@example.com,Ada,Lovelace,Analytical\n\nAli Attia <ali@the-leadlab.com>'}
-                      className="min-h-[110px] bg-white dark:bg-neutral-900 font-mono text-xs"
+                      className="min-h-[110px] bg-card font-mono text-xs"
                     />
                     <Button
                       type="button"
@@ -2001,10 +2001,10 @@ export function ColdOutreachPage() {
 
                 {addPeopleMethod === 'csv' && (
                   <>
-                    <p className="text-sm text-slate-600 dark:text-neutral-300">
+                    <p className="text-sm text-muted-foreground dark:text-muted-foreground">
                       {t('outreach.csvHint')}
                     </p>
-                    <label className="inline-flex cursor-pointer items-center rounded-md border border-slate-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 dark:bg-neutral-800/60">
+                    <label className="inline-flex cursor-pointer items-center rounded-md border border-border dark:border-border bg-card px-3 py-2 text-sm hover:bg-muted/50 dark:hover:bg-muted dark:bg-muted/40">
                       <FileSpreadsheet className="mr-2 h-4 w-4" />
                       {t('outreach.chooseCsv')}
                       <input
@@ -2035,7 +2035,7 @@ export function ColdOutreachPage() {
                         )}
                         {sheetFiles.length > 0 && (
                           <Select value={sheetChoice || undefined} onValueChange={setSheetChoice}>
-                            <SelectTrigger className="bg-white dark:bg-neutral-900">
+                            <SelectTrigger className="bg-card">
                               <SelectValue placeholder={t('outreach.chooseSpreadsheet')} />
                             </SelectTrigger>
                             <SelectContent>
@@ -2048,14 +2048,14 @@ export function ColdOutreachPage() {
                           </Select>
                         )}
                         <Input
-                          className="bg-white dark:bg-neutral-900"
+                          className="bg-card"
                           value={sheetUrl}
                           onChange={(event) => setSheetUrl(event.target.value)}
                           placeholder={t('outreach.pasteSheetsUrlPlaceholder')}
                         />
                         {sheetTabs.length > 0 && (
                           <Select value={sheetTab || undefined} onValueChange={setSheetTab}>
-                            <SelectTrigger className="bg-white dark:bg-neutral-900">
+                            <SelectTrigger className="bg-card">
                               <SelectValue placeholder={t('outreach.chooseTab')} />
                             </SelectTrigger>
                             <SelectContent>
@@ -2068,7 +2068,7 @@ export function ColdOutreachPage() {
                           </Select>
                         )}
                         <Input
-                          className="bg-white dark:bg-neutral-900"
+                          className="bg-card"
                           value={sheetRange}
                           onChange={(event) => setSheetRange(event.target.value)}
                           placeholder="Cleaned - Lucas!A1:Z500"
@@ -2093,7 +2093,7 @@ export function ColdOutreachPage() {
                             </Button>
                           )}
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-neutral-400">
+                        <p className="text-xs text-slate-500 dark:text-muted-foreground">
                           {t('outreach.sheetSentHint')}
                         </p>
                       </div>
@@ -2103,7 +2103,7 @@ export function ColdOutreachPage() {
                           {connectingGoogle ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-1 h-4 w-4" />}
                           {t('outreach.connectSheets')}
                         </Button>
-                        <p className="text-xs text-slate-500 dark:text-neutral-400">
+                        <p className="text-xs text-slate-500 dark:text-muted-foreground">
                           {t('outreach.googlePermissionHint')}
                         </p>
                       </div>
@@ -2117,25 +2117,25 @@ export function ColdOutreachPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 dark:border-neutral-700 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardHeader className="border-b border-slate-100 dark:border-neutral-800 pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-neutral-50">
-              <Mail className="h-5 w-5 text-slate-700 dark:text-neutral-200" />
+            <CardTitle className="flex items-center gap-2 text-lg text-foreground dark:text-foreground">
+              <Mail className="h-5 w-5 text-slate-700 dark:text-foreground" />
               {t('outreach.composeAndSend')}
             </CardTitle>
-            <p className="text-sm text-slate-500 dark:text-neutral-400">
+            <p className="text-sm text-slate-500 dark:text-muted-foreground">
               {t('outreach.composeHint')}
             </p>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
-            <div className="rounded-lg border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800/60/80 px-3 py-2.5 text-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">{t('outreach.campaign')}</p>
-              <p className="mt-0.5 font-medium text-slate-900 dark:text-neutral-50">
+            <div className="rounded-lg border border-border bg-muted/50/80 px-3 py-2.5 text-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-muted-foreground">{t('outreach.campaign')}</p>
+              <p className="mt-0.5 font-medium text-foreground dark:text-foreground">
                 {campaignMode === 'new'
                   ? campaignName.trim() || t('outreach.nameCampaignAbove')
                   : selectedCampaign?.name || t('outreach.chooseCampaignAbove')}
               </p>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-muted-foreground">
                 {campaignMode === 'new' ? t('newCampaign') : t('outreach.existingCampaign')} — {t('outreach.changeCampaignHint')}
               </p>
             </div>
@@ -2154,7 +2154,7 @@ export function ColdOutreachPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
+              <p className="mt-1 text-xs text-slate-500 dark:text-muted-foreground">
                 {t('outreach.sendsAs', { email: selectedAccount?.email || t('outreach.thisMailbox') })}
               </p>
             </div>
@@ -2204,7 +2204,7 @@ export function ColdOutreachPage() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                className="text-sm text-slate-600 dark:text-neutral-300 underline-offset-2 hover:underline"
+                className="text-sm text-muted-foreground dark:text-muted-foreground underline-offset-2 hover:underline"
                 onClick={() => setShowAdvancedSend((open) => !open)}
               >
                 {showAdvancedSend ? t('outreach.hideExtra') : t('outreach.showExtra')}
@@ -2216,7 +2216,7 @@ export function ColdOutreachPage() {
             </div>
 
             {showAdvancedSend && (
-              <div className="space-y-4 rounded-lg border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800/60/70 dark:bg-neutral-800/70 p-3">
+              <div className="space-y-4 rounded-lg border border-border bg-muted/50/70 dark:bg-muted/50 p-3">
             <div>
               <Label>{t('outreach.loadTemplate')}</Label>
               <Select value={templateId || 'none'} onValueChange={applyTemplate}>
@@ -2306,7 +2306,7 @@ export function ColdOutreachPage() {
                 />
               </div>
             </div>
-            <p className="-mt-2 text-xs text-gray-500">
+            <p className="-mt-2 text-xs text-muted-foreground">
               {parsePositiveNumber(delayMinutes)
                 ? t('outreach.paceSummary', { count: maxPerHour || hourCapFromMinutes(parsePositiveNumber(delayMinutes)) })
                 : t('outreach.paceEmpty')}
@@ -2358,7 +2358,7 @@ export function ColdOutreachPage() {
                 onChange={(event) => setMaxPerHour(event.target.value)}
                 placeholder={t('outreach.maxPerHourPlaceholder')}
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {t('outreach.maxPerHourHint')}
               </p>
             </div>
@@ -2375,7 +2375,7 @@ export function ColdOutreachPage() {
             )}
 
             {lastBatchId && (
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-muted-foreground">
                 {t('outreach.lastBatch')} <code>{lastBatchId}</code>{' '}
                 <button
                   type="button"
@@ -2391,7 +2391,7 @@ export function ColdOutreachPage() {
             )}
 
             {progress && (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 {t('outreach.processing', { done: progress.done, total: progress.total })}
               </p>
             )}
@@ -2552,7 +2552,7 @@ export function ColdOutreachPage() {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <div className="text-xs uppercase text-gray-500">{t('from')}</div>
+              <div className="text-xs uppercase text-muted-foreground">{t('from')}</div>
               <div className="text-sm">
                 {selectedAccount
                   ? `${selectedAccount.display_name ? `${selectedAccount.display_name} ` : ''}<${selectedAccount.email}>`
@@ -2560,18 +2560,18 @@ export function ColdOutreachPage() {
               </div>
             </div>
             <div>
-              <div className="text-xs uppercase text-gray-500">{t('subject')}</div>
+              <div className="text-xs uppercase text-muted-foreground">{t('subject')}</div>
               <div className="font-medium">{previewSubject || t('outreach.emptySubject')}</div>
             </div>
             {previewAsHtml ? (
               <iframe
                 title={t('outreach.htmlPreview')}
                 sandbox="allow-popups allow-popups-to-escape-sandbox"
-                className="h-[28rem] w-full rounded-md border bg-white dark:bg-neutral-900"
+                className="h-[28rem] w-full rounded-md border bg-card"
                 srcDoc={previewHtmlDocument}
               />
             ) : (
-              <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md border bg-slate-50 dark:bg-neutral-800/60 p-3 text-sm">
+              <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md border bg-muted/50 p-3 text-sm">
                 {previewBody || t('outreach.emptyMessage')}
               </pre>
             )}

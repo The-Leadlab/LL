@@ -469,7 +469,7 @@ export function OrganizationPage() {
                 <img 
                   src={`${getApiOrigin()}/api/v1/organizations/logo/${organization.id}/${organization.logo_filename}`}
                   alt={organization.name}
-                  className="w-full h-32 object-contain rounded-lg border bg-gray-50"
+                  className="w-full h-32 object-contain rounded-lg border bg-muted/50"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';

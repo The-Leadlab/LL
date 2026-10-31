@@ -213,7 +213,7 @@ function ModuleConfigEditor({
   }
 
   return (
-    <p className="text-sm text-gray-500">
+    <p className="text-sm text-muted-foreground">
       {module.type === 'trigger_manual' && 'Starts when you run the scenario manually.'}
       {module.type === 'router_has_email' && 'Routes leads with an email address to the next branch.'}
       {module.type === 'stop_on_reply' && 'Stops the flow when the lead replies.'}
@@ -375,7 +375,7 @@ export function OutreachScenarioBuilderPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">{isEdit ? 'Edit scenario' : 'New scenario'}</h1>
-          <p className="mt-1 text-sm text-gray-600">Linear module list — reorder steps top to bottom.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Linear module list — reorder steps top to bottom.</p>
         </div>
         <Button type="button" variant="outline" onClick={() => navigate('/emails/scenarios')}>
           Back to list
@@ -433,7 +433,7 @@ export function OutreachScenarioBuilderPage() {
                   className="flex flex-1 items-center gap-2 text-left"
                   onClick={() => setExpandedId(isExpanded ? null : mod.id)}
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs font-medium">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-medium">
                     {index + 1}
                   </span>
                   <CardTitle className="text-base">{typeLabel}</CardTitle>
