@@ -1,106 +1,77 @@
 /**
- * Dark Mode Provider - Theme Support
- *
- * SALESFORCE: No dark mode (or requires paid "Einstein" tier)
- * LEADLAB: Beautiful dark mode included for everyone
- *
- * Professional teams work late nights - they need dark mode!
+ * App color-mode provider — light by default; dark is opt-in.
  */
 
-import { createContext, useContext, useEffect, useState } from 'react';
-
-type Theme = 'light' | 'dark' | 'system';
+import { createContext, useContext, useEffect, useState } from 'react'
+import {
+  applyThemeClass,
+  readStoredTheme,
+  resolveTheme,
+  writeStoredTheme,
+  type ResolvedTheme,
+  type ThemePreference,
+} from '@/lib/theme'
 
 interface ThemeContextType {
-  theme: Theme;
-  actualTheme: 'light' | 'dark'; // Resolved theme (system -> light/dark)
-  setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
+  theme: ThemePreference
+  actualTheme: ResolvedTheme
+  setTheme: (theme: ThemePreference) => void
+  /** Switches between light and dark only (does not land on system). */
+  toggleTheme: () => void
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function DarkModeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    // Load theme from localStorage or default to light
-    const stored = localStorage.getItem('leadlab-theme') as Theme;
-    return stored || 'light';
-  });
+  const [theme, setThemeState] = useState<ThemePreference>(() => readStoredTheme())
+  const [actualTheme, setActualTheme] = useState<ResolvedTheme>(() =>
+    resolveTheme(readStoredTheme())
+  )
 
-  const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('light');
-
-  // Get system theme preference
-  const getSystemTheme = (): 'light' | 'dark' => {
-    if (typeof window === 'undefined') return 'light';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  };
-
-  // Resolve actual theme based on preference
-  const resolveTheme = (themePreference: Theme): 'light' | 'dark' => {
-    if (themePreference === 'system') {
-      return getSystemTheme();
-    }
-    return themePreference;
-  };
-
-  // Apply theme to document
-  const applyTheme = (resolved: 'light' | 'dark') => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(resolved);
-    setActualTheme(resolved);
+  const apply = (preference: ThemePreference) => {
+    const resolved = resolveTheme(preference)
+    applyThemeClass(resolved)
+    setActualTheme(resolved)
     void import('@/native/capacitorBootstrap').then(({ syncStatusBarWithTheme }) =>
       syncStatusBarWithTheme(resolved)
-    );
-  };
+    )
+  }
 
-  // Update theme
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem('leadlab-theme', newTheme);
-    const resolved = resolveTheme(newTheme);
-    applyTheme(resolved);
-  };
+  const setTheme = (newTheme: ThemePreference) => {
+    setThemeState(newTheme)
+    writeStoredTheme(newTheme)
+    apply(newTheme)
+  }
 
-  // Toggle between light and dark (system -> light -> dark -> system)
   const toggleTheme = () => {
-    const themeOrder: Theme[] = ['light', 'dark', 'system'];
-    const currentIndex = themeOrder.indexOf(theme);
-    const nextIndex = (currentIndex + 1) % themeOrder.length;
-    setTheme(themeOrder[nextIndex]);
-  };
+    setTheme(actualTheme === 'dark' ? 'light' : 'dark')
+  }
 
-  // Initialize theme on mount
   useEffect(() => {
-    const resolved = resolveTheme(theme);
-    applyTheme(resolved);
-  }, []);
+    apply(theme)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount once with stored preference
+  }, [])
 
-  // Listen for system theme changes
   useEffect(() => {
-    if (theme !== 'system') return;
+    if (theme !== 'system') return
 
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      const resolved = resolveTheme('system');
-      applyTheme(resolved);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme]);
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = () => apply('system')
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [theme])
 
   return (
     <ThemeContext.Provider value={{ theme, actualTheme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
-  );
+  )
 }
 
 export function useDarkMode() {
-  const context = useContext(ThemeContext);
+  const context = useContext(ThemeContext)
   if (context === undefined) {
-    throw new Error('useDarkMode must be used within a DarkModeProvider');
+    throw new Error('useDarkMode must be used within a DarkModeProvider')
   }
-  return context;
+  return context
 }

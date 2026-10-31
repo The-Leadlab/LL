@@ -271,26 +271,16 @@ export const CustomizationProvider: React.FC<{ children: ReactNode }> = ({ child
   };
 
   const applyUICustomization = (ui: UICustomization) => {
-    // Apply theme
-    const html = document.querySelector('html');
-    if (html) {
-      html.classList.remove('light', 'dark');
-      if (ui.theme === 'system') {
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        html.classList.add(systemTheme);
-      } else if (ui.theme === 'custom') {
-        // Apply custom theme variables
-        document.documentElement.style.setProperty('--primary', ui.primaryColor);
-        document.documentElement.style.setProperty('--secondary', ui.secondaryColor);
-        document.documentElement.style.setProperty('--accent', ui.accentColor);
-        document.documentElement.style.setProperty('--radius', `${ui.borderRadius}px`);
-        document.documentElement.style.setProperty('--spacing', `${ui.spacing * 0.25}rem`);
-      } else {
-        html.classList.add(ui.theme);
-      }
+    // Color mode is owned by DarkModeProvider / leadlab-theme — do not flip html.dark here.
+    // Custom brand tokens only (not light/dark class switching).
+    if (ui.theme === 'custom') {
+      document.documentElement.style.setProperty('--primary', ui.primaryColor);
+      document.documentElement.style.setProperty('--secondary', ui.secondaryColor);
+      document.documentElement.style.setProperty('--accent', ui.accentColor);
+      document.documentElement.style.setProperty('--radius', `${ui.borderRadius}px`);
+      document.documentElement.style.setProperty('--spacing', `${ui.spacing * 0.25}rem`);
     }
 
-    // Apply custom CSS
     if (ui.customCSS) {
       let styleElement = document.getElementById('custom-platform-css');
       if (!styleElement) {

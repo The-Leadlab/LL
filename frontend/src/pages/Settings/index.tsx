@@ -43,22 +43,10 @@ export function SettingsPage() {
       setLoading(true);
       // Mock API call
       
-      // Apply theme change
-      const html = document.querySelector('html');
-      if (html) {
-        // Remove existing theme classes
-        html.classList.remove('light', 'dark');
-        
-        // Apply new theme
-        if (data.theme === 'system') {
-          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          html.classList.add(systemTheme);
-          localStorage.setItem('theme', 'system');
-        } else {
-          html.classList.add(data.theme);
-          localStorage.setItem('theme', data.theme);
-        }
-      }
+      // Color mode via shared LeadLab theme store (not legacy `theme` key)
+      const { applyThemeClass, resolveTheme, writeStoredTheme } = await import('@/lib/theme');
+      writeStoredTheme(data.theme);
+      applyThemeClass(resolveTheme(data.theme));
       
       // Handle email notifications
       if (data.emailNotifications) {
