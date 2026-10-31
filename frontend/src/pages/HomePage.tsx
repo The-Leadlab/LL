@@ -99,12 +99,11 @@ export function HomePage() {
   ]
 
   return (
-    <div className="flex min-h-screen flex-col bg-white font-sans text-slate-900 dark:bg-slate-950 dark:text-slate-50">
+    <div className="flex w-full min-h-screen flex-col bg-white font-sans text-slate-900 dark:bg-slate-950 dark:text-slate-50">
       <MarketingNav />
 
-      <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-24 sm:px-6 sm:pt-28 lg:px-8">
-        <main className="flex-1">
-          <section className="w-full bg-white dark:bg-slate-950 py-12 md:py-16">
+      <main className="w-full flex-1 pt-16">
+          <section className="w-full bg-white px-4 py-12 dark:bg-slate-950 sm:px-6 md:py-16 lg:px-8">
             <div className="mx-auto w-full max-w-3xl text-center">
               <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-primary-600">
                 LeadLab
@@ -150,7 +149,7 @@ export function HomePage() {
                 {stats.map((stat, index) => (
                   <div
                     key={index}
-                    className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-5 text-center md:px-4"
+                    className="rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-5 text-center dark:border-slate-700/80 dark:bg-slate-900 md:px-4"
                   >
                     <div className="text-2xl font-bold text-primary-600 md:text-3xl">
                       <CountUp end={stat.number} duration={1.2} />
@@ -163,8 +162,8 @@ export function HomePage() {
             </div>
           </section>
 
-          <section id="about" className="w-full rounded-2xl bg-slate-50 dark:bg-slate-900 px-4 py-12 sm:px-8 md:py-14">
-            <div className="mx-auto w-full max-w-5xl">
+          <section id="about" className="w-full bg-slate-50 px-4 py-12 dark:bg-slate-900/60 sm:px-6 md:py-16 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl">
               <div className="mx-auto mb-10 max-w-2xl text-center">
                 <h2 className="mb-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-4xl">
                   {t('home.about.title')}
@@ -180,9 +179,9 @@ export function HomePage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
                   transition={{ duration: 0.3 }}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm"
+                  className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none"
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                     <Target className="h-6 w-6 text-primary-600" />
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-50">{t('home.about.mission.title')}</h3>
@@ -196,9 +195,9 @@ export function HomePage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
                   transition={{ duration: 0.3, delay: 0.05 }}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm"
+                  className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none"
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                     <Eye className="h-6 w-6 text-primary-600" />
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-50">{t('home.about.vision.title')}</h3>
@@ -212,9 +211,9 @@ export function HomePage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
                   transition={{ duration: 0.3, delay: 0.1 }}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm"
+                  className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none"
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                     <Shield className="h-6 w-6 text-primary-600" />
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-50">{t('home.about.values.title')}</h3>
@@ -236,9 +235,9 @@ export function HomePage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
                   transition={{ duration: 0.3 }}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm"
+                  className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none"
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                     <Clock className="h-6 w-6 text-primary-600" />
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-50">{t('home.about.problems.timeConsuming.title')}</h3>
@@ -252,9 +251,9 @@ export function HomePage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
                   transition={{ duration: 0.3, delay: 0.05 }}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm"
+                  className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none"
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                     <Filter className="h-6 w-6 text-primary-600" />
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-50">{t('home.about.problems.qualification.title')}</h3>
@@ -268,9 +267,9 @@ export function HomePage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
                   transition={{ duration: 0.3, delay: 0.1 }}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm"
+                  className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none"
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                     <Crosshair className="h-6 w-6 text-primary-600" />
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-50">{t('home.about.problems.targeting.title')}</h3>
@@ -282,8 +281,8 @@ export function HomePage() {
             </div>
           </section>
 
-          <section className="w-full bg-white dark:bg-slate-950 py-12 md:py-14">
-            <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
+          <section className="w-full bg-white px-4 py-12 dark:bg-slate-950 sm:px-6 md:py-14 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl">
               <div className="mb-10 text-center">
                 <h2 className="mb-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-4xl">
                   {t('home.why.title')}
@@ -317,9 +316,9 @@ export function HomePage() {
                     whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm"
+                    className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none"
                   >
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                       {feature.icon}
                     </div>
                     <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-50">{feature.title}</h3>
@@ -330,8 +329,8 @@ export function HomePage() {
             </div>
           </section>
 
-          <section className="w-full bg-white dark:bg-slate-950 py-12 md:py-14" id="services">
-            <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
+          <section id="services" className="w-full bg-white px-4 py-12 dark:bg-slate-950 sm:px-6 md:py-14 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl">
               <div className="mb-10 text-center">
                 <h2 className="mb-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-4xl">
                   {t('home.how.title')}
@@ -342,7 +341,7 @@ export function HomePage() {
               </div>
 
               <div className="relative">
-                <div className="absolute top-1/2 left-0 w-full h-1 bg-primary-100 transform -translate-y-1/2 hidden md:block"></div>
+                <div className="absolute left-0 top-1/2 hidden h-1 w-full -translate-y-1/2 transform bg-primary-100 dark:bg-primary-900/50 md:block" />
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-4 md:gap-6">
                   {[
                     {
@@ -372,9 +371,9 @@ export function HomePage() {
                       whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="relative z-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm"
+                      className="relative z-10 rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none"
                     >
-                      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                         {step.icon}
                       </div>
                       <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-slate-50">{step.title}</h3>
@@ -390,7 +389,7 @@ export function HomePage() {
           </section>
 
           <section className="w-full bg-white dark:bg-slate-950 py-12 md:py-14">
-            <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
+            <div className="mx-auto w-full max-w-7xl">
               <div className="mb-10 text-center">
                 <h2 className="mb-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-4xl">
                   {t('home.results.title')}
@@ -406,7 +405,7 @@ export function HomePage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
                   transition={{ duration: 0.3 }}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm"
+                  className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none"
                 >
                   <h3 className="text-2xl font-bold mb-6">{t('home.calculator.title')}</h3>
                   <div className="space-y-6">
@@ -552,7 +551,7 @@ export function HomePage() {
                       </div>
                     </div>
 
-                    <div className="bg-primary-50 p-6 rounded-xl space-y-4">
+                    <div className="space-y-4 rounded-xl bg-primary-50 p-6 dark:bg-primary-950/40">
                       <div className="text-center">
                         <p className="text-slate-600 dark:text-slate-400 mb-2">{t('home.calculator.estimatedMonthlyRoi')}</p>
                         <p className="text-4xl font-bold text-primary-600">
@@ -617,8 +616,8 @@ export function HomePage() {
             </div>
           </section>
 
-          <section id="features" className="w-full bg-white dark:bg-slate-950 py-12 md:py-16">
-            <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
+          <section id="features" className="w-full bg-white px-4 py-12 dark:bg-slate-950 sm:px-6 md:py-16 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl">
               <h2 className="mb-3 text-center text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-4xl">
                 {t('home.approach.title')}
               </h2>
@@ -659,8 +658,8 @@ export function HomePage() {
                     description: t('home.approach.social.description')
                   }
                 ].map((feature, index) => (
-                  <div key={index} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                  <div key={index} className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                       {feature.icon}
                     </div>
                     <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-slate-50">{feature.title}</h3>
@@ -671,8 +670,8 @@ export function HomePage() {
             </div>
           </section>
 
-          <section id="testimonials" className="w-full bg-white dark:bg-slate-950 py-12 md:py-16">
-            <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
+          <section id="testimonials" className="w-full bg-slate-50 px-4 py-12 dark:bg-slate-900/40 sm:px-6 md:py-16 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl">
               <h2 className="mb-3 text-center text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-4xl">
                 {t('home.testimonials.title')}
               </h2>
@@ -681,7 +680,7 @@ export function HomePage() {
               </p>
               
               <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
-                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
+                <div className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none">
                   <p className="text-slate-600 dark:text-slate-400 italic text-lg mb-6">"{t('home.testimonials.schieder.quote')}"</p>
                   <div className="w-12 h-1 bg-primary-600 rounded-full mb-4"></div>
                   <div>
@@ -690,7 +689,7 @@ export function HomePage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
+                <div className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none">
                   <p className="text-slate-600 dark:text-slate-400 italic text-lg mb-6">"{t('home.testimonials.lipscombe.quote')}"</p>
                   <div className="w-12 h-1 bg-primary-600 rounded-full mb-4"></div>
                   <div>
@@ -699,7 +698,7 @@ export function HomePage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
+                <div className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none">
                   <p className="text-slate-600 dark:text-slate-400 italic text-lg mb-6">"{t('home.testimonials.holt.quote')}"</p>
                   <div className="w-12 h-1 bg-primary-600 rounded-full mb-4"></div>
                   <div>
@@ -711,8 +710,8 @@ export function HomePage() {
             </div>
           </section>
 
-          <section id="pricing" className="w-full bg-slate-50 dark:bg-slate-900 py-12 md:py-16">
-            <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
+          <section id="pricing" className="w-full bg-slate-50 px-4 py-12 dark:bg-slate-900/60 sm:px-6 md:py-16 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl">
               <h2 className="mb-3 text-center text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-4xl">
                 {t('home.products.title')}
               </h2>
@@ -771,8 +770,8 @@ export function HomePage() {
                     icon: <Share2 className="h-6 w-6 text-primary-600" />
                   }
                 ].map((product, index) => (
-                  <div key={index} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                  <div key={index} className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                       {product.icon}
                     </div>
                     <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-50">{product.title}</h3>
@@ -805,8 +804,8 @@ export function HomePage() {
             </div>
           </section>
 
-          <section id="packages" className="w-full bg-white dark:bg-slate-950 py-12 md:py-16">
-            <div className="w-full max-w-[2000px] px-4 md:px-6 mx-auto">
+          <section id="packages" className="w-full bg-white px-4 py-12 dark:bg-slate-950 sm:px-6 md:py-16 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl">
               <h2 className="mb-3 text-center text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-4xl">
                 {t('home.packages.title')}
               </h2>
@@ -815,8 +814,8 @@ export function HomePage() {
               </p>
               
               <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
-                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                <div className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                     <Users className="h-6 w-6 text-primary-600" />
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-50">{t('home.packages.solo.title')}</h3>
@@ -852,7 +851,7 @@ export function HomePage() {
                 </div>
 
                 <div className="rounded-xl border-2 border-primary-500 bg-white dark:bg-slate-950 p-6 shadow-sm ring-1 ring-primary-100">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                     <Building className="h-6 w-6 text-primary-600" />
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-50">{t('home.packages.sme.title')}</h3>
@@ -887,8 +886,8 @@ export function HomePage() {
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                <div className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-none">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/60">
                     <Award className="h-6 w-6 text-primary-600" />
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-50">{t('home.packages.enterprise.title')}</h3>
@@ -920,14 +919,15 @@ export function HomePage() {
               </div>
             </div>
           </section>
-        </main>
+      </main>
 
-        <footer className="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 py-10">
-          <div className="container mx-auto px-4">
+      <footer className="w-full border-t border-slate-200 bg-white py-10 dark:border-slate-800 dark:bg-slate-950">
+          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 gap-5 md:grid-cols-4 md:gap-6 mb-8">
               <div>
-                <Link to="/">
-                  <img src="/images/leadlab-logo.png" alt={t('home.logoAlt')} className="mb-3 h-8 w-auto" />
+                <Link to="/" className="mb-3 inline-block" aria-label={t('home.logoAlt')}>
+                  <img src="/images/leadlab-logo.png" alt="" className="h-8 w-auto dark:hidden" />
+                  <img src="/images/leadlab-logo-dark.png" alt="" className="hidden h-8 w-auto dark:block" />
                 </Link>
                 <p className="text-slate-600 dark:text-slate-400">{t('home.footer.tagline')}</p>
               </div>
@@ -1013,8 +1013,7 @@ export function HomePage() {
               </div>
             </div>
           </div>
-        </footer>
-      </div>
+      </footer>
     </div>
   )
 }
