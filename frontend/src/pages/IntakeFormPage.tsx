@@ -179,7 +179,7 @@ export function IntakeFormPage() {
   )
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="marketing-light min-h-screen bg-white font-sans text-slate-900">
       <MarketingNav />
       <main className="pt-28 pb-20 px-4">
         <div className={`mx-auto ${slug === 'data-request' ? 'max-w-4xl' : 'max-w-3xl'}`}>

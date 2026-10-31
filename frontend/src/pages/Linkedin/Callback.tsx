@@ -54,11 +54,11 @@ export function LinkedInCallback() {
   }, [searchParams, navigate]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="marketing-light flex min-h-screen items-center justify-center bg-slate-50 font-sans text-slate-900">
       <div className="text-center">
-        <h2 className="text-xl font-semibold mb-4">Connecting to LinkedIn...</h2>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="text-gray-600 mt-4">Please wait while we complete your LinkedIn connection...</p>
+        <h2 className="mb-4 text-xl font-semibold text-slate-900">Connecting to LinkedIn...</h2>
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+        <p className="mt-4 text-slate-600">Please wait while we complete your LinkedIn connection...</p>
       </div>
     </div>
   );

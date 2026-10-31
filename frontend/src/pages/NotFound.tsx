@@ -7,9 +7,9 @@ export function NotFound() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="marketing-light flex h-full min-h-screen flex-col bg-white font-sans text-slate-900">
       <PublicHeader />
-      <main className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <main className="flex flex-1 items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center px-4">
           <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
             <h1 className="text-6xl font-bold text-blue-600 mb-4">404</h1>

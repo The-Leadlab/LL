@@ -340,7 +340,7 @@ These pages are operational drafts for the product. They are not legal advice. H
   );
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="marketing-light flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900">
       <PublicHeader />
       <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-8 md:py-12">
         <div className="flex flex-col md:flex-row gap-8">

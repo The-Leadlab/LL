@@ -33,7 +33,7 @@ const options = [
 export function IntakeSelectPage() {
   const { t } = useTranslation('marketing')
   return (
-    <div className="min-h-screen bg-background">
+    <div className="marketing-light min-h-screen bg-white font-sans text-slate-900">
       <MarketingNav />
       <main className="pt-28 pb-20 px-4">
         <div className="max-w-4xl mx-auto">

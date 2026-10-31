@@ -189,3 +189,33 @@ a {
   background-color: #ffffff;
   color: #0f172a;
 }
+
+/* Native fields: keep readable even when html.dark is on (autofill / UA styles). */
+.marketing-light input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.marketing-light textarea,
+.marketing-light select {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  border-color: #e2e8f0;
+  color-scheme: light;
+}
+
+.marketing-light input::placeholder,
+.marketing-light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.marketing-light option {
+  color: #0f172a;
+  background-color: #ffffff;
+}
+
+.marketing-light input:-webkit-autofill,
+.marketing-light input:-webkit-autofill:hover,
+.marketing-light input:-webkit-autofill:focus,
+.marketing-light textarea:-webkit-autofill,
+.marketing-light select:-webkit-autofill {
+  -webkit-text-fill-color: #0f172a !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  transition: background-color 99999s ease-out;
+}

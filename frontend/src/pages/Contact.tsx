@@ -61,7 +61,7 @@ export function Contact() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="marketing-light flex min-h-screen flex-col bg-white font-sans text-slate-900">
       <MarketingNav />
       <main className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 pt-24">
         <div className="max-w-7xl mx-auto px-4 py-12">
@@ -95,8 +95,8 @@ export function Contact() {
             </div>
 
             {/* Contact Form */}
-            <div className="bg-card rounded-2xl shadow-xl p-8 w-full">
-              <h2 className="text-2xl font-semibold text-foreground mb-6">
+            <div className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+              <h2 className="mb-6 text-2xl font-semibold text-slate-900">
                 {t('contact.formTitle')}
               </h2>
 
@@ -104,7 +104,7 @@ export function Contact() {
                 <div>
                   <label
                     htmlFor="name"
-                    className="block text-sm font-medium text-foreground mb-1"
+                    className="mb-1 block text-sm font-medium text-slate-800"
                   >
                     {t('contact.name')}
                   </label>
@@ -115,14 +115,14 @@ export function Contact() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium text-foreground mb-1"
+                    className="mb-1 block text-sm font-medium text-slate-800"
                   >
                     {t('contact.email')}
                   </label>
@@ -133,14 +133,14 @@ export function Contact() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="subject"
-                    className="block text-sm font-medium text-foreground mb-1"
+                    className="mb-1 block text-sm font-medium text-slate-800"
                   >
                     {t('contact.subject')}
                   </label>
@@ -151,14 +151,14 @@ export function Contact() {
                     value={formData.subject}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="message"
-                    className="block text-sm font-medium text-foreground mb-1"
+                    className="mb-1 block text-sm font-medium text-slate-800"
                   >
                     {t('contact.message')}
                   </label>
@@ -169,7 +169,7 @@ export function Contact() {
                     onChange={handleChange}
                     required
                     rows={4}
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 

@@ -145,29 +145,37 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
     }
   }
 
+  const fieldClass =
+    'w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400'
+
   const formCard = (
-    <div className={embedded ? 'max-w-2xl mx-auto p-4 sm:p-6' : 'max-w-2xl mx-auto'}>
-      <div className="flex items-center gap-3 mb-2">
-        <Ticket className="w-7 h-7 text-blue-600" />
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('reportIssueTitle')}</h1>
+    <div className={embedded ? 'mx-auto max-w-2xl p-4 sm:p-6' : 'mx-auto max-w-2xl'}>
+      <div className="mb-2 flex items-center gap-3">
+        <Ticket className="h-7 w-7 text-primary-600" />
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('reportIssueTitle')}</h1>
       </div>
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="mb-6 text-sm text-slate-600">
         {t('reportIssuePage.intro')}
       </p>
 
-      <form onSubmit={onSubmit} className="space-y-4 bg-card rounded-2xl border border-blue-100 p-6 shadow-xl">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <form
+        onSubmit={onSubmit}
+        className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">{t('reportIssuePage.yourName')}</label>
+            <label className="mb-1 block text-sm font-medium text-slate-800">{t('reportIssuePage.yourName')}</label>
             <Input
+              className={fieldClass}
               value={form.reporter_name}
               onChange={(e) => setForm({ ...form, reporter_name: e.target.value })}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">{t('reportIssuePage.yourEmail')}</label>
+            <label className="mb-1 block text-sm font-medium text-slate-800">{t('reportIssuePage.yourEmail')}</label>
             <Input
+              className={fieldClass}
               type="email"
               value={form.reporter_email}
               onChange={(e) => setForm({ ...form, reporter_email: e.target.value })}
@@ -176,8 +184,9 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1">{t('reportIssuePage.project')}</label>
+          <label className="mb-1 block text-sm font-medium text-slate-800">{t('reportIssuePage.project')}</label>
           <Input
+            className={fieldClass}
             value={form.project_name}
             onChange={(e) => setForm({ ...form, project_name: e.target.value })}
             placeholder={t('reportIssuePage.projectPlaceholder')}
@@ -185,8 +194,9 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1">{t('subject')}</label>
+          <label className="mb-1 block text-sm font-medium text-slate-800">{t('subject')}</label>
           <Input
+            className={fieldClass}
             value={form.subject}
             onChange={(e) => setForm({ ...form, subject: e.target.value })}
             placeholder={t('reportIssuePage.subjectPlaceholder')}
@@ -194,9 +204,9 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1">{t('reportIssuePage.priority')}</label>
+          <label className="mb-1 block text-sm font-medium text-slate-800">{t('reportIssuePage.priority')}</label>
           <select
-            className="w-full rounded-md border border-border px-3 py-2 text-sm bg-card"
+            className={fieldClass}
             value={form.priority}
             onChange={(e) => setForm({ ...form, priority: e.target.value })}
           >
@@ -207,9 +217,9 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1">{t('common:description')}</label>
+          <label className="mb-1 block text-sm font-medium text-slate-800">{t('common:description')}</label>
           <textarea
-            className="w-full min-h-[140px] rounded-md border border-border px-3 py-2 text-sm"
+            className={`${fieldClass} min-h-[140px]`}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             placeholder={t('reportIssuePage.descriptionPlaceholder')}
@@ -218,10 +228,10 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1">
+          <label className="mb-1 block text-sm font-medium text-slate-800">
             {t('reportIssuePage.attachments')}
           </label>
-          <p className="text-xs text-muted-foreground mb-2">
+          <p className="mb-2 text-xs text-slate-500">
             {t('reportIssuePage.attachmentsHelp', { count: MAX_FILES })}
           </p>
           <input
@@ -246,15 +256,15 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
               {files.map((file, index) => (
                 <li
                   key={`${file.name}-${file.size}-${index}`}
-                  className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm"
+                  className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
                 >
-                  <span className="truncate text-foreground">
+                  <span className="truncate text-slate-900">
                     {file.name}{' '}
-                    <span className="text-muted-foreground">({formatBytes(file.size)})</span>
+                    <span className="text-slate-500">({formatBytes(file.size)})</span>
                   </span>
                   <button
                     type="button"
-                    className="text-muted-foreground hover:text-red-600 shrink-0"
+                    className="shrink-0 text-slate-500 hover:text-red-600"
                     onClick={() => removeFile(index)}
                     aria-label={t('reportIssuePage.removeFile', { name: file.name })}
                   >
@@ -278,9 +288,9 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
   if (embedded) return formCard
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="marketing-light flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900">
       <MarketingNav />
-      <main className="flex-1 pt-24 pb-16 px-4">{formCard}</main>
+      <main className="flex-1 px-4 pb-16 pt-24">{formCard}</main>
     </div>
   )
 }

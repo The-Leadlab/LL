@@ -83,8 +83,8 @@ export function GoogleAuthCallback() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-sm text-gray-600">Finalizing Google sign in...</div>
+    <div className="marketing-light flex min-h-screen items-center justify-center bg-slate-50 font-sans text-slate-900">
+      <div className="text-sm text-slate-600">Finalizing Google sign in...</div>
     </div>
   );
 }
