@@ -8,9 +8,7 @@ type PublicAuthShellProps = {
   withCard?: boolean
 }
 
-/**
- * Atlas auth chrome — cool ink atmosphere, solid primary CTA (no indigo gradients).
- */
+/** Public auth chrome — always light/white, even if CRM dark mode is on. */
 export function PublicAuthShell({
   children,
   maxWidthClassName = 'max-w-md',
@@ -18,17 +16,13 @@ export function PublicAuthShell({
   withCard = true,
 }: PublicAuthShellProps) {
   return (
-    <div className="relative flex min-h-screen flex-col bg-background font-sans">
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(37,99,235,0.08),_transparent_55%)]"
-        aria-hidden
-      />
+    <div className="marketing-light flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900">
       <MarketingNav />
-      <main className="relative flex flex-1 items-center justify-center px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+      <main className="flex flex-1 items-center justify-center px-4 pb-16 pt-24 sm:px-6 lg:px-8">
         <div className={`w-full ${maxWidthClassName}`}>
           {withCard ? (
             <div
-              className={`rounded-xl border border-border bg-card p-8 shadow-md ${cardClassName}`}
+              className={`rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 ${cardClassName}`}
             >
               {children}
             </div>
