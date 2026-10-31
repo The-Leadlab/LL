@@ -146,25 +146,25 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
   }
 
   const fieldClass =
-    'w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400'
+    'w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-50 dark:placeholder:text-slate-500'
 
   const formCard = (
     <div className={embedded ? 'mx-auto max-w-2xl p-4 sm:p-6' : 'mx-auto max-w-2xl'}>
       <div className="mb-2 flex items-center gap-3">
         <Ticket className="h-7 w-7 text-primary-600" />
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('reportIssueTitle')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">{t('reportIssueTitle')}</h1>
       </div>
-      <p className="mb-6 text-sm text-slate-600">
+      <p className="mb-6 text-sm text-slate-600 dark:text-slate-400">
         {t('reportIssuePage.intro')}
       </p>
 
       <form
         onSubmit={onSubmit}
-        className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900"
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-800">{t('reportIssuePage.yourName')}</label>
+            <label className="mb-1 block text-sm font-medium text-slate-800 dark:text-slate-200">{t('reportIssuePage.yourName')}</label>
             <Input
               className={fieldClass}
               value={form.reporter_name}
@@ -173,7 +173,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-800">{t('reportIssuePage.yourEmail')}</label>
+            <label className="mb-1 block text-sm font-medium text-slate-800 dark:text-slate-200">{t('reportIssuePage.yourEmail')}</label>
             <Input
               className={fieldClass}
               type="email"
@@ -184,7 +184,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-800">{t('reportIssuePage.project')}</label>
+          <label className="mb-1 block text-sm font-medium text-slate-800 dark:text-slate-200">{t('reportIssuePage.project')}</label>
           <Input
             className={fieldClass}
             value={form.project_name}
@@ -194,7 +194,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-800">{t('subject')}</label>
+          <label className="mb-1 block text-sm font-medium text-slate-800 dark:text-slate-200">{t('subject')}</label>
           <Input
             className={fieldClass}
             value={form.subject}
@@ -204,7 +204,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-800">{t('reportIssuePage.priority')}</label>
+          <label className="mb-1 block text-sm font-medium text-slate-800 dark:text-slate-200">{t('reportIssuePage.priority')}</label>
           <select
             className={fieldClass}
             value={form.priority}
@@ -217,7 +217,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-800">{t('common:description')}</label>
+          <label className="mb-1 block text-sm font-medium text-slate-800 dark:text-slate-200">{t('common:description')}</label>
           <textarea
             className={`${fieldClass} min-h-[140px]`}
             value={form.description}
@@ -228,7 +228,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-800">
+          <label className="mb-1 block text-sm font-medium text-slate-800 dark:text-slate-200">
             {t('reportIssuePage.attachments')}
           </label>
           <p className="mb-2 text-xs text-slate-500">
@@ -288,7 +288,7 @@ export default function ReportIssue({ embedded = false }: { embedded?: boolean }
   if (embedded) return formCard
 
   return (
-    <div className="marketing-light flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900">
+    <div className="flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900 dark:bg-slate-950 dark:text-slate-50">
       <MarketingNav />
       <main className="flex-1 px-4 pb-16 pt-24">{formCard}</main>
     </div>

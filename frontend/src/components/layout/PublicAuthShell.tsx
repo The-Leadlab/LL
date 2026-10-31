@@ -16,13 +16,13 @@ export function PublicAuthShell({
   withCard = true,
 }: PublicAuthShellProps) {
   return (
-    <div className="marketing-light flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900">
+    <div className="flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900 dark:bg-slate-950 dark:text-slate-50">
       <MarketingNav />
       <main className="flex flex-1 items-center justify-center px-4 pb-16 pt-24 sm:px-6 lg:px-8">
         <div className={`w-full ${maxWidthClassName}`}>
           {withCard ? (
             <div
-              className={`rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 ${cardClassName}`}
+              className={`rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-8 ${cardClassName}`}
             >
               {children}
             </div>

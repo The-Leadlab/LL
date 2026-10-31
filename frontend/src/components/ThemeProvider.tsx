@@ -1,5 +1,5 @@
 /**
- * App color-mode provider — light by default; dark is opt-in.
+ * App color-mode provider — follows OS by default; users can pin light or dark.
  */
 
 import { createContext, useContext, useEffect, useState } from 'react'

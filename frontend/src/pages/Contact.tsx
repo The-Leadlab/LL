@@ -61,9 +61,9 @@ export function Contact() {
   }
 
   return (
-    <div className="marketing-light flex min-h-screen flex-col bg-white font-sans text-slate-900">
+    <div className="flex min-h-screen flex-col bg-white font-sans text-slate-900 dark:bg-slate-950 dark:text-slate-50">
       <MarketingNav />
-      <main className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 pt-24">
+      <main className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 pt-24 dark:from-slate-950 dark:to-slate-900">
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Contact Information */}
@@ -95,8 +95,8 @@ export function Contact() {
             </div>
 
             {/* Contact Form */}
-            <div className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-              <h2 className="mb-6 text-2xl font-semibold text-slate-900">
+            <div className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <h2 className="mb-6 text-2xl font-semibold text-slate-900 dark:text-slate-50">
                 {t('contact.formTitle')}
               </h2>
 
@@ -104,7 +104,7 @@ export function Contact() {
                 <div>
                   <label
                     htmlFor="name"
-                    className="mb-1 block text-sm font-medium text-slate-800"
+                    className="mb-1 block text-sm font-medium text-slate-800 dark:text-slate-200"
                   >
                     {t('contact.name')}
                   </label>
@@ -115,14 +115,14 @@ export function Contact() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-50"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="email"
-                    className="mb-1 block text-sm font-medium text-slate-800"
+                    className="mb-1 block text-sm font-medium text-slate-800 dark:text-slate-200"
                   >
                     {t('contact.email')}
                   </label>
@@ -133,14 +133,14 @@ export function Contact() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-50"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="subject"
-                    className="mb-1 block text-sm font-medium text-slate-800"
+                    className="mb-1 block text-sm font-medium text-slate-800 dark:text-slate-200"
                   >
                     {t('contact.subject')}
                   </label>
@@ -151,14 +151,14 @@ export function Contact() {
                     value={formData.subject}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-50"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="message"
-                    className="mb-1 block text-sm font-medium text-slate-800"
+                    className="mb-1 block text-sm font-medium text-slate-800 dark:text-slate-200"
                   >
                     {t('contact.message')}
                   </label>
@@ -169,7 +169,7 @@ export function Contact() {
                     onChange={handleChange}
                     required
                     rows={4}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-50"
                   />
                 </div>
 

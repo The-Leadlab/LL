@@ -3,9 +3,9 @@ import { PublicHeader } from '../components/layout/PublicHeader';
 
 export function About() {
   return (
-    <div className="marketing-light flex h-full min-h-screen flex-col bg-white font-sans text-slate-900">
+    <div className="flex h-full min-h-screen flex-col bg-white font-sans text-slate-900 dark:bg-slate-950 dark:text-slate-50">
       <PublicHeader />
-      <main className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-100">
+      <main className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-slate-900">
         <div className="max-w-4xl mx-auto px-4 py-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-8">About Us</h1>
           

@@ -1,13 +1,13 @@
 /**
  * Single source of truth for LeadLab color mode.
- * Dark is opt-in; product default is light (marketing and CRM stay aligned).
+ * Default follows the OS (system); users can pin light or dark.
  */
 
 export type ThemePreference = 'light' | 'dark' | 'system'
 export type ResolvedTheme = 'light' | 'dark'
 
 export const THEME_STORAGE_KEY = 'leadlab-theme'
-const THEME_MIGRATION_KEY = 'leadlab-theme-v2'
+const THEME_MIGRATION_KEY = 'leadlab-theme-v3'
 const LEGACY_KEYS = ['theme', 'dashboard-theme'] as const
 
 export function getSystemTheme(): ResolvedTheme {
@@ -21,7 +21,7 @@ export function resolveTheme(preference: ThemePreference): ResolvedTheme {
 }
 
 export function readStoredTheme(): ThemePreference {
-  if (typeof window === 'undefined') return 'light'
+  if (typeof window === 'undefined') return 'system'
   try {
     const migrated = localStorage.getItem(THEME_MIGRATION_KEY) === '1'
     const raw =
@@ -29,13 +29,13 @@ export function readStoredTheme(): ThemePreference {
       localStorage.getItem('theme') ||
       localStorage.getItem('dashboard-theme')
 
-    // One-time: stop surprising users whose OS is dark while marketing looked light.
-    // Explicit light/dark choices are kept; bare "system" / missing → light.
     if (!migrated) {
-      const next: ThemePreference =
-        raw === 'dark' || raw === 'light' ? raw : 'light'
+      // Re-enable OS detection for the prior v2 "force light" cohort.
+      // Keep an explicit dark pin; everything else starts on system.
+      const next: ThemePreference = raw === 'dark' ? 'dark' : 'system'
       localStorage.setItem(THEME_STORAGE_KEY, next)
       localStorage.setItem(THEME_MIGRATION_KEY, '1')
+      localStorage.setItem('leadlab-theme-v2', '1')
       for (const key of LEGACY_KEYS) localStorage.removeItem(key)
       return next
     }
@@ -43,9 +43,9 @@ export function readStoredTheme(): ThemePreference {
     if (raw === 'light' || raw === 'dark' || raw === 'system') {
       return raw
     }
-    return 'light'
+    return 'system'
   } catch {
-    return 'light'
+    return 'system'
   }
 }
 
@@ -53,6 +53,7 @@ export function writeStoredTheme(preference: ThemePreference): void {
   try {
     localStorage.setItem(THEME_STORAGE_KEY, preference)
     localStorage.setItem(THEME_MIGRATION_KEY, '1')
+    localStorage.setItem('leadlab-theme-v2', '1')
     for (const key of LEGACY_KEYS) localStorage.removeItem(key)
   } catch {
     /* private mode */
